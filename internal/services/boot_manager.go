@@ -112,7 +112,8 @@ func (bm *BootManager) BootAll() error {
 	}
 
 	// Group local services by compose file for batch startup
-	composeGroups := make(map[string][]string) // compose_file -> []service_name
+	remoteGroups := make(map[string][]string)  // compose_file -> []service_name for remote
+	composeGroups := make(map[string][]string) // compose_file -> []service_name for local
 	for name, ep := range endpoints {
 		if !ep.Enabled {
 			if _, exists := bm.Results[name]; !exists {
@@ -129,7 +130,15 @@ func (bm *BootManager) BootAll() error {
 				}
 				bm.Results[name] = &BootResult{Name: name, Status: status}
 			}
-			bm.Logger.WithField("service", name).Info("Service configured as remote or discovered, skipping compose start")
+			bm.Logger.WithField("service", name).Info("Service configured as remote or discovered, skipping local compose start")
+			// Collect remote services for deployment
+			if ep.Remote && ep.ComposeFile != "" && ep.ServiceName != "" && bm.ContainerAdapter != nil {
+				key := ep.ComposeFile
+				if ep.Profile != "" {
+					key = ep.ComposeFile + "|" + ep.Profile
+				}
+				remoteGroups[key] = append(remoteGroups[key], ep.ServiceName)
+			}
 			continue
 		}
 		if ep.ComposeFile != "" && ep.ServiceName != "" {
@@ -139,6 +148,56 @@ func (bm *BootManager) BootAll() error {
 			}
 			composeGroups[key] = append(composeGroups[key], ep.ServiceName)
 		}
+	}
+
+	// Deploy remote services grouped by compose file
+	if bm.ContainerAdapter != nil && bm.ContainerAdapter.RemoteEnabled() && len(remoteGroups) > 0 {
+		bm.Logger.Info("Deploying remote services to remote host...")
+		for key, services := range remoteGroups {
+			parts := strings.SplitN(key, "|", 2)
+			composeFile := parts[0]
+			profile := ""
+			if len(parts) > 1 {
+				profile = parts[1]
+			}
+
+			start := time.Now()
+
+			// For remote deployment, we assume compose files are pre-deployed on the remote host
+			// in /home/<user>/helixagent/deploy/ directory
+			// This avoids copying the entire project directory (7.6GB+) on every boot
+			// The RemoteComposeUp method will handle the deployment
+			err := bm.ContainerAdapter.RemoteComposeUp(ctx, composeFile, profile)
+			duration := time.Since(start)
+
+			if err != nil {
+				bm.Logger.WithFields(logrus.Fields{
+					"compose_file": composeFile,
+					"services":     strings.Join(services, ", "),
+					"error":        err,
+				}).Error("Failed to deploy remote services")
+				for _, svc := range services {
+					if result, ok := bm.Results[svc]; ok {
+						result.Error = err
+						result.Status = "failed"
+						result.Duration = duration
+					}
+				}
+			} else {
+				bm.Logger.WithFields(logrus.Fields{
+					"compose_file": composeFile,
+					"services":     strings.Join(services, ", "),
+					"duration":     duration,
+				}).Info("Remote services deployed successfully")
+				for _, svc := range services {
+					if result, ok := bm.Results[svc]; ok {
+						result.Duration = duration
+					}
+				}
+			}
+		}
+	} else if len(remoteGroups) > 0 {
+		bm.Logger.Warn("Remote services configured but ContainerAdapter not available for deployment")
 	}
 
 	// Start local services grouped by compose file

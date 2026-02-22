@@ -623,8 +623,9 @@ func (a *Adapter) RemoteEnabled() bool {
 
 // RemoteComposeUp deploys a compose file to the first available
 // remote host and starts its services. It copies the compose file
-// and any supporting files in the same directory, then runs
-// `docker compose up -d` on the remote host.
+// to the remote host and runs `podman compose up -d`.
+// NOTE: Only copies the compose file itself, not the entire directory,
+// to avoid copying large project directories (7.6GB+) on every boot.
 func (a *Adapter) RemoteComposeUp(
 	ctx context.Context, composeFile, profile string,
 ) error {
@@ -653,8 +654,7 @@ func (a *Adapter) RemoteComposeUp(
 	}
 
 	// Use user's home directory for HelixAgent deployments (no sudo required)
-	// This avoids permission issues with /opt/helixagent
-	remoteDir := fmt.Sprintf("/home/%s/helixagent", host.User)
+	remoteDir := fmt.Sprintf("/home/%s/helixagent/deploy", host.User)
 	mkdirCmd := fmt.Sprintf("mkdir -p %s", remoteDir)
 	if _, err := a.executor.Execute(
 		ctx, host, mkdirCmd,
@@ -665,14 +665,14 @@ func (a *Adapter) RemoteComposeUp(
 		)
 	}
 
-	// Copy the compose file's directory to the remote host.
-	localDir := filepath.Dir(absFile)
-	remoteDest := remoteDir + "/" + filepath.Base(localDir)
-	if err := a.executor.CopyDir(
-		ctx, host, localDir, remoteDest,
+	// Copy only the compose file itself, not the entire directory
+	// This is much faster for large project directories
+	remoteFile := remoteDir + "/" + filepath.Base(absFile)
+	if err := a.executor.CopyFile(
+		ctx, host, absFile, remoteFile,
 	); err != nil {
 		return fmt.Errorf(
-			"copy compose dir to %s: %w", host.Name, err,
+			"copy compose file to %s: %w", host.Name, err,
 		)
 	}
 
@@ -680,7 +680,6 @@ func (a *Adapter) RemoteComposeUp(
 	remoteOrch := remote.NewRemoteComposeOrchestrator(
 		host, a.executor, a.logger,
 	)
-	remoteFile := remoteDest + "/" + filepath.Base(absFile)
 	project := compose.ComposeProject{
 		File:    remoteFile,
 		Profile: profile,
