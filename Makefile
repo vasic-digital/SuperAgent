@@ -337,51 +337,8 @@ test-complete-keep:
 	@./scripts/run_complete_test_suite.sh --verbose --coverage --keep
 
 test-infra-start:
-	@echo "🐳 Starting test infrastructure (PostgreSQL, Redis, Mock LLM)..."
-	@source ./scripts/container-runtime.sh 2>/dev/null || true; \
-	if [ -z "$$COMPOSE_CMD" ]; then \
-		echo "❌ No compose tool available. Using fallback detection..."; \
-		if command -v docker &> /dev/null && docker info &> /dev/null 2>&1; then \
-			COMPOSE_CMD="docker compose"; \
-		elif command -v podman-compose &> /dev/null; then \
-			COMPOSE_CMD="podman-compose"; \
-		else \
-			echo "❌ No container runtime found. Install Docker or Podman."; \
-			exit 1; \
-		fi; \
-	fi; \
-	echo "Using: $$COMPOSE_CMD"; \
-	$$COMPOSE_CMD -f docker-compose.test.yml up -d postgres redis mock-llm
-	@echo "⏳ Waiting for services to be ready..."
-	@sleep 5
-	@echo "Checking PostgreSQL..."
-	@source ./scripts/container-runtime.sh 2>/dev/null || true; \
-	if [ -z "$$COMPOSE_CMD" ]; then COMPOSE_CMD="docker compose"; fi; \
-	for i in 1 2 3 4 5 6 7 8 9 10; do \
-		$$COMPOSE_CMD -f docker-compose.test.yml exec -T postgres pg_isready -U helixagent -d helixagent_db > /dev/null 2>&1 && break; \
-		echo "  Waiting for PostgreSQL... ($$i/10)"; \
-		sleep 2; \
-	done
-	@echo "Checking Redis..."
-	@source ./scripts/container-runtime.sh 2>/dev/null || true; \
-	if [ -z "$$COMPOSE_CMD" ]; then COMPOSE_CMD="docker compose"; fi; \
-	for i in 1 2 3 4 5; do \
-		$$COMPOSE_CMD -f docker-compose.test.yml exec -T redis redis-cli ping > /dev/null 2>&1 && break; \
-		echo "  Waiting for Redis... ($$i/5)"; \
-		sleep 1; \
-	done
-	@echo "Checking Mock LLM..."
-	@for i in 1 2 3 4 5 6 7 8 9 10; do \
-		curl -sf http://localhost:$${MOCK_LLM_PORT:-18081}/health > /dev/null 2>&1 && break; \
-		echo "  Waiting for Mock LLM... ($$i/10)"; \
-		sleep 2; \
-	done
-	@echo "✅ Test infrastructure is ready!"
-	@echo ""
-	@echo "Services available at:"
-	@echo "  PostgreSQL: localhost:$${POSTGRES_PORT:-15432} (helixagent/helixagent123)"
-	@echo "  Redis:      localhost:$${REDIS_PORT:-16379} (password: helixagent123)"
-	@echo "  Mock LLM:   http://localhost:$${MOCK_LLM_PORT:-18081}"
+	@echo "🐳 Starting test infrastructure..."
+	@./scripts/deploy-containers.sh docker-compose.test.yml postgres redis mock-llm
 
 test-infra-stop:
 	@echo "🐳 Stopping test infrastructure..."
