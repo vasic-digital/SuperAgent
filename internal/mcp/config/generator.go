@@ -2,6 +2,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strings"
 )
@@ -154,7 +155,14 @@ func (g *MCPConfigGenerator) GenerateOpenCodeMCPs() map[string]MCPServerConfig {
 	}
 
 	// PostgreSQL - enabled if POSTGRES_URL is set or service is running
-	postgresURL := g.getEnvOrDefault("POSTGRES_URL", "postgresql://helixagent:helixagent123@localhost:15432/helixagent_db")
+	// Build URL from components to avoid hardcoding credentials
+	postgresURL := g.getEnvOrDefault("POSTGRES_URL", fmt.Sprintf("postgresql://%s:%s@%s:%s/%s",
+		g.getEnvOrDefault("POSTGRES_USER", "helixagent"),
+		os.Getenv("POSTGRES_PASSWORD"),
+		g.getEnvOrDefault("POSTGRES_HOST", "localhost"),
+		g.getEnvOrDefault("POSTGRES_PORT", "15432"),
+		g.getEnvOrDefault("POSTGRES_DB", "helixagent_db"),
+	))
 	mcps["postgres"] = MCPServerConfig{
 		Type:    "local",
 		Command: []string{"npx", "-y", "@modelcontextprotocol/server-postgres"},
@@ -166,7 +174,11 @@ func (g *MCPConfigGenerator) GenerateOpenCodeMCPs() map[string]MCPServerConfig {
 
 	// Redis - enabled if REDIS_URL is set
 	if g.hasEnvVar("REDIS_URL") || g.hasEnvVar("REDIS_HOST") {
-		redisURL := g.getEnvOrDefault("REDIS_URL", "redis://:helixagent123@localhost:16379")
+		redisURL := g.getEnvOrDefault("REDIS_URL", fmt.Sprintf("redis://:%s@%s:%s",
+			os.Getenv("REDIS_PASSWORD"),
+			g.getEnvOrDefault("REDIS_HOST", "localhost"),
+			g.getEnvOrDefault("REDIS_PORT", "16379"),
+		))
 		mcps["redis"] = MCPServerConfig{
 			Type:    "local",
 			Command: []string{"npx", "-y", "mcp-server-redis"},
@@ -179,7 +191,13 @@ func (g *MCPConfigGenerator) GenerateOpenCodeMCPs() map[string]MCPServerConfig {
 
 	// MongoDB - enabled if MONGODB_URI is set
 	if g.hasEnvVar("MONGODB_URI") || g.hasEnvVar("MONGODB_HOST") {
-		mongoURI := g.getEnvOrDefault("MONGODB_URI", "mongodb://helixagent:helixagent123@localhost:27017/helixagent?authSource=admin")
+		mongoURI := g.getEnvOrDefault("MONGODB_URI", fmt.Sprintf("mongodb://%s:%s@%s:%s/%s?authSource=admin",
+			g.getEnvOrDefault("MONGODB_USER", "helixagent"),
+			os.Getenv("MONGODB_PASSWORD"),
+			g.getEnvOrDefault("MONGODB_HOST", "localhost"),
+			g.getEnvOrDefault("MONGODB_PORT", "27017"),
+			g.getEnvOrDefault("MONGODB_DB", "helixagent"),
+		))
 		mcps["mongodb"] = MCPServerConfig{
 			Type:    "local",
 			Command: []string{"npx", "-y", "mcp-server-mongodb"},

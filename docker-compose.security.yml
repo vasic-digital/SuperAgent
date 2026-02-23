@@ -11,7 +11,7 @@
 services:
   # SonarQube Server - Code Quality and Security Analysis
   sonarqube:
-    image: sonarqube:community
+    image: docker.io/sonarqube:community
     container_name: helixagent-sonarqube
     ports:
       - "${SONARQUBE_PORT:-9000}:9000"

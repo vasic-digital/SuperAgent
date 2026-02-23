@@ -2,6 +2,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strings"
 )
@@ -181,7 +182,13 @@ func (g *FullMCPConfigGenerator) GenerateAllMCPs() map[string]MCPServerConfigFul
 		Type:    "local",
 		Command: []string{"npx", "-y", "@modelcontextprotocol/server-postgres"},
 		Environment: map[string]string{
-			"POSTGRES_URL": g.getEnvOrDefault("POSTGRES_URL", "postgresql://helixagent:helixagent123@localhost:15432/helixagent_db"),
+			"POSTGRES_URL": g.getEnvOrDefault("POSTGRES_URL", fmt.Sprintf("postgresql://%s:%s@%s:%s/%s",
+				g.getEnvOrDefault("POSTGRES_USER", "helixagent"),
+				os.Getenv("POSTGRES_PASSWORD"),
+				g.getEnvOrDefault("POSTGRES_HOST", "localhost"),
+				g.getEnvOrDefault("POSTGRES_PORT", "15432"),
+				g.getEnvOrDefault("POSTGRES_DB", "helixagent_db"),
+			)),
 		},
 		Enabled: g.hasAnyEnvVar("POSTGRES_URL", "POSTGRES_HOST"),
 	}
@@ -189,7 +196,11 @@ func (g *FullMCPConfigGenerator) GenerateAllMCPs() map[string]MCPServerConfigFul
 		Type:    "local",
 		Command: []string{"npx", "-y", "mcp-server-redis"},
 		Environment: map[string]string{
-			"REDIS_URL": g.getEnvOrDefault("REDIS_URL", "redis://:helixagent123@localhost:16379"),
+			"REDIS_URL": g.getEnvOrDefault("REDIS_URL", fmt.Sprintf("redis://:%s@%s:%s",
+				os.Getenv("REDIS_PASSWORD"),
+				g.getEnvOrDefault("REDIS_HOST", "localhost"),
+				g.getEnvOrDefault("REDIS_PORT", "16379"),
+			)),
 		},
 		Enabled: g.hasAnyEnvVar("REDIS_URL", "REDIS_HOST"),
 	}
@@ -197,7 +208,13 @@ func (g *FullMCPConfigGenerator) GenerateAllMCPs() map[string]MCPServerConfigFul
 		Type:    "local",
 		Command: []string{"npx", "-y", "mcp-server-mongodb"},
 		Environment: map[string]string{
-			"MONGODB_URI": g.getEnvOrDefault("MONGODB_URI", "mongodb://helixagent:helixagent123@localhost:27017/helixagent?authSource=admin"),
+			"MONGODB_URI": g.getEnvOrDefault("MONGODB_URI", fmt.Sprintf("mongodb://%s:%s@%s:%s/%s?authSource=admin",
+				g.getEnvOrDefault("MONGODB_USER", "helixagent"),
+				os.Getenv("MONGODB_PASSWORD"),
+				g.getEnvOrDefault("MONGODB_HOST", "localhost"),
+				g.getEnvOrDefault("MONGODB_PORT", "27017"),
+				g.getEnvOrDefault("MONGODB_DB", "helixagent"),
+			)),
 		},
 		Enabled: g.hasAnyEnvVar("MONGODB_URI", "MONGODB_HOST"),
 	}
@@ -205,7 +222,13 @@ func (g *FullMCPConfigGenerator) GenerateAllMCPs() map[string]MCPServerConfigFul
 		Type:    "local",
 		Command: []string{"npx", "-y", "mcp-server-mysql"},
 		Environment: map[string]string{
-			"MYSQL_URL": g.getEnvOrDefault("MYSQL_URL", "mysql://helixagent:helixagent123@localhost:3306/helixagent"),
+			"MYSQL_URL": g.getEnvOrDefault("MYSQL_URL", fmt.Sprintf("mysql://%s:%s@%s:%s/%s",
+				g.getEnvOrDefault("MYSQL_USER", "helixagent"),
+				os.Getenv("MYSQL_PASSWORD"),
+				g.getEnvOrDefault("MYSQL_HOST", "localhost"),
+				g.getEnvOrDefault("MYSQL_PORT", "3306"),
+				g.getEnvOrDefault("MYSQL_DB", "helixagent"),
+			)),
 		},
 		Enabled: g.hasAnyEnvVar("MYSQL_URL", "MYSQL_HOST"),
 	}

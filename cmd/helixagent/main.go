@@ -584,9 +584,6 @@ func checkPostgresHealth() error {
 		dbUser = "helixagent"
 	}
 	dbPassword := os.Getenv("DB_PASSWORD")
-	if dbPassword == "" {
-		dbPassword = "helixagent123" // Default from docker-compose.yml
-	}
 	dbName := os.Getenv("DB_NAME")
 	if dbName == "" {
 		dbName = "helixagent_db"
@@ -624,9 +621,6 @@ func checkRedisHealth() error {
 		redisPort = "6379"
 	}
 	redisPassword := os.Getenv("REDIS_PASSWORD")
-	if redisPassword == "" {
-		redisPassword = "helixagent123" // Default from docker-compose.yml
-	}
 
 	rdb := redis.NewClient(&redis.Options{
 		Addr:        redisHost + ":" + redisPort,
@@ -2065,15 +2059,6 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 
 	baseURL := fmt.Sprintf("http://%s:%s", host, port)
 
-	// Determine which format to use based on output filename
-	// Config should be saved as "opencode.json" (no dot prefix) in ~/.config/opencode/
-	// The old ".opencode.json" (with dot) format is NOT recognized by OpenCode v1.2.6+
-	useOldFormat := false
-	if appCfg.OpenCodeOutput != "" {
-		basename := filepath.Base(appCfg.OpenCodeOutput)
-		useOldFormat = basename == "opencode.json"
-	}
-
 	var jsonData []byte
 	var err error
 
@@ -2127,13 +2112,6 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 		TUI:          &OpenCodeTUIDef{Theme: "opencode"},
 	}
 	jsonData, err = json.MarshalIndent(config, "", "  ")
-
-	// Log which format we're generating (for debugging)
-	if useOldFormat {
-		logger.Info("Generated OpenCode config (opencode.json)")
-	} else {
-		logger.Info("Generated OpenCode config (opencode.json)")
-	}
 
 	if err != nil {
 		return fmt.Errorf("failed to marshal OpenCode config: %w", err)

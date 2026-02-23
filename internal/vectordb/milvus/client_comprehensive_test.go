@@ -319,7 +319,7 @@ func TestClient_Connect_WithAllAuthMethods(t *testing.T) {
 				}
 			},
 			checkFunc: func(r *http.Request) bool {
-				return r.Header.Get("Authorization") == "" && r.Header.Get("Authorization") == ""
+				return r.Header.Get("Authorization") == ""
 			},
 		},
 		{

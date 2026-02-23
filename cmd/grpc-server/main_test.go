@@ -47,11 +47,7 @@ func TestGrpcServer_Complete(t *testing.T) {
 		resp, err := server.Complete(ctx, req)
 
 		// The ensemble may return an error without configured providers
-		if err != nil {
-			assert.NotNil(t, resp)
-		} else {
-			assert.NotNil(t, resp)
-		}
+		assert.NotNil(t, resp)
 	})
 
 	t.Run("empty prompt", func(t *testing.T) {
@@ -64,11 +60,7 @@ func TestGrpcServer_Complete(t *testing.T) {
 		resp, err := server.Complete(ctx, req)
 
 		// Method should handle empty prompts gracefully
-		if err != nil {
-			assert.NotNil(t, resp)
-		} else {
-			assert.NotNil(t, resp)
-		}
+		assert.NotNil(t, resp)
 	})
 }
 

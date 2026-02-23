@@ -343,12 +343,7 @@ func (p *MCPPreinstaller) isPackageInstalled(pkgDir string, npmPkg string) bool 
 	// Handle scoped packages like @modelcontextprotocol/server-filesystem
 	// Note: pkgDir comes from installDir (config-provided) + pkg.Name (hardcoded)
 	// Note: npmPkg comes from StandardMCPPackages (hardcoded NPM package names)
-	var checkPath string
-	if npmPkg[0] == '@' {
-		checkPath = filepath.Join(pkgDir, "node_modules", npmPkg)
-	} else {
-		checkPath = filepath.Join(pkgDir, "node_modules", npmPkg)
-	}
+	checkPath := filepath.Join(pkgDir, "node_modules", npmPkg)
 
 	// Check if package.json exists in the package directory
 	packageJSON := filepath.Join(checkPath, "package.json")
