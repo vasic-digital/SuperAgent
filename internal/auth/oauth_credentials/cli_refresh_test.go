@@ -301,6 +301,9 @@ func TestVerifyTokenRefreshed(t *testing.T) {
 }
 
 func TestRefreshQwenTokenWithFallback(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping CLI-based token refresh test in short mode (requires qwen CLI)")
+	}
 	t.Run("returns error when both methods fail", func(t *testing.T) {
 		// Create expired credentials
 		creds := &QwenOAuthCredentials{

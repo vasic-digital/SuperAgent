@@ -56,7 +56,11 @@ func (f *CacheFactory) TestCacheConnection(ctx context.Context) bool {
 		return false
 	}
 
-	if err := f.redisClient.Ping(ctx); err != nil {
+	// Ensure the Ping has a reasonable timeout so we don't hang indefinitely.
+	pingCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	if err := f.redisClient.Ping(pingCtx); err != nil {
 		f.log.WithError(err).Warn("Redis cache connection test failed")
 		return false
 	}
