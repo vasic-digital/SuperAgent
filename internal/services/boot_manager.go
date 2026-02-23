@@ -28,14 +28,18 @@ type BootResult struct {
 // from outside this package; use GetResults() for concurrent-safe reads.
 // All writes go through setResult() which is protected by resultsMu.
 type BootManager struct {
-	Config           *config.ServicesConfig
-	Logger           *logrus.Logger
-	Results          map[string]*BootResult // protected by resultsMu
-	resultsMu        sync.RWMutex
-	HealthChecker    *ServiceHealthChecker
-	Discoverer       discovery.Discoverer
-	RemoteDeployer   RemoteDeployer
+	Config        *config.ServicesConfig
+	Logger        *logrus.Logger
+	Results       map[string]*BootResult // protected by resultsMu
+	resultsMu     sync.RWMutex
+	HealthChecker *ServiceHealthChecker
+	Discoverer    discovery.Discoverer
+	RemoteDeployer RemoteDeployer
+	// ContainerAdapter is exported for external inspection only.
+	// All internal reads MUST use getContainerAdapter() and writes MUST
+	// use SetContainerAdapter() so that concurrent access is safe.
 	ContainerAdapter *containeradapter.Adapter
+	adapterMu        sync.RWMutex
 	ProjectDir       string
 }
 
@@ -66,8 +70,21 @@ func NewBootManagerWithAdapter(cfg *config.ServicesConfig, logger *logrus.Logger
 }
 
 // SetContainerAdapter sets the container adapter for remote health checks.
+// Safe for concurrent use — protected by adapterMu.
 func (bm *BootManager) SetContainerAdapter(adapter *containeradapter.Adapter) {
+	bm.adapterMu.Lock()
 	bm.ContainerAdapter = adapter
+	bm.adapterMu.Unlock()
+}
+
+// getContainerAdapter returns the current container adapter under a read lock.
+// All internal code in this file must use this instead of reading
+// bm.ContainerAdapter directly, to avoid a data race with SetContainerAdapter.
+func (bm *BootManager) getContainerAdapter() *containeradapter.Adapter {
+	bm.adapterMu.RLock()
+	a := bm.ContainerAdapter
+	bm.adapterMu.RUnlock()
+	return a
 }
 
 // NewBootManagerWithDeployer creates a new BootManager with a remote deployer.
@@ -113,15 +130,17 @@ func (bm *BootManager) setResult(name string, result *BootResult) {
 
 // getResult retrieves a copy of the BootResult by name under the read lock.
 // Returns (result, true) when found, (nil, false) otherwise.
-// A value copy is returned so callers cannot alias the internal map entry.
+// The value copy is made while the lock is held, matching the aliasing
+// invariant enforced by GetResults() — callers cannot race on struct fields.
 func (bm *BootManager) getResult(name string) (*BootResult, bool) {
 	bm.resultsMu.RLock()
 	r, ok := bm.Results[name]
-	bm.resultsMu.RUnlock()
 	if !ok {
+		bm.resultsMu.RUnlock()
 		return nil, false
 	}
-	cp := *r // value copy — matches GetResults() aliasing invariant
+	cp := *r // dereference inside the lock — concurrent writers are excluded
+	bm.resultsMu.RUnlock()
 	return &cp, true
 }
 
@@ -186,7 +205,7 @@ func (bm *BootManager) BootAll() error {
 			}
 			bm.Logger.WithField("service", name).Info("Service configured as remote or discovered, skipping local compose start")
 			// Collect remote services for deployment
-			if ep.Remote && ep.ComposeFile != "" && ep.ServiceName != "" && bm.ContainerAdapter != nil {
+			if ep.Remote && ep.ComposeFile != "" && ep.ServiceName != "" && bm.getContainerAdapter() != nil {
 				key := ep.ComposeFile
 				if ep.Profile != "" {
 					key = ep.ComposeFile + "|" + ep.Profile
@@ -205,7 +224,8 @@ func (bm *BootManager) BootAll() error {
 	}
 
 	// Deploy remote services grouped by compose file
-	if bm.ContainerAdapter != nil && bm.ContainerAdapter.RemoteEnabled() && len(remoteGroups) > 0 {
+	adapter := bm.getContainerAdapter()
+	if adapter != nil && adapter.RemoteEnabled() && len(remoteGroups) > 0 {
 		bm.Logger.Info("Deploying remote services to remote host...")
 		for key, services := range remoteGroups {
 			parts := strings.SplitN(key, "|", 2)
@@ -221,7 +241,7 @@ func (bm *BootManager) BootAll() error {
 			// in /home/<user>/helixagent/deploy/ directory
 			// This avoids copying the entire project directory (7.6GB+) on every boot
 			// The RemoteComposeUp method will handle the deployment
-			err := bm.ContainerAdapter.RemoteComposeUp(ctx, composeFile, profile)
+			err := adapter.RemoteComposeUp(ctx, composeFile, profile)
 			duration := time.Since(start)
 
 			if err != nil {
@@ -299,7 +319,8 @@ func (bm *BootManager) BootAll() error {
 		// Skip health checks for remote services - they should be health-checked
 		// via the Containers module's remote health check mechanism
 		if ep.Remote {
-			if bm.ContainerAdapter != nil && bm.ContainerAdapter.RemoteEnabled() {
+			remoteAdapter := bm.getContainerAdapter()
+			if remoteAdapter != nil && remoteAdapter.RemoteEnabled() {
 				// Perform remote health check via SSH
 				start := time.Now()
 				err := bm.checkRemoteServiceHealth(ctx, name, ep)
@@ -475,16 +496,14 @@ func (bm *BootManager) ShutdownAll() error {
 
 func (bm *BootManager) startComposeServices(composeFile, profile string, services []string) error {
 	// Use Containers module adapter when available.
-	if bm.ContainerAdapter != nil && composeFile != "" {
+	if ca := bm.getContainerAdapter(); ca != nil && composeFile != "" {
 		bm.Logger.WithFields(logrus.Fields{
 			"file":     composeFile,
 			"profile":  profile,
 			"services": strings.Join(services, ", "),
 		}).Info("Starting compose services via Containers module")
 		ctx := context.Background()
-		return bm.ContainerAdapter.ComposeUp(
-			ctx, composeFile, profile,
-		)
+		return ca.ComposeUp(ctx, composeFile, profile)
 	}
 
 	// Fallback: direct exec.Command.
@@ -519,15 +538,13 @@ func (bm *BootManager) startComposeServices(composeFile, profile string, service
 
 func (bm *BootManager) stopComposeServices(composeFile, profile string, services []string) error {
 	// Use Containers module adapter when available.
-	if bm.ContainerAdapter != nil && composeFile != "" {
+	if ca := bm.getContainerAdapter(); ca != nil && composeFile != "" {
 		bm.Logger.WithFields(logrus.Fields{
 			"file":     composeFile,
 			"services": strings.Join(services, ", "),
 		}).Info("Stopping compose services via Containers module")
 		ctx := context.Background()
-		return bm.ContainerAdapter.ComposeDown(
-			ctx, composeFile, profile,
-		)
+		return ca.ComposeDown(ctx, composeFile, profile)
 	}
 
 	// Fallback: direct exec.Command.
@@ -644,12 +661,13 @@ func (bm *BootManager) HealthCheckRemoteServices(ctx context.Context) error {
 // checkRemoteServiceHealth performs health check on a remote service via SSH.
 // It uses the ContainerAdapter to execute health check commands on the remote host.
 func (bm *BootManager) checkRemoteServiceHealth(ctx context.Context, name string, ep config.ServiceEndpoint) error {
-	if bm.ContainerAdapter == nil {
+	ca := bm.getContainerAdapter()
+	if ca == nil {
 		return fmt.Errorf("container adapter not configured for remote health checks")
 	}
 
 	// Check if remote distribution is enabled
-	if !bm.ContainerAdapter.RemoteEnabled() {
+	if !ca.RemoteEnabled() {
 		return fmt.Errorf("remote distribution not enabled")
 	}
 
