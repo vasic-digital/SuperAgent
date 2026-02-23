@@ -32,10 +32,10 @@ func TestLogLevelHierarchyCompliance(t *testing.T) {
 func TestStructuredLoggingCompliance(t *testing.T) {
 	// Structured log entries should include required fields
 	requiredFields := []string{
-		"level",    // Log severity
-		"message",  // Human-readable message
-		"time",     // Timestamp
-		"service",  // Service name for aggregation
+		"level",   // Log severity
+		"message", // Human-readable message
+		"time",    // Timestamp
+		"service", // Service name for aggregation
 	}
 
 	for _, field := range requiredFields {
@@ -49,10 +49,10 @@ func TestStructuredLoggingCompliance(t *testing.T) {
 // endpoints follow the standard paths.
 func TestObservabilityEndpointsCompliance(t *testing.T) {
 	requiredEndpoints := map[string]string{
-		"/health":                   "Service health check",
-		"/metrics":                  "Prometheus metrics",
-		"/v1/monitoring/status":     "HelixAgent monitoring status",
-		"/v1/startup/verification":  "Startup verification results",
+		"/health":                  "Service health check",
+		"/metrics":                 "Prometheus metrics",
+		"/v1/monitoring/status":    "HelixAgent monitoring status",
+		"/v1/startup/verification": "Startup verification results",
 	}
 
 	for endpoint, description := range requiredEndpoints {

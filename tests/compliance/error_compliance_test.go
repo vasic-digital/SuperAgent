@@ -78,12 +78,12 @@ func TestErrorTypeCompliance(t *testing.T) {
 // TestErrorCodeCompliance verifies that common error codes are well-formed.
 func TestErrorCodeCompliance(t *testing.T) {
 	errorCodes := map[string]string{
-		"model_not_found":           "invalid_request_error",
-		"invalid_api_key":           "authentication_error",
-		"insufficient_quota":        "rate_limit_error",
-		"context_length_exceeded":   "invalid_request_error",
-		"rate_limit_exceeded":       "rate_limit_error",
-		"server_error":              "api_error",
+		"model_not_found":         "invalid_request_error",
+		"invalid_api_key":         "authentication_error",
+		"insufficient_quota":      "rate_limit_error",
+		"context_length_exceeded": "invalid_request_error",
+		"rate_limit_exceeded":     "rate_limit_error",
+		"server_error":            "api_error",
 	}
 
 	for code, errType := range errorCodes {

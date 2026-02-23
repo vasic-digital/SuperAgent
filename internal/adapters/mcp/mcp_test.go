@@ -18,11 +18,11 @@ type mockMCPAdapter struct {
 	name string
 }
 
-func (m *mockMCPAdapter) Name() string                           { return m.name }
-func (m *mockMCPAdapter) Config() map[string]interface{}         { return nil }
-func (m *mockMCPAdapter) Start(_ context.Context) error          { return nil }
-func (m *mockMCPAdapter) Stop(_ context.Context) error           { return nil }
-func (m *mockMCPAdapter) HealthCheck(_ context.Context) error    { return nil }
+func (m *mockMCPAdapter) Name() string                        { return m.name }
+func (m *mockMCPAdapter) Config() map[string]interface{}      { return nil }
+func (m *mockMCPAdapter) Start(_ context.Context) error       { return nil }
+func (m *mockMCPAdapter) Stop(_ context.Context) error        { return nil }
+func (m *mockMCPAdapter) HealthCheck(_ context.Context) error { return nil }
 
 // ============================================================================
 // RegistryAdapter Tests

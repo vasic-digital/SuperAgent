@@ -200,12 +200,12 @@ func TestConversationAggregator_AggregateWindow_Basic(t *testing.T) {
 	ctx := context.Background()
 
 	state := &ConversationState{
-		ConversationID: "conv-006",
-		UserID:         "user-001",
-		MessageCount:   10,
-		EntityCount:    5,
+		ConversationID:   "conv-006",
+		UserID:           "user-001",
+		MessageCount:     10,
+		EntityCount:      5,
 		DebateRoundCount: 0,
-		Entities:       make(map[string]EntityData),
+		Entities:         make(map[string]EntityData),
 		ProviderUsage: map[string]int{
 			"claude":   6,
 			"deepseek": 4,

@@ -28,12 +28,12 @@ type BootResult struct {
 // from outside this package; use GetResults() for concurrent-safe reads.
 // All writes go through setResult() which is protected by resultsMu.
 type BootManager struct {
-	Config        *config.ServicesConfig
-	Logger        *logrus.Logger
-	Results       map[string]*BootResult // protected by resultsMu
-	resultsMu     sync.RWMutex
-	HealthChecker *ServiceHealthChecker
-	Discoverer    discovery.Discoverer
+	Config         *config.ServicesConfig
+	Logger         *logrus.Logger
+	Results        map[string]*BootResult // protected by resultsMu
+	resultsMu      sync.RWMutex
+	HealthChecker  *ServiceHealthChecker
+	Discoverer     discovery.Discoverer
 	RemoteDeployer RemoteDeployer
 	// ContainerAdapter is exported for external inspection only.
 	// All internal reads MUST use getContainerAdapter() and writes MUST

@@ -27,7 +27,7 @@ func (m *mockLLMPlugin) Capabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{SupportedModels: []string{m.name}}
 }
 func (m *mockLLMPlugin) Init(_ map[string]interface{}) error { return nil }
-func (m *mockLLMPlugin) Shutdown(_ context.Context) error   { return nil }
+func (m *mockLLMPlugin) Shutdown(_ context.Context) error    { return nil }
 func (m *mockLLMPlugin) HealthCheck(_ context.Context) error { return nil }
 func (m *mockLLMPlugin) Complete(_ context.Context, _ *models.LLMRequest) (*models.LLMResponse, error) {
 	return nil, fmt.Errorf("not supported")

@@ -482,7 +482,6 @@ func (h *logrusWarnHook) messages() []string {
 	return cp
 }
 
-
 // TestCircuitBreaker_ListenerNotifyTimeout_TransitionTo verifies that a
 // slow listener triggers a warn log via transitionTo.
 func TestCircuitBreaker_ListenerNotifyTimeout_TransitionTo(t *testing.T) {
