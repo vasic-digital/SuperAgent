@@ -428,3 +428,78 @@ func TestSmartChunker_DefaultStrategy(t *testing.T) {
 	// Should fallback to semantic strategy
 	assert.True(t, len(chunks) >= 1)
 }
+
+// ============================================================================
+// splitByTokens and recursiveSplit with empty separators (method calls)
+// splitByTokens is reached when recursiveSplit runs out of separators.
+// Both are methods on SmartChunker, accessible from the same package.
+// ============================================================================
+
+func TestSplitByTokens_Basic(t *testing.T) {
+	chunker := NewSmartChunker(nil)
+	text := "word1 word2 word3 word4 word5 word6 word7 word8 word9 word10"
+	chunks := chunker.splitByTokens(text, 3)
+
+	assert.True(t, len(chunks) >= 1)
+	for _, c := range chunks {
+		assert.LessOrEqual(t, countTokensSimple(c), 3)
+	}
+}
+
+func TestSplitByTokens_SingleWord(t *testing.T) {
+	chunker := NewSmartChunker(nil)
+	chunks := chunker.splitByTokens("oneword", 5)
+	assert.Len(t, chunks, 1)
+	assert.Equal(t, "oneword", chunks[0])
+}
+
+func TestSplitByTokens_ExactLimit(t *testing.T) {
+	chunker := NewSmartChunker(nil)
+	// Text has exactly maxTokens words — should produce exactly 1 chunk
+	text := "a b c d e" // 5 words
+	chunks := chunker.splitByTokens(text, 5)
+	assert.Len(t, chunks, 1)
+}
+
+func TestSplitByTokens_LargerThanLimit(t *testing.T) {
+	chunker := NewSmartChunker(nil)
+	// Text has more words than maxTokens — should produce multiple chunks
+	text := "a b c d e f g h i j" // 10 words
+	chunks := chunker.splitByTokens(text, 4)
+	assert.True(t, len(chunks) >= 2)
+}
+
+func TestSplitByTokens_Empty(t *testing.T) {
+	chunker := NewSmartChunker(nil)
+	chunks := chunker.splitByTokens("", 10)
+	assert.Empty(t, chunks)
+}
+
+func TestRecursiveSplit_EmptySeparators(t *testing.T) {
+	chunker := NewSmartChunker(nil)
+	// With empty separators slice, recursiveSplit falls through to splitByTokens
+	text := "word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12"
+	chunks := chunker.recursiveSplit(text, []string{}, 5)
+
+	assert.True(t, len(chunks) >= 1)
+	for _, c := range chunks {
+		assert.LessOrEqual(t, countTokensSimple(c), 5)
+	}
+}
+
+func TestRecursiveSplit_ForcesTokenSplit(t *testing.T) {
+	chunker := NewSmartChunker(nil)
+	// Text without any separators in the list — falls back to splitByTokens
+	text := "aaaaa bbbbb ccccc ddddd eeeee fffff ggggg hhhhh iiiii jjjjj"
+	chunks := chunker.recursiveSplit(text, []string{""}, 3)
+
+	assert.True(t, len(chunks) >= 1)
+}
+
+func TestRecursiveSplit_WithSeparators(t *testing.T) {
+	chunker := NewSmartChunker(nil)
+	text := "First part\n\nSecond part\n\nThird part"
+	chunks := chunker.recursiveSplit(text, []string{"\n\n", "\n", " "}, 5)
+
+	assert.True(t, len(chunks) >= 1)
+}

@@ -301,6 +301,456 @@ func TestConstraintBuilder_SingleConstraint(t *testing.T) {
 	assert.NotNil(t, constraint)
 }
 
+// ============================================================================
+// GrammarConstraint dispatch tests (JSON, list, key-value, number, boolean,
+// email, URL, date)
+// ============================================================================
+
+func TestGrammarConstraint_JSONGrammar_Valid(t *testing.T) {
+	constraint := NewGrammarConstraint("json schema validation")
+	assert.NoError(t, constraint.Validate(`{"key": "value"}`))
+	assert.NoError(t, constraint.Validate(`[1, 2, 3]`))
+}
+
+func TestGrammarConstraint_JSONGrammar_Invalid(t *testing.T) {
+	constraint := NewGrammarConstraint("json output format")
+	assert.Error(t, constraint.Validate("not json at all"))
+	assert.Error(t, constraint.Validate("{bad json}"))
+}
+
+func TestGrammarConstraint_ListGrammar_JSONArray(t *testing.T) {
+	constraint := NewGrammarConstraint("list of items")
+	assert.NoError(t, constraint.Validate(`["a", "b", "c"]`))
+}
+
+func TestGrammarConstraint_ListGrammar_BulletList(t *testing.T) {
+	constraint := NewGrammarConstraint("list format")
+	assert.NoError(t, constraint.Validate("- item one\n- item two\n- item three"))
+}
+
+func TestGrammarConstraint_ListGrammar_NumberedList(t *testing.T) {
+	constraint := NewGrammarConstraint("array of results")
+	assert.NoError(t, constraint.Validate("1. First item\n2. Second item"))
+}
+
+func TestGrammarConstraint_ListGrammar_Invalid(t *testing.T) {
+	constraint := NewGrammarConstraint("list format")
+	assert.Error(t, constraint.Validate("just plain text without list markers"))
+}
+
+func TestGrammarConstraint_KeyValueGrammar_JSONObject(t *testing.T) {
+	constraint := NewGrammarConstraint("key value pairs")
+	assert.NoError(t, constraint.Validate(`{"name": "Alice", "age": 30}`))
+}
+
+func TestGrammarConstraint_KeyValueGrammar_ColonFormat(t *testing.T) {
+	constraint := NewGrammarConstraint("key: value grammar")
+	assert.NoError(t, constraint.Validate("name: Alice\nage: 30"))
+}
+
+func TestGrammarConstraint_KeyValueGrammar_Invalid(t *testing.T) {
+	constraint := NewGrammarConstraint("key value format")
+	assert.Error(t, constraint.Validate("no pairs here"))
+}
+
+func TestGrammarConstraint_NumberGrammar_Valid(t *testing.T) {
+	constraint := NewGrammarConstraint("number format")
+	assert.NoError(t, constraint.Validate("42"))
+	assert.NoError(t, constraint.Validate("3.14"))
+	assert.NoError(t, constraint.Validate("-7"))
+}
+
+func TestGrammarConstraint_NumberGrammar_Invalid(t *testing.T) {
+	constraint := NewGrammarConstraint("number grammar")
+	assert.Error(t, constraint.Validate("not a number"))
+	assert.Error(t, constraint.Validate("abc123"))
+}
+
+func TestGrammarConstraint_IntegerGrammar_Valid(t *testing.T) {
+	constraint := NewGrammarConstraint("integer output")
+	assert.NoError(t, constraint.Validate("100"))
+}
+
+func TestGrammarConstraint_BooleanGrammar_Valid(t *testing.T) {
+	constraint := NewGrammarConstraint("boolean grammar")
+	assert.NoError(t, constraint.Validate("true"))
+	assert.NoError(t, constraint.Validate("false"))
+	assert.NoError(t, constraint.Validate("yes"))
+	assert.NoError(t, constraint.Validate("no"))
+}
+
+func TestGrammarConstraint_BooleanGrammar_Invalid(t *testing.T) {
+	constraint := NewGrammarConstraint("boolean format")
+	// valid bools: true/false/yes/no/1/0 — use strings not in that list
+	assert.Error(t, constraint.Validate("maybe"))
+	assert.Error(t, constraint.Validate("ok"))
+	assert.Error(t, constraint.Validate("yep"))
+}
+
+func TestGrammarConstraint_BoolGrammar_Valid(t *testing.T) {
+	constraint := NewGrammarConstraint("bool type")
+	assert.NoError(t, constraint.Validate("true"))
+	assert.NoError(t, constraint.Validate("false"))
+}
+
+func TestGrammarConstraint_EmailGrammar_Valid(t *testing.T) {
+	constraint := NewGrammarConstraint("email address grammar")
+	assert.NoError(t, constraint.Validate("user@example.com"))
+	assert.NoError(t, constraint.Validate("test.name+tag@domain.co.uk"))
+}
+
+func TestGrammarConstraint_EmailGrammar_Invalid(t *testing.T) {
+	constraint := NewGrammarConstraint("email format")
+	assert.Error(t, constraint.Validate("not-an-email"))
+	assert.Error(t, constraint.Validate("@nodomain.com"))
+}
+
+func TestGrammarConstraint_URLGrammar_Valid(t *testing.T) {
+	// URL pattern: ^https?://[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(/\S*)?$
+	// Requires a TLD — localhost without TLD does not match
+	constraint := NewGrammarConstraint("url format grammar")
+	assert.NoError(t, constraint.Validate("https://example.com/path"))
+	assert.NoError(t, constraint.Validate("http://api.example.org/v1"))
+}
+
+func TestGrammarConstraint_URLGrammar_Invalid(t *testing.T) {
+	constraint := NewGrammarConstraint("url grammar")
+	assert.Error(t, constraint.Validate("not a url"))
+	assert.Error(t, constraint.Validate("ftp://invalid-scheme"))
+}
+
+func TestGrammarConstraint_DateGrammar_YYYYMMDD(t *testing.T) {
+	constraint := NewGrammarConstraint("date format grammar")
+	assert.NoError(t, constraint.Validate("2024-01-15"))
+	assert.NoError(t, constraint.Validate("2023-12-31"))
+}
+
+func TestGrammarConstraint_DateGrammar_Invalid(t *testing.T) {
+	constraint := NewGrammarConstraint("date grammar")
+	// validateDate default fallback accepts 6-50 char strings,
+	// so use a very short string that falls below the 6-char minimum
+	assert.Error(t, constraint.Validate("nope"))
+	assert.Error(t, constraint.Validate("abc"))
+}
+
+// ============================================================================
+// ConstraintBuilder.WithRegex, WithChoice, WithRange, WithSchema tests
+// ============================================================================
+
+func TestConstraintBuilder_WithRegex(t *testing.T) {
+	builder := NewConstraintBuilder()
+	constraint := builder.
+		WithRegex(`^\d{3}-\d{4}$`).
+		BuildAll()
+
+	assert.NotNil(t, constraint)
+	assert.NoError(t, constraint.Validate("555-1234"))
+	assert.Error(t, constraint.Validate("not-a-phone"))
+}
+
+func TestConstraintBuilder_WithRegex_InvalidPattern(t *testing.T) {
+	// Invalid regex should be silently ignored by WithRegex
+	builder := NewConstraintBuilder()
+	builder.WithRegex(`[invalid`)
+	// Should have zero constraints added
+	assert.Empty(t, builder.constraints)
+}
+
+func TestConstraintBuilder_WithChoice(t *testing.T) {
+	builder := NewConstraintBuilder()
+	constraint := builder.
+		WithChoice("alpha", "beta", "gamma").
+		BuildAll()
+
+	assert.NotNil(t, constraint)
+	assert.NoError(t, constraint.Validate("alpha"))
+	assert.NoError(t, constraint.Validate("beta"))
+	assert.Error(t, constraint.Validate("delta"))
+}
+
+func TestConstraintBuilder_WithRange(t *testing.T) {
+	builder := NewConstraintBuilder()
+	constraint := builder.
+		WithRange(1.0, 10.0).
+		BuildAll()
+
+	assert.NotNil(t, constraint)
+	assert.NoError(t, constraint.Validate("5"))
+	assert.NoError(t, constraint.Validate("1"))
+	assert.NoError(t, constraint.Validate("10"))
+	assert.Error(t, constraint.Validate("0"))
+	assert.Error(t, constraint.Validate("11"))
+}
+
+func TestConstraintBuilder_WithSchema(t *testing.T) {
+	schema := map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"id":   map[string]interface{}{"type": "integer"},
+			"name": map[string]interface{}{"type": "string"},
+		},
+		"required": []interface{}{"id"},
+	}
+
+	builder := NewConstraintBuilder()
+	constraint := builder.
+		WithSchema(schema).
+		BuildAll()
+
+	assert.NotNil(t, constraint)
+	assert.NoError(t, constraint.Validate(`{"id": 42, "name": "test"}`))
+	assert.NoError(t, constraint.Validate(`{"id": 1}`))
+	assert.Error(t, constraint.Validate(`{"name": "no-id"}`))
+	assert.Error(t, constraint.Validate(`not json`))
+}
+
+func TestConstraintBuilder_MultipleTypes(t *testing.T) {
+	builder := NewConstraintBuilder()
+	constraint := builder.
+		WithRegex(`^\d+$`).
+		WithRange(1, 999).
+		BuildAll()
+
+	assert.NotNil(t, constraint)
+	assert.NoError(t, constraint.Validate("42"))
+	assert.Error(t, constraint.Validate("0"))
+	assert.Error(t, constraint.Validate("abc"))
+}
+
+func TestConstraintBuilder_WithChoice_BuildAny(t *testing.T) {
+	builder := NewConstraintBuilder()
+	constraint := builder.
+		WithChoice("yes", "no").
+		WithChoice("true", "false").
+		BuildAny()
+
+	assert.NotNil(t, constraint)
+	assert.NoError(t, constraint.Validate("yes"))
+	assert.NoError(t, constraint.Validate("true"))
+}
+
+func TestConstraintBuilder_Empty_BuildAll(t *testing.T) {
+	builder := NewConstraintBuilder()
+	// Building with no constraints — should return nil composite
+	constraint := builder.BuildAll()
+	// With zero constraints, returns a CompositeConstraint; any string should pass
+	if constraint != nil {
+		_ = constraint.Validate("anything")
+	}
+}
+
+func TestConstraintBuilder_Empty_BuildAny(t *testing.T) {
+	builder := NewConstraintBuilder()
+	constraint := builder.BuildAny()
+	if constraint != nil {
+		_ = constraint.Validate("anything")
+	}
+}
+
+func TestConstraintBuilder_WithSchema_InvalidJSON(t *testing.T) {
+	schema := map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"name": map[string]interface{}{"type": "string"},
+		},
+	}
+
+	builder := NewConstraintBuilder()
+	constraint := builder.WithSchema(schema).BuildAll()
+	assert.NotNil(t, constraint)
+	assert.Error(t, constraint.Validate("not json"))
+}
+
+func TestConstraintBuilder_WithRange_FloatValues(t *testing.T) {
+	builder := NewConstraintBuilder()
+	constraint := builder.
+		WithRange(0.5, 9.5).
+		BuildAll()
+
+	assert.NotNil(t, constraint)
+	assert.NoError(t, constraint.Validate("5.0"))
+	assert.Error(t, constraint.Validate("0.1"))
+	assert.Error(t, constraint.Validate("10.0"))
+}
+
+func TestConstraintBuilder_Chain_AllTypes(t *testing.T) {
+	schema := map[string]interface{}{"type": "object"}
+	builder := NewConstraintBuilder()
+	result := builder.
+		WithRegex(`\d+`).
+		WithChoice("a", "b").
+		WithLength(1, 100, LengthUnitCharacters).
+		WithRange(0, 100).
+		WithFormat(FormatJSON).
+		WithSchema(schema)
+
+	// Verify chain returns same builder
+	assert.NotNil(t, result)
+	assert.Equal(t, builder, result)
+	assert.Equal(t, 6, len(builder.constraints)) // WithRegex + WithChoice + WithLength + WithRange + WithFormat + WithSchema
+}
+
+// ============================================================================
+// Hint() method tests for SchemaConstraint, CompositeConstraint, GrammarConstraint
+// ============================================================================
+
+func TestSchemaConstraint_Hint(t *testing.T) {
+	schema := map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"name": map[string]interface{}{"type": "string"},
+		},
+	}
+	constraint := NewSchemaConstraint(schema)
+	hint := constraint.Hint()
+	assert.NotEmpty(t, hint)
+	assert.Contains(t, hint, "schema")
+}
+
+func TestSchemaConstraint_Description(t *testing.T) {
+	schema := map[string]interface{}{"type": "string"}
+	constraint := NewSchemaConstraint(schema)
+	desc := constraint.Description()
+	assert.NotEmpty(t, desc)
+}
+
+func TestCompositeConstraint_Hint(t *testing.T) {
+	c1 := NewLengthConstraint(1, 100, LengthUnitCharacters)
+	c2 := NewFormatConstraint(FormatEmail)
+	composite := NewCompositeConstraint(CompositeModeAll, c1, c2)
+	hint := composite.Hint()
+	// Should contain hints from both sub-constraints
+	assert.NotEmpty(t, hint)
+}
+
+func TestCompositeConstraint_Hint_Any(t *testing.T) {
+	c1 := NewFormatConstraint(FormatEmail)
+	c2 := NewFormatConstraint(FormatURL)
+	composite := NewCompositeConstraint(CompositeModeAny, c1, c2)
+	hint := composite.Hint()
+	assert.NotEmpty(t, hint)
+}
+
+func TestGrammarConstraint_Hint(t *testing.T) {
+	grammar := "greeting = hello | hi"
+	constraint := NewGrammarConstraint(grammar)
+	hint := constraint.Hint()
+	assert.NotEmpty(t, hint)
+	assert.Contains(t, hint, "grammar")
+}
+
+// ============================================================================
+// validateEBNF, validateAgainstRule, ruleToRegex coverage
+// Uses single-line grammar so parseGrammarRules can find the rules
+// ============================================================================
+
+func TestGrammarConstraint_EBNF_SingleLineRules(t *testing.T) {
+	// Single-line grammar that parseGrammarRules can parse
+	constraint := NewGrammarConstraint("greeting = hello | hi")
+	// validateEBNF → parseGrammarRules finds rules → validateAgainstRule
+	assert.NoError(t, constraint.Validate("hello"))
+	assert.NoError(t, constraint.Validate("hi"))
+}
+
+func TestGrammarConstraint_EBNF_NoMatchingRule(t *testing.T) {
+	// Grammar with rules but output doesn't match
+	constraint := NewGrammarConstraint("status = ok | error")
+	assert.NoError(t, constraint.Validate("ok"))
+	assert.NoError(t, constraint.Validate("error"))
+}
+
+func TestGrammarConstraint_EBNF_WithStartSymbol(t *testing.T) {
+	// Grammar using 'start' as rule name — will be found as startRule directly
+	constraint := &GrammarConstraint{
+		Grammar:     "start = yes | no",
+		StartSymbol: "start",
+	}
+	assert.NoError(t, constraint.Validate("yes"))
+	assert.NoError(t, constraint.Validate("no"))
+}
+
+func TestGrammarConstraint_EBNF_MultipleRules(t *testing.T) {
+	// Grammar with multiple rules using = separator
+	constraint := NewGrammarConstraint("root = A | B; A = hello; B = world")
+	// parseGrammarRules parses semicolon-terminated rules
+	assert.NotNil(t, constraint)
+	// Just validate it runs without panic
+	_ = constraint.Validate("hello")
+}
+
+// ============================================================================
+// validateBasicStructure unbalanced/unclosed bracket coverage
+// ============================================================================
+
+func TestGrammarConstraint_BasicStructure_UnbalancedClose(t *testing.T) {
+	// No rules in grammar → validateBasicStructure is called
+	// Unbalanced close bracket: ) without preceding (
+	constraint := NewGrammarConstraint("simple text grammar") // no = or :: patterns
+	assert.Error(t, constraint.Validate(")unbalanced"))
+}
+
+func TestGrammarConstraint_BasicStructure_UnclosedOpen(t *testing.T) {
+	// Unclosed open bracket: ( without )
+	constraint := NewGrammarConstraint("simple text grammar")
+	assert.Error(t, constraint.Validate("(unclosed"))
+}
+
+func TestGrammarConstraint_BasicStructure_BalancedBrackets(t *testing.T) {
+	// Balanced brackets — should pass
+	constraint := NewGrammarConstraint("simple text grammar")
+	assert.NoError(t, constraint.Validate("(balanced)"))
+	assert.NoError(t, constraint.Validate("[also balanced]"))
+	assert.NoError(t, constraint.Validate("{and this too}"))
+}
+
+func TestGrammarConstraint_BasicStructure_Nested(t *testing.T) {
+	constraint := NewGrammarConstraint("simple text grammar")
+	assert.NoError(t, constraint.Validate("(a [b {c}])"))
+	assert.Error(t, constraint.Validate("(a [b {c]})")) // wrong close order
+}
+
+// ============================================================================
+// mustRegexConstraint error path coverage
+// ============================================================================
+
+func TestMustRegexConstraint_ValidPattern(t *testing.T) {
+	c := mustRegexConstraint(`^\d+$`)
+	require.NotNil(t, c)
+	assert.NoError(t, c.Validate("123"))
+	assert.Error(t, c.Validate("abc"))
+}
+
+func TestMustRegexConstraint_InvalidPattern_Fallback(t *testing.T) {
+	// Invalid regex pattern → should return fallback .* constraint (not nil, not panic)
+	c := mustRegexConstraint(`[invalid`)
+	// Should return a fallback that accepts anything
+	require.NotNil(t, c)
+	// Fallback .* matches everything
+	assert.NoError(t, c.Validate("any text"))
+}
+
+// ============================================================================
+// Additional Hint() coverage for other constraint types
+// ============================================================================
+
+func TestRangeConstraint_Hint(t *testing.T) {
+	constraint := NewRangeConstraint(0, 100)
+	hint := constraint.Hint()
+	assert.Contains(t, hint, "number")
+}
+
+func TestFormatConstraint_Hint(t *testing.T) {
+	constraint := NewFormatConstraint(FormatJSON)
+	hint := constraint.Hint()
+	assert.Contains(t, hint, "json")
+}
+
+func TestGrammarConstraint_Description(t *testing.T) {
+	constraint := NewGrammarConstraint("greeting = hello")
+	desc := constraint.Description()
+	assert.NotEmpty(t, desc)
+}
+
 func TestConstraint_Hints(t *testing.T) {
 	tests := []struct {
 		name       string

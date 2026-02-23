@@ -394,6 +394,130 @@ func TestWindowSnapshot(t *testing.T) {
 	assert.Equal(t, 10, snapshot.TokenCount)
 }
 
+// ============================================================================
+// evictLRU and evictByPriority coverage tests
+// These need content large enough so total tokens exceed MaxTokens-ReserveTokens
+// estimateTokens(text) = len(text)/4
+// Using MaxTokens=50, ReserveTokens=5 → available=45
+// Content string of 56 chars = 14 tokens, so 4 entries → 56 > 45, triggers eviction
+// ============================================================================
+
+// largeContent returns a 56-character string (14 tokens at len/4 approximation).
+func largeContent() string {
+	return "Context entry text for testing eviction behavior trigger"
+}
+
+func TestContextWindow_Eviction_LRU_Triggered(t *testing.T) {
+	config := &WindowConfig{
+		MaxTokens:      50,
+		ReserveTokens:  5,
+		EvictionPolicy: EvictionPolicyLRU,
+		PreserveLastN:  1,
+	}
+	window := NewContextWindow(config)
+
+	// Add 3 entries (42 tokens) — still within available=45
+	for i := 0; i < 3; i++ {
+		err := window.AddMessage("user", largeContent())
+		require.NoError(t, err)
+	}
+
+	// 4th add: 42+14=56 > 45 → triggers evictLRU
+	err := window.AddMessage("user", largeContent())
+	require.NoError(t, err)
+
+	// evictLRU was called and freed enough space
+	assert.LessOrEqual(t, window.TokenCount(), 45)
+}
+
+func TestContextWindow_Eviction_LRU_Multiple_Rounds(t *testing.T) {
+	config := &WindowConfig{
+		MaxTokens:      50,
+		ReserveTokens:  5,
+		EvictionPolicy: EvictionPolicyLRU,
+		PreserveLastN:  1,
+	}
+	window := NewContextWindow(config)
+
+	// Repeatedly add beyond capacity to exercise multiple LRU eviction rounds
+	for i := 0; i < 10; i++ {
+		err := window.AddMessage("user", largeContent())
+		require.NoError(t, err)
+	}
+
+	// Window should always stay within bounds
+	assert.LessOrEqual(t, window.TokenCount(), 45)
+}
+
+func TestContextWindow_Eviction_Priority_LowEvictedFirst(t *testing.T) {
+	config := &WindowConfig{
+		MaxTokens:      50,
+		ReserveTokens:  5,
+		EvictionPolicy: EvictionPolicyPriority,
+		PreserveLastN:  1,
+	}
+	window := NewContextWindow(config)
+
+	// Add 3 low-priority entries (42 tokens total)
+	for i := 0; i < 3; i++ {
+		err := window.Add(ContextEntry{
+			Role:     "user",
+			Content:  largeContent(),
+			Priority: PriorityLow,
+		})
+		require.NoError(t, err)
+	}
+
+	// Add high-priority entry (56>45 triggers evictByPriority)
+	err := window.Add(ContextEntry{
+		Role:     "user",
+		Content:  largeContent(),
+		Priority: PriorityHigh,
+	})
+	require.NoError(t, err)
+
+	// High-priority entry must remain
+	found := false
+	for _, e := range window.entries {
+		if e.Priority == PriorityHigh {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "high priority entry should not be evicted")
+}
+
+func TestContextWindow_Eviction_Priority_AllPriorityLevels(t *testing.T) {
+	config := &WindowConfig{
+		MaxTokens:      50,
+		ReserveTokens:  5,
+		EvictionPolicy: EvictionPolicyPriority,
+		PreserveLastN:  1,
+	}
+	window := NewContextWindow(config)
+
+	// Add entries at each priority level — exercise the priority loop
+	priorities := []Priority{PriorityLow, PriorityNormal, PriorityHigh, PriorityCritical}
+	for _, p := range priorities {
+		_ = window.Add(ContextEntry{
+			Role:     "user",
+			Content:  largeContent(),
+			Priority: p,
+		})
+	}
+
+	// Add more to force eviction cycles through priority levels
+	for i := 0; i < 6; i++ {
+		_ = window.Add(ContextEntry{
+			Role:     "user",
+			Content:  largeContent(),
+			Priority: PriorityNormal,
+		})
+	}
+
+	assert.LessOrEqual(t, window.TokenCount(), 45)
+}
+
 func TestWindowStats(t *testing.T) {
 	stats := &WindowStats{
 		TotalEntries:     10,

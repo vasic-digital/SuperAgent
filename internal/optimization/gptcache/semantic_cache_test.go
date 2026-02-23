@@ -1515,3 +1515,91 @@ func BenchmarkNormalizeL2(b *testing.B) {
 		NormalizeL2(vec)
 	}
 }
+
+// ============================================================================
+// removeByID direct coverage tests
+// removeByID acquires c.mu.Lock() then delegates to removeByIDLocked.
+// It is only invoked via the LRU+TTL eviction background goroutine, so
+// a direct call from a same-package test is needed for coverage.
+// ============================================================================
+
+func TestSemanticCache_removeByID_ExistingEntry(t *testing.T) {
+	ctx := context.Background()
+	cache := NewSemanticCache()
+
+	embedding := []float64{1.0, 0.0, 0.0}
+	entry, err := cache.Set(ctx, "test query", "test response", embedding, nil)
+	require.NoError(t, err)
+	require.NotNil(t, entry)
+
+	initialSize := cache.Size()
+	assert.Equal(t, 1, initialSize)
+
+	// Direct call to the private method (accessible from same package)
+	cache.removeByID(entry.ID)
+
+	assert.Equal(t, 0, cache.Size())
+}
+
+func TestSemanticCache_removeByID_NonexistentID(t *testing.T) {
+	cache := NewSemanticCache()
+
+	// Should not panic when ID does not exist
+	assert.NotPanics(t, func() {
+		cache.removeByID("nonexistent-id-xyz")
+	})
+
+	assert.Equal(t, 0, cache.Size())
+}
+
+func TestSemanticCache_removeByID_AfterMultipleEntries(t *testing.T) {
+	ctx := context.Background()
+	cache := NewSemanticCache()
+
+	embedding1 := []float64{1.0, 0.0, 0.0}
+	embedding2 := []float64{0.0, 1.0, 0.0}
+	embedding3 := []float64{0.0, 0.0, 1.0}
+
+	entry1, _ := cache.Set(ctx, "query 1", "response 1", embedding1, nil)
+	entry2, _ := cache.Set(ctx, "query 2", "response 2", embedding2, nil)
+	_, _ = cache.Set(ctx, "query 3", "response 3", embedding3, nil)
+
+	assert.Equal(t, 3, cache.Size())
+
+	// Remove middle entry
+	cache.removeByID(entry2.ID)
+	assert.Equal(t, 2, cache.Size())
+
+	// Remove first entry
+	cache.removeByID(entry1.ID)
+	assert.Equal(t, 1, cache.Size())
+
+	// Remove nonexistent entry — no-op
+	cache.removeByID("not-there")
+	assert.Equal(t, 1, cache.Size())
+}
+
+func TestSemanticCache_removeByID_WithEvictCallback(t *testing.T) {
+	ctx := context.Background()
+
+	var evictedIDs []string
+	var mu sync.Mutex
+
+	cache := NewSemanticCache()
+	cache.SetOnEvict(func(entry *CacheEntry) {
+		mu.Lock()
+		evictedIDs = append(evictedIDs, entry.ID)
+		mu.Unlock()
+	})
+
+	embedding := []float64{0.5, 0.5, 0.0}
+	entry, err := cache.Set(ctx, "evict test", "evict response", embedding, nil)
+	require.NoError(t, err)
+
+	// removeByID should trigger the onEvict callback
+	cache.removeByID(entry.ID)
+
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Contains(t, evictedIDs, entry.ID)
+}
