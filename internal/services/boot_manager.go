@@ -97,7 +97,9 @@ func (bm *BootManager) GetResults() map[string]*BootResult {
 }
 
 // setResultLocked stores a BootResult directly into the map.
-// Caller MUST hold resultsMu.Lock() before calling this.
+// Caller MUST hold resultsMu for writing (resultsMu.Lock()) before calling this.
+// Never call from code that does not already hold the write lock — doing so
+// creates a data race that the race detector will not catch at this call site.
 func (bm *BootManager) setResultLocked(name string, result *BootResult) {
 	bm.Results[name] = result
 }
@@ -109,13 +111,18 @@ func (bm *BootManager) setResult(name string, result *BootResult) {
 	bm.resultsMu.Unlock()
 }
 
-// getResult retrieves a BootResult by name under the read lock.
+// getResult retrieves a copy of the BootResult by name under the read lock.
 // Returns (result, true) when found, (nil, false) otherwise.
+// A value copy is returned so callers cannot alias the internal map entry.
 func (bm *BootManager) getResult(name string) (*BootResult, bool) {
 	bm.resultsMu.RLock()
 	r, ok := bm.Results[name]
 	bm.resultsMu.RUnlock()
-	return r, ok
+	if !ok {
+		return nil, false
+	}
+	cp := *r // value copy — matches GetResults() aliasing invariant
+	return &cp, true
 }
 
 // setResultIfAbsent sets a BootResult only when no entry already exists for name.

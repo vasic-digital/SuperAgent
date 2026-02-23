@@ -27,7 +27,7 @@ func TestNewBootManager(t *testing.T) {
 	if bm.Logger != logger {
 		t.Error("Expected Logger to be set")
 	}
-	if bm.Results == nil {
+	if bm.GetResults() == nil {
 		t.Error("Expected Results to be non-nil map")
 	}
 	if bm.HealthChecker == nil {
@@ -63,7 +63,7 @@ func TestBootAll_RemoteSkipsCompose(t *testing.T) {
 	}
 
 	// Verify remote services are marked as "remote" in results
-	for name, result := range bm.Results {
+	for name, result := range bm.GetResults() {
 		ep := cfg.AllEndpoints()[name]
 		if ep.Remote && result.Status != "remote" && result.Status != "failed" {
 			t.Errorf("Expected remote service %s to have status 'remote', got %s", name, result.Status)
@@ -181,7 +181,7 @@ func TestBootAll_SkippedDisabledServices(t *testing.T) {
 	}
 
 	// All results should be "skipped"
-	for name, result := range bm.Results {
+	for name, result := range bm.GetResults() {
 		if result.Status != "skipped" {
 			t.Errorf("Expected service %s to be skipped, got %s", name, result.Status)
 		}
