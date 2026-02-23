@@ -39,6 +39,8 @@ import (
 	"dev.helix.agent/internal/handlers"
 	"dev.helix.agent/internal/services"
 	"dev.helix.agent/internal/tools"
+
+	"go.uber.org/goleak"
 )
 
 // =============================================================================
@@ -102,13 +104,14 @@ func TestMain(m *testing.M) {
 	}
 	suite.logger.SetLevel(logrus.InfoLevel)
 
-	// Run tests
-	code := m.Run()
+	// goleak.VerifyTestMain runs m.Run() internally, then checks for goroutine leaks.
+	goleak.VerifyTestMain(m,
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+		goleak.IgnoreTopFunction("google.golang.org/grpc/internal/transport.(*http2Client).keepalive"),
+	)
 
-	// Print summary
+	// Print summary (runs after VerifyTestMain returns)
 	suite.printSummary()
-
-	os.Exit(code)
 }
 
 // addResult adds a test result to the suite

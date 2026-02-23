@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"go.uber.org/goleak"
 )
 
 // TestMain is the entry point for all tests in this package.
@@ -17,7 +19,8 @@ import (
 func TestMain(m *testing.M) {
 	// Check if we should skip infrastructure setup
 	if os.Getenv("SKIP_INFRA_SETUP") == "true" {
-		os.Exit(m.Run())
+		goleak.VerifyTestMain(m)
+		return
 	}
 
 	fmt.Println("╔════════════════════════════════════════════════════════════════╗")
@@ -45,10 +48,17 @@ func TestMain(m *testing.M) {
 	// Wait for services to be ready
 	waitForServices()
 
-	// Run tests
-	code := m.Run()
+	// Detect and ignore known background goroutines from infrastructure services
+	// (database pools, redis connections, etc.) that outlive individual tests.
+	opts := []goleak.Option{
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+		goleak.IgnoreTopFunction("google.golang.org/grpc/internal/transport.(*http2Client).keepalive"),
+		goleak.IgnoreTopFunction("google.golang.org/grpc/internal/transport.(*controlBuffer).get"),
+		goleak.IgnoreTopFunction("github.com/jackc/pgx/v5/pgxpool.(*Pool).backgroundHealthCheck"),
+		goleak.IgnoreTopFunction("github.com/redis/go-redis/v9/internal/pool.(*ConnPool).reaper"),
+	}
 
-	os.Exit(code)
+	goleak.VerifyTestMain(m, opts...)
 }
 
 // runPreconditionCheck verifies container infrastructure is available

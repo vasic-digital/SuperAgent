@@ -14,6 +14,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.uber.org/goleak"
 )
 
 func init() {
@@ -45,15 +47,16 @@ func getSharedRouter() (*RouterContext, func()) {
 
 // TestMain handles setup and cleanup for all tests in this package
 func TestMain(m *testing.M) {
-	// Run tests
-	code := m.Run()
+	// goleak.VerifyTestMain runs m.Run() internally, then checks for goroutine leaks.
+	goleak.VerifyTestMain(m,
+		goleak.IgnoreTopFunction("github.com/jackc/pgx/v5/pgxpool.(*Pool).backgroundHealthCheck"),
+		goleak.IgnoreTopFunction("github.com/redis/go-redis/v9/internal/pool.(*ConnPool).reaper"),
+	)
 
 	// Cleanup shared router if it was created
 	if sharedRouterCleanup != nil {
 		sharedRouterCleanup()
 	}
-
-	os.Exit(code)
 }
 
 // clearDBEnvVars temporarily clears database environment variables to force standalone mode

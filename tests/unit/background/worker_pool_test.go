@@ -2,7 +2,6 @@ package background_test
 
 import (
 	"context"
-	"os"
 	"sync"
 	"testing"
 	"time"
@@ -14,6 +13,8 @@ import (
 
 	"dev.helix.agent/internal/background"
 	"dev.helix.agent/internal/models"
+
+	"go.uber.org/goleak"
 )
 
 var (
@@ -36,15 +37,17 @@ func TestMain(m *testing.M) {
 	testLogger = logrus.New()
 	testLogger.SetLevel(logrus.ErrorLevel)
 
-	// Run tests
-	code := m.Run()
+	// goleak.VerifyTestMain runs m.Run() internally, then checks for goroutine leaks.
+	// Worker pool goroutines winding down after Stop() are ignored.
+	goleak.VerifyTestMain(m,
+		goleak.IgnoreTopFunction("dev.helix.agent/internal/background.(*AdaptiveWorkerPool).workerLoop"),
+		goleak.IgnoreTopFunction("dev.helix.agent/internal/background.(*AdaptiveWorkerPool).scaleLoop"),
+	)
 
 	// Clean up
 	if testPool != nil && testPoolStarted {
 		testPool.Stop(time.Second)
 	}
-
-	os.Exit(code)
 }
 
 // getTestPool returns a shared worker pool for tests

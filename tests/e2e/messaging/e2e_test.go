@@ -18,6 +18,7 @@ import (
 	"dev.helix.agent/internal/messaging/replay"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
 	"go.uber.org/zap"
 )
 
@@ -33,14 +34,16 @@ func TestMain(m *testing.M) {
 	testCtx, testCancel = context.WithTimeout(context.Background(), 5*time.Minute)
 	testLogger, _ = zap.NewDevelopment()
 
-	// Run tests
-	code := m.Run()
+	// goleak.VerifyTestMain runs m.Run() internally, then checks for goroutine leaks.
+	goleak.VerifyTestMain(m,
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+		goleak.IgnoreTopFunction("google.golang.org/grpc/internal/transport.(*http2Client).keepalive"),
+		goleak.IgnoreTopFunction("google.golang.org/grpc/internal/transport.(*controlBuffer).get"),
+	)
 
-	// Teardown
+	// Teardown (runs after VerifyTestMain returns)
 	testCancel()
 	testLogger.Sync()
-
-	os.Exit(code)
 }
 
 // TestE2E_FullMessageLifecycle tests complete message flow from publish to consume

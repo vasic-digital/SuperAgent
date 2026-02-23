@@ -17,6 +17,7 @@ import (
 	"dev.helix.agent/internal/messaging/replay"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
 	"go.uber.org/zap"
 )
 
@@ -528,11 +529,9 @@ func TestMain(m *testing.M) {
 	// Setup
 	os.Setenv("MESSAGING_TEST_MODE", "integration")
 
-	// Run tests
-	code := m.Run()
+	// goleak.VerifyTestMain runs m.Run() internally, then checks for goroutine leaks.
+	goleak.VerifyTestMain(m)
 
-	// Teardown
+	// Teardown (runs after VerifyTestMain returns)
 	os.Unsetenv("MESSAGING_TEST_MODE")
-
-	os.Exit(code)
 }
