@@ -3,9 +3,10 @@ package llm
 import (
 	"context"
 	"errors"
-	"log"
 	"sync"
 	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"dev.helix.agent/internal/models"
 )
@@ -295,9 +296,11 @@ func (cb *CircuitBreaker) transitionTo(newState CircuitState) {
 			case <-done:
 				// Listener completed
 			case <-time.After(5 * time.Second):
-				// Listener timed out, log warning and continue
-				log.Printf("[WARN] circuit breaker %q: listener notification timed out after 5s "+
-					"(state transition %s -> %s)", cb.providerID, oldState, newState)
+				logrus.WithFields(logrus.Fields{
+					"provider":  cb.providerID,
+					"old_state": string(oldState),
+					"new_state": string(newState),
+				}).Warn("circuit breaker listener notification timed out")
 			}
 		}(listener)
 	}
@@ -379,8 +382,10 @@ func (cb *CircuitBreaker) Reset() {
 			select {
 			case <-done:
 			case <-time.After(5 * time.Second):
-				log.Printf("[WARN] circuit breaker %q: listener notification timed out after 5s "+
-					"(reset to closed)", providerID)
+				logrus.WithFields(logrus.Fields{
+					"provider":  providerID,
+					"new_state": string(CircuitClosed),
+				}).Warn("circuit breaker listener notification timed out on reset")
 			}
 		}(listener)
 	}
