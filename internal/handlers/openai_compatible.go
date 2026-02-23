@@ -5331,12 +5331,14 @@ func (h *UnifiedHandler) executeWriteFunction(ctx context.Context, call Embedded
 
 	// Create parent directories if needed
 	dir := filepath.Dir(filePath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	// #nosec G301 -- user workspace directories use standard 0755 permissions for usability
+	if err := os.MkdirAll(dir, 0750); err != nil {
 		return "", fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 
 	// Write the file
 	// #nosec G304 - filePath is validated by utils.ValidatePath for path traversal and dangerous characters
+	// #nosec G306 - user workspace files use standard 0644 permissions for usability
 	if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
 		return "", fmt.Errorf("failed to write file %s: %w", filePath, err)
 	}
@@ -5387,6 +5389,7 @@ func (h *UnifiedHandler) executeEditFunction(ctx context.Context, call EmbeddedF
 
 	// Write back
 	// #nosec G304 - filePath is validated by utils.ValidatePath for path traversal and dangerous characters
+	// #nosec G306 - user workspace files use standard 0644 permissions for usability
 	if err := os.WriteFile(filePath, []byte(newContent), 0644); err != nil {
 		return "", fmt.Errorf("failed to write file %s: %w", filePath, err)
 	}

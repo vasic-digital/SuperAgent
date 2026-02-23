@@ -96,7 +96,7 @@ func (cm *ConstitutionManager) SaveConstitution(projectRoot string, constitution
 		return fmt.Errorf("failed to marshal Constitution: %w", err)
 	}
 
-	if err := os.WriteFile(constitutionPath, data, 0644); err != nil {
+	if err := os.WriteFile(constitutionPath, data, 0600); err != nil {
 		return fmt.Errorf("failed to write Constitution file: %w", err)
 	}
 

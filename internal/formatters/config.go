@@ -178,6 +178,7 @@ func SaveConfig(config *Config, path string) error {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
 
+	// #nosec G306 -- formatter config is a non-sensitive configuration file
 	if err := os.WriteFile(path, data, 0644); err != nil {
 		return fmt.Errorf("failed to write config file: %w", err)
 	}

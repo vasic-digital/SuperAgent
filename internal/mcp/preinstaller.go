@@ -192,7 +192,8 @@ func (p *MCPPreinstaller) PreInstallAll(ctx context.Context) error {
 	}
 
 	// Ensure install directory exists
-	if err := os.MkdirAll(p.installDir, 0755); err != nil {
+	// #nosec G301 -- MCP package install directories use standard 0750 permissions
+	if err := os.MkdirAll(p.installDir, 0750); err != nil {
 		return fmt.Errorf("failed to create install directory: %w", err)
 	}
 
@@ -255,7 +256,8 @@ func (p *MCPPreinstaller) installPackage(ctx context.Context, pkg MCPPackage) er
 
 	// Create package-specific install directory
 	pkgDir := filepath.Join(p.installDir, pkg.Name)
-	if err := os.MkdirAll(pkgDir, 0755); err != nil {
+	// #nosec G301 -- MCP package-specific directories use standard 0750 permissions
+	if err := os.MkdirAll(pkgDir, 0750); err != nil {
 		p.updateStatus(pkg.Name, StatusFailed, "", fmt.Errorf("failed to create directory: %w", err))
 		return err
 	}

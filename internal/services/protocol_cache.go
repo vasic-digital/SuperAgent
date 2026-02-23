@@ -2,9 +2,9 @@ package services
 
 import (
 	"context"
-	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"sync"
 	"time"
 
@@ -451,8 +451,9 @@ func GenerateCacheKey(protocol, operation string, params map[string]interface{})
 	}
 
 	key := fmt.Sprintf("%s:%s:%s", protocol, operation, paramStr)
-	// #nosec G401 -- MD5 is used for cache key generation, not for security purposes
-	return fmt.Sprintf("%x", md5.Sum([]byte(key)))
+	h := fnv.New64a()
+	_, _ = h.Write([]byte(key))
+	return fmt.Sprintf("%016x", h.Sum64())
 }
 
 // Protocol-aware cache keys

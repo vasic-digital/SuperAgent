@@ -1185,11 +1185,13 @@ func (so *SpecKitOrchestrator) resumeFlow(ctx context.Context, flowID string, us
 // Helper functions for file operations
 
 func ensureDir(dir string) error {
-	return os.MkdirAll(dir, 0755)
+	// #nosec G301 -- speckit cache directories use standard 0750 permissions
+	return os.MkdirAll(dir, 0750)
 }
 
 func writeFile(path string, data []byte) error {
-	return os.WriteFile(path, data, 0644)
+	// #nosec G306 -- speckit phase cache files use standard 0600 permissions
+	return os.WriteFile(path, data, 0600)
 }
 
 func readFile(path string) ([]byte, error) {

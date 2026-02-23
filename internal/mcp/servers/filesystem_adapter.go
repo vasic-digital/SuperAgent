@@ -403,6 +403,7 @@ func (a *FilesystemAdapter) CreateDirectory(ctx context.Context, path string) er
 		return err
 	}
 
+	// #nosec G301 -- user-accessible filesystem directories use standard 0755 permissions
 	if err := os.MkdirAll(path, 0755); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}

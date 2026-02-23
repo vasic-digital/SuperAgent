@@ -1415,7 +1415,7 @@ func TestCacheService_HashStringDirect(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			hash := service.hashString(tc.input)
 			assert.NotEmpty(t, hash)
-			assert.Len(t, hash, 32) // MD5 produces 32 hex characters
+			assert.Len(t, hash, 16) // FNV-64a produces 16 hex characters
 
 			// Same input should produce same hash
 			hash2 := service.hashString(tc.input)

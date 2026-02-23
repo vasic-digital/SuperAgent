@@ -381,7 +381,8 @@ func TestRemoteFlag(t *testing.T) {
 func TestServicesConfigInLoad(t *testing.T) {
 	// Save and restore env
 	envKeys := []string{
-		"SVC_POSTGRESQL_HOST", "SVC_REDIS_REMOTE",
+		"SVC_POSTGRESQL_HOST", "SVC_POSTGRESQL_ENABLED", "SVC_POSTGRESQL_PORT",
+		"SVC_REDIS_REMOTE", "SVC_REDIS_ENABLED",
 		"PORT", "DB_HOST", "REDIS_HOST", "GIN_MODE",
 	}
 	orig := make(map[string]string)

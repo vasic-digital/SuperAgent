@@ -53,6 +53,7 @@ func (ds *DocumentationSync) SyncConstitutionToDocumentation(projectRoot string,
 	// Save Constitution as markdown
 	constitutionMDPath := filepath.Join(projectRoot, "CONSTITUTION.md")
 	markdown := constitutionManager.ExportConstitutionMarkdown(constitution)
+	// #nosec G306 -- documentation files are intentionally world-readable (not sensitive)
 	if err := os.WriteFile(constitutionMDPath, []byte(markdown), 0644); err != nil {
 		return fmt.Errorf("failed to save CONSTITUTION.md: %w", err)
 	}
@@ -167,6 +168,7 @@ func (ds *DocumentationSync) syncToFile(filePath, sectionName, newContent string
 	}
 
 	// Write updated content
+	// #nosec G306 -- documentation files (AGENTS.md, CLAUDE.md) are intentionally world-readable
 	if err := os.WriteFile(filePath, []byte(updatedContent), 0644); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
@@ -183,6 +185,7 @@ func (ds *DocumentationSync) createFileWithSection(filePath, sectionName, conten
 	fileContent.WriteString(fmt.Sprintf("*Auto-generated: %s*\n\n", time.Now().Format("2006-01-02 15:04")))
 	fileContent.WriteString(ds.wrapSection(sectionName, content))
 
+	// #nosec G306 -- documentation files are intentionally world-readable (not sensitive)
 	return os.WriteFile(filePath, []byte(fileContent.String()), 0644)
 }
 

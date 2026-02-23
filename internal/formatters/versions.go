@@ -44,6 +44,7 @@ func SaveVersionsManifest(manifest *VersionsManifest, path string) error {
 		return fmt.Errorf("failed to marshal versions manifest: %w", err)
 	}
 
+	// #nosec G306 -- formatter versions manifest is a public metadata file, not a sensitive file
 	if err := os.WriteFile(path, data, 0644); err != nil {
 		return fmt.Errorf("failed to write versions manifest: %w", err)
 	}

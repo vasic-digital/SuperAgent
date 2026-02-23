@@ -119,7 +119,8 @@ func (m *MemoryAdapter) Initialize(ctx context.Context) error {
 
 	// Load from storage if persistence is enabled
 	if m.config.EnablePersistence {
-		if err := os.MkdirAll(m.config.StoragePath, 0755); err != nil {
+		// #nosec G301 -- memory storage directory uses standard 0750 permissions
+		if err := os.MkdirAll(m.config.StoragePath, 0750); err != nil {
 			return fmt.Errorf("failed to create storage directory: %w", err)
 		}
 

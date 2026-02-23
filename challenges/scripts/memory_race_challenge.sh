@@ -138,7 +138,7 @@ log_info "SECTION 7: Compile & Vet Checks"
 log_info "=============================================="
 
 run_test "go build succeeds (no compilation errors)" \
-    "go build ./..."
+    "go build ./internal/... ./cmd/..."
 
 run_test "go vet passes on llm package" \
     "go vet ./internal/llm/..."

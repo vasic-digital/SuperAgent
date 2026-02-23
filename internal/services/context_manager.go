@@ -2,9 +2,9 @@ package services
 
 import (
 	"compress/gzip"
-	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"sort"
 	"strings"
@@ -692,8 +692,9 @@ func (cm *ContextManager) detectSourceConflicts(source string, entries []*Contex
 
 	contentMap := make(map[string][]*ContextEntry)
 	for _, entry := range entries {
-		// #nosec G401 -- MD5 is used for content deduplication in conflict detection, not for security purposes
-		hash := fmt.Sprintf("%x", md5.Sum([]byte(entry.Content)))
+		hf := fnv.New64a()
+		_, _ = hf.Write([]byte(entry.Content))
+		hash := fmt.Sprintf("%016x", hf.Sum64())
 		contentMap[hash] = append(contentMap[hash], entry)
 	}
 

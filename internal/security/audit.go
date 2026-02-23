@@ -196,7 +196,7 @@ type FileAuditLogger struct {
 
 // NewFileAuditLogger creates a new file-based audit logger
 func NewFileAuditLogger(filename string, logger *logrus.Logger) (*FileAuditLogger, error) {
-	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open audit log file: %w", err)
 	}

@@ -472,7 +472,7 @@ func TestGenerateCacheKey(t *testing.T) {
 	t.Run("nil params", func(t *testing.T) {
 		key := GenerateCacheKey("mcp", "list", nil)
 		assert.NotEmpty(t, key)
-		assert.Len(t, key, 32) // MD5 hex length
+		assert.Len(t, key, 16) // FNV-64a produces 16 hex characters
 	})
 
 	t.Run("different protocols", func(t *testing.T) {

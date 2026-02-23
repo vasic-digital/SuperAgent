@@ -612,7 +612,7 @@ func TestCacheService_HashString(t *testing.T) {
 		t.Run(fmt.Sprintf("hash_%s", input[:min(10, len(input))]), func(t *testing.T) {
 			hash := service.hashString(input)
 			assert.NotEmpty(t, hash)
-			assert.Len(t, hash, 32) // MD5 produces 32 hex chars
+			assert.Len(t, hash, 16) // FNV-64a produces 16 hex chars
 
 			// Same input produces same hash
 			hash2 := service.hashString(input)

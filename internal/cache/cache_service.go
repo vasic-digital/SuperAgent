@@ -2,9 +2,9 @@ package cache
 
 import (
 	"context"
-	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"sync"
 	"time"
 
@@ -458,10 +458,11 @@ func (c *CacheService) generateCacheKey(req *models.LLMRequest) string {
 	return fmt.Sprintf("llm:%s", hash)
 }
 
-// hashString creates an MD5 hash of a string for cache key generation
+// hashString creates a FNV hash of a string for cache key generation
 func (c *CacheService) hashString(s string) string {
-	// #nosec G401 -- MD5 is used for cache key generation, not for security purposes
-	return fmt.Sprintf("%x", md5.Sum([]byte(s)))
+	h := fnv.New64a()
+	_, _ = h.Write([]byte(s))
+	return fmt.Sprintf("%016x", h.Sum64())
 }
 
 // incrementHitCount increments the hit count for a cache key

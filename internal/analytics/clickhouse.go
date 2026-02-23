@@ -258,8 +258,25 @@ func (cha *ClickHouseAnalytics) GetProviderPerformance(ctx context.Context, wind
 	return stats, nil
 }
 
+// validTimeIntervals is the allowlist of valid ClickHouse time interval units
+var validTimeIntervals = map[string]bool{
+	"SECOND": true, "MINUTE": true, "HOUR": true, "DAY": true,
+	"WEEK": true, "MONTH": true, "QUARTER": true, "YEAR": true,
+}
+
+// sanitizeTimeInterval validates and normalizes a time interval unit against an allowlist
+func sanitizeTimeInterval(interval string) string {
+	upper := strings.ToUpper(strings.TrimSpace(interval))
+	if validTimeIntervals[upper] {
+		return upper
+	}
+	return "HOUR" // safe default
+}
+
 // GetProviderTrends retrieves provider performance trends over time
 func (cha *ClickHouseAnalytics) GetProviderTrends(ctx context.Context, provider string, interval string, periods int) ([]ProviderStats, error) {
+	safeInterval := sanitizeTimeInterval(interval)
+	// #nosec G201 -- safeInterval is validated against an allowlist of time interval units
 	query := fmt.Sprintf(`
 		SELECT
 			provider,
@@ -279,7 +296,7 @@ func (cha *ClickHouseAnalytics) GetProviderTrends(ctx context.Context, provider 
 		GROUP BY provider, period_start
 		ORDER BY period_start DESC
 		LIMIT ?
-	`, interval, interval)
+	`, safeInterval, safeInterval)
 
 	rows, err := cha.conn.QueryContext(ctx, query, provider, periods, periods)
 	if err != nil {
@@ -395,6 +412,8 @@ func (cha *ClickHouseAnalytics) StoreConversationMetrics(ctx context.Context, me
 
 // GetConversationTrends retrieves conversation trends
 func (cha *ClickHouseAnalytics) GetConversationTrends(ctx context.Context, interval string, periods int) ([]map[string]interface{}, error) {
+	safeInterval := sanitizeTimeInterval(interval)
+	// #nosec G201 -- safeInterval is validated against an allowlist of time interval units
 	query := fmt.Sprintf(`
 		SELECT
 			toStartOfInterval(timestamp, INTERVAL 1 %s) as period_start,
@@ -409,7 +428,7 @@ func (cha *ClickHouseAnalytics) GetConversationTrends(ctx context.Context, inter
 		GROUP BY period_start
 		ORDER BY period_start DESC
 		LIMIT ?
-	`, interval, interval)
+	`, safeInterval, safeInterval)
 
 	rows, err := cha.conn.QueryContext(ctx, query, periods, periods)
 	if err != nil {
@@ -476,6 +495,7 @@ func (cha *ClickHouseAnalytics) GetTopProviders(ctx context.Context, limit int, 
 		orderClause = "total_requests DESC"
 	}
 
+	// #nosec G201 -- orderClause is set exclusively from switch-case with hardcoded safe values
 	query := fmt.Sprintf(`
 		SELECT
 			provider,
