@@ -247,6 +247,76 @@ Final Response → User
 └─────────────────────────────────────────────────┘
 ```
 
+## Extracted Modules Layer
+
+HelixAgent's functionality is decomposed into **25 independent Go modules** organized by phase. Each
+module is a separate Go project with its own `go.mod`, tests, and documentation, integrated via git
+submodules and `replace` directives. Bridge adapters in `internal/adapters/` connect internal types
+to each module. Full catalog: [`docs/MODULES.md`](../MODULES.md).
+
+```
+HelixAgent (dev.helix.agent)
+├── Foundation Layer (zero dependencies)
+│   ├── EventBus         (digital.vasic.eventbus)      — Pub/Sub event system
+│   ├── Concurrency      (digital.vasic.concurrency)   — Pools, limiters, breakers
+│   ├── Observability    (digital.vasic.observability) — Tracing, metrics, logging
+│   ├── Auth             (digital.vasic.auth)          — JWT, API key, OAuth
+│   ├── Storage          (digital.vasic.storage)       — S3, local filesystem
+│   └── Streaming        (digital.vasic.streaming)     — SSE, WS, gRPC, webhooks
+├── Infrastructure Layer
+│   ├── Security         (digital.vasic.security)      — Guardrails, PII, policies
+│   ├── VectorDB         (digital.vasic.vectordb)      — Qdrant, Pinecone, Milvus
+│   ├── Embeddings       (digital.vasic.embeddings)    — 6 embedding providers
+│   ├── Database         (digital.vasic.database)      — PostgreSQL, SQLite
+│   └── Cache            (digital.vasic.cache)         — Redis, in-memory
+├── Services Layer
+│   ├── Messaging        (digital.vasic.messaging)     — Kafka, RabbitMQ
+│   ├── Formatters       (digital.vasic.formatters)    — 32+ code formatters
+│   └── MCP              (digital.vasic.mcp)           — Model Context Protocol
+├── Integration Layer
+│   ├── RAG              (digital.vasic.rag)           — Retrieval-Augmented Generation
+│   ├── Memory           (digital.vasic.memory)        — Mem0-style memory
+│   ├── Optimization     (digital.vasic.optimization)  — GPT-Cache, prompt optimization
+│   └── Plugins          (digital.vasic.plugins)       — Plugin system
+├── AI/ML Layer (Phase 5)
+│   ├── Agentic          (digital.vasic.agentic)       — Graph-based workflow orchestration
+│   ├── LLMOps          (digital.vasic.llmops)         — Evaluation, experiments, datasets
+│   ├── SelfImprove      (digital.vasic.selfimprove)   — Reward model, RLHF
+│   ├── Planning         (digital.vasic.planning)      — HiPlan, MCTS, Tree of Thoughts
+│   └── Benchmark        (digital.vasic.benchmark)     — LLM benchmarking, leaderboards
+└── Pre-existing
+    ├── Containers       (digital.vasic.containers)    — Container orchestration
+    └── Challenges       (digital.vasic.challenges)    — Challenge framework
+```
+
+### AI/ML Phase 5 Modules
+
+Five modules added to support advanced AI/ML capabilities beyond inference:
+
+- **Agentic** (`Agentic/`, `digital.vasic.agentic`): Graph-based agentic workflow orchestration.
+  Multi-step workflow execution with conditional branching, parallel nodes, state management, and
+  retry logic. Used for complex AI task pipelines. Adapter: `internal/adapters/agentic/adapter.go`.
+
+- **LLMOps** (`LLMOps/`, `digital.vasic.llmops`): LLM operations and observability framework.
+  Continuous evaluation pipelines, A/B experiment management with statistical significance testing,
+  dataset management (golden sets, synthetic data), and prompt versioning.
+  Adapter: `internal/adapters/llmops/adapter.go`.
+
+- **SelfImprove** (`SelfImprove/`, `digital.vasic.selfimprove`): AI self-improvement via
+  RLHF-style feedback collection, reward model training with dimension-weighted scoring, and an
+  optimizer that adjusts model parameters based on accumulated feedback signals.
+  Adapter: `internal/adapters/selfimprove/adapter.go`.
+
+- **Planning** (`Planning/`, `digital.vasic.planning`): AI planning algorithms for complex task
+  decomposition. Hierarchical planning (HiPlan with milestone-based decomposition), Monte Carlo
+  Tree Search (MCTS for code action optimization), and Tree of Thoughts (multi-path reasoning).
+  Adapter: `internal/adapters/planning/adapter.go`.
+
+- **Benchmark** (`Benchmark/`, `digital.vasic.benchmark`): LLM benchmarking and evaluation
+  framework. Industry-standard benchmarks (SWE-bench, HumanEval, MBPP, LMSYS, HellaSwag, MMLU,
+  GSM8K, MATH), custom benchmark support, provider comparison, and leaderboard generation.
+  Adapter: `internal/adapters/benchmark/adapter.go`.
+
 ## Performance Characteristics
 
 - **Latency**: <100ms for cached requests, <2s for ensemble responses

@@ -75,6 +75,35 @@ HelixAgent is an AI-powered ensemble LLM service that combines responses from mu
 +-------------------------------------------------------------------+
 ```
 
+## Extracted Modules Layer
+
+HelixAgent's functionality is decomposed into **25 independent Go modules** integrated as git
+submodules. All modules use `replace` directives in the root `go.mod` for local development. Bridge
+adapters in `internal/adapters/<name>/adapter.go` connect internal types to each module.
+
+Full catalog: [`docs/MODULES.md`](../MODULES.md)
+
+| Phase | Modules |
+|-------|---------|
+| Foundation | EventBus, Concurrency, Observability, Auth, Storage, Streaming |
+| Infrastructure | Security, VectorDB, Embeddings, Database, Cache |
+| Services | Messaging, Formatters, MCP |
+| Integration | RAG, Memory, Optimization, Plugins |
+| **AI/ML (Phase 5)** | **Agentic, LLMOps, SelfImprove, Planning, Benchmark** |
+| Pre-existing | Containers, Challenges |
+
+### AI/ML Modules (Phase 5)
+
+Five new modules added to support advanced AI/ML capabilities:
+
+| Module | Go Path | Description |
+|--------|---------|-------------|
+| **Agentic** (`Agentic/`) | `digital.vasic.agentic` | Graph-based workflow orchestration for autonomous AI agents with planning, conditional branching, parallel execution, state management, and retry logic |
+| **LLMOps** (`LLMOps/`) | `digital.vasic.llmops` | LLM operations framework: continuous evaluation pipelines, A/B experiment management with statistical significance testing, dataset management, and prompt versioning |
+| **SelfImprove** (`SelfImprove/`) | `digital.vasic.selfimprove` | AI self-improvement via RLHF-style feedback collection, reward model training with dimension-weighted scoring, and optimizer that adjusts model parameters based on feedback |
+| **Planning** (`Planning/`) | `digital.vasic.planning` | AI planning algorithms: HiPlan (hierarchical milestone-based decomposition), MCTS (Monte Carlo Tree Search for code action optimization), Tree of Thoughts (multi-path reasoning) |
+| **Benchmark** (`Benchmark/`) | `digital.vasic.benchmark` | LLM benchmarking framework: industry-standard benchmarks (SWE-bench, HumanEval, MMLU, GSM8K, MATH, MBPP, LMSYS, HellaSwag), custom benchmarks, provider comparison, and leaderboard generation |
+
 ## Key Architectural Patterns
 
 ### AI Debate Ensemble
