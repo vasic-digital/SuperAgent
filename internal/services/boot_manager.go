@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 
 	containeradapter "dev.helix.agent/internal/adapters/containers"
@@ -22,10 +23,15 @@ type BootResult struct {
 }
 
 // BootManager handles starting, health-checking, and stopping all configured services.
+//
+// Results is exported for backward compatibility but MUST NOT be accessed directly
+// from outside this package; use GetResults() for concurrent-safe reads.
+// All writes go through setResult() which is protected by resultsMu.
 type BootManager struct {
 	Config           *config.ServicesConfig
 	Logger           *logrus.Logger
-	Results          map[string]*BootResult
+	Results          map[string]*BootResult // protected by resultsMu
+	resultsMu        sync.RWMutex
 	HealthChecker    *ServiceHealthChecker
 	Discoverer       discovery.Discoverer
 	RemoteDeployer   RemoteDeployer
@@ -76,6 +82,45 @@ func NewBootManagerWithDeployer(cfg *config.ServicesConfig, logger *logrus.Logge
 	}
 }
 
+// GetResults returns a defensive copy of the Results map under a read lock.
+// It is safe to call concurrently with BootAll and any other method that writes
+// to the Results map.
+func (bm *BootManager) GetResults() map[string]*BootResult {
+	bm.resultsMu.RLock()
+	defer bm.resultsMu.RUnlock()
+	copy := make(map[string]*BootResult, len(bm.Results))
+	for k, v := range bm.Results {
+		r := *v // value copy so callers cannot mutate internal state
+		copy[k] = &r
+	}
+	return copy
+}
+
+// setResult stores a BootResult under the write lock.
+func (bm *BootManager) setResult(name string, result *BootResult) {
+	bm.resultsMu.Lock()
+	bm.Results[name] = result
+	bm.resultsMu.Unlock()
+}
+
+// getResult retrieves a BootResult by name under the read lock.
+// Returns (result, true) when found, (nil, false) otherwise.
+func (bm *BootManager) getResult(name string) (*BootResult, bool) {
+	bm.resultsMu.RLock()
+	r, ok := bm.Results[name]
+	bm.resultsMu.RUnlock()
+	return r, ok
+}
+
+// setResultIfAbsent sets a BootResult only when no entry already exists for name.
+func (bm *BootManager) setResultIfAbsent(name string, result *BootResult) {
+	bm.resultsMu.Lock()
+	if _, exists := bm.Results[name]; !exists {
+		bm.Results[name] = result
+	}
+	bm.resultsMu.Unlock()
+}
+
 // BootAll starts all enabled local services and health-checks all enabled services.
 // Remote services (Remote: true) are only health-checked, not started via compose.
 // Required services that fail health check will cause an error return.
@@ -106,7 +151,7 @@ func (bm *BootManager) BootAll() error {
 
 		if discovered {
 			ep.Discovered = true
-			bm.Results[name] = &BootResult{Name: name, Status: "discovered"}
+			bm.setResult(name, &BootResult{Name: name, Status: "discovered"})
 			bm.Logger.WithField("service", name).Info("Service discovered in network, skipping compose start")
 		}
 	}
@@ -116,19 +161,15 @@ func (bm *BootManager) BootAll() error {
 	composeGroups := make(map[string][]string) // compose_file -> []service_name for local
 	for name, ep := range endpoints {
 		if !ep.Enabled {
-			if _, exists := bm.Results[name]; !exists {
-				bm.Results[name] = &BootResult{Name: name, Status: "skipped"}
-			}
+			bm.setResultIfAbsent(name, &BootResult{Name: name, Status: "skipped"})
 			bm.Logger.WithField("service", name).Debug("Service disabled, skipping")
 			continue
 		}
 		if ep.Remote || ep.Discovered {
-			if _, exists := bm.Results[name]; !exists {
-				status := "remote"
-				if ep.Discovered {
-					status = "discovered"
-				}
-				bm.Results[name] = &BootResult{Name: name, Status: status}
+			if ep.Discovered {
+				bm.setResultIfAbsent(name, &BootResult{Name: name, Status: "discovered"})
+			} else {
+				bm.setResultIfAbsent(name, &BootResult{Name: name, Status: "remote"})
 			}
 			bm.Logger.WithField("service", name).Info("Service configured as remote or discovered, skipping local compose start")
 			// Collect remote services for deployment
@@ -176,6 +217,7 @@ func (bm *BootManager) BootAll() error {
 					"services":     strings.Join(services, ", "),
 					"error":        err,
 				}).Error("Failed to deploy remote services")
+				bm.resultsMu.Lock()
 				for _, svc := range services {
 					if result, ok := bm.Results[svc]; ok {
 						result.Error = err
@@ -183,17 +225,20 @@ func (bm *BootManager) BootAll() error {
 						result.Duration = duration
 					}
 				}
+				bm.resultsMu.Unlock()
 			} else {
 				bm.Logger.WithFields(logrus.Fields{
 					"compose_file": composeFile,
 					"services":     strings.Join(services, ", "),
 					"duration":     duration,
 				}).Info("Remote services deployed successfully")
+				bm.resultsMu.Lock()
 				for _, svc := range services {
 					if result, ok := bm.Results[svc]; ok {
 						result.Duration = duration
 					}
 				}
+				bm.resultsMu.Unlock()
 			}
 		}
 	} else if len(remoteGroups) > 0 {
@@ -220,11 +265,11 @@ func (bm *BootManager) BootAll() error {
 				"error":        err,
 			}).Warn("Failed to start compose services")
 			for _, svc := range services {
-				bm.Results[svc] = &BootResult{Name: svc, Status: "failed", Duration: duration, Error: err}
+				bm.setResult(svc, &BootResult{Name: svc, Status: "failed", Duration: duration, Error: err})
 			}
 		} else {
 			for _, svc := range services {
-				bm.Results[svc] = &BootResult{Name: svc, Status: "started", Duration: duration}
+				bm.setResult(svc, &BootResult{Name: svc, Status: "started", Duration: duration})
 			}
 		}
 	}
@@ -261,19 +306,23 @@ func (bm *BootManager) BootAll() error {
 							"error":    err,
 						}).Warn("Optional remote service health check failed")
 					}
+					bm.resultsMu.Lock()
 					if result, ok := bm.Results[name]; ok {
 						result.Error = err
 					} else {
 						bm.Results[name] = &BootResult{Name: name, Status: "failed", Duration: duration, Error: err}
 					}
+					bm.resultsMu.Unlock()
 				} else {
 					bm.Logger.WithFields(logrus.Fields{
 						"service":  name,
 						"duration": duration,
 					}).Info("Remote service health check passed")
+					bm.resultsMu.Lock()
 					if result, ok := bm.Results[name]; ok {
 						result.Duration = duration
 					}
+					bm.resultsMu.Unlock()
 				}
 			} else {
 				// No container adapter available - for required services, this is a failure
@@ -285,7 +334,7 @@ func (bm *BootManager) BootAll() error {
 						"service": name,
 						"error":   err,
 					}).Error("REQUIRED remote service health check FAILED (no adapter)")
-					bm.Results[name] = &BootResult{Name: name, Status: "failed", Error: err}
+					bm.setResult(name, &BootResult{Name: name, Status: "failed", Error: err})
 				} else {
 					bm.Logger.WithField("service", name).Info("Skipping health check for optional remote service (no container adapter)")
 				}
@@ -312,6 +361,7 @@ func (bm *BootManager) BootAll() error {
 					"error":    err,
 				}).Warn("Optional service health check failed")
 			}
+			bm.resultsMu.Lock()
 			if result, ok := bm.Results[name]; ok {
 				result.Error = err
 				if result.Status != "remote" {
@@ -320,17 +370,20 @@ func (bm *BootManager) BootAll() error {
 			} else {
 				bm.Results[name] = &BootResult{Name: name, Status: "failed", Duration: duration, Error: err}
 			}
+			bm.resultsMu.Unlock()
 		} else {
 			bm.Logger.WithFields(logrus.Fields{
 				"service":  name,
 				"duration": duration,
 			}).Info("Service health check passed")
+			bm.resultsMu.Lock()
 			if result, ok := bm.Results[name]; ok {
 				result.Duration = duration
 				if result.Status == "" {
 					result.Status = "already_running"
 				}
 			}
+			bm.resultsMu.Unlock()
 		}
 	}
 
@@ -372,7 +425,7 @@ func (bm *BootManager) ShutdownAll() error {
 		if !ep.Enabled || ep.Remote {
 			continue
 		}
-		result, ok := bm.Results[name]
+		result, ok := bm.getResult(name)
 		if !ok || (result.Status != "started" && result.Status != "already_running") {
 			continue
 		}
@@ -496,6 +549,8 @@ func (bm *BootManager) stopComposeServices(composeFile, profile string, services
 
 func (bm *BootManager) logSummary() {
 	started, remote, discovered, failed, skipped := 0, 0, 0, 0, 0
+	bm.resultsMu.RLock()
+	total := len(bm.Results)
 	for _, r := range bm.Results {
 		switch r.Status {
 		case "started", "already_running":
@@ -510,6 +565,7 @@ func (bm *BootManager) logSummary() {
 			skipped++
 		}
 	}
+	bm.resultsMu.RUnlock()
 
 	bm.Logger.WithFields(logrus.Fields{
 		"started":    started,
@@ -517,7 +573,7 @@ func (bm *BootManager) logSummary() {
 		"discovered": discovered,
 		"failed":     failed,
 		"skipped":    skipped,
-		"total":      len(bm.Results),
+		"total":      total,
 	}).Info("Service boot summary")
 }
 
