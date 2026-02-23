@@ -8,7 +8,7 @@ HelixAgent is an AI-powered ensemble LLM service written in Go that combines res
 
 **Module**: `dev.helix.agent` (Go 1.24+, toolchain go1.24.11)
 
-Subprojects: **Toolkit** (`Toolkit/`) — Go library for AI apps. **LLMsVerifier** (`LLMsVerifier/`) — provider accuracy verification. Plus **20 extracted modules** (see [Extracted Modules](#extracted-modules-submodules) below) covering containers, challenges, concurrency, observability, auth, storage, streaming, security, vector databases, embeddings, database, cache, messaging, formatters, MCP, RAG, memory, optimization, plugins, and event bus.
+Subprojects: **Toolkit** (`Toolkit/`) — Go library for AI apps. **LLMsVerifier** (`LLMsVerifier/`) — provider accuracy verification. Plus **25 extracted modules** (see [Extracted Modules](#extracted-modules-submodules) below) covering containers, challenges, concurrency, observability, auth, storage, streaming, security, vector databases, embeddings, database, cache, messaging, formatters, MCP, RAG, memory, optimization, plugins, event bus, agentic workflows, LLM operations, self-improvement, planning algorithms, and benchmarking.
 
 ## Mandatory Development Standards
 
@@ -199,6 +199,13 @@ Each module is an independent Go module with its own go.mod, tests, CLAUDE.md, A
 - **Memory** (`Memory/`, `digital.vasic.memory`) — Mem0-style memory: entity graph, semantic search, memory scopes, consolidation. 4 packages.
 - **Optimization** (`Optimization/`, `digital.vasic.optimization`) — GPT-Cache, Outlines structured output, streaming optimization, SGLang, prompt optimization. 6 packages.
 - **Plugins** (`Plugins/`, `digital.vasic.plugins`) — Plugin system: interface + lifecycle, registry, dynamic loading, sandboxing, structured output parsing. 5 packages.
+
+**AI/ML (Phase 5):**
+- **Agentic** (`Agentic/`, `digital.vasic.agentic`) — Graph-based agentic workflow orchestration: multi-step execution, conditional branching, state management. 1 package.
+- **LLMOps** (`LLMOps/`, `digital.vasic.llmops`) — LLM operations: continuous evaluation, A/B experiment management, dataset management, prompt versioning. 5 packages.
+- **SelfImprove** (`SelfImprove/`, `digital.vasic.selfimprove`) — AI self-improvement: reward modelling, RLHF feedback integration, optimizer, dimension-weighted scoring. 5 packages.
+- **Planning** (`Planning/`, `digital.vasic.planning`) — AI planning algorithms: hierarchical planning (HiPlan), Monte Carlo Tree Search (MCTS), Tree of Thoughts. 3 packages.
+- **Benchmark** (`Benchmark/`, `digital.vasic.benchmark`) — LLM benchmarking: SWE-bench, HumanEval, MMLU and custom benchmarks; leaderboard, provider comparison. 3 packages.
 
 **Pre-existing:**
 - **Containers** (`Containers/`, `digital.vasic.containers`) — Generic container orchestration: runtime abstraction (Docker/Podman/K8s), health checking, compose orchestration, lifecycle management. 12 packages.

@@ -559,9 +559,26 @@ Key environment variables (see `.env.example`):
   - Example: `feat(llm): add ensemble voting strategy`
 - Always run `make fmt vet lint test` before committing.
 
+## Extracted Modules (25 Independent Go Modules)
+
+HelixAgent's functionality is decomposed into 25 independent Go modules. Full catalog: `docs/MODULES.md`.
+
+| Phase | Modules |
+|-------|---------|
+| Foundation | EventBus, Concurrency, Observability, Auth, Storage, Streaming |
+| Infrastructure | Security, VectorDB, Embeddings, Database, Cache |
+| Services | Messaging, Formatters, MCP |
+| Integration | RAG, Memory, Optimization, Plugins |
+| AI/ML | Agentic, LLMOps, SelfImprove, Planning, Benchmark |
+| Pre-existing | Containers, Challenges |
+
+Each module: `go.mod` (`digital.vasic.<name>`), `CLAUDE.md`, `README.md`, `AGENTS.md`, `challenges/scripts/`, `replace` in root `go.mod`.
+Bridge adapters in `internal/adapters/<name>/adapter.go`.
+
 ## Additional Resources
 
 - `CLAUDE.md` – Detailed project overview and architecture.
+- `docs/MODULES.md` – Full extracted modules catalog (25 modules, 123 packages).
 - `Makefile` – Complete list of available commands.
 - `go.mod` – Go module dependencies.
 - `docs/` – Project documentation.

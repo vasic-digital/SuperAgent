@@ -1,6 +1,6 @@
 # Extracted Modules Catalog
 
-HelixAgent's functionality is decomposed into **20 independent Go modules**, each with its own repository, tests, and documentation. All modules are integrated as git submodules with `replace` directives in the root `go.mod` for local development.
+HelixAgent's functionality is decomposed into **25 independent Go modules**, each with its own repository, tests, and documentation. All modules are integrated as git submodules with `replace` directives in the root `go.mod` for local development.
 
 ## Module Index
 
@@ -26,8 +26,13 @@ HelixAgent's functionality is decomposed into **20 independent Go modules**, eac
 | 18 | Plugins | `digital.vasic.plugins` | `Plugins/` | 5 | Integration |
 | 19 | Containers | `digital.vasic.containers` | `Containers/` | 12 | Pre-existing |
 | 20 | Challenges | `digital.vasic.challenges` | `Challenges/` | 12 | Pre-existing |
+| 21 | Agentic | `digital.vasic.agentic` | `Agentic/` | 1 | AI/ML |
+| 22 | LLMOps | `digital.vasic.llmops` | `LLMOps/` | 1 | AI/ML |
+| 23 | SelfImprove | `digital.vasic.selfimprove` | `SelfImprove/` | 1 | AI/ML |
+| 24 | Planning | `digital.vasic.planning` | `Planning/` | 1 | AI/ML |
+| 25 | Benchmark | `digital.vasic.benchmark` | `Benchmark/` | 1 | AI/ML |
 
-**Total: 20 modules, 118 packages**
+**Total: 25 modules, 123 packages**
 
 ---
 
@@ -309,6 +314,50 @@ Plugin system with lifecycle management and sandboxing.
 
 ---
 
+## Phase 5: AI/ML Modules
+
+### Agentic (`digital.vasic.agentic`)
+
+Graph-based agentic workflow orchestration framework. 1 package providing multi-step workflow execution with conditional branching, parallel execution, state management, retry logic, and context propagation. Used for complex AI task pipelines requiring ordered or parallel step execution with error recovery.
+
+**Key types**: `Workflow`, `WorkflowConfig`, `WorkflowState`, `Step`, `StepResult`
+
+**Adapter**: `internal/adapters/agentic/adapter.go` — `New()`, `NewWorkflow()`, `ExecuteWorkflow()`
+
+### LLMOps (`digital.vasic.llmops`)
+
+LLM operations and observability framework. 1 package (5 files) covering continuous evaluation pipelines, A/B experiment management with statistical significance testing, dataset management (golden sets, synthetic data), prompt versioning, and scheduled evaluation runs.
+
+**Key types**: `InMemoryContinuousEvaluator`, `InMemoryExperimentManager`, `Dataset`, `EvaluationRun`, `Experiment`, `Variant`, `ExperimentResult`
+
+**Adapter**: `internal/adapters/llmops/adapter.go` — `NewEvaluator()`, `NewExperimentManager()`, `CreateDataset()`
+
+### SelfImprove (`digital.vasic.selfimprove`)
+
+AI self-improvement framework using reward modelling. 1 package (5 files) covering RLHF-style feedback collection, reward model training with dimension-weighted scoring, optimizer that adjusts model parameters based on feedback, and integration layer for connecting reward signals to model updates.
+
+**Key types**: `AIRewardModel`, `SelfImprovementOptimizer`, `TrainingExample`, `DimensionType`, `FeedbackCollector`
+
+**Adapter**: `internal/adapters/selfimprove/adapter.go` — `NewRewardModel()`, `Train()`
+
+### Planning (`digital.vasic.planning`)
+
+AI planning algorithms for complex task decomposition. 1 package (3 files) covering hierarchical planning (HiPlan with milestone-based decomposition), Monte Carlo Tree Search (MCTS for code action optimization), and Tree of Thoughts (ToT for multi-path reasoning).
+
+**Key types**: `HiPlan`, `HiPlanConfig`, `MCTS`, `MCTSConfig`, `TreeOfThoughts`, `TreeOfThoughtsConfig`, `LLMMilestoneGenerator`, `LLMThoughtGenerator`
+
+**Adapter**: `internal/adapters/planning/adapter.go` — `NewHiPlan()`, `NewMCTS()`, `NewTreeOfThoughts()`
+
+### Benchmark (`digital.vasic.benchmark`)
+
+LLM benchmarking framework. 1 package (3 files) covering industry-standard benchmarks (SWE-bench, HumanEval, MBPP, LMSYS, HellaSwag, MMLU, GSM8K, MATH), custom benchmark support, provider comparison, leaderboard generation, and run management.
+
+**Key types**: `StandardBenchmarkRunner`, `BenchmarkSystem`, `BenchmarkType`, `BenchmarkRun`, `Leaderboard`, `ProviderServiceForBenchmark`
+
+**Adapter**: `internal/adapters/benchmark/adapter.go` — `Initialize()`, `RunBenchmarkWithBestProvider()`, `CompareProviders()`, `GenerateLeaderboard()`
+
+---
+
 ## Pre-existing Modules
 
 ### Containers (`digital.vasic.containers`)
@@ -332,7 +381,8 @@ cd EventBus && go test ./... -count=1 -race && cd ..
 # Test all modules
 for mod in EventBus Concurrency Observability Auth Storage Streaming \
            Security VectorDB Embeddings Database Cache \
-           Messaging Formatters MCP_Module RAG Memory Optimization Plugins; do
+           Messaging Formatters MCP_Module RAG Memory Optimization Plugins \
+           Agentic LLMOps SelfImprove Planning Benchmark; do
   echo "Testing $mod..."
   (cd $mod && go test ./... -count=1 -race -short)
 done
@@ -389,6 +439,12 @@ HelixAgent (dev.helix.agent)
 │   ├── Memory ─── Mem0-style memory
 │   ├── Optimization ─── GPT-Cache, prompt optimization
 │   └── Plugins ─── Plugin system
+├── AI/ML Layer
+│   ├── Agentic ─── Agentic workflow orchestration
+│   ├── LLMOps ─── Evaluation, experiments, datasets
+│   ├── SelfImprove ─── Reward model, RLHF
+│   ├── Planning ─── HiPlan, MCTS, Tree of Thoughts
+│   └── Benchmark ─── LLM benchmarking, leaderboards
 └── Pre-existing
     ├── Containers ─── Container orchestration
     └── Challenges ─── Challenge framework
@@ -425,6 +481,11 @@ HelixAgent's `internal/adapters/` package bridges internal types to the extracte
 | `storage/minio/adapter.go` | digital.vasic.storage | MinIO object storage |
 | `streaming/adapter.go` | digital.vasic.streaming | SSE, WebSocket, webhook adapters |
 | `vectordb/qdrant/adapter.go` | digital.vasic.vectordb | Qdrant vector store client |
+| `agentic/adapter.go` | digital.vasic.agentic | Agentic workflow execution |
+| `llmops/adapter.go` | digital.vasic.llmops | Evaluation and experiment management |
+| `selfimprove/adapter.go` | digital.vasic.selfimprove | Reward model training |
+| `planning/adapter.go` | digital.vasic.planning | HiPlan, MCTS, Tree of Thoughts |
+| `benchmark/adapter.go` | digital.vasic.benchmark | Benchmark runner and leaderboards |
 
 ### Usage Pattern
 
