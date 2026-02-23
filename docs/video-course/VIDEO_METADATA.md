@@ -886,6 +886,354 @@ Before publishing each video:
 
 ---
 
-*Metadata Templates Version: 1.0.0*
+---
+
+## Module S7.1: Advanced AI/ML Modules — Part 1
+
+### Video MS71_01: Agentic Module — Graph-Based Workflow Orchestration
+
+```yaml
+video_id: MS71_01
+title: "[Module S7.1] Agentic Module — Graph-Based Workflow Orchestration"
+description: |
+  Master the Agentic module (digital.vasic.agentic) for building autonomous AI workflows using
+  directed graphs. Learn how to define nodes, edges, and mutable WorkflowState to create agents
+  that can plan, execute, and self-correct multi-step tasks.
+
+  Learning Objectives:
+  - Understand graph-based workflow architecture (Workflow, WorkflowGraph, Node, Edge)
+  - Implement NodeHandler functions for each step
+  - Use WorkflowState to thread mutable context through all nodes
+  - Enable dynamic routing via NextNode output
+  - Integrate with HelixAgent via the agentic adapter
+
+  Topics Covered:
+  - Workflow and WorkflowGraph types
+  - NodeHandler signature and NodeOutput routing
+  - WorkflowState get/set API
+  - Building a three-node code-review agent (live demo)
+  - HelixAgent adapter usage at internal/adapters/agentic/
+
+  Prerequisites: Modules 1-3 (HelixAgent basics), familiarity with Go interfaces
+
+  Resources:
+  - Module source: Agentic/
+  - Adapter: internal/adapters/agentic/adapter.go
+  - Challenge: challenges/scripts/agentic_challenge.sh
+
+duration: "30:00"
+level: "Advanced"
+tags:
+  - HelixAgent
+  - agentic
+  - workflow orchestration
+  - autonomous agents
+  - graph-based
+  - Go
+  - digital.vasic.agentic
+  - NodeHandler
+  - WorkflowState
+  - planning
+  - self-correction
+timestamps:
+  - "00:00 - Introduction: What the Agentic Module Solves"
+  - "05:00 - Core Concepts: Workflow, Node, Edge, WorkflowState"
+  - "10:00 - NodeHandler Signature and NodeOutput Routing"
+  - "15:00 - Live Demo: Three-Node Code-Review Agent"
+  - "25:00 - Integration Patterns with HelixAgent Adapters"
+  - "29:00 - Summary and Next Steps"
+prerequisites:
+  - "Modules 1-3 completed"
+  - "Go 1.24+ installed"
+  - "HelixAgent running locally"
+related_videos:
+  - "MS71_02 - LLMOps Module"
+  - "MS72_01 - Planning Module"
+  - "M07_01 - Plugin Architecture"
+```
+
+---
+
+### Video MS71_02: LLMOps Module — Evaluation, Experiments, and Prompt Versioning
+
+```yaml
+video_id: MS71_02
+title: "[Module S7.1] LLMOps Module — Continuous Evaluation and A/B Experiments"
+description: |
+  Learn how to operate LLMs in production with the LLMOps module (digital.vasic.llmops).
+  Implement continuous evaluation pipelines, A/B experiment management, and prompt versioning
+  to detect regressions and improve model quality over time.
+
+  Learning Objectives:
+  - Run continuous evaluation against golden, synthetic, and production datasets
+  - Create and manage A/B experiments between two model configurations
+  - Version prompt templates and measure their impact on quality
+  - Interpret EvaluationRun metrics (MeanScore, per-example results)
+  - Integrate with HelixAgent's LLMsVerifier pipeline
+
+  Topics Covered:
+  - InMemoryContinuousEvaluator and Dataset types
+  - InMemoryExperimentManager: creating experiments, recording results, finding the winner
+  - EvaluationRun structure and AggregateMetrics
+  - Prompt versioning and rollback patterns
+  - Live demo: A/B experiment between DeepSeek and Claude for code generation
+  - HelixAgent adapter at internal/adapters/llmops/
+
+  Prerequisites: Module S7.1.1 (Agentic module), LLMsVerifier basics (Module 14)
+
+  Resources:
+  - Module source: LLMOps/
+  - Adapter: internal/adapters/llmops/adapter.go
+  - Challenge: challenges/scripts/llmops_challenge.sh
+
+duration: "30:00"
+level: "Advanced"
+tags:
+  - HelixAgent
+  - LLMOps
+  - evaluation
+  - A/B testing
+  - experiment management
+  - prompt versioning
+  - digital.vasic.llmops
+  - InMemoryContinuousEvaluator
+  - dataset management
+  - model quality
+  - regression detection
+timestamps:
+  - "00:00 - Introduction: Why LLMOps Matters"
+  - "05:00 - Core Concepts: Evaluator, Experiment, Dataset"
+  - "10:00 - EvaluationRun and Aggregate Metrics"
+  - "15:00 - Live Demo: A/B Experiment Between Providers"
+  - "25:00 - Integration Patterns: LLMsVerifier and Provider Promotions"
+  - "29:00 - Summary"
+prerequisites:
+  - "MS71_01 - Agentic Module"
+  - "Module 14 - LLMsVerifier Integration"
+related_videos:
+  - "MS71_01 - Agentic Module"
+  - "MS71_03 - SelfImprove Module"
+  - "M14_04 - LLMsVerifier Integration"
+```
+
+---
+
+### Video MS71_03: SelfImprove Module — RLHF, Reward Modeling, and Preference Optimization
+
+```yaml
+video_id: MS71_03
+title: "[Module S7.1] SelfImprove Module — RLHF and Self-Refinement Loops"
+description: |
+  Implement AI self-improvement infrastructure with the SelfImprove module
+  (digital.vasic.selfimprove). Learn how to collect explicit and implicit feedback, train reward
+  models, run Direct Preference Optimization, and build self-refinement loops that make every
+  response better than the last.
+
+  Learning Objectives:
+  - Collect explicit (thumbs up/down) and implicit (behavioral) feedback
+  - Build and train a RewardModel from PreferencePair data
+  - Implement a SelfRefinementLoop for iterative response improvement
+  - Integrate feedback collection into HelixAgent streaming responses
+  - Apply preference optimization at inference time
+
+  Topics Covered:
+  - ExplicitFeedback, ImplicitFeedback, and PreferencePair types
+  - RewardModel interface: Score, Train, Evaluate
+  - FeedbackCollector buffering and batch export
+  - SelfRefinementLoop: initial → critique → refine → score → done
+  - Live demo: Self-refinement improving a code explanation through 3 iterations
+  - HelixAgent adapter at internal/adapters/selfimprove/
+  - PII considerations for feedback data
+
+  Prerequisites: Module S7.1.2 (LLMOps), Module 12 (Challenge System)
+
+  Resources:
+  - Module source: SelfImprove/
+  - Adapter: internal/adapters/selfimprove/adapter.go
+  - Challenge: challenges/scripts/selfimprove_challenge.sh
+
+duration: "30:00"
+level: "Advanced"
+tags:
+  - HelixAgent
+  - RLHF
+  - reward modeling
+  - preference optimization
+  - self-improvement
+  - digital.vasic.selfimprove
+  - FeedbackCollector
+  - SelfRefinementLoop
+  - DPO
+  - AI quality
+  - continuous improvement
+timestamps:
+  - "00:00 - Introduction: RLHF in Production Systems"
+  - "05:00 - Core Concepts: Feedback Types and RewardModel"
+  - "10:00 - SelfRefinementLoop Architecture"
+  - "15:00 - Live Demo: Three-Iteration Self-Refinement"
+  - "25:00 - Integration Patterns: Feedback in Streaming Responses"
+  - "29:00 - Summary"
+prerequisites:
+  - "MS71_02 - LLMOps Module"
+  - "Module 12 - Challenge System"
+related_videos:
+  - "MS71_02 - LLMOps Module"
+  - "MS72_01 - Planning Module"
+  - "M14_02 - Multi-Pass Validation"
+```
+
+---
+
+## Module S7.2: Advanced AI/ML Modules — Part 2
+
+### Video MS72_01: Planning Module — HiPlan, MCTS, and Tree of Thoughts
+
+```yaml
+video_id: MS72_01
+title: "[Module S7.2] Planning Module — HiPlan, MCTS, and Tree of Thoughts"
+description: |
+  Give your AI agents the ability to plan ahead using the Planning module
+  (digital.vasic.planning). Master three complementary planning algorithms: HiPlan for
+  hierarchical decomposition, Monte Carlo Tree Search (MCTS) for exploratory planning, and
+  Tree of Thoughts for open-ended reasoning.
+
+  Learning Objectives:
+  - Choose the right planning algorithm for each task type
+  - Implement HiPlan with custom MilestoneGenerator and StepExecutor
+  - Configure MCTS with UCB exploration, action generators, and reward functions
+  - Build Tree of Thoughts with LLM-backed ThoughtGenerator and ThoughtEvaluator
+  - Integrate planning algorithms into HelixAgent's SpecKit orchestrator
+
+  Topics Covered:
+  - HiPlan: HierarchicalPlan, Milestone, PlanStep, LLMMilestoneGenerator
+  - MCTS: MCTSConfig, MCTSNode, CodeActionGenerator, CodeRewardFunction
+  - Tree of Thoughts: TreeOfThoughtsConfig, Thought, ThoughtNode, LLMThoughtEvaluator
+  - Algorithm selection guide: when to use HiPlan vs MCTS vs ToT
+  - Live demo: HiPlan decomposing a software feature; MCTS optimizing code
+  - Cost control: MaxDepth, MaxIterations, BranchingFactor tradeoffs
+  - HelixAgent adapter at internal/adapters/planning/
+
+  Prerequisites: Module S7.1.1 (Agentic), Module 9 (Optimization)
+
+  Resources:
+  - Module source: Planning/
+  - Adapter: internal/adapters/planning/adapter.go
+  - Challenge: challenges/scripts/planning_challenge.sh
+
+duration: "30:00"
+level: "Advanced"
+tags:
+  - HelixAgent
+  - planning
+  - HiPlan
+  - MCTS
+  - Monte Carlo Tree Search
+  - Tree of Thoughts
+  - digital.vasic.planning
+  - hierarchical planning
+  - autonomous agents
+  - AI reasoning
+  - lookahead
+timestamps:
+  - "00:00 - Introduction: Why Agents Need Planning"
+  - "05:00 - Core Concepts: Three Planning Algorithms Compared"
+  - "10:00 - HiPlan, MCTS, and ToT Data Types"
+  - "15:00 - Live Demo: HiPlan for Software Features; MCTS for Code"
+  - "25:00 - Integration Patterns: SpecKit and Debate System"
+  - "29:00 - Summary"
+prerequisites:
+  - "MS71_01 - Agentic Module"
+  - "Module 9 - Optimization Features"
+related_videos:
+  - "MS71_01 - Agentic Module"
+  - "MS72_02 - Benchmark Module"
+  - "M14_03 - Debate Orchestrator Framework"
+```
+
+---
+
+### Video MS72_02: Benchmark Module — Standardized LLM Evaluation
+
+```yaml
+video_id: MS72_02
+title: "[Module S7.2] Benchmark Module — Standardized LLM Provider Evaluation"
+description: |
+  Objectively compare LLM providers using the Benchmark module (digital.vasic.benchmark).
+  Run standardized benchmarks (MMLU, HumanEval, GSM8K, SWE-Bench, and more) as well as custom
+  domain benchmarks to make data-driven provider selection decisions.
+
+  Learning Objectives:
+  - Run MMLU, HumanEval, and GSM8K benchmarks against multiple providers
+  - Create custom benchmark datasets for domain-specific evaluation
+  - Interpret BenchmarkResult metrics: score, sub-scores, latency, cost
+  - Generate ComparisonReports with statistical significance testing
+  - Integrate benchmark results into HelixAgent's provider scoring and LLMsVerifier pipeline
+
+  Topics Covered:
+  - Supported benchmarks: MMLU, HumanEval, GSM8K, SWE-Bench, MBPP, LMSYS, HellaSwag, MATH
+  - BenchmarkRunner, RunConfig, BenchmarkResult, ComparisonReport types
+  - Custom benchmark workflow: define dataset, register, run, compare
+  - Statistical significance: bootstrapped confidence intervals and p-values
+  - Live demo: HumanEval comparison between DeepSeek-Coder and Claude-3.5-Sonnet
+  - Resource management: GOMAXPROCS limits, MaxExamples for CI vs nightly runs
+  - Storing results in PostgreSQL for trend analysis
+  - HelixAgent adapter at internal/adapters/benchmark/
+
+  Prerequisites: Module S7.1.2 (LLMOps), Module 14 (LLMsVerifier Integration)
+
+  Resources:
+  - Module source: Benchmark/
+  - Adapter: internal/adapters/benchmark/adapter.go
+  - Challenge: challenges/scripts/benchmark_challenge.sh
+
+duration: "30:00"
+level: "Advanced"
+tags:
+  - HelixAgent
+  - benchmark
+  - MMLU
+  - HumanEval
+  - GSM8K
+  - digital.vasic.benchmark
+  - LLM evaluation
+  - provider comparison
+  - BenchmarkRunner
+  - ComparisonReport
+  - A/B testing
+  - model quality
+timestamps:
+  - "00:00 - Introduction: Why Standardized Benchmarks Matter"
+  - "05:00 - Core Concepts: Supported Benchmarks and Key Types"
+  - "10:00 - BenchmarkRunner, RunConfig, BenchmarkResult"
+  - "15:00 - Live Demo: HumanEval on DeepSeek vs Claude"
+  - "25:00 - Integration Patterns: LLMsVerifier and Provider Promotions"
+  - "29:00 - Summary"
+prerequisites:
+  - "MS71_02 - LLMOps Module"
+  - "Module 14 - LLMsVerifier Integration"
+related_videos:
+  - "MS71_02 - LLMOps Module"
+  - "MS71_03 - SelfImprove Module"
+  - "M14_04 - LLMsVerifier Integration"
+```
+
+---
+
+### Module S7.1-S7.2: Summary Table
+
+| Video ID | Title | Duration | Level |
+|----------|-------|----------|-------|
+| MS71_01 | Agentic — Graph-Based Workflow Orchestration | 30:00 | Advanced |
+| MS71_02 | LLMOps — Evaluation, Experiments, Prompt Versioning | 30:00 | Advanced |
+| MS71_03 | SelfImprove — RLHF, Reward Modeling, Preference Optimization | 30:00 | Advanced |
+| MS72_01 | Planning — HiPlan, MCTS, Tree of Thoughts | 30:00 | Advanced |
+| MS72_02 | Benchmark — Standardized LLM Evaluation | 30:00 | Advanced |
+
+**Common Tags**: HelixAgent, advanced AI/ML, Go modules, extracted modules, digital.vasic,
+autonomous agents, LLM operations, self-improvement, planning algorithms, benchmarking
+
+---
+
+*Metadata Templates Version: 1.1.0*
 *Last Updated: February 2026*
-*Total Videos: 74*
+*Total Videos: 79 (74 original + 5 new AI/ML module videos)*

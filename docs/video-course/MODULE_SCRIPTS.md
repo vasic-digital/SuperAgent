@@ -1684,6 +1684,848 @@ cat configs/production-debate.yaml
 
 ---
 
-*Module Scripts Version: 1.0.0*
+---
+
+## Module S7.1: Advanced AI/ML Modules — Part 1 (Agentic, LLMOps, SelfImprove)
+
+### Section Overview
+
+This section covers three advanced extracted modules that extend HelixAgent with agentic workflow
+orchestration, LLM operations management, and AI self-improvement capabilities. Each module is an
+independent Go library (`digital.vasic.agentic`, `digital.vasic.llmops`,
+`digital.vasic.selfimprove`) usable standalone or via HelixAgent adapters.
+
+---
+
+### Video S7.1.1: Agentic Module — Graph-Based Workflow Orchestration (30 min)
+
+#### Part 1 — Introduction (5 min)
+
+**Opening Hook**:
+- "What if an AI agent could plan, execute, and correct its own multi-step workflows without human
+  intervention between each step?"
+
+**Talking Points**:
+- What the Agentic module provides:
+  - Graph-based workflow definition for autonomous AI agents
+  - Nodes represent individual steps; edges encode dependencies and branching
+  - Mutable `WorkflowState` shared across all nodes for stateful execution
+  - Planning, execution, and self-correction in a single framework
+- Module identity: `digital.vasic.agentic` (Go 1.24+)
+- Position in the HelixAgent ecosystem: used by `internal/agentic/` for orchestrating multi-step
+  agent tasks (code analysis → planning → execution → validation loops)
+- Architecture at a glance:
+
+```
+WorkflowGraph
+  ├── Node (handler func + metadata)
+  ├── Node
+  └── Edge (source → target, condition)
+
+WorkflowState (mutable, context-threaded)
+```
+
+**Visual Aids**:
+- Directed graph diagram: nodes as circles, edges as arrows with labels
+- Side-by-side comparison: linear pipeline vs graph-based workflow
+
+---
+
+#### Part 2 — Core Concepts (10 min)
+
+**Talking Points**:
+- `Workflow` — top-level orchestrator: builds the graph, resolves execution order, runs nodes
+- `WorkflowGraph` — pure structure: nodes map + edge list, no execution logic
+- `Node` — the unit of work:
+  - `ID` string — unique within graph
+  - `Handler NodeHandler` — the function that runs
+  - `Metadata map[string]interface{}` — arbitrary annotations
+- `WorkflowState` — thread-safe mutable bag passed to every handler
+- `NodeHandler` signature:
+  ```go
+  type NodeHandler func(ctx context.Context, state *WorkflowState, input interface{}) (*NodeOutput, error)
+  ```
+- `NodeOutput`:
+  - `NextNode string` — dynamic routing: which node runs next
+  - `Data interface{}` — payload forwarded to the next node
+  - `Done bool` — signals workflow termination from within a node
+- Edge semantics: static edges define graph topology; `NextNode` in output enables runtime routing
+- Error propagation: a node returning a non-nil error halts the workflow unless the graph defines
+  an error-recovery edge
+
+**Code Walkthrough**:
+```go
+import "digital.vasic.agentic/agentic"
+
+graph := &agentic.WorkflowGraph{
+    Nodes: map[string]*agentic.Node{
+        "plan":     {ID: "plan",     Handler: planHandler},
+        "execute":  {ID: "execute",  Handler: executeHandler},
+        "validate": {ID: "validate", Handler: validateHandler},
+    },
+    Edges: []agentic.Edge{
+        {From: "plan",    To: "execute"},
+        {From: "execute", To: "validate"},
+    },
+}
+
+wf := agentic.NewWorkflow(graph)
+state := agentic.NewWorkflowState()
+state.Set("goal", "refactor authentication module")
+
+result, err := wf.Run(ctx, "plan", state, nil)
+```
+
+**Visual Aids**:
+- Annotated code block with callouts for each key type
+
+---
+
+#### Part 3 — Live Demo (10 min)
+
+**Demo: Building a Three-Node Code-Review Agent**
+
+```go
+// Node 1: gather context
+gatherHandler := func(ctx context.Context, state *agentic.WorkflowState,
+    input interface{}) (*agentic.NodeOutput, error) {
+
+    filePath, _ := state.Get("file_path").(string)
+    code, err := os.ReadFile(filePath)
+    if err != nil {
+        return nil, fmt.Errorf("read file: %w", err)
+    }
+    state.Set("code", string(code))
+    return &agentic.NodeOutput{NextNode: "review", Data: string(code)}, nil
+}
+
+// Node 2: LLM code review
+reviewHandler := func(ctx context.Context, state *agentic.WorkflowState,
+    input interface{}) (*agentic.NodeOutput, error) {
+
+    code := input.(string)
+    // call LLM provider via HelixAgent adapter
+    review, err := llmClient.Complete(ctx, "Review this Go code:\n"+code)
+    if err != nil {
+        return nil, err
+    }
+    state.Set("review", review)
+    return &agentic.NodeOutput{NextNode: "report", Data: review}, nil
+}
+
+// Node 3: generate report
+reportHandler := func(ctx context.Context, state *agentic.WorkflowState,
+    input interface{}) (*agentic.NodeOutput, error) {
+
+    review := input.(string)
+    fmt.Printf("=== Code Review Report ===\n%s\n", review)
+    return &agentic.NodeOutput{Done: true}, nil
+}
+```
+
+**Running the demo**:
+```bash
+# Build and run the workflow
+go test ./agentic/... -v -run TestWorkflow_CodeReview
+
+# Output shows each node executing in order
+# PASS: plan -> execute -> validate all ran and state threaded correctly
+```
+
+---
+
+#### Part 4 — Integration Patterns (5 min)
+
+**Talking Points**:
+- HelixAgent adapter location: `internal/adapters/agentic/adapter.go`
+- How HelixAgent uses Agentic:
+  - SpecKit orchestrator (`internal/services/speckit_orchestrator.go`) uses workflow graphs for
+    the 7-phase development flow (Constitution → Specify → Clarify → Plan → Tasks → Analyze →
+    Implement)
+  - Each SpecKit phase is a `Node`; phase caching writes to `WorkflowState`
+- Standalone usage pattern:
+  ```go
+  // Direct import, no HelixAgent dependency required
+  import "digital.vasic.agentic/agentic"
+  ```
+- When to use Agentic vs plain sequential code:
+  - Use Agentic when: branching on LLM output, retry/self-correction loops, parallel sub-graphs
+  - Use plain sequential code when: exactly one linear path, no dynamic routing
+- Testing patterns: unit-test each `NodeHandler` independently; integration-test the full graph
+  with real state
+
+**Demo**:
+```bash
+# Run with HelixAgent adapter
+curl -X POST http://localhost:7061/v1/agentic/workflows \
+  -H "Content-Type: application/json" \
+  -d '{"workflow_id": "code-review", "input": {"file_path": "main.go"}}'
+```
+
+---
+
+### Video S7.1.2: LLMOps Module — Evaluation, Experiments, and Prompt Versioning (30 min)
+
+#### Part 1 — Introduction (5 min)
+
+**Opening Hook**:
+- "Deploying an LLM is easy. Knowing whether it's getting better or worse over time — that requires
+  LLMOps."
+
+**Talking Points**:
+- What LLMOps means in practice:
+  - Continuous evaluation: run your LLM against a dataset and track quality over time
+  - A/B experiments: compare two model configurations on live traffic
+  - Dataset management: golden, synthetic, and production datasets
+  - Prompt versioning: track prompt changes and their impact on quality
+- Module identity: `digital.vasic.llmops` (Go 1.24+)
+- Position in HelixAgent: used by the LLMsVerifier startup pipeline and provider scoring to detect
+  regressions and run controlled experiments when adding new providers
+- Why a standalone module: LLMOps concerns are orthogonal to inference — they belong in a separate
+  deployable library that any LLM application can adopt
+
+**Visual Aids**:
+- LLMOps lifecycle diagram: Deploy → Evaluate → Experiment → Version → Iterate
+
+---
+
+#### Part 2 — Core Concepts (10 min)
+
+**Talking Points**:
+- `InMemoryContinuousEvaluator`:
+  - Runs an evaluation pipeline against a `Dataset` using a pluggable `LLMClient`
+  - Produces an `EvaluationRun` with per-example scores and aggregate metrics
+  - "Continuous" means it can be scheduled (cron or event-driven) to detect drift
+- `InMemoryExperimentManager`:
+  - Creates and tracks A/B experiments between two model configurations (control vs treatment)
+  - Assigns traffic splits, collects results, computes statistical significance
+  - `Experiment` struct: `ID`, `Name`, `ControlConfig`, `TreatmentConfig`, `TrafficSplit float64`
+- `Dataset`:
+  ```go
+  type Dataset struct {
+      ID       string
+      Name     string
+      Type     DatasetType // golden | synthetic | production
+      Examples []Example
+  }
+
+  type Example struct {
+      ID       string
+      Input    string
+      Expected string // optional: ground truth for scored evaluation
+  }
+  ```
+- `EvaluationRun`:
+  ```go
+  type EvaluationRun struct {
+      ID          string
+      DatasetID   string
+      ModelConfig ModelConfig
+      StartedAt   time.Time
+      CompletedAt time.Time
+      Results     []ExampleResult
+      AggMetrics  AggregateMetrics
+  }
+  ```
+- Prompt versioning: store prompt templates with semantic version tags, diff between versions,
+  roll back when a new version causes score regressions
+
+**Code Walkthrough**:
+```go
+import "digital.vasic.llmops/llmops"
+
+// Create evaluator
+evaluator := llmops.NewInMemoryContinuousEvaluator(llmClient)
+
+// Register a golden dataset
+dataset := &llmops.Dataset{
+    ID:   "code-generation-v1",
+    Type: llmops.DatasetTypeGolden,
+    Examples: []llmops.Example{
+        {ID: "ex1", Input: "Write a Go HTTP handler", Expected: "func handler(w http.ResponseWriter, r *http.Request)"},
+    },
+}
+evaluator.RegisterDataset(dataset)
+
+// Run evaluation
+run, err := evaluator.Evaluate(ctx, "code-generation-v1", modelCfg)
+fmt.Printf("Mean score: %.3f\n", run.AggMetrics.MeanScore)
+```
+
+---
+
+#### Part 3 — Live Demo (10 min)
+
+**Demo: Running an A/B Experiment**
+
+```go
+mgr := llmops.NewInMemoryExperimentManager()
+
+exp, err := mgr.CreateExperiment(ctx, &llmops.Experiment{
+    Name: "deepseek-vs-claude-code-gen",
+    ControlConfig: llmops.ModelConfig{
+        Provider: "deepseek",
+        Model:    "deepseek-coder",
+    },
+    TreatmentConfig: llmops.ModelConfig{
+        Provider: "claude",
+        Model:    "claude-3.5-sonnet",
+    },
+    TrafficSplit: 0.5, // 50/50
+})
+
+// Record results as traffic flows through
+for _, result := range liveResults {
+    mgr.RecordResult(ctx, exp.ID, result)
+}
+
+// Get winner
+summary, err := mgr.GetSummary(ctx, exp.ID)
+fmt.Printf("Winner: %s (p-value: %.4f)\n", summary.Winner, summary.PValue)
+```
+
+```bash
+# Run tests
+go test ./llmops/... -v -run TestExperimentManager
+
+# Check HelixAgent experiment endpoint
+curl http://localhost:7061/v1/llmops/experiments | jq
+curl http://localhost:7061/v1/llmops/evaluations/latest | jq
+```
+
+---
+
+#### Part 4 — Integration Patterns (5 min)
+
+**Talking Points**:
+- Adapter location: `internal/adapters/llmops/adapter.go`
+- How HelixAgent uses LLMOps:
+  - LLMsVerifier startup pipeline runs a mini evaluation against each provider using a built-in
+    golden dataset (the 8-test verification pipeline)
+  - Provider scoring (ResponseSpeed, CostEffectiveness, etc.) feeds into `EvaluationRun` metrics
+  - Experiment manager can be used to A/B test provider upgrades (e.g., testing a new Claude model
+    against the current one before promoting it)
+- Operational pattern — running evaluation on a schedule:
+  ```go
+  ticker := time.NewTicker(1 * time.Hour)
+  for range ticker.C {
+      run, _ := evaluator.Evaluate(ctx, "production-golden", currentConfig)
+      if run.AggMetrics.MeanScore < threshold {
+          alertOps("Score regression detected")
+      }
+  }
+  ```
+- Prompt versioning workflow:
+  1. `mgr.RegisterPromptVersion(name, version, template)` — stores the prompt
+  2. Run evaluation against both old and new versions
+  3. `mgr.PromotePrompt(name, version)` if new version wins
+  4. `mgr.RollbackPrompt(name)` on regression
+
+---
+
+### Video S7.1.3: SelfImprove Module — RLHF, Reward Modeling, and Preference Optimization (30 min)
+
+#### Part 1 — Introduction (5 min)
+
+**Opening Hook**:
+- "The most powerful AI systems don't just respond — they learn from every interaction to become
+  measurably better over time."
+
+**Talking Points**:
+- What AI self-improvement means in a production system:
+  - Reinforcement Learning from Human Feedback (RLHF): collect preference signals, train reward
+    models, update response policies
+  - Reward modeling: learn to predict which responses humans prefer without asking them every time
+  - Preference optimization: directly optimize the model to generate higher-rewarded outputs
+  - Continuous self-refinement: iterative loops where the system critiques and improves its own
+    outputs
+- Module identity: `digital.vasic.selfimprove` (Go 1.24+)
+- This module provides the infrastructure layer — it does not train neural networks itself; instead
+  it manages the data collection, scoring, and feedback routing that feeds into fine-tuning
+  pipelines
+- Real-world use case: HelixAgent collects thumbs-up/thumbs-down signals from CLI agent users →
+  SelfImprove aggregates these → generates training data → triggers provider fine-tuning jobs
+
+**Visual Aids**:
+- RLHF loop diagram: Human Feedback → Reward Model → Policy Update → Better Responses → repeat
+
+---
+
+#### Part 2 — Core Concepts (10 min)
+
+**Talking Points**:
+- Core package: `selfimprove` — reward models, feedback collection, optimization
+- Feedback collection types:
+  - `ExplicitFeedback` — user-provided (thumbs up/down, star ratings, corrections)
+  - `ImplicitFeedback` — inferred from behavior (copy, follow-up questions, abandonment)
+  - `PreferencePair` — two responses where one is preferred (used for DPO/RLHF training)
+- `RewardModel` interface:
+  ```go
+  type RewardModel interface {
+      Score(ctx context.Context, prompt, response string) (float64, error)
+      Train(ctx context.Context, pairs []PreferencePair) error
+      Evaluate(ctx context.Context, dataset []PreferencePair) (*RewardMetrics, error)
+  }
+  ```
+- `FeedbackCollector`:
+  - Buffers incoming feedback signals
+  - Deduplicates by session and prompt hash
+  - Exports batches for reward model training
+- `PreferenceOptimizer`:
+  - Takes a `RewardModel` and a set of candidate responses
+  - Returns the highest-scored response (at inference time)
+  - Can trigger DPO (Direct Preference Optimization) training runs
+- `SelfRefinementLoop`:
+  - Generates an initial response
+  - Critiques it using a second LLM call or a reward model
+  - Regenerates with the critique as context
+  - Stops when score exceeds threshold or max iterations reached
+
+**Code Walkthrough**:
+```go
+import "digital.vasic.selfimprove/selfimprove"
+
+// Collect feedback
+collector := selfimprove.NewFeedbackCollector()
+collector.Record(selfimprove.ExplicitFeedback{
+    PromptHash: hash(prompt),
+    ResponseID: resp.ID,
+    Signal:     selfimprove.SignalThumbsUp,
+    UserID:     "user-123",
+})
+
+// Score a candidate response
+rewardModel := selfimprove.NewInMemoryRewardModel()
+score, err := rewardModel.Score(ctx, prompt, candidateResponse)
+fmt.Printf("Reward score: %.3f\n", score)
+```
+
+---
+
+#### Part 3 — Live Demo (10 min)
+
+**Demo: Self-Refinement Loop**
+
+```go
+refiner := selfimprove.NewSelfRefinementLoop(selfimprove.SelfRefinementConfig{
+    MaxIterations:  3,
+    ScoreThreshold: 0.85,
+    CritiquePrompt: "Critique this response for accuracy, clarity, and completeness: ",
+    RefinePrompt:   "Improve this response based on the critique: ",
+})
+
+initial := "The quick sort algorithm works by partitioning arrays."
+refined, metrics, err := refiner.Refine(ctx, prompt, initial, llmClient, rewardModel)
+
+fmt.Printf("Iterations: %d\n", metrics.Iterations)
+fmt.Printf("Initial score: %.3f → Final score: %.3f\n",
+    metrics.InitialScore, metrics.FinalScore)
+fmt.Printf("Refined response: %s\n", refined)
+```
+
+```bash
+# Run the self-improvement tests
+go test ./selfimprove/... -v -run TestSelfRefinement
+
+# Check improvement metrics via HelixAgent
+curl http://localhost:7061/v1/selfimprove/metrics | jq
+```
+
+---
+
+#### Part 4 — Integration Patterns (5 min)
+
+**Talking Points**:
+- Adapter location: `internal/adapters/selfimprove/adapter.go`
+- How HelixAgent integrates SelfImprove:
+  - The AI Debate multi-pass validation (Modules 14.2) is conceptually a self-refinement loop;
+    SelfImprove provides the formal framework
+  - CLI agent interactions generate implicit feedback (session length, follow-up rate)
+  - The `FeedbackCollector` is wired into the streaming response handler
+- End-to-end flow with HelixAgent:
+  ```
+  User request → HelixAgent streams response
+  → FeedbackCollector captures implicit signals
+  → Nightly batch: RewardModel.Train(pairs)
+  → Next day: PreferenceOptimizer uses updated model
+  → Better responses on similar prompts
+  ```
+- Production considerations:
+  - Feedback data is PII-sensitive: anonymize before training
+  - Reward model drift: re-evaluate monthly against a held-out golden set
+  - Cold-start problem: use rule-based scoring for the first 1000 interactions
+
+---
+
+## Module S7.2: Advanced AI/ML Modules — Part 2 (Planning, Benchmark)
+
+### Section Overview
+
+This section covers two more advanced modules: Planning (HiPlan, MCTS, Tree of Thoughts) and
+Benchmark (standardized LLM evaluation across MMLU, HumanEval, GSM8K, and custom suites).
+
+---
+
+### Video S7.2.1: Planning Module — HiPlan, MCTS, and Tree of Thoughts (30 min)
+
+#### Part 1 — Introduction (5 min)
+
+**Opening Hook**:
+- "An LLM that can only respond to prompts is a calculator. An LLM that can plan ahead is an
+  agent."
+
+**Talking Points**:
+- The problem with single-shot LLM responses for complex tasks:
+  - No lookahead: the model commits to a path without exploring alternatives
+  - No backtracking: a wrong sub-step contaminates all subsequent reasoning
+  - No hierarchical decomposition: large tasks exceed context windows
+- What the Planning module solves:
+  - Three complementary algorithms covering different planning regimes
+  - **HiPlan** — hierarchical decomposition for structured, known-topology tasks
+  - **MCTS** — Monte Carlo Tree Search for exploratory planning with uncertainty
+  - **Tree of Thoughts** — breadth-first thought exploration with LLM-powered evaluation
+- Module identity: `digital.vasic.planning` (Go 1.24+)
+- When to use which algorithm:
+  - HiPlan: multi-phase projects with known milestones (software development, research pipelines)
+  - MCTS: game-like tasks where you can simulate outcomes (code generation with test feedback)
+  - ToT: open-ended reasoning where the "right" path is unknown (math proofs, strategic decisions)
+
+**Visual Aids**:
+- Side-by-side comparison: HiPlan tree (top-down), MCTS game tree, ToT thought branches
+
+---
+
+#### Part 2 — Core Concepts (10 min)
+
+**Talking Points**:
+
+**HiPlan (Hierarchical Planning)**:
+```go
+type HiPlan struct {
+    config    *HiPlanConfig
+    generator MilestoneGenerator
+    executor  StepExecutor
+}
+
+type HiPlanConfig struct {
+    MaxMilestones   int
+    MaxStepsPerMile int
+    TimeoutPerStep  time.Duration
+}
+
+// Interfaces for extension
+type MilestoneGenerator interface {
+    GenerateMilestones(ctx context.Context, goal string) ([]Milestone, error)
+}
+
+type StepExecutor interface {
+    ExecuteStep(ctx context.Context, step PlanStep, state interface{}) (interface{}, error)
+}
+```
+
+**MCTS**:
+```go
+type MCTSConfig struct {
+    MaxIterations  int
+    ExplorationC   float64 // UCB exploration constant
+    MaxDepth       int
+    RolloutDepth   int
+}
+
+// Strategy interfaces
+type MCTSActionGenerator interface {
+    GenerateActions(ctx context.Context, node *MCTSNode) ([]interface{}, error)
+}
+type MCTSRewardFunction interface {
+    Reward(ctx context.Context, node *MCTSNode, action interface{}) (float64, error)
+}
+```
+
+**Tree of Thoughts**:
+```go
+type TreeOfThoughtsConfig struct {
+    BranchingFactor  int
+    MaxDepth         int
+    BeamWidth        int
+    EvaluationPrompt string
+}
+
+type ThoughtGenerator interface {
+    Generate(ctx context.Context, parent *ThoughtNode) ([]Thought, error)
+}
+type ThoughtEvaluator interface {
+    Evaluate(ctx context.Context, thought Thought) (float64, error)
+}
+```
+
+---
+
+#### Part 3 — Live Demo (10 min)
+
+**Demo 1 — HiPlan for a software feature**:
+```go
+plan := planning.NewHiPlan(planning.DefaultHiPlanConfig(),
+    &planning.LLMMilestoneGenerator{Client: llmClient},
+    &myStepExecutor{},
+)
+
+result, err := plan.Execute(ctx, "Implement user authentication with JWT")
+for _, milestone := range result.Milestones {
+    fmt.Printf("[Milestone] %s\n", milestone.Title)
+    for _, step := range milestone.Steps {
+        fmt.Printf("  [Step] %s: %s\n", step.ID, step.Description)
+    }
+}
+```
+
+**Demo 2 — MCTS for code optimization**:
+```go
+mcts := planning.NewMCTS(planning.DefaultMCTSConfig(),
+    &planning.CodeActionGenerator{},
+    &planning.CodeRewardFunction{TestRunner: runner},
+    &planning.DefaultRolloutPolicy{},
+)
+
+result, err := mcts.Search(ctx, initialState)
+fmt.Printf("Best action: %v (score: %.3f)\n", result.BestAction, result.BestScore)
+```
+
+```bash
+# Run planning tests
+go test ./planning/... -v -run TestHiPlan_Execute
+go test ./planning/... -v -run TestMCTS_Search
+go test ./planning/... -v -run TestTreeOfThoughts_Run
+
+# HelixAgent planning endpoint
+curl -X POST http://localhost:7061/v1/planning/run \
+  -H "Content-Type: application/json" \
+  -d '{"algorithm": "hiplan", "goal": "Build REST API for user management"}'
+```
+
+---
+
+#### Part 4 — Integration Patterns (5 min)
+
+**Talking Points**:
+- Adapter location: `internal/adapters/planning/adapter.go`
+- How HelixAgent uses Planning:
+  - SpecKit orchestrator uses HiPlan to decompose large refactoring tasks into milestones and steps
+    (`GranularityRefactoring` triggers a HiPlan execution before task assignment)
+  - The AI Debate system optionally uses Tree of Thoughts to explore multiple response strategies
+    before committing to the Proposal phase
+  - MCTS is used in the code-generation skill to search for optimal implementations given unit test
+    feedback
+- Choosing algorithm parameters:
+  - HiPlan: `MaxMilestones=5` for most tasks; increase only for very large projects
+  - MCTS: `MaxIterations=100` is a good start; `ExplorationC=1.414` (sqrt(2)) is the classic UCB
+    constant
+  - ToT: `BranchingFactor=3`, `MaxDepth=4`, `BeamWidth=2` balances quality vs cost
+- Cost control: each tree node = 1 LLM call; set `MaxDepth` conservatively in production
+
+---
+
+### Video S7.2.2: Benchmark Module — Standardized LLM Evaluation (30 min)
+
+#### Part 1 — Introduction (5 min)
+
+**Opening Hook**:
+- "Everyone claims their LLM is the best. The Benchmark module gives you the data to know for
+  sure — against your actual workloads, not marketing benchmarks."
+
+**Talking Points**:
+- Why standardized benchmarks matter:
+  - Published benchmarks (MMLU, HumanEval, GSM8K) measure specific capabilities under controlled
+    conditions — they may not reflect your use case
+  - You need both: standard benchmarks for apples-to-apples provider comparison, AND custom
+    benchmarks for your domain
+  - Benchmarking is essential before promoting a provider upgrade (ties into LLMOps evaluation)
+- Supported benchmarks out of the box:
+  - **MMLU** — Massive Multitask Language Understanding (57 subjects, multiple choice)
+  - **HumanEval** — Python code generation (164 problems, pass@k metric)
+  - **GSM8K** — Grade school math word problems (8500 problems)
+  - **SWE-Bench** — Software engineering tasks on real GitHub issues
+  - **MBPP** — Mostly Basic Python Problems
+  - **LMSYS** — Chatbot Arena style head-to-head comparison
+  - **HellaSwag** — Commonsense NLI
+  - **MATH** — Competition mathematics
+  - **Custom** — Bring your own benchmark suite
+- Module identity: `digital.vasic.benchmark` (Go 1.24+)
+
+**Visual Aids**:
+- Benchmark comparison table: which benchmark measures what capability
+
+---
+
+#### Part 2 — Core Concepts (10 min)
+
+**Talking Points**:
+- Core package: `benchmark` — runner, types, integration adapters, metrics
+- `BenchmarkRunner`:
+  ```go
+  type BenchmarkRunner interface {
+      Run(ctx context.Context, cfg *RunConfig) (*BenchmarkResult, error)
+      RunSuite(ctx context.Context, cfgs []*RunConfig) ([]*BenchmarkResult, error)
+      Compare(ctx context.Context, results []*BenchmarkResult) (*ComparisonReport, error)
+  }
+  ```
+- `RunConfig`:
+  ```go
+  type RunConfig struct {
+      BenchmarkID  string          // "mmlu", "humaneval", "gsm8k", "custom"
+      Provider     string
+      Model        string
+      MaxExamples  int             // limit for fast runs
+      Temperature  float64
+      Timeout      time.Duration
+      CustomDataset *Dataset       // for custom benchmarks
+  }
+  ```
+- `BenchmarkResult`:
+  ```go
+  type BenchmarkResult struct {
+      BenchmarkID  string
+      Provider     string
+      Model        string
+      Score        float64         // primary metric (accuracy, pass@1, etc.)
+      SubScores    map[string]float64 // per-category or per-subject scores
+      Latency      LatencyStats    // p50, p95, p99
+      Cost         CostStats       // tokens, estimated USD
+      RunAt        time.Time
+  }
+  ```
+- `ComparisonReport`:
+  - Side-by-side provider comparison
+  - Statistical significance testing (bootstrapped confidence intervals)
+  - Recommendation: which provider to use for which task type
+- Integration adapters: each benchmark has a dedicated adapter that handles dataset loading,
+  prompt formatting, answer extraction, and scoring
+
+---
+
+#### Part 3 — Live Demo (10 min)
+
+**Demo: Running benchmarks and comparing providers**
+
+```go
+runner := benchmark.NewBenchmarkRunner(benchmark.RunnerConfig{
+    Providers: []benchmark.ProviderConfig{
+        {Name: "deepseek", Model: "deepseek-coder"},
+        {Name: "claude",   Model: "claude-3.5-sonnet"},
+    },
+    Parallelism: 4,
+    OutputDir:   "./benchmark-results",
+})
+
+// Run HumanEval on two providers
+results, err := runner.RunSuite(ctx, []*benchmark.RunConfig{
+    {BenchmarkID: "humaneval", Provider: "deepseek", Model: "deepseek-coder", MaxExamples: 50},
+    {BenchmarkID: "humaneval", Provider: "claude",   Model: "claude-3.5-sonnet", MaxExamples: 50},
+})
+
+// Compare
+report, err := runner.Compare(ctx, results)
+for _, entry := range report.Ranking {
+    fmt.Printf("%s/%s: %.1f%% (p95 latency: %dms)\n",
+        entry.Provider, entry.Model,
+        entry.Score*100,
+        entry.Latency.P95.Milliseconds())
+}
+```
+
+```bash
+# Run via Make
+GOMAXPROCS=2 nice -n 19 go test ./benchmark/... -v -run TestBenchmarkRunner
+
+# Run via HelixAgent CLI
+curl -X POST http://localhost:7061/v1/benchmark/run \
+  -H "Content-Type: application/json" \
+  -d '{
+    "benchmark": "humaneval",
+    "providers": ["deepseek", "claude"],
+    "max_examples": 50
+  }' | jq '.ranking'
+
+# Get latest comparison report
+curl http://localhost:7061/v1/benchmark/reports/latest | jq
+```
+
+---
+
+#### Part 4 — Integration Patterns (5 min)
+
+**Talking Points**:
+- Adapter location: `internal/adapters/benchmark/adapter.go`
+- How HelixAgent uses Benchmark:
+  - LLMsVerifier startup pipeline runs a lightweight 8-test verification using the Benchmark runner
+    under the hood (the verification pipeline IS a benchmark suite)
+  - The `CostEffectiveness` and `ModelEfficiency` scoring components pull from BenchmarkResult
+    metrics
+  - Provider promotions: before `SVC_*` overrides promote a new model to production, the Benchmark
+    adapter runs a quick HumanEval/GSM8K suite to gate the promotion
+- Custom benchmark workflow:
+  ```go
+  // 1. Define your domain dataset
+  dataset := &benchmark.Dataset{
+      ID: "my-company-sql-tasks",
+      Examples: []benchmark.Example{
+          {Input: "Write SQL to find top 10 customers by revenue", Expected: "SELECT ..."},
+      },
+  }
+
+  // 2. Register and run
+  runner.RegisterCustomDataset(dataset)
+  result, _ := runner.Run(ctx, &benchmark.RunConfig{
+      BenchmarkID:   "custom",
+      CustomDataset: dataset,
+      Provider:      "deepseek",
+      Model:         "deepseek-chat",
+  })
+  ```
+- Resource management: benchmark runs are compute-intensive; always use `GOMAXPROCS=2`, `nice -n
+  19`, `MaxExamples` limits in CI/CD. Full benchmark suites belong in scheduled nightly jobs, not
+  pre-commit hooks.
+- Storing results: `BenchmarkResult` objects are persisted to PostgreSQL via the Database adapter,
+  enabling trend analysis over weeks and months
+
+---
+
+## Appendix E: AI/ML Module Integration Reference
+
+### Module Dependency Map
+
+```
+HelixAgent core
+  ├── internal/adapters/agentic/     → digital.vasic.agentic
+  ├── internal/adapters/llmops/      → digital.vasic.llmops
+  ├── internal/adapters/selfimprove/ → digital.vasic.selfimprove
+  ├── internal/adapters/planning/    → digital.vasic.planning
+  └── internal/adapters/benchmark/  → digital.vasic.benchmark
+```
+
+### go.mod replace directives (development)
+
+```go
+replace (
+    digital.vasic.agentic      => ./Agentic
+    digital.vasic.llmops       => ./LLMOps
+    digital.vasic.selfimprove  => ./SelfImprove
+    digital.vasic.planning     => ./Planning
+    digital.vasic.benchmark    => ./Benchmark
+)
+```
+
+### Challenge Scripts
+
+```bash
+./challenges/scripts/agentic_challenge.sh       # Workflow orchestration validation
+./challenges/scripts/llmops_challenge.sh        # Evaluation pipeline validation
+./challenges/scripts/selfimprove_challenge.sh   # RLHF loop validation
+./challenges/scripts/planning_challenge.sh      # HiPlan/MCTS/ToT validation
+./challenges/scripts/benchmark_challenge.sh     # Provider benchmark comparison
+```
+
+---
+
+*Module Scripts Version: 1.1.0*
 *Last Updated: February 2026*
-*Total Videos: 74*
+*Total Videos: 84 (74 original + 5 new AI/ML module videos + 5 demos)*

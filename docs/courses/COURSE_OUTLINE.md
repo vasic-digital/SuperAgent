@@ -836,6 +836,272 @@ Upon completion of this course, participants will be able to:
 
 ---
 
+## Module S7.1: Advanced AI/ML Modules — Part 1 (150 minutes)
+
+### Prerequisites
+
+- Modules 1-3 completed (HelixAgent basics, configuration)
+- Go 1.24+ development environment
+- Familiarity with Go interfaces and context.Context
+- HelixAgent running locally with at least one LLM provider configured
+- Understanding of Module 7 (Plugin Architecture) recommended
+
+### Learning Objectives
+
+Upon completion of this section, participants will be able to:
+
+1. Build autonomous AI agents using graph-based workflows with the Agentic module
+2. Implement continuous evaluation pipelines and A/B experiments with the LLMOps module
+3. Collect feedback, train reward models, and run self-refinement loops with the SelfImprove module
+4. Integrate all three modules via HelixAgent adapters
+5. Write tests and challenges following the 100% coverage standard for each module
+
+### Estimated Duration: 150 minutes (3 × 30-minute videos)
+
+---
+
+#### S7.1.1: Agentic Module — Graph-Based Workflow Orchestration (30 min)
+
+**Module**: `digital.vasic.agentic` | **Source**: `Agentic/` | **Adapter**: `internal/adapters/agentic/`
+
+**Topics**:
+- Graph-based workflow definition: Workflow, WorkflowGraph, Node, Edge
+- NodeHandler signature: `func(ctx, state, input) (*NodeOutput, error)`
+- WorkflowState: mutable context threaded through all nodes
+- Dynamic routing via `NodeOutput.NextNode`
+- Self-correction patterns: error edges, retry nodes
+- HelixAgent integration: SpecKit orchestrator uses Agentic for the 7-phase development flow
+
+**Live Demo**: Three-node code-review agent (gather context → LLM review → generate report)
+
+**Challenge**: `./challenges/scripts/agentic_challenge.sh`
+
+**Key Types**:
+```go
+type Workflow struct{ ... }
+type WorkflowGraph struct {
+    Nodes map[string]*Node
+    Edges []Edge
+}
+type Node struct {
+    ID       string
+    Handler  NodeHandler
+    Metadata map[string]interface{}
+}
+type NodeHandler func(ctx context.Context, state *WorkflowState,
+    input interface{}) (*NodeOutput, error)
+type WorkflowState struct{ ... } // thread-safe get/set
+type NodeOutput struct {
+    NextNode string
+    Data     interface{}
+    Done     bool
+}
+```
+
+---
+
+#### S7.1.2: LLMOps Module — Evaluation, Experiments, and Prompt Versioning (30 min)
+
+**Module**: `digital.vasic.llmops` | **Source**: `LLMOps/` | **Adapter**: `internal/adapters/llmops/`
+
+**Topics**:
+- Continuous evaluation: InMemoryContinuousEvaluator, Dataset (golden/synthetic/production)
+- EvaluationRun: per-example results, AggregateMetrics (MeanScore)
+- A/B experiment management: InMemoryExperimentManager, Experiment, TrafficSplit
+- Statistical significance: p-values, confidence intervals on experiment outcomes
+- Prompt versioning: register, compare, promote, rollback
+- HelixAgent integration: LLMsVerifier startup pipeline uses evaluation under the hood; provider
+  promotions gated by benchmark results
+
+**Live Demo**: A/B experiment — DeepSeek-Coder vs Claude-3.5-Sonnet on code generation dataset
+
+**Challenge**: `./challenges/scripts/llmops_challenge.sh`
+
+**Key Types**:
+```go
+type InMemoryContinuousEvaluator struct{ ... }
+type InMemoryExperimentManager struct{ ... }
+type Dataset struct {
+    ID       string
+    Type     DatasetType // golden | synthetic | production
+    Examples []Example
+}
+type EvaluationRun struct {
+    Score      float64
+    AggMetrics AggregateMetrics
+    Results    []ExampleResult
+}
+```
+
+---
+
+#### S7.1.3: SelfImprove Module — RLHF, Reward Modeling, and Preference Optimization (30 min)
+
+**Module**: `digital.vasic.selfimprove` | **Source**: `SelfImprove/` | **Adapter**: `internal/adapters/selfimprove/`
+
+**Topics**:
+- Feedback types: ExplicitFeedback (thumbs up/down), ImplicitFeedback (behavioral), PreferencePair
+- RewardModel interface: Score, Train, Evaluate
+- FeedbackCollector: buffer, deduplicate, batch export for training
+- SelfRefinementLoop: initial response → critique → refine → score → iterate
+- Direct Preference Optimization (DPO) training data generation
+- PII considerations: anonymize feedback data before training
+- HelixAgent integration: FeedbackCollector wired into streaming response handler
+
+**Live Demo**: SelfRefinementLoop improving a code explanation through 3 iterations, showing score
+progression from 0.62 to 0.89
+
+**Challenge**: `./challenges/scripts/selfimprove_challenge.sh`
+
+**Key Types**:
+```go
+type RewardModel interface {
+    Score(ctx context.Context, prompt, response string) (float64, error)
+    Train(ctx context.Context, pairs []PreferencePair) error
+}
+type SelfRefinementLoop struct{ ... }
+type SelfRefinementConfig struct {
+    MaxIterations  int
+    ScoreThreshold float64
+    CritiquePrompt string
+    RefinePrompt   string
+}
+```
+
+---
+
+### Hands-On Lab: AI Agent Self-Improvement Pipeline
+
+**Duration**: 45 minutes | **Difficulty**: Advanced
+
+**Objective**: Build a complete pipeline that:
+1. Defines a three-node Agentic workflow for code review
+2. Runs LLMOps evaluation to measure baseline code review quality
+3. Applies SelfImprove to refine low-scoring code reviews
+4. Re-evaluates to confirm quality improvement
+
+**Assessment**: `docs/courses/assessments/QUIZ_MODULE_S71_S72.md`
+
+---
+
+## Module S7.2: Advanced AI/ML Modules — Part 2 (60 minutes)
+
+### Prerequisites
+
+- Module S7.1 completed (Agentic, LLMOps, SelfImprove)
+- Module 9 (Optimization Features) recommended
+- Module 14 (LLMsVerifier Integration) recommended for Benchmark integration
+
+### Learning Objectives
+
+Upon completion of this section, participants will be able to:
+
+1. Select the appropriate planning algorithm (HiPlan, MCTS, Tree of Thoughts) for a given task
+2. Implement custom MilestoneGenerator, StepExecutor, action generators, and reward functions
+3. Run standardized benchmarks (MMLU, HumanEval, GSM8K) against multiple LLM providers
+4. Define custom domain benchmark datasets and interpret ComparisonReports
+5. Gate provider promotions using benchmark results integrated with LLMsVerifier
+
+### Estimated Duration: 60 minutes (2 × 30-minute videos)
+
+---
+
+#### S7.2.1: Planning Module — HiPlan, MCTS, and Tree of Thoughts (30 min)
+
+**Module**: `digital.vasic.planning` | **Source**: `Planning/` | **Adapter**: `internal/adapters/planning/`
+
+**Topics**:
+- HiPlan: hierarchical decomposition for structured tasks with known milestone topology
+  - `HiPlan`, `HiPlanConfig`, `MilestoneGenerator`, `StepExecutor`
+  - `HierarchicalPlan`, `Milestone`, `PlanStep`, `PlanResult`
+  - `LLMMilestoneGenerator` — LLM-backed milestone generation
+- MCTS: Monte Carlo Tree Search for exploratory planning with uncertainty
+  - `MCTS`, `MCTSConfig` (MaxIterations, ExplorationC, MaxDepth)
+  - `MCTSActionGenerator`, `MCTSRewardFunction`, `MCTSRolloutPolicy`
+  - `MCTSNode`, `MCTSResult`
+  - `CodeActionGenerator`, `CodeRewardFunction`, `DefaultRolloutPolicy`
+- Tree of Thoughts: breadth-first thought exploration for open-ended reasoning
+  - `TreeOfThoughts`, `TreeOfThoughtsConfig` (BranchingFactor, MaxDepth, BeamWidth)
+  - `ThoughtGenerator`, `ThoughtEvaluator`
+  - `Thought`, `ThoughtNode`, `ToTResult`
+  - `LLMThoughtGenerator`, `LLMThoughtEvaluator`
+- Algorithm selection guide:
+  - HiPlan: multi-phase software projects, research pipelines (known topology)
+  - MCTS: code generation with test feedback, game-like tasks (simulatable outcomes)
+  - ToT: math proofs, strategic decisions, open-ended reasoning (unknown right path)
+- Cost control: MaxDepth, MaxIterations, BranchingFactor vs quality tradeoffs
+- HelixAgent integration: SpecKit uses HiPlan; Debate system optionally uses ToT
+
+**Live Demo**: HiPlan decomposing "Implement JWT authentication" → milestones + steps
+
+**Challenge**: `./challenges/scripts/planning_challenge.sh`
+
+**Key Configuration**:
+```go
+// HiPlan defaults
+planning.DefaultHiPlanConfig() // MaxMilestones=5, MaxStepsPerMile=10
+
+// MCTS defaults (UCB constant sqrt(2))
+planning.DefaultMCTSConfig() // MaxIterations=100, ExplorationC=1.414, MaxDepth=10
+
+// ToT defaults
+planning.DefaultTreeOfThoughtsConfig() // BranchingFactor=3, MaxDepth=4, BeamWidth=2
+```
+
+---
+
+#### S7.2.2: Benchmark Module — Standardized LLM Evaluation (30 min)
+
+**Module**: `digital.vasic.benchmark` | **Source**: `Benchmark/` | **Adapter**: `internal/adapters/benchmark/`
+
+**Topics**:
+- Supported standardized benchmarks:
+  - MMLU (57-subject multiple-choice, accuracy metric)
+  - HumanEval (164 Python problems, pass@k metric)
+  - GSM8K (8500 math word problems, exact-match accuracy)
+  - SWE-Bench (real GitHub issues, resolution rate)
+  - MBPP, LMSYS, HellaSwag, MATH, Custom
+- BenchmarkRunner interface: Run, RunSuite, Compare
+- RunConfig: BenchmarkID, Provider, Model, MaxExamples, Temperature, Timeout, CustomDataset
+- BenchmarkResult: Score, SubScores (per-category), Latency (p50/p95/p99), Cost (tokens, USD)
+- ComparisonReport: ranking, statistical significance (bootstrapped CI, p-values), recommendation
+- Custom benchmark workflow: define Dataset → RegisterCustomDataset → Run → Compare
+- PostgreSQL persistence: store results for trend analysis over weeks/months
+- Resource management: GOMAXPROCS=2, MaxExamples for CI runs; full suites in nightly jobs
+- HelixAgent integration: LLMsVerifier startup pipeline; provider promotion gates
+
+**Live Demo**: HumanEval benchmark on DeepSeek-Coder vs Claude-3.5-Sonnet (50 examples each),
+with ComparisonReport showing winner, p-value, and latency comparison
+
+**Challenge**: `./challenges/scripts/benchmark_challenge.sh`
+
+**Key API**:
+```bash
+# Run benchmark via HelixAgent
+curl -X POST http://localhost:7061/v1/benchmark/run \
+  -H "Content-Type: application/json" \
+  -d '{"benchmark":"humaneval","providers":["deepseek","claude"],"max_examples":50}'
+
+# Get comparison report
+curl http://localhost:7061/v1/benchmark/reports/latest | jq '.ranking'
+```
+
+---
+
+### Hands-On Lab: Provider Benchmark and Promotion Pipeline
+
+**Duration**: 30 minutes | **Difficulty**: Advanced
+
+**Objective**: Build a provider promotion pipeline that:
+1. Runs HumanEval and GSM8K on two providers
+2. Generates a ComparisonReport
+3. Promotes the winning provider if p-value < 0.05
+4. Persists results to PostgreSQL for trend tracking
+
+**Assessment**: `docs/courses/assessments/QUIZ_MODULE_S71_S72.md`
+
+---
+
 ## Certification Path
 
 ### Level 1: HelixAgent Fundamentals
@@ -868,6 +1134,18 @@ Upon completion of this course, participants will be able to:
   - Demonstrate MCP Tool Search integration
   - Document strict validation methodology
 
+### Level 6: AI/ML Systems Architect (NEW)
+- Modules S7.1-S7.2
+- Advanced AI/ML extracted module mastery
+- Assessment: End-to-end AI agent system implementation
+- Requirements:
+  - Implement a complete Agentic workflow with at least 4 nodes and dynamic routing
+  - Run LLMOps A/B experiment between two providers and document results
+  - Demonstrate SelfRefinementLoop improving response quality by >20% over 3 iterations
+  - Run HiPlan or MCTS on a real planning task and verify output
+  - Complete Benchmark comparison of at least 2 providers on HumanEval with p-value analysis
+  - Pass all 5 module challenge scripts with 100% test pass rate
+
 ---
 
 ## Course Resources
@@ -887,7 +1165,7 @@ Upon completion of this course, participants will be able to:
 
 ---
 
-*Course Version: 3.0.0*
-*Last Updated: January 2026*
-*Total Duration: 14+ hours*
-*Modules: 14 (including 3 new challenge and advanced modules)*
+*Course Version: 4.0.0*
+*Last Updated: February 2026*
+*Total Duration: 16.5+ hours*
+*Modules: 14 + 2 advanced AI/ML sections (S7.1, S7.2) = 5 new modules covered*
