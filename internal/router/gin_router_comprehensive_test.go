@@ -848,10 +848,21 @@ func TestGinRouterShutdownError(t *testing.T) {
 		<-serverStarted
 		time.Sleep(100 * time.Millisecond)
 
+		// Use a cancellable context for the client request so we can clean up the goroutine.
+		clientCtx, clientCancel := context.WithCancel(context.Background())
+		defer clientCancel()
+
+		clientDone := make(chan struct{})
 		// Start a request that will be in progress
 		go func() {
-			client := &http.Client{Timeout: 10 * time.Second}
-			_, _ = client.Get("http://" + addr + "/hold")
+			defer close(clientDone)
+			req, reqErr := http.NewRequestWithContext(clientCtx, http.MethodGet, "http://"+addr+"/hold", nil)
+			if reqErr != nil {
+				return
+			}
+			client := &http.Client{}
+			//nolint:bodyclose
+			_, _ = client.Do(req)
 		}()
 
 		// Give the request time to start
@@ -859,14 +870,18 @@ func TestGinRouterShutdownError(t *testing.T) {
 
 		// Try to shutdown with a deadline that might expire
 		// The server should close active connections
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
-		defer cancel()
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+		defer shutdownCancel()
 
-		err = router.Shutdown(ctx)
+		err = router.Shutdown(shutdownCtx)
 		// This might return an error due to context deadline
 		if err != nil {
 			assert.Contains(t, err.Error(), "shutdown error")
 		}
+
+		// Cancel the client context to unblock the client goroutine, then wait for it.
+		clientCancel()
+		<-clientDone
 	})
 }
 

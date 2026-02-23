@@ -148,7 +148,9 @@ func (e *InMemoryContinuousEvaluator) executeRun(ctx context.Context, run *Evalu
 	for _, sample := range samples {
 		select {
 		case <-ctx.Done():
+			e.mu.Lock()
 			run.Status = EvaluationStatusFailed
+			e.mu.Unlock()
 			return
 		default:
 		}
@@ -182,21 +184,25 @@ func (e *InMemoryContinuousEvaluator) executeRun(ctx context.Context, run *Evalu
 
 	results.PassRate = float64(results.PassedSamples) / float64(results.TotalSamples)
 
-	// Update run
+	// Update run — capture log values under the lock to avoid races with
+	// concurrent writers that may modify run.Results after Unlock.
 	e.mu.Lock()
 	now := time.Now()
 	run.Status = EvaluationStatusCompleted
 	run.EndTime = &now
 	run.Results = results
+	logRunID := run.ID
+	logPassRate := results.PassRate
+	logSamples := results.TotalSamples
 	e.mu.Unlock()
 
 	// Check for regressions and trigger alerts
 	e.checkForRegressions(ctx, run)
 
 	e.logger.WithFields(logrus.Fields{
-		"id":        run.ID,
-		"pass_rate": results.PassRate,
-		"samples":   results.TotalSamples,
+		"id":        logRunID,
+		"pass_rate": logPassRate,
+		"samples":   logSamples,
 	}).Info("Evaluation run completed")
 }
 
@@ -273,20 +279,42 @@ func (e *InMemoryContinuousEvaluator) checkForRegressions(ctx context.Context, r
 			}
 		}
 	}
+	// While still holding the RLock, take snapshots of the result values
+	// we need for regression comparison to avoid races with concurrent writers.
+	var (
+		runPassRate      float64
+		runMetricScores  map[string]float64
+		prevPassRate     float64
+		prevMetricScores map[string]float64
+		prevRunID        string
+	)
+	if previousRun != nil && previousRun.Results != nil && run.Results != nil {
+		runPassRate = run.Results.PassRate
+		runMetricScores = make(map[string]float64, len(run.Results.MetricScores))
+		for k, v := range run.Results.MetricScores {
+			runMetricScores[k] = v
+		}
+		prevPassRate = previousRun.Results.PassRate
+		prevMetricScores = make(map[string]float64, len(previousRun.Results.MetricScores))
+		for k, v := range previousRun.Results.MetricScores {
+			prevMetricScores[k] = v
+		}
+		prevRunID = previousRun.ID
+	}
 	e.mu.RUnlock()
 
-	if previousRun == nil || previousRun.Results == nil || run.Results == nil {
+	if previousRun == nil || prevRunID == "" {
 		return
 	}
 
-	// Check for regressions
-	passRateChange := run.Results.PassRate - previousRun.Results.PassRate
+	// Check for regressions using snapshots (no lock held, safe to use)
+	passRateChange := runPassRate - prevPassRate
 	if passRateChange < -0.05 { // 5% regression
 		alert := &Alert{
 			ID:          uuid.New().String(),
 			Type:        AlertTypeRegression,
 			Severity:    AlertSeverityWarning,
-			Message:     fmt.Sprintf("Pass rate regression: %.1f%% -> %.1f%%", previousRun.Results.PassRate*100, run.Results.PassRate*100),
+			Message:     fmt.Sprintf("Pass rate regression: %.1f%% -> %.1f%%", prevPassRate*100, runPassRate*100),
 			Source:      "evaluation",
 			SourceID:    run.ID,
 			Threshold:   -0.05,
@@ -301,9 +329,9 @@ func (e *InMemoryContinuousEvaluator) checkForRegressions(ctx context.Context, r
 		_ = e.alertManager.Create(ctx, alert)
 	}
 
-	// Check individual metrics
-	for metric, score := range run.Results.MetricScores {
-		if prevScore, ok := previousRun.Results.MetricScores[metric]; ok {
+	// Check individual metrics using snapshots
+	for metric, score := range runMetricScores {
+		if prevScore, ok := prevMetricScores[metric]; ok {
 			change := score - prevScore
 			if change < -0.1 {
 				alert := &Alert{
@@ -334,7 +362,10 @@ func (e *InMemoryContinuousEvaluator) GetRun(ctx context.Context, runID string) 
 		return nil, fmt.Errorf("run not found: %s", runID)
 	}
 
-	return run, nil
+	// Return a shallow copy so callers do not race with concurrent writers on
+	// scalar fields (Status, StartTime, EndTime) after the lock is released.
+	cp := *run
+	return &cp, nil
 }
 
 // ListRuns lists evaluation runs
@@ -345,7 +376,9 @@ func (e *InMemoryContinuousEvaluator) ListRuns(ctx context.Context, filter *Eval
 	var result []*EvaluationRun
 	for _, run := range e.runs {
 		if e.matchesFilter(run, filter) {
-			result = append(result, run)
+			// Return a shallow copy to avoid races after the lock is released.
+			cp := *run
+			result = append(result, &cp)
 		}
 	}
 

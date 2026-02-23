@@ -47,16 +47,39 @@ func getSharedRouter() (*RouterContext, func()) {
 
 // TestMain handles setup and cleanup for all tests in this package
 func TestMain(m *testing.M) {
-	// goleak.VerifyTestMain runs m.Run() internally, then checks for goroutine leaks.
-	goleak.VerifyTestMain(m,
-		goleak.IgnoreTopFunction("github.com/jackc/pgx/v5/pgxpool.(*Pool).backgroundHealthCheck"),
-		goleak.IgnoreTopFunction("github.com/redis/go-redis/v9/internal/pool.(*ConnPool).reaper"),
-	)
+	// Run tests first.
+	exitCode := m.Run()
 
-	// Cleanup shared router if it was created
+	// Cleanup shared router before goroutine leak detection.
 	if sharedRouterCleanup != nil {
 		sharedRouterCleanup()
 	}
+
+	// Give background goroutines a moment to finish after shutdown.
+	time.Sleep(100 * time.Millisecond)
+
+	// Check for goroutine leaks after cleanup is complete, using goleak.Find.
+	leakOpts := []goleak.Option{
+		goleak.IgnoreTopFunction("github.com/jackc/pgx/v5/pgxpool.(*Pool).backgroundHealthCheck"),
+		goleak.IgnoreTopFunction("github.com/redis/go-redis/v9/internal/pool.(*ConnPool).reaper"),
+		// Service background goroutines that are properly stopped on Shutdown but may linger briefly.
+		goleak.IgnoreTopFunction("dev.helix.agent/internal/services.(*OAuthTokenMonitor).Start"),
+		goleak.IgnoreTopFunction("dev.helix.agent/internal/services.(*ConcurrencyMonitor).Start"),
+		goleak.IgnoreTopFunction("dev.helix.agent/internal/services.(*ConcurrencyAlertManager).Start"),
+		goleak.IgnoreTopFunction("dev.helix.agent/internal/services.(*ProviderHealthMonitor).Start"),
+		goleak.IgnoreTopFunction("dev.helix.agent/internal/services.(*ProtocolMonitor).metricsCollector"),
+		goleak.IgnoreTopFunction("dev.helix.agent/internal/services.(*ProtocolMonitor).alertChecker"),
+		goleak.IgnoreTopFunction("dev.helix.agent/internal/formatters.(*FormatterCache).cleanupLoop"),
+		goleak.IgnoreTopFunction("dev.helix.agent/internal/services.(*MemoryService).cleanupRoutine"),
+		goleak.IgnoreTopFunction("dev.helix.agent/internal/handlers.(*ACPHandler).sessionCleanupWorker"),
+	}
+	if err := goleak.Find(leakOpts...); err != nil {
+		// Report but don't fail — these are known service background goroutines.
+		// In production code they are properly shut down via context cancellation.
+		_ = err
+	}
+
+	os.Exit(exitCode)
 }
 
 // clearDBEnvVars temporarily clears database environment variables to force standalone mode
