@@ -3,6 +3,7 @@ package llm
 import (
 	"context"
 	"errors"
+	"log"
 	"sync"
 	"time"
 
@@ -294,9 +295,9 @@ func (cb *CircuitBreaker) transitionTo(newState CircuitState) {
 			case <-done:
 				// Listener completed
 			case <-time.After(5 * time.Second):
-				// Listener timed out, log and continue
-				// Note: We don't have access to logger here, but the goroutine
-				// will eventually complete or be garbage collected
+				// Listener timed out, log warning and continue
+				log.Printf("[WARN] circuit breaker %q: listener notification timed out after 5s "+
+					"(state transition %s -> %s)", cb.providerID, oldState, newState)
 			}
 		}(listener)
 	}
@@ -378,6 +379,8 @@ func (cb *CircuitBreaker) Reset() {
 			select {
 			case <-done:
 			case <-time.After(5 * time.Second):
+				log.Printf("[WARN] circuit breaker %q: listener notification timed out after 5s "+
+					"(reset to closed)", providerID)
 			}
 		}(listener)
 	}
