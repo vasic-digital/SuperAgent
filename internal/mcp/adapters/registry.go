@@ -244,14 +244,33 @@ var AvailableAdapters = []AdapterMetadata{
 	{Name: "miro", Category: CategoryCollaboration, Description: "Miro whiteboard collaboration for visual planning", AuthType: "oauth2", DocsURL: "https://developers.miro.com/docs", Official: false, Supported: true},
 }
 
-// DefaultRegistry is the default adapter registry.
-var DefaultRegistry = NewAdapterRegistry()
+var (
+	defaultRegistry     *AdapterRegistry
+	defaultRegistryOnce sync.Once
+)
 
-// InitializeDefaultRegistry initializes the default registry with all adapters.
+// DefaultRegistry is the default adapter registry, populated lazily on first access.
+var DefaultRegistry = getDefaultRegistry()
+
+// getDefaultRegistry returns the singleton default adapter registry,
+// populating it with all available adapters on the first call.
+func getDefaultRegistry() *AdapterRegistry {
+	defaultRegistryOnce.Do(func() {
+		r := NewAdapterRegistry()
+		for _, meta := range AvailableAdapters {
+			r.metadata[meta.Name] = meta
+		}
+		defaultRegistry = r
+	})
+	return defaultRegistry
+}
+
+// InitializeDefaultRegistry populates the default registry with all available adapters.
+// Deprecated: DefaultRegistry is now initialized lazily via sync.Once.
+// This function is retained for backward compatibility.
 func InitializeDefaultRegistry() {
-	for _, meta := range AvailableAdapters {
-		DefaultRegistry.metadata[meta.Name] = meta
-	}
+	// DefaultRegistry is already populated; this is a no-op kept for compatibility.
+	_ = getDefaultRegistry()
 }
 
 // GetAdapterCount returns the total number of available adapters.
@@ -279,10 +298,6 @@ func GetOfficialAdapters() []AdapterMetadata {
 		}
 	}
 	return official
-}
-
-func init() {
-	InitializeDefaultRegistry()
 }
 
 // AdapterSearchResult represents a search result with relevance score

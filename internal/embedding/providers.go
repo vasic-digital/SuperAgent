@@ -999,11 +999,6 @@ func hmacSHA256(key []byte, data string) []byte {
 // Extended Factory Functions
 // =============================================================================
 
-// init registers the new model types in DefaultEmbeddingConfig.
-func init() {
-	// This ensures the new model types are recognized
-}
-
 // DefaultEmbeddingConfigExtended returns default configuration for extended models.
 func DefaultEmbeddingConfigExtended(modelType ModelType) EmbeddingConfig {
 	config := EmbeddingConfig{

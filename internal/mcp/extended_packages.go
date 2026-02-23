@@ -345,8 +345,3 @@ func FilterAvailablePackages(packages []MCPPackage) []MCPPackage {
 	return available
 }
 
-// init extends MCPPackage with Category and RequiresEnv fields
-func init() {
-	// Extend the MCPPackage struct at package level
-	// This is handled by the ExtendedMCPPackages variable which includes the extra fields
-}

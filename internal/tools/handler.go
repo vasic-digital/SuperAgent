@@ -69,24 +69,36 @@ func (r *ToolRegistry) Execute(ctx context.Context, toolName string, args map[st
 	return handler.Execute(ctx, args)
 }
 
-// DefaultToolRegistry is the global tool registry with all built-in handlers
-var DefaultToolRegistry = NewToolRegistry()
+var (
+	defaultToolRegistry     *ToolRegistry
+	defaultToolRegistryOnce sync.Once
+)
 
-func init() {
-	// Register all tool handlers
-	DefaultToolRegistry.Register(&ReadFileHandler{})
-	DefaultToolRegistry.Register(&GitHandler{})
-	DefaultToolRegistry.Register(&TestHandler{})
-	DefaultToolRegistry.Register(&LintHandler{})
-	DefaultToolRegistry.Register(&DiffHandler{})
-	DefaultToolRegistry.Register(&TreeViewHandler{})
-	DefaultToolRegistry.Register(&FileInfoHandler{})
-	DefaultToolRegistry.Register(&SymbolsHandler{})
-	DefaultToolRegistry.Register(&ReferencesHandler{})
-	DefaultToolRegistry.Register(&DefinitionHandler{})
-	DefaultToolRegistry.Register(&PRHandler{})
-	DefaultToolRegistry.Register(&IssueHandler{})
-	DefaultToolRegistry.Register(&WorkflowHandler{})
+// DefaultToolRegistry is the global tool registry with all built-in handlers,
+// initialized lazily on first access via sync.Once.
+var DefaultToolRegistry = getDefaultToolRegistry()
+
+// getDefaultToolRegistry returns the singleton default tool registry,
+// initializing it with all built-in handlers on the first call.
+func getDefaultToolRegistry() *ToolRegistry {
+	defaultToolRegistryOnce.Do(func() {
+		r := NewToolRegistry()
+		r.Register(&ReadFileHandler{})
+		r.Register(&GitHandler{})
+		r.Register(&TestHandler{})
+		r.Register(&LintHandler{})
+		r.Register(&DiffHandler{})
+		r.Register(&TreeViewHandler{})
+		r.Register(&FileInfoHandler{})
+		r.Register(&SymbolsHandler{})
+		r.Register(&ReferencesHandler{})
+		r.Register(&DefinitionHandler{})
+		r.Register(&PRHandler{})
+		r.Register(&IssueHandler{})
+		r.Register(&WorkflowHandler{})
+		defaultToolRegistry = r
+	})
+	return defaultToolRegistry
 }
 
 // ============================================
