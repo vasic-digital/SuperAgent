@@ -317,6 +317,298 @@ func TestTestContext(t *testing.T) {
 	}
 }
 
+// ============================================================================
+// Tests for fibonacci.go
+// ============================================================================
+
+func TestFibonacci(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    int
+		expected int
+	}{
+		{"n=0", 0, 0},
+		{"n=1", 1, 1},
+		{"n=2", 2, 1},
+		{"n=3", 3, 2},
+		{"n=5", 5, 5},
+		{"n=10", 10, 55},
+		{"n=20", 20, 6765},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Fibonacci(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestFibonacciSequence(t *testing.T) {
+	tests := []struct {
+		name     string
+		n        int
+		expected []int
+	}{
+		{"n=0", 0, []int{}},
+		{"n<0", -1, []int{}},
+		{"n=1", 1, []int{0}},
+		{"n=5", 5, []int{0, 1, 1, 2, 3}},
+		{"n=8", 8, []int{0, 1, 1, 2, 3, 5, 8, 13}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := FibonacciSequence(tt.n)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// ============================================================================
+// Tests for math.go
+// ============================================================================
+
+func TestFactorial(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       int
+		expected    int64
+		expectError bool
+	}{
+		{"n=0", 0, 1, false},
+		{"n=1", 1, 1, false},
+		{"n=5", 5, 120, false},
+		{"n=10", 10, 3628800, false},
+		{"n=20", 20, 2432902008176640000, false},
+		{"negative", -1, 0, true},
+		{"overflow n=21", 21, 0, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Factorial(tt.input)
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Equal(t, int64(0), result)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestFactorialRecursive(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       int
+		expected    int64
+		expectError bool
+	}{
+		{"n=0", 0, 1, false},
+		{"n=1", 1, 1, false},
+		{"n=5", 5, 120, false},
+		{"n=10", 10, 3628800, false},
+		{"n=20", 20, 2432902008176640000, false},
+		{"negative", -1, 0, true},
+		{"overflow n=21", 21, 0, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := FactorialRecursive(tt.input)
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Equal(t, int64(0), result)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestFactorial_MatchesRecursive(t *testing.T) {
+	for n := 0; n <= 15; n++ {
+		iter, errI := Factorial(n)
+		rec, errR := FactorialRecursive(n)
+		assert.NoError(t, errI)
+		assert.NoError(t, errR)
+		assert.Equal(t, iter, rec, "Factorial(%d) mismatch: iterative=%d, recursive=%d", n, iter, rec)
+	}
+}
+
+// ============================================================================
+// Tests for path_validation.go
+// ============================================================================
+
+func TestValidatePath(t *testing.T) {
+	tests := []struct {
+		name     string
+		path     string
+		expected bool
+	}{
+		{"empty path", "", false},
+		{"valid simple path", "/tmp/file.go", true},
+		{"valid relative", "src/main.go", true},
+		{"path traversal ..", "../../etc/passwd", false},
+		{"semicolon injection", "/tmp/file;rm -rf /", false},
+		{"pipe injection", "/tmp/file|cat /etc/passwd", false},
+		{"dollar sign", "/tmp/$HOME/file", false},
+		{"backtick", "/tmp/`whoami`/file", false},
+		{"ampersand", "/tmp/file&other", false},
+		{"parenthesis", "/tmp/(file)", false},
+		{"newline", "/tmp/file\ninjection", false},
+		{"carriage return", "/tmp/file\rinjection", false},
+		{"curly braces", "/tmp/${var}/file", false},
+		{"redirect", "/tmp/file>other", false},
+		{"valid with dots", "/tmp/file.txt", true},
+		{"valid with dashes", "/opt/my-app/data", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ValidatePath(tt.path)
+			assert.Equal(t, tt.expected, result, "ValidatePath(%q)", tt.path)
+		})
+	}
+}
+
+func TestValidateSymbol(t *testing.T) {
+	tests := []struct {
+		name     string
+		symbol   string
+		expected bool
+	}{
+		{"empty", "", false},
+		{"valid simple", "myFunc", true},
+		{"valid with underscore", "my_func", true},
+		{"valid start underscore", "_private", true},
+		{"valid alphanumeric", "func123", true},
+		{"starts with digit", "123func", false},
+		{"has space", "my func", false},
+		{"has dash", "my-func", false},
+		{"has dot", "my.func", false},
+		{"single char", "x", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ValidateSymbol(tt.symbol)
+			assert.Equal(t, tt.expected, result, "ValidateSymbol(%q)", tt.symbol)
+		})
+	}
+}
+
+func TestSanitizePath(t *testing.T) {
+	tests := []struct {
+		name     string
+		path     string
+		wantOK   bool
+		wantPath string
+	}{
+		{"valid path", "/tmp/file.go", true, "/tmp/file.go"},
+		{"path with redundant slashes", "/tmp//file.go", true, "/tmp/file.go"},
+		{"path traversal", "../../etc/passwd", false, ""},
+		{"empty path", "", false, ""},
+		{"injection", "/tmp/file;cat", false, ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, ok := SanitizePath(tt.path)
+			assert.Equal(t, tt.wantOK, ok)
+			if tt.wantOK {
+				assert.Equal(t, tt.wantPath, result)
+			} else {
+				assert.Empty(t, result)
+			}
+		})
+	}
+}
+
+func TestValidateGitRef(t *testing.T) {
+	tests := []struct {
+		name     string
+		ref      string
+		expected bool
+	}{
+		{"empty", "", false},
+		{"main", "main", true},
+		{"branch with slash", "feature/my-feature", true},
+		{"tag with dot", "v1.0.0", true},
+		{"SHA", "abc123def456", true},
+		{"with spaces", "my branch", false},
+		{"with dollar", "feat/$var", false},
+		{"with semicolon", "feat;cmd", false},
+		{"with at", "feat@branch", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ValidateGitRef(tt.ref)
+			assert.Equal(t, tt.expected, result, "ValidateGitRef(%q)", tt.ref)
+		})
+	}
+}
+
+func TestValidateCommandArg(t *testing.T) {
+	tests := []struct {
+		name     string
+		arg      string
+		expected bool
+	}{
+		{"empty (safe)", "", true},
+		{"normal word", "hello", true},
+		{"normal path", "/tmp/file.txt", true},
+		{"number", "42", true},
+		{"semicolon", "arg;cmd", false},
+		{"pipe", "arg|cmd", false},
+		{"dollar", "$var", false},
+		{"backtick", "`cmd`", false},
+		{"ampersand", "arg&cmd", false},
+		{"newline", "arg\ncmd", false},
+		{"backslash", "arg\\cmd", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ValidateCommandArg(tt.arg)
+			assert.Equal(t, tt.expected, result, "ValidateCommandArg(%q)", tt.arg)
+		})
+	}
+}
+
+// ============================================================================
+// Tests for string.go
+// ============================================================================
+
+func TestReverseString(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{"empty string", "", ""},
+		{"single char", "a", "a"},
+		{"two chars", "ab", "ba"},
+		{"simple word", "hello", "olleh"},
+		{"palindrome", "racecar", "racecar"},
+		{"with spaces", "hello world", "dlrow olleh"},
+		{"UTF-8 chars", "héllo", "olléh"},
+		{"emoji", "abc", "cba"},
+		{"unicode cjk", "日本語", "語本日"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ReverseString(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 // testResponseWriter is a mock response writer for testing
 type testResponseWriter struct {
 	statusCode int

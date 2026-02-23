@@ -75,6 +75,9 @@ func (a *ChunkerAdapter) Chunk(text string) []helixrag.PipelineChunk {
 
 // ChunkDocument splits a document into chunks.
 func (a *ChunkerAdapter) ChunkDocument(doc *helixrag.PipelineDocument) []helixrag.PipelineChunk {
+	if doc == nil {
+		return nil
+	}
 	chunks := a.Chunk(doc.Content)
 	// Add document context to chunks
 	for i := range chunks {
