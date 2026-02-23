@@ -235,7 +235,7 @@ func (i *EventDrivenInvalidation) Start() {
 				if !ok {
 					return
 				}
-				i.handleEvent(event)
+				i.handleEvent(i.ctx, event)
 			}
 		}
 	}()
@@ -310,7 +310,7 @@ func (i *EventDrivenInvalidation) registerDefaultRules() {
 	})
 }
 
-func (i *EventDrivenInvalidation) handleEvent(event *Event) {
+func (i *EventDrivenInvalidation) handleEvent(ctx context.Context, event *Event) {
 	i.mu.RLock()
 	rules := i.rules[event.Type]
 	i.mu.RUnlock()
@@ -337,7 +337,6 @@ func (i *EventDrivenInvalidation) handleEvent(event *Event) {
 	}
 
 	// Invalidate all collected keys
-	ctx := context.Background()
 	for key := range keysToInvalidate {
 		// Check if it's a pattern (contains *)
 		if containsWildcard(key) {
