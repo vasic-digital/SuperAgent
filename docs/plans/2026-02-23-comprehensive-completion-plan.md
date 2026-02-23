@@ -2155,6 +2155,45 @@ git commit -m "chore: add 10 new challenge scripts to run_all_challenges.sh"
 
 ---
 
+### Task 8.4b: Resolve TODO at main.go:1368
+
+**File:** `cmd/helixagent/main.go:1368`
+
+**Step 1: Read the context**
+
+```go
+// Auto-start LSP and RAG services (non-blocking, runs in background)
+logger.Info("Starting LSP and RAG infrastructure services...")
+// TODO: Re-implement infrastructure orchestration if needed
+// startAllInfrastructure(logger)
+```
+
+**Step 2: Determine correct action**
+
+The BootManager now handles all infrastructure. `startAllInfrastructure()` is superseded. Remove the TODO and add an explanatory comment:
+
+```go
+// LSP and RAG infrastructure is now managed by BootManager.BootAll()
+// called during startup verification. No separate orchestration needed.
+logger.Info("Infrastructure startup delegated to BootManager")
+```
+
+**Step 3: Build and test**
+
+```bash
+nice -n 19 go build ./cmd/helixagent/...
+GOMAXPROCS=2 nice -n 19 go test -count=1 -p 1 -short ./cmd/helixagent/...
+```
+
+**Step 4: Commit**
+
+```bash
+git add cmd/helixagent/main.go
+git commit -m "fix(main): remove TODO — infrastructure orchestration delegated to BootManager"
+```
+
+---
+
 ### Task 8.5: Final go vet + lint Pass
 
 **Step 1: Run go vet on all project-owned packages**
