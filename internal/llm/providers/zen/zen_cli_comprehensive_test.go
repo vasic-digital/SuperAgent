@@ -108,6 +108,10 @@ func TestZenCLIProvider_FailedAPIModelTracking(t *testing.T) {
 
 // TestZenCLIProvider_CLIAvailabilityCheck tests CLI availability checking
 func TestZenCLIProvider_CLIAvailabilityCheck(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping CLI availability test in short mode")
+	}
+
 	t.Run("availability check is cached (sync.Once)", func(t *testing.T) {
 		provider := NewZenCLIProviderWithModel("test")
 
@@ -141,6 +145,10 @@ func TestZenCLIProvider_CLIAvailabilityCheck(t *testing.T) {
 
 // TestZenCLIProvider_ProviderInterface tests LLMProvider interface compliance
 func TestZenCLIProvider_ProviderInterface(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping CLI availability test in short mode")
+	}
+
 	provider := NewZenCLIProviderWithModel("test-model")
 
 	t.Run("GetName returns correct name", func(t *testing.T) {
@@ -295,6 +303,10 @@ func TestZenCLIProvider_EmptyPromptHandling(t *testing.T) {
 
 // TestZenCLIProvider_ModelDiscovery tests model discovery functionality
 func TestZenCLIProvider_ModelDiscovery(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping CLI availability test in short mode")
+	}
+
 	provider := NewZenCLIProviderWithModel("initial-model")
 
 	t.Run("GetAvailableModels returns non-empty list", func(t *testing.T) {
@@ -484,6 +496,10 @@ func TestZenCLIProvider_ConcurrentAccess(t *testing.T) {
 
 // TestZenCLIProvider_HealthCheckComprehensive tests health check functionality
 func TestZenCLIProvider_HealthCheckComprehensive(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping CLI availability test in short mode")
+	}
+
 	t.Run("health check returns appropriate result based on CLI availability", func(t *testing.T) {
 		provider := NewZenCLIProviderWithModel("test")
 
@@ -508,6 +524,10 @@ func TestZenCLIProvider_HealthCheckComprehensive(t *testing.T) {
 
 // TestDiscoverZenModels_Standalone tests standalone discovery function
 func TestDiscoverZenModels_Standalone(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping CLI availability test in short mode")
+	}
+
 	models, err := DiscoverZenModels()
 
 	// STRICT: Must always return some models (discovered or fallback)
@@ -552,6 +572,10 @@ func TestGetOpenCodePath_Standalone(t *testing.T) {
 
 // TestZenCLIProvider_ResponseMetadata tests response metadata completeness
 func TestZenCLIProvider_ResponseMetadata(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping CLI availability test in short mode")
+	}
+
 	if !IsOpenCodeInstalled() {
 		t.Skip("OpenCode CLI not installed - skipping response metadata test")
 	}

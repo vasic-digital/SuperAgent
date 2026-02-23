@@ -115,6 +115,12 @@ func NewClaudeCLIProviderWithModel(model string) *ClaudeCLIProvider {
 // NOTE: Claude Code CLI doesn't have an "auth status" command, so we check
 // credential files directly to verify authentication
 func (p *ClaudeCLIProvider) IsCLIAvailable() bool {
+	// Check if we're inside a Claude Code session first (not cacheable via sync.Once)
+	if IsInsideClaudeCodeSession() {
+		p.cliCheckErr = fmt.Errorf("Claude Code CLI not available: cannot run inside another Claude Code session")
+		p.cliAvailable = false
+		return false
+	}
 	p.cliCheckOnce.Do(func() {
 		// Check for claude command in PATH
 		path, err := exec.LookPath("claude")
@@ -159,11 +165,6 @@ func (p *ClaudeCLIProvider) GetCLIError() error {
 
 // Complete implements the LLMProvider interface
 func (p *ClaudeCLIProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
-	// Check if we're inside a Claude Code session (causes recursive CLI issues)
-	if IsInsideClaudeCodeSession() {
-		return nil, fmt.Errorf("claude CLI cannot run inside another Claude Code session (detected CLAUDECODE or CLAUDE_CODE_ENTRYPOINT env var)")
-	}
-
 	if !p.IsCLIAvailable() {
 		return nil, fmt.Errorf("Claude Code CLI not available: %v", p.cliCheckErr)
 	}
@@ -365,11 +366,6 @@ func (p *ClaudeCLIProvider) parseJSONResponse(rawOutput string) (string, string,
 
 // CompleteStream implements streaming for Claude CLI (reads output line by line)
 func (p *ClaudeCLIProvider) CompleteStream(ctx context.Context, req *models.LLMRequest) (<-chan *models.LLMResponse, error) {
-	// Check if we're inside a Claude Code session (causes recursive CLI issues)
-	if IsInsideClaudeCodeSession() {
-		return nil, fmt.Errorf("claude CLI cannot run inside another Claude Code session (detected CLAUDECODE or CLAUDE_CODE_ENTRYPOINT env var)")
-	}
-
 	if !p.IsCLIAvailable() {
 		return nil, fmt.Errorf("Claude Code CLI not available: %v", p.cliCheckErr)
 	}

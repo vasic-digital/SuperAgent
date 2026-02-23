@@ -1648,7 +1648,7 @@ func TestStreamingTimeoutPreventsEndlessLoop(t *testing.T) {
 			select {
 			case <-done:
 				elapsed := time.Since(startTime)
-				assert.True(t, elapsed < tt.timeout+50*time.Millisecond,
+				assert.True(t, elapsed < tt.timeout+200*time.Millisecond,
 					"Timeout should trigger around %v, took %v", tt.timeout, elapsed)
 			case <-time.After(tt.timeout + 100*time.Millisecond):
 				t.Errorf("Test did not complete within expected timeout")

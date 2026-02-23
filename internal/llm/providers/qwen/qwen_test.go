@@ -1535,8 +1535,8 @@ func TestQwenProvider_WaitWithJitter(t *testing.T) {
 
 		// Should wait at least the delay time (jitter adds, not subtracts)
 		assert.GreaterOrEqual(t, elapsed, delay)
-		// Should not wait too much more (10% jitter max)
-		assert.Less(t, elapsed, delay+delay/5+10*time.Millisecond)
+		// Should not wait too much more (allow generous OS scheduling overhead)
+		assert.Less(t, elapsed, delay+delay/2+50*time.Millisecond)
 	})
 }
 

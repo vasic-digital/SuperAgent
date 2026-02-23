@@ -255,6 +255,10 @@ func TestVisionDetection(t *testing.T) {
 
 // TestVisionHealthCheck tests vision service health
 func TestVisionHealthCheck(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping functional test in short mode")
+	}
+
 	client := NewVisionClient("http://localhost:8080")
 
 	resp, err := client.httpClient.Get(client.baseURL + "/v1/vision/health")
@@ -263,6 +267,11 @@ func TestVisionHealthCheck(t *testing.T) {
 		return
 	}
 	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode == http.StatusNotFound {
+		t.Skip("Vision endpoint not found: HelixAgent not running at expected address")
+		return
+	}
 
 	require.Equal(t, http.StatusOK, resp.StatusCode, "Health check should return 200")
 }

@@ -835,8 +835,8 @@ func TestIsExpired_EdgeCases(t *testing.T) {
 			expected:  true,
 		},
 		{
-			name:      "one millisecond in future",
-			expiresAt: time.Now().Add(time.Millisecond).UnixMilli(),
+			name:      "one second in future",
+			expiresAt: time.Now().Add(time.Second).UnixMilli(),
 			expected:  false,
 		},
 	}

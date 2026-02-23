@@ -144,7 +144,9 @@ func TestClaudeCLIProvider_ValidateConfig(t *testing.T) {
 	provider := NewClaudeCLIProviderWithModel("claude-sonnet-4-20250514")
 
 	valid, errs := provider.ValidateConfig(nil)
-	if IsClaudeCodeInstalled() && IsClaudeCodeAuthenticated() {
+	// ValidateConfig requires IsCLIAvailable() to return true.
+	// When inside a Claude Code session, IsCLIAvailable() returns false.
+	if IsClaudeCodeInstalled() && IsClaudeCodeAuthenticated() && !IsInsideClaudeCodeSession() {
 		assert.True(t, valid)
 		assert.Empty(t, errs)
 	} else {
