@@ -44,7 +44,7 @@ func TestGrpcServer_Complete(t *testing.T) {
 			MemoryEnhanced: true,
 		}
 
-		resp, err := server.Complete(ctx, req)
+		resp, _ := server.Complete(ctx, req)
 
 		// The ensemble may return an error without configured providers
 		assert.NotNil(t, resp)
@@ -57,7 +57,7 @@ func TestGrpcServer_Complete(t *testing.T) {
 			MemoryEnhanced: false,
 		}
 
-		resp, err := server.Complete(ctx, req)
+		resp, _ := server.Complete(ctx, req)
 
 		// Method should handle empty prompts gracefully
 		assert.NotNil(t, resp)
