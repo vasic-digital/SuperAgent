@@ -355,7 +355,7 @@ User Input
 
 ## Submodules Architecture
 
-HelixAgent uses a modular architecture with 20+ extracted modules:
+HelixAgent uses a modular architecture with 25+ extracted modules:
 
 ### Foundation Modules (Phase 1)
 
@@ -394,6 +394,16 @@ HelixAgent uses a modular architecture with 20+ extracted modules:
 | Memory | `digital.vasic.memory` | Mem0-style memory |
 | Optimization | `digital.vasic.optimization` | GPT-Cache, streaming |
 | Plugins | `digital.vasic.plugins` | Plugin system |
+
+### AI/ML Modules (Phase 5)
+
+| Module | Package | Purpose |
+|--------|---------|---------|
+| Agentic | `digital.vasic.agentic` | Graph-based agentic workflow orchestration |
+| LLMOps | `digital.vasic.llmops` | Evaluation pipelines, A/B experiments, prompt versioning |
+| SelfImprove | `digital.vasic.selfimprove` | RLHF, reward modelling, feedback-driven optimization |
+| Planning | `digital.vasic.planning` | HiPlan, MCTS, Tree of Thoughts planning algorithms |
+| Benchmark | `digital.vasic.benchmark` | SWE-bench, HumanEval, MMLU benchmarking suites |
 
 ### Pre-existing Modules
 

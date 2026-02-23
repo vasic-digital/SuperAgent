@@ -240,6 +240,32 @@ pii:
 
 ## Vulnerability Scanning
 
+### Static Analysis with gosec
+
+HelixAgent uses `gosec` (Go Security Checker) for static analysis during development and CI:
+
+```bash
+# Run gosec scan
+make security-scan
+
+# Run manually
+gosec -severity medium -confidence medium ./...
+```
+
+**gosec Rules Enforced:**
+
+| Rule | Description |
+|------|-------------|
+| G101 | Hardcoded credentials detection |
+| G102 | Binding to all network interfaces |
+| G103 | Use of unsafe package |
+| G104 | Errors unhandled |
+| G106 | SSH InsecureIgnoreHostKey |
+| G201/G202 | SQL query construction with string formatting |
+| G304 | File path provided as taint input |
+| G401-G402 | Weak cryptography (MD5, SHA1, weak TLS) |
+| G501-G502 | Deprecated crypto libraries |
+
 ### Built-in Security Scanner
 
 ```go
@@ -258,6 +284,49 @@ results, err := scanner.ScanDirectory(ctx, "./src", &security.ScanOptions{
 })
 ```
 
+### Input Validation Patterns
+
+All API inputs are validated before processing:
+
+```go
+// Request validation middleware (applied to all routes)
+func ValidateRequest(c *gin.Context) {
+    // 1. Content-Type check
+    if !isValidContentType(c.GetHeader("Content-Type")) {
+        c.AbortWithStatus(http.StatusUnsupportedMediaType)
+        return
+    }
+
+    // 2. Body size limit
+    c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxBodyBytes)
+
+    // 3. JSON schema validation
+    if err := validateSchema(c); err != nil {
+        c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    // 4. Injection pattern detection
+    if containsInjectionPattern(c) {
+        c.AbortWithStatus(http.StatusBadRequest)
+        return
+    }
+
+    c.Next()
+}
+```
+
+**Validated Fields:**
+
+| Field | Validation |
+|-------|------------|
+| `model` | Allowlist of known model IDs |
+| `messages[].role` | Enum: `user`, `assistant`, `system` |
+| `messages[].content` | Max length, no null bytes |
+| `temperature` | Float in [0.0, 2.0] |
+| `max_tokens` | Integer in [1, 128000] |
+| `stream` | Boolean only |
+
 ### Vulnerability Categories
 
 | Category | CWE | Examples |
@@ -274,14 +343,14 @@ results, err := scanner.ScanDirectory(ctx, "./src", &security.ScanOptions{
 | # | Risk | Detection |
 |---|------|-----------|
 | A01 | Broken Access Control | Authorization checks |
-| A02 | Cryptographic Failures | Weak crypto detection |
-| A03 | Injection | SQL/Command injection patterns |
+| A02 | Cryptographic Failures | Weak crypto detection + gosec G401-G502 |
+| A03 | Injection | SQL/Command injection patterns + gosec G201/G202 |
 | A04 | Insecure Design | Security anti-patterns |
-| A05 | Security Misconfiguration | Config validation |
-| A06 | Vulnerable Components | Dependency scanning |
+| A05 | Security Misconfiguration | Config validation + gosec G102 |
+| A06 | Vulnerable Components | Dependency scanning (`govulncheck`) |
 | A07 | Authentication Failures | Auth weakness detection |
 | A08 | Data Integrity Failures | Deserialization checks |
-| A09 | Logging Failures | Sensitive data logging |
+| A09 | Logging Failures | Sensitive data logging + gosec G532 |
 | A10 | SSRF | Server-side request patterns |
 
 ---

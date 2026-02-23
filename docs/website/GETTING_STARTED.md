@@ -446,6 +446,91 @@ curl -X POST http://localhost:8080/v1/chat/completions \
 
 ---
 
+## Using AI/ML Modules
+
+HelixAgent ships with five advanced AI/ML modules accessible via adapter bridges in `internal/adapters/`.
+
+### Agentic Workflows
+
+Run multi-step graph workflows:
+
+```go
+import agenticadapter "dev.helix.agent/internal/adapters/agentic"
+
+adapter := agenticadapter.NewAdapter(cfg)
+
+// Execute a workflow defined as a directed task graph
+result, err := adapter.Execute(ctx, workflow)
+```
+
+### LLMOps — Evaluation and Experiments
+
+Measure and compare response quality:
+
+```go
+import llmopsadapter "dev.helix.agent/internal/adapters/llmops"
+
+adapter := llmopsadapter.NewAdapter(cfg)
+
+// Run an evaluation pipeline against a named dataset
+report, err := adapter.Evaluate(ctx, "my-dataset", evalConfig)
+
+// Start an A/B experiment between two prompt variants
+experiment, err := adapter.StartExperiment(ctx, variantA, variantB)
+```
+
+### SelfImprove — Feedback-Driven Optimization
+
+Collect feedback and improve response selection:
+
+```go
+import selfimproveadapter "dev.helix.agent/internal/adapters/selfimprove"
+
+adapter := selfimproveadapter.NewAdapter(cfg)
+
+// Submit human feedback for a completed response
+err := adapter.SubmitFeedback(ctx, responseID, feedbackScore)
+
+// Retrieve optimized preferences for use in prompts
+prefs, err := adapter.GetOptimizedPreferences(ctx, userID)
+```
+
+### Planning — Algorithmic Problem Solving
+
+Decompose complex goals into executable plans:
+
+```go
+import planningadapter "dev.helix.agent/internal/adapters/planning"
+
+adapter := planningadapter.NewAdapter(cfg)
+
+// Run hierarchical planning
+plan, err := adapter.HiPlan(ctx, goal, constraints)
+
+// Use Monte Carlo Tree Search for exploration
+result, err := adapter.MCTS(ctx, initialState, simulations)
+```
+
+### Benchmarking
+
+Run quality benchmarks against industry-standard suites:
+
+```go
+import benchmarkadapter "dev.helix.agent/internal/adapters/benchmark"
+
+adapter := benchmarkadapter.NewAdapter(cfg)
+
+// Run HumanEval coding benchmark
+scores, err := adapter.RunHumanEval(ctx, providerName)
+
+// Run MMLU reasoning benchmark
+scores, err := adapter.RunMMLU(ctx, providerName)
+```
+
+All five modules are independent Go modules with their own `go.mod`, tests, CLAUDE.md, and challenges. See the submodule directories (`Agentic/`, `LLMOps/`, `SelfImprove/`, `Planning/`, `Benchmark/`) for module-specific documentation.
+
+---
+
 ## Next Steps
 
 Now that HelixAgent is running, explore:

@@ -681,6 +681,245 @@ mcp:
 
 ---
 
+## AI/ML Module Integrations
+
+HelixAgent includes five advanced AI/ML modules (Phase 5 extracted modules). Each is accessible via an adapter in `internal/adapters/`.
+
+### Agentic Module (`digital.vasic.agentic`)
+
+Graph-based workflow orchestration for multi-step AI automation.
+
+**Configuration:**
+
+```yaml
+agentic:
+  enabled: true
+  max_concurrent_nodes: 10
+  default_timeout: 120s
+  retry_policy:
+    max_attempts: 3
+    backoff: exponential
+```
+
+**Usage:**
+
+```go
+import agenticadapter "dev.helix.agent/internal/adapters/agentic"
+
+adapter := agenticadapter.NewAdapter(&agenticadapter.Config{
+    MaxConcurrentNodes: 10,
+    DefaultTimeout:     120 * time.Second,
+})
+
+// Define a workflow
+workflow := &agentic.Workflow{
+    ID:    "code-review-pipeline",
+    Nodes: []agentic.Node{
+        {ID: "fetch-pr",    Task: fetchPRTask},
+        {ID: "review-code", Task: reviewTask,  DependsOn: []string{"fetch-pr"}},
+        {ID: "post-review", Task: postTask,    DependsOn: []string{"review-code"}},
+    },
+}
+
+result, err := adapter.Execute(ctx, workflow)
+```
+
+---
+
+### LLMOps Module (`digital.vasic.llmops`)
+
+Production operations tooling: evaluation pipelines, A/B experiments, dataset management, and prompt versioning.
+
+**Configuration:**
+
+```yaml
+llmops:
+  enabled: true
+  evaluation:
+    provider: claude
+    metrics:
+      - accuracy
+      - relevance
+      - coherence
+  experiments:
+    significance_threshold: 0.95
+    min_sample_size: 100
+```
+
+**Usage:**
+
+```go
+import llmopsadapter "dev.helix.agent/internal/adapters/llmops"
+
+adapter := llmopsadapter.NewAdapter(cfg)
+
+// Run evaluation pipeline
+report, err := adapter.Evaluate(ctx, &llmops.EvalConfig{
+    Dataset:  "qa-benchmark-v2",
+    Provider: "helixagent-debate",
+    Metrics:  []string{"accuracy", "relevance"},
+})
+
+// Create A/B experiment
+exp, err := adapter.StartExperiment(ctx, &llmops.Experiment{
+    Name:     "prompt-v2-vs-v3",
+    VariantA: promptV2,
+    VariantB: promptV3,
+    TrafficSplit: 0.5,
+})
+
+// Version a prompt
+version, err := adapter.VersionPrompt(ctx, "system-prompt", newPromptContent)
+```
+
+---
+
+### SelfImprove Module (`digital.vasic.selfimprove`)
+
+RLHF-based feedback loops, reward modelling, and response optimization.
+
+**Configuration:**
+
+```yaml
+selfimprove:
+  enabled: true
+  reward_model:
+    update_interval: 1h
+    min_feedback_samples: 50
+  rlhf:
+    learning_rate: 0.001
+    feedback_window: 30d
+```
+
+**Usage:**
+
+```go
+import selfimproveadapter "dev.helix.agent/internal/adapters/selfimprove"
+
+adapter := selfimproveadapter.NewAdapter(cfg)
+
+// Submit feedback after a response
+err := adapter.SubmitFeedback(ctx, &selfimprove.Feedback{
+    ResponseID: responseID,
+    UserID:     userID,
+    Score:      0.9,
+    Comment:    "Accurate and concise",
+})
+
+// Retrieve learned preferences for prompt enrichment
+prefs, err := adapter.GetOptimizedPreferences(ctx, userID)
+
+// Train reward model on collected feedback
+err = adapter.TrainRewardModel(ctx)
+```
+
+---
+
+### Planning Module (`digital.vasic.planning`)
+
+Hierarchical planning, Monte Carlo Tree Search, and Tree of Thoughts algorithms.
+
+**Configuration:**
+
+```yaml
+planning:
+  enabled: true
+  hiplan:
+    max_depth: 5
+    max_subtasks: 20
+  mcts:
+    simulations: 1000
+    exploration_constant: 1.414
+  tree_of_thoughts:
+    branches: 3
+    depth: 4
+    eval_provider: claude
+```
+
+**Usage:**
+
+```go
+import planningadapter "dev.helix.agent/internal/adapters/planning"
+
+adapter := planningadapter.NewAdapter(cfg)
+
+// Hierarchical planning
+plan, err := adapter.HiPlan(ctx, &planning.Goal{
+    Description: "Refactor the authentication module",
+    Constraints: []string{"no breaking API changes", "maintain test coverage"},
+})
+
+// Monte Carlo Tree Search for exploration problems
+result, err := adapter.MCTS(ctx, initialState, 500 /* simulations */)
+
+// Tree of Thoughts for deliberate reasoning
+thoughts, err := adapter.TreeOfThoughts(ctx, &planning.ToTConfig{
+    Problem:  "Design a caching strategy for the API",
+    Branches: 3,
+    Depth:    4,
+})
+```
+
+---
+
+### Benchmark Module (`digital.vasic.benchmark`)
+
+Standardized quality benchmarking against SWE-bench, HumanEval, and MMLU.
+
+**Configuration:**
+
+```yaml
+benchmark:
+  enabled: true
+  suites:
+    - humaneval
+    - mmlu
+    - swe-bench
+  parallel: 4
+  result_store:
+    type: postgresql
+    table: benchmark_results
+```
+
+**Usage:**
+
+```go
+import benchmarkadapter "dev.helix.agent/internal/adapters/benchmark"
+
+adapter := benchmarkadapter.NewAdapter(cfg)
+
+// Run HumanEval (code generation)
+humanEvalResult, err := adapter.RunHumanEval(ctx, &benchmark.RunConfig{
+    Provider: "helixagent-debate",
+    Problems: 164, // full suite
+})
+
+fmt.Printf("HumanEval pass@1: %.2f%%\n", humanEvalResult.PassAt1 * 100)
+
+// Run MMLU (reasoning across 57 subjects)
+mmluResult, err := adapter.RunMMLU(ctx, &benchmark.RunConfig{
+    Provider: "helixagent-debate",
+    Subjects: benchmark.AllSubjects,
+})
+
+fmt.Printf("MMLU accuracy: %.2f%%\n", mmluResult.Accuracy * 100)
+
+// Run SWE-bench (software engineering tasks)
+sweResult, err := adapter.RunSWEBench(ctx, &benchmark.RunConfig{
+    Provider: "helixagent-debate",
+    Split:    "test",
+})
+
+fmt.Printf("SWE-bench resolved: %.2f%%\n", sweResult.ResolvedRate * 100)
+
+// Compare providers across all benchmarks
+comparison, err := adapter.CompareProviders(ctx, []string{
+    "claude", "deepseek", "gemini", "helixagent-debate",
+})
+```
+
+---
+
 ## Integration Testing
 
 Verify integrations with challenges:

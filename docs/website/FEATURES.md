@@ -534,6 +534,107 @@ Automated deployment:
 
 ---
 
+## AI/ML Advanced Capabilities
+
+### 33. Agentic Workflow Orchestration
+
+Graph-based agentic workflows for complex multi-step AI automation (`digital.vasic.agentic`):
+
+**Core Types:**
+- `Workflow` — Directed graph of connected AI tasks
+- `WorkflowConfig` — Topology, concurrency, and timeout configuration
+- `WorkflowState` — Runtime state tracking and persistence
+
+**Features:**
+- DAG-based task dependency resolution
+- Parallel branch execution
+- Conditional routing based on task output
+- Built-in retry and error recovery
+
+**Use Cases:**
+- Multi-step reasoning pipelines
+- Automated code review and fix workflows
+- Research and analysis automation
+
+---
+
+### 34. LLM Operations (LLMOps)
+
+Production operations tooling for LLM-powered applications (`digital.vasic.llmops`):
+
+**Components:**
+- **Evaluation Pipelines** — Automated quality scoring with configurable metrics
+- **A/B Experiments** — Statistically rigorous model and prompt comparison
+- **Dataset Management** — Versioned evaluation datasets with schema validation
+- **Prompt Versioning** — Track, diff, and rollback prompt changes
+
+**Benefits:**
+- Measure response quality over time
+- Data-driven model upgrade decisions
+- Regression detection for prompt changes
+
+---
+
+### 35. AI Self-Improvement (SelfImprove)
+
+Feedback-driven AI quality improvement framework (`digital.vasic.selfimprove`):
+
+**Components:**
+- **Reward Modelling** — Learn quality scores from human and automated feedback
+- **RLHF Integration** — Reinforcement Learning from Human Feedback pipeline
+- **Feedback Loops** — Continuous signal collection and aggregation
+- **Response Optimizer** — Apply learned preferences to improve future responses
+
+**Benefits:**
+- Responses improve as HelixAgent collects feedback
+- Customizable reward signals per deployment
+- Preference alignment without model retraining
+
+---
+
+### 36. AI Planning Algorithms
+
+Advanced planning for complex problem decomposition (`digital.vasic.planning`):
+
+**Algorithms:**
+- **HiPlan** — Hierarchical planning that decomposes goals into subtask trees
+- **MCTS (Monte Carlo Tree Search)** — Probabilistic exploration of solution spaces
+- **Tree of Thoughts (ToT)** — Deliberate reasoning through branching thought chains
+
+**Features:**
+- Configurable search depth and branching factor
+- Interruptible planning with partial-result streaming
+- Integration with ensemble voting for plan evaluation
+
+**Use Cases:**
+- Complex software architecture decisions
+- Multi-step research strategies
+- Task decomposition for agentic workflows
+
+---
+
+### 37. LLM Benchmarking
+
+Standardized benchmarking against industry suites (`digital.vasic.benchmark`):
+
+**Supported Benchmark Suites:**
+- **SWE-bench** — Software engineering task evaluation on real GitHub issues
+- **HumanEval** — Code generation correctness across 164 problems
+- **MMLU** — Massive Multitask Language Understanding (57 academic subjects)
+
+**Features:**
+- Parallel benchmark execution with resource limits
+- Per-provider and per-model score comparison
+- Historical trend tracking
+- Automated regression alerts
+
+**Benefits:**
+- Objective provider quality measurement
+- Evidence-based model selection
+- Continuous quality assurance
+
+---
+
 ## Summary Table
 
 | Category | Feature Count | Status |
@@ -550,14 +651,14 @@ Automated deployment:
 | Embeddings & Vector | 2 | Production |
 | RAG | 1 | Production |
 | Deployment | 2 | Production |
-| **Total** | **32+** | |
+| AI/ML Advanced | 5 | Production |
+| **Total** | **37+** | |
 
 ---
 
 ## Coming Soon
 
 - Fine-tuning pipeline integration
-- A/B testing framework
 - Cost optimization recommendations
 - Multi-region deployment
 - Enterprise SSO (SAML, OIDC)

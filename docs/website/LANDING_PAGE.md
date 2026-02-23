@@ -27,6 +27,7 @@ HelixAgent is an enterprise-grade ensemble LLM service that combines the strengt
 | **LLM Providers** | 10+ integrated |
 | **Response Accuracy** | 85%+ consensus rate |
 | **API Compatibility** | 100% OpenAI compatible |
+| **Extracted Modules** | 25+ independent modules |
 | **Uptime SLA** | 99.9% availability |
 
 ---
@@ -94,6 +95,21 @@ Native MCP (Model Context Protocol), LSP (Language Server Protocol), and ACP sup
 
 **48 CLI Agents**
 Pre-configured agents for popular AI coding tools including Claude Code, Cursor, and OpenCode.
+
+**Agentic Workflows**
+Graph-based multi-step workflow orchestration with parallel execution, conditional routing, and automatic retry.
+
+**LLM Operations**
+Built-in evaluation pipelines, A/B experiment framework, dataset management, and prompt versioning for production AI.
+
+**AI Self-Improvement**
+RLHF-powered feedback loops and reward modelling allow HelixAgent to improve response quality over time.
+
+**AI Planning**
+Hierarchical planning (HiPlan), Monte Carlo Tree Search, and Tree of Thoughts algorithms for complex problem solving.
+
+**Standardized Benchmarking**
+Continuous quality measurement against SWE-bench, HumanEval, and MMLU for objective model comparison.
 
 ---
 
