@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -29,7 +30,7 @@ func TestMCPContainerConnectivity(t *testing.T) {
 
 	for _, p := range ports {
 		t.Run(p.Name, func(t *testing.T) {
-			addr := fmt.Sprintf("%s:%d", host, p.Port)
+			addr := net.JoinHostPort(host, strconv.Itoa(p.Port))
 			conn, err := net.DialTimeout("tcp", addr, 5*time.Second)
 			if err != nil {
 				t.Errorf("Failed to connect to %s at %s: %v", p.Name, addr, err)
@@ -103,10 +104,10 @@ func TestMCPContainerJSONRPCCompliance(t *testing.T) {
 
 	// Test a few core MCP servers for JSON-RPC compliance
 	corePorts := []config.MCPContainerPort{
-		{"fetch", 9101, "core"},
-		{"git", 9102, "core"},
-		{"time", 9103, "core"},
-		{"memory", 9105, "core"},
+		{Name: "fetch", Port: 9101, Category: "core"},
+		{Name: "git", Port: 9102, Category: "core"},
+		{Name: "time", Port: 9103, Category: "core"},
+		{Name: "memory", Port: 9105, Category: "core"},
 	}
 
 	for _, p := range corePorts {
@@ -167,8 +168,8 @@ func TestMCPContainerToolDiscovery(t *testing.T) {
 
 	// Test a few core MCP servers for tool discovery
 	corePorts := []config.MCPContainerPort{
-		{"filesystem", 9104, "core"},
-		{"memory", 9105, "core"},
+		{Name: "filesystem", Port: 9104, Category: "core"},
+		{Name: "memory", Port: 9105, Category: "core"},
 	}
 
 	for _, p := range corePorts {
@@ -358,7 +359,7 @@ func TestMCPContainerStartup(t *testing.T) {
 
 	startedCount := 0
 	for _, port := range corePorts {
-		addr := fmt.Sprintf("%s:%d", host, port)
+		addr := net.JoinHostPort(host, strconv.Itoa(port))
 		conn, err := net.DialTimeout("tcp", addr, 5*time.Second)
 		if err == nil {
 			conn.Close()
