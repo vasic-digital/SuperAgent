@@ -41,10 +41,10 @@ const (
 	RoleModerator AgentRole = "moderator" // Facilitates discussion
 
 	// Specialized roles
-	RoleArchitect AgentRole = "architect" // Designs structure
-	RoleSecurity  AgentRole = "security"  // Security analysis
+	RoleArchitect AgentRole = "architect"  // Designs structure
+	RoleSecurity  AgentRole = "security"   // Security analysis
 	RoleTestAgent AgentRole = "test_agent" // Test generation
-	RoleValidator AgentRole = "validator" // Final validation
+	RoleValidator AgentRole = "validator"  // Final validation
 
 	// Adversarial roles
 	RoleRedTeam  AgentRole = "red_team"  // Adversarial testing

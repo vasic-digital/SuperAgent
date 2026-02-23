@@ -54,8 +54,8 @@ func TestBasicTestCaseValidator_Validate(t *testing.T) {
 	validator := NewBasicTestCaseValidator()
 
 	tests := []struct {
-		name     string
-		testCase *TestCase
+		name      string
+		testCase  *TestCase
 		wantValid bool
 	}{
 		{
@@ -92,8 +92,8 @@ func TestBasicTestCaseValidator_Validate(t *testing.T) {
 
 func TestSandboxedTestExecutor_Execute(t *testing.T) {
 	executor := NewSandboxedTestExecutor(
-		WithTimeout(5 * time.Second),
-		WithMemoryLimit(256 * 1024 * 1024),
+		WithTimeout(5*time.Second),
+		WithMemoryLimit(256*1024*1024),
 	)
 
 	testCase := &TestCase{

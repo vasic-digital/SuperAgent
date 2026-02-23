@@ -351,11 +351,16 @@ func TestGetModelDisplayName_Known(t *testing.T) {
 		modelID  string
 		expected string
 	}{
-		// New model IDs (without opencode/ prefix)
-		{"big-pickle", "Big Pickle (Stealth)"},
-		{"grok-code", "Grok Code Fast"},
-		{"glm-4.7-free", "GLM 4.7 Free"},
-		{"gpt-5-nano", "GPT 5 Nano"},
+		// Known models in nameMap
+		{"big-pickle", "Big Pickle"},
+		{"glm-5-free", "GLM 5 Free"},
+		{"minimax-m2.5-free", "Minimax M2.5 Free"},
+		{"minimax-m2.1-free", "Minimax M2.1 Free"},
+		{"trinity-large-preview-free", "Trinity Large Preview"},
+		// Unknown models - return as-is
+		{"grok-code", "grok-code"},
+		{"glm-4.7-free", "glm-4.7-free"},
+		{"gpt-5-nano", "gpt-5-nano"},
 		// Legacy model IDs (with opencode/ prefix) - also tested for backward compat
 		{"opencode/big-pickle", "big-pickle"},
 		{"opencode/grok-code", "grok-code"},

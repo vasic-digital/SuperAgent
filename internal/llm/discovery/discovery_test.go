@@ -160,7 +160,7 @@ func TestDiscoverModels_NoAPIKey_SkipsTier1(t *testing.T) {
 	config := ProviderConfig{
 		ProviderName:   "test",
 		ModelsEndpoint: "https://api.test.com/v1/models", // Would fail anyway
-		APIKey:         "",                                // No API key
+		APIKey:         "",                               // No API key
 		FallbackModels: []string{"fallback-model"},
 	}
 

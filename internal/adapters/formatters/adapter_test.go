@@ -96,13 +96,13 @@ func TestToGenericMetadata(t *testing.T) {
 
 func TestFromGenericMetadata(t *testing.T) {
 	generic := &genericfmt.FormatterMetadata{
-		Name:            "black",
-		Type:            genericfmt.FormatterTypeNative,
-		Architecture:    "python",
-		Version:         "26.1",
-		Languages:       []string{"python"},
-		SupportsStdin:   true,
-		SupportsCheck:   true,
+		Name:          "black",
+		Type:          genericfmt.FormatterTypeNative,
+		Architecture:  "python",
+		Version:       "26.1",
+		Languages:     []string{"python"},
+		SupportsStdin: true,
+		SupportsCheck: true,
 	}
 
 	metadata := adapter.FromGenericMetadata(generic)
@@ -159,16 +159,16 @@ type mockFormatter struct {
 	languages []string
 }
 
-func (m *mockFormatter) Name() string                            { return m.name }
-func (m *mockFormatter) Version() string                         { return m.version }
-func (m *mockFormatter) Languages() []string                     { return m.languages }
-func (m *mockFormatter) SupportsStdin() bool                     { return true }
-func (m *mockFormatter) SupportsInPlace() bool                   { return true }
-func (m *mockFormatter) SupportsCheck() bool                     { return true }
-func (m *mockFormatter) SupportsConfig() bool                    { return true }
-func (m *mockFormatter) HealthCheck(ctx context.Context) error   { return nil }
+func (m *mockFormatter) Name() string                                { return m.name }
+func (m *mockFormatter) Version() string                             { return m.version }
+func (m *mockFormatter) Languages() []string                         { return m.languages }
+func (m *mockFormatter) SupportsStdin() bool                         { return true }
+func (m *mockFormatter) SupportsInPlace() bool                       { return true }
+func (m *mockFormatter) SupportsCheck() bool                         { return true }
+func (m *mockFormatter) SupportsConfig() bool                        { return true }
+func (m *mockFormatter) HealthCheck(ctx context.Context) error       { return nil }
 func (m *mockFormatter) ValidateConfig(map[string]interface{}) error { return nil }
-func (m *mockFormatter) DefaultConfig() map[string]interface{}   { return nil }
+func (m *mockFormatter) DefaultConfig() map[string]interface{}       { return nil }
 
 func (m *mockFormatter) Format(
 	ctx context.Context,

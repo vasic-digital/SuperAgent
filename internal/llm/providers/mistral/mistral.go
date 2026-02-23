@@ -320,7 +320,7 @@ func (p *MistralProvider) CompleteStream(ctx context.Context, req *models.LLMReq
 	ch := make(chan *models.LLMResponse)
 
 	go func() {
-	defer func() { _ = resp.Body.Close() }()
+		defer func() { _ = resp.Body.Close() }()
 		defer close(ch)
 
 		reader := bufio.NewReader(resp.Body)

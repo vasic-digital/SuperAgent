@@ -633,7 +633,7 @@ func TestEnhanceProviderRegistry(t *testing.T) {
 		registryConfig := &RegistryConfig{
 			DefaultTimeout:       30 * time.Second,
 			DisableAutoDiscovery: true,
-			MaxRetries:     3,
+			MaxRetries:           3,
 		}
 		registry := NewProviderRegistry(registryConfig, nil)
 		_ = registry.RegisterProvider("provider1", &CogneeMockProvider{})

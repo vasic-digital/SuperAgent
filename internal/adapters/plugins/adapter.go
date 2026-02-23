@@ -6,11 +6,11 @@ import (
 	"context"
 	"fmt"
 
-	helixplugins "dev.helix.agent/internal/plugins"
 	"dev.helix.agent/internal/models"
+	helixplugins "dev.helix.agent/internal/plugins"
+	modloader "digital.vasic.plugins/pkg/loader"
 	modplugin "digital.vasic.plugins/pkg/plugin"
 	modregistry "digital.vasic.plugins/pkg/registry"
-	modloader "digital.vasic.plugins/pkg/loader"
 	modstructured "digital.vasic.plugins/pkg/structured"
 )
 

@@ -58,8 +58,8 @@ func TestValidationPipeline_Validate_AllPass(t *testing.T) {
 	}
 
 	artifact := &Artifact{
-		Type:    ArtifactCode,
-		Content: "func test() {}",
+		Type:     ArtifactCode,
+		Content:  "func test() {}",
 		Language: "go",
 	}
 
@@ -90,8 +90,8 @@ func TestValidationPipeline_Validate_InitialFail(t *testing.T) {
 	})
 
 	artifact := &Artifact{
-		Type:    ArtifactCode,
-		Content: "invalid code",
+		Type:     ArtifactCode,
+		Content:  "invalid code",
 		Language: "go",
 	}
 
@@ -123,8 +123,8 @@ func TestValidationPipeline_Validate_WithBlockers(t *testing.T) {
 	}
 
 	artifact := &Artifact{
-		Type:    ArtifactCode,
-		Content: "func test() { panic() }",
+		Type:     ArtifactCode,
+		Content:  "func test() { panic() }",
 		Language: "go",
 	}
 
@@ -150,8 +150,8 @@ func TestValidationPipeline_Validate_Timeout(t *testing.T) {
 	})
 
 	artifact := &Artifact{
-		Type:    ArtifactCode,
-		Content: "func test() {}",
+		Type:     ArtifactCode,
+		Content:  "func test() {}",
 		Language: "go",
 	}
 

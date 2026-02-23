@@ -5,12 +5,12 @@
 //
 // This package provides two main integration paths:
 //
-// 1. Direct replacement: For code that can work directly with the database module's
-//    interfaces (Database, Tx, Row, Rows), import digital.vasic.database directly.
+//  1. Direct replacement: For code that can work directly with the database module's
+//     interfaces (Database, Tx, Row, Rows), import digital.vasic.database directly.
 //
-// 2. Compatibility layer: For code that relies on HelixAgent's existing database
-//    types (PostgresDB, MemoryDB), the internal/database package continues to
-//    provide these types but now implements them using the extracted module.
+//  2. Compatibility layer: For code that relies on HelixAgent's existing database
+//     types (PostgresDB, MemoryDB), the internal/database package continues to
+//     provide these types but now implements them using the extracted module.
 //
 // # Migration Path
 //

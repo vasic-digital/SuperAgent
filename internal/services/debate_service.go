@@ -115,15 +115,39 @@ func NewDebateServiceWithDeps(
 	providerRegistry *ProviderRegistry,
 	cogneeService *CogneeService,
 ) *DebateService {
-	// Initialize Test-Driven Debate components
 	basicValidator := &testing.BasicTestCaseValidator{}
-	testGen := testing.NewLLMTestCaseGenerator(providerRegistry, basicValidator)
+
+	llmAdapter := testing.NewProviderAdapter(func(ctx context.Context, prompt string) (string, error) {
+		req := &models.LLMRequest{
+			ID:        uuid.New().String(),
+			Prompt:    prompt,
+			CreatedAt: time.Now(),
+			ModelParams: models.ModelParameters{
+				Model:       "default",
+				Temperature: 0.7,
+				MaxTokens:   2000,
+			},
+		}
+		provider, err := providerRegistry.GetProvider("claude")
+		if err != nil {
+			provider, err = providerRegistry.GetProvider("deepseek")
+			if err != nil {
+				return "", err
+			}
+		}
+		resp, err := provider.Complete(ctx, req)
+		if err != nil {
+			return "", err
+		}
+		return resp.Content, nil
+	})
+	testGen := testing.NewLLMTestCaseGenerator(llmAdapter, basicValidator)
 	testExec := testing.NewSandboxedTestExecutor(
 		testing.WithTimeout(30*time.Second),
-		testing.WithMemoryLimit(512*1024*1024), // 512MB
-		testing.WithCPULimit(2.0),              // 2 cores
+		testing.WithMemoryLimit(512*1024*1024),
+		testing.WithCPULimit(2.0),
 	)
-	contrastiveAnalyzer := testing.NewDifferentialContrastiveAnalyzer(providerRegistry)
+	contrastiveAnalyzer := testing.NewDifferentialContrastiveAnalyzer(nil)
 
 	// Initialize 4-Pass Validation Pipeline
 	validationPipeline := validation.NewValidationPipeline(validation.DefaultPipelineConfig())

@@ -69,14 +69,14 @@ func TestBrokerAdapter_PublishSubscribe(t *testing.T) {
 
 func TestBrokerAdapter_BrokerType(t *testing.T) {
 	tests := []struct {
-		name           string
-		genericBroker  broker.MessageBroker
-		expectedType   messaging.BrokerType
+		name          string
+		genericBroker broker.MessageBroker
+		expectedType  messaging.BrokerType
 	}{
 		{
-			name:           "InMemory",
-			genericBroker:  broker.NewInMemoryBroker(),
-			expectedType:   messaging.BrokerTypeInMemory,
+			name:          "InMemory",
+			genericBroker: broker.NewInMemoryBroker(),
+			expectedType:  messaging.BrokerTypeInMemory,
 		},
 	}
 

@@ -914,7 +914,7 @@ func TestConcurrency_AddRemove(t *testing.T) {
 		go func(id int) {
 			defer wg.Done()
 			_ = router.AddRoute(context.Background(), &Route{
-				Name:       string(rune('A' + id%26)) + string(rune('0'+id/26)),
+				Name:       string(rune('A'+id%26)) + string(rune('0'+id/26)),
 				Utterances: []string{"test"},
 			})
 		}(i)
@@ -927,7 +927,7 @@ func TestConcurrency_AddRemove(t *testing.T) {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
-			router.RemoveRoute(string(rune('A' + id%26)) + string(rune('0'+id/26)))
+			router.RemoveRoute(string(rune('A'+id%26)) + string(rune('0'+id/26)))
 		}(i)
 	}
 

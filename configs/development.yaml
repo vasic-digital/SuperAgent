@@ -375,10 +375,10 @@ backup:
 
 services:
   postgresql:
-    host: "localhost"
-    port: "5432"
-    enabled: true
-    required: true
+    host: "${DB_HOST:-localhost}"
+    port: "${DB_PORT:-5432}"
+    enabled: "${SVC_POSTGRESQL_ENABLED:-true}"
+    required: "${SVC_POSTGRESQL_REQUIRED:-false}"
     remote: false
     discovery_enabled: false
     discovery_method: "tcp"
@@ -390,10 +390,10 @@ services:
     service_name: "postgres"
     profile: "default"
   redis:
-    host: "localhost"
-    port: "6379"
-    enabled: true
-    required: true
+    host: "${REDIS_HOST:-localhost}"
+    port: "${REDIS_PORT:-6379}"
+    enabled: "${SVC_REDIS_ENABLED:-true}"
+    required: "${SVC_REDIS_REQUIRED:-false}"
     remote: false
     discovery_enabled: false
     discovery_method: "tcp"

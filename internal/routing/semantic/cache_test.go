@@ -207,8 +207,8 @@ func TestSemanticCache_SetWithEmbedding_TableDriven(t *testing.T) {
 // TestSemanticCache_GetSemantic_TableDriven tests semantic retrieval
 func TestSemanticCache_GetSemantic_TableDriven(t *testing.T) {
 	tests := []struct {
-		name           string
-		cached         []struct {
+		name   string
+		cached []struct {
 			query     string
 			route     *Route
 			embedding []float32
@@ -276,8 +276,8 @@ func TestSemanticCache_GetSemantic_TableDriven(t *testing.T) {
 			expectedRoute:  "farewell",
 		},
 		{
-			name:           "empty_cache",
-			cached:         []struct {
+			name: "empty_cache",
+			cached: []struct {
 				query     string
 				route     *Route
 				embedding []float32

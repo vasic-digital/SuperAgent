@@ -66,7 +66,7 @@ func TestNewHubMetrics(t *testing.T) {
 	assert.Nil(t, metrics.TaskQueueMetrics)
 	assert.Nil(t, metrics.EventStreamMetrics)
 	assert.Nil(t, metrics.FallbackMetrics)
-	assert.Equal(t, int64(0), metrics.FallbackUsages)
+	assert.Equal(t, int64(0), metrics.FallbackUsages.Load())
 }
 
 func TestMessagingHub_SetBrokers(t *testing.T) {
@@ -639,7 +639,9 @@ func (m *hubTestMockTaskQueueBroker) SubscribeTasks(ctx context.Context, queue s
 		topic:  queue,
 		active: true,
 	}
+	m.taskMu.Lock()
 	m.taskSubscription = sub
+	m.taskMu.Unlock()
 	return sub, nil
 }
 
@@ -952,7 +954,7 @@ func TestMessagingHub_EnqueueTask_WithTaskQueueError_FallsBackToInMemory(t *test
 
 	assert.NoError(t, err)
 	assert.Len(t, fallback.publishedMsgs, 1)
-	assert.Greater(t, hub.GetMetrics().FallbackUsages, int64(0))
+	assert.Greater(t, hub.GetMetrics().FallbackUsages.Load(), int64(0))
 }
 
 func TestMessagingHub_EnqueueTask_NoTaskQueue_UsesFallback(t *testing.T) {
@@ -1479,7 +1481,7 @@ func TestMessagingHub_MetricsRecording_FallbackUsage(t *testing.T) {
 	_ = hub.EnqueueTask(ctx, "test-queue", task)
 
 	metrics := hub.GetMetrics()
-	assert.Greater(t, metrics.FallbackUsages, int64(0))
+	assert.Greater(t, metrics.FallbackUsages.Load(), int64(0))
 }
 
 // =============================================================================

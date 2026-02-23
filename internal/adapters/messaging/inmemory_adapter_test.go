@@ -2,6 +2,7 @@ package messaging
 
 import (
 	"context"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -70,10 +71,10 @@ func TestInMemoryBrokerAdapter_PublishBatch(t *testing.T) {
 	require.NoError(t, err)
 	defer func() { _ = adapter.Close(ctx) }()
 
-	receivedCount := 0
+	var receivedCount int64
 	receivedCh := make(chan struct{}, 3)
 	handler := func(ctx context.Context, msg *messaging.Message) error {
-		receivedCount++
+		atomic.AddInt64(&receivedCount, 1)
 		receivedCh <- struct{}{}
 		return nil
 	}

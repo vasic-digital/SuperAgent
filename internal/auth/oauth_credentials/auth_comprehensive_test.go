@@ -474,12 +474,12 @@ func TestOAuthCredentialReader_ConcurrentAccess(t *testing.T) {
 
 func TestIsClaudeOAuthEnabled_AllVariants(t *testing.T) {
 	tests := []struct {
-		name      string
-		mainEnv   string
-		typoEnv   string
-		mainVal   string
-		typoVal   string
-		expected  bool
+		name     string
+		mainEnv  string
+		typoEnv  string
+		mainVal  string
+		typoVal  string
+		expected bool
 	}{
 		{"main true", "CLAUDE_CODE_USE_OAUTH_CREDENTIALS", "", "true", "", true},
 		{"main 1", "CLAUDE_CODE_USE_OAUTH_CREDENTIALS", "", "1", "", true},
@@ -729,7 +729,7 @@ func TestUpdateQwenCredentialsFile_Success(t *testing.T) {
 	assert.Equal(t, "new-token", updatedCreds.AccessToken)
 	assert.Equal(t, "new-refresh", updatedCreds.RefreshToken)
 	assert.Equal(t, "new-id-token", updatedCreds.IDToken)
-	assert.Equal(t, "Bearer", updatedCreds.TokenType)       // Preserved
+	assert.Equal(t, "Bearer", updatedCreds.TokenType)                // Preserved
 	assert.Equal(t, "https://example.com", updatedCreds.ResourceURL) // Preserved
 }
 
@@ -950,8 +950,8 @@ func TestCLIRefresher_ParseQwenOutput_VariousFormats(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name: "error result",
-			output: `{"type":"result","subtype":"error","is_error":true,"result":"Failed"}`,
+			name:        "error result",
+			output:      `{"type":"result","subtype":"error","is_error":true,"result":"Failed"}`,
 			expectError: true,
 		},
 		{

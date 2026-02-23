@@ -307,7 +307,7 @@ func (p *Provider) HealthCheck() error {
 // GetCapabilities returns provider capabilities
 func (p *Provider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
-		SupportedModels: p.discoverer.DiscoverModels(),
+		SupportedModels:         p.discoverer.DiscoverModels(),
 		SupportedFeatures:       []string{"chat", "streaming", "tools", "vision", "json_mode"},
 		SupportedRequestTypes:   []string{"chat", "completion"},
 		SupportsStreaming:       true,

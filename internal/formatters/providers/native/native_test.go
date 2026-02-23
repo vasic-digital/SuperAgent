@@ -171,7 +171,191 @@ func TestNativeFormatter_Format_MissingBinary(t *testing.T) {
 	ctx := context.Background()
 	req := &formatters.FormatRequest{Content: "test", Language: "test"}
 	result, err := formatter.Format(ctx, req)
-	require.NoError(t, err) // Format returns result with error, not an error
+	require.NoError(t, err)
 	assert.False(t, result.Success)
 	assert.Contains(t, result.Error.Error(), "formatter execution failed")
+}
+
+func TestComputeLineChanges(t *testing.T) {
+	tests := []struct {
+		name      string
+		original  string
+		formatted string
+		expected  int
+	}{
+		{
+			name:      "no changes",
+			original:  "line1\nline2\nline3",
+			formatted: "line1\nline2\nline3",
+			expected:  0,
+		},
+		{
+			name:      "one line changed",
+			original:  "line1\nline2\nline3",
+			formatted: "line1\nCHANGED\nline3",
+			expected:  1,
+		},
+		{
+			name:      "all lines changed",
+			original:  "a\nb\nc",
+			formatted: "x\ny\nz",
+			expected:  3,
+		},
+		{
+			name:      "added line",
+			original:  "line1\nline2",
+			formatted: "line1\nline2\nline3",
+			expected:  1,
+		},
+		{
+			name:      "removed line",
+			original:  "line1\nline2\nline3",
+			formatted: "line1\nline2",
+			expected:  1,
+		},
+		{
+			name:      "empty strings",
+			original:  "",
+			formatted: "",
+			expected:  0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := computeLineChanges(tt.original, tt.formatted)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestNewGofmtFormatter(t *testing.T) {
+	logger := logrus.New()
+	formatter := NewGofmtFormatter(logger)
+
+	require.NotNil(t, formatter)
+	assert.Equal(t, "gofmt", formatter.Name())
+	assert.Equal(t, "go1.24.11", formatter.Version())
+	assert.Contains(t, formatter.Languages(), "go")
+}
+
+func TestNewBlackFormatter(t *testing.T) {
+	logger := logrus.New()
+	formatter := NewBlackFormatter(logger)
+
+	require.NotNil(t, formatter)
+	assert.Equal(t, "black", formatter.Name())
+	assert.Contains(t, formatter.Languages(), "python")
+}
+
+func TestNewRuffFormatter(t *testing.T) {
+	logger := logrus.New()
+	formatter := NewRuffFormatter(logger)
+
+	require.NotNil(t, formatter)
+	assert.Equal(t, "ruff", formatter.Name())
+	assert.Contains(t, formatter.Languages(), "python")
+}
+
+func TestNewPrettierFormatter(t *testing.T) {
+	logger := logrus.New()
+	formatter := NewPrettierFormatter(logger)
+
+	require.NotNil(t, formatter)
+	assert.Equal(t, "prettier", formatter.Name())
+}
+
+func TestNewRustfmtFormatter(t *testing.T) {
+	logger := logrus.New()
+	formatter := NewRustfmtFormatter(logger)
+
+	require.NotNil(t, formatter)
+	assert.Equal(t, "rustfmt", formatter.Name())
+	assert.Contains(t, formatter.Languages(), "rust")
+}
+
+func TestNewClangFormatFormatter(t *testing.T) {
+	logger := logrus.New()
+	formatter := NewClangFormatFormatter(logger)
+
+	require.NotNil(t, formatter)
+	assert.Equal(t, "clang-format", formatter.Name())
+}
+
+func TestNewBiomeFormatter(t *testing.T) {
+	logger := logrus.New()
+	formatter := NewBiomeFormatter(logger)
+
+	require.NotNil(t, formatter)
+	assert.Equal(t, "biome", formatter.Name())
+}
+
+func TestNewShfmtFormatter(t *testing.T) {
+	logger := logrus.New()
+	formatter := NewShfmtFormatter(logger)
+
+	require.NotNil(t, formatter)
+	assert.Equal(t, "shfmt", formatter.Name())
+	assert.Contains(t, formatter.Languages(), "shell")
+}
+
+func TestNewYamlfmtFormatter(t *testing.T) {
+	logger := logrus.New()
+	formatter := NewYamlfmtFormatter(logger)
+
+	require.NotNil(t, formatter)
+	assert.Equal(t, "yamlfmt", formatter.Name())
+	assert.Contains(t, formatter.Languages(), "yaml")
+}
+
+func TestNewTaploFormatter(t *testing.T) {
+	logger := logrus.New()
+	formatter := NewTaploFormatter(logger)
+
+	require.NotNil(t, formatter)
+	assert.Equal(t, "taplo", formatter.Name())
+	assert.Contains(t, formatter.Languages(), "toml")
+}
+
+func TestNewStyluaFormatter(t *testing.T) {
+	logger := logrus.New()
+	formatter := NewStyluaFormatter(logger)
+
+	require.NotNil(t, formatter)
+	assert.Equal(t, "stylua", formatter.Name())
+	assert.Contains(t, formatter.Languages(), "lua")
+}
+
+func TestAllFormatters_UniqueNames(t *testing.T) {
+	logger := logrus.New()
+	formatters := map[string]*NativeFormatter{
+		"gofmt":        NewGofmtFormatter(logger),
+		"black":        NewBlackFormatter(logger),
+		"ruff":         NewRuffFormatter(logger),
+		"prettier":     NewPrettierFormatter(logger),
+		"rustfmt":      NewRustfmtFormatter(logger),
+		"clang-format": NewClangFormatFormatter(logger),
+		"biome":        NewBiomeFormatter(logger),
+		"shfmt":        NewShfmtFormatter(logger),
+		"yamlfmt":      NewYamlfmtFormatter(logger),
+		"taplo":        NewTaploFormatter(logger),
+		"stylua":       NewStyluaFormatter(logger),
+	}
+
+	names := make(map[string]bool)
+	for name, f := range formatters {
+		assert.False(t, names[f.Name()], "Duplicate formatter name: %s", f.Name())
+		names[f.Name()] = true
+		assert.Equal(t, name, f.Name())
+	}
+}
+
+func BenchmarkComputeLineChanges(b *testing.B) {
+	original := "line1\nline2\nline3\nline4\nline5"
+	formatted := "line1\nchanged\nline3\nline4\nline5"
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = computeLineChanges(original, formatted)
+	}
 }

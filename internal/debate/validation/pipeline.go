@@ -22,9 +22,9 @@ const (
 type ValidationResult struct {
 	Pass        ValidationPass         `json:"pass"`
 	Passed      bool                   `json:"passed"`
-	Score       float64                `json:"score"`        // 0-1
-	Issues      []*ValidationIssue     `json:"issues"`       // Found issues
-	Suggestions []*Suggestion          `json:"suggestions"`  // Improvement suggestions
+	Score       float64                `json:"score"`       // 0-1
+	Issues      []*ValidationIssue     `json:"issues"`      // Found issues
+	Suggestions []*Suggestion          `json:"suggestions"` // Improvement suggestions
 	Metadata    map[string]interface{} `json:"metadata"`
 	Duration    time.Duration          `json:"duration"`
 	Timestamp   int64                  `json:"timestamp"`
@@ -32,10 +32,10 @@ type ValidationResult struct {
 
 // ValidationIssue represents a problem found during validation.
 type ValidationIssue struct {
-	Severity    IssueSeverity `json:"severity"`
-	Category    IssueCategory `json:"category"`
-	Description string        `json:"description"`
-	Location    string        `json:"location"` // Line number, function, etc.
+	Severity     IssueSeverity `json:"severity"`
+	Category     IssueCategory `json:"category"`
+	Description  string        `json:"description"`
+	Location     string        `json:"location"` // Line number, function, etc.
 	SuggestedFix string        `json:"suggested_fix"`
 }
 
@@ -54,23 +54,23 @@ const (
 type IssueCategory string
 
 const (
-	CategoryCorrectness   IssueCategory = "correctness"
-	CategoryPerformance   IssueCategory = "performance"
-	CategorySecurity      IssueCategory = "security"
-	CategoryStyle         IssueCategory = "style"
+	CategoryCorrectness     IssueCategory = "correctness"
+	CategoryPerformance     IssueCategory = "performance"
+	CategorySecurity        IssueCategory = "security"
+	CategoryStyle           IssueCategory = "style"
 	CategoryMaintainability IssueCategory = "maintainability"
-	CategoryDocumentation IssueCategory = "documentation"
+	CategoryDocumentation   IssueCategory = "documentation"
 )
 
 // Suggestion provides improvement recommendations.
 type Suggestion struct {
-	Type        string  `json:"type"`        // "refactor", "optimize", "simplify"
-	Priority    int     `json:"priority"`    // 1 (highest) - 5 (lowest)
+	Type        string  `json:"type"`     // "refactor", "optimize", "simplify"
+	Priority    int     `json:"priority"` // 1 (highest) - 5 (lowest)
 	Description string  `json:"description"`
-	Before      string  `json:"before"`      // Current code
-	After       string  `json:"after"`       // Suggested code
+	Before      string  `json:"before"` // Current code
+	After       string  `json:"after"`  // Suggested code
 	Rationale   string  `json:"rationale"`
-	Impact      float64 `json:"impact"`      // Expected improvement (0-1)
+	Impact      float64 `json:"impact"` // Expected improvement (0-1)
 }
 
 // ValidationPipeline orchestrates multi-pass validation.
@@ -82,10 +82,10 @@ type ValidationPipeline struct {
 // PipelineConfig configures the validation pipeline.
 type PipelineConfig struct {
 	// Pass requirements
-	RequireAllPasses    bool              `json:"require_all_passes"`    // All passes must succeed
-	MinScoreThreshold   float64           `json:"min_score_threshold"`   // Minimum score to pass (0-1)
-	MaxBlockerIssues    int               `json:"max_blocker_issues"`    // Max blocker issues allowed
-	StopOnFirstFailure  bool              `json:"stop_on_first_failure"` // Stop on first failed pass
+	RequireAllPasses   bool    `json:"require_all_passes"`    // All passes must succeed
+	MinScoreThreshold  float64 `json:"min_score_threshold"`   // Minimum score to pass (0-1)
+	MaxBlockerIssues   int     `json:"max_blocker_issues"`    // Max blocker issues allowed
+	StopOnFirstFailure bool    `json:"stop_on_first_failure"` // Stop on first failed pass
 
 	// Pass-specific configs
 	PassConfigs map[ValidationPass]*PassConfig `json:"pass_configs"`
@@ -93,10 +93,10 @@ type PipelineConfig struct {
 
 // PassConfig configures a single validation pass.
 type PassConfig struct {
-	Enabled         bool          `json:"enabled"`
-	Timeout         time.Duration `json:"timeout"`
-	MinScore        float64       `json:"min_score"`
-	RequiredChecks  []string      `json:"required_checks"`
+	Enabled        bool          `json:"enabled"`
+	Timeout        time.Duration `json:"timeout"`
+	MinScore       float64       `json:"min_score"`
+	RequiredChecks []string      `json:"required_checks"`
 }
 
 // NewValidationPipeline creates a validation pipeline.
@@ -120,27 +120,27 @@ func DefaultPipelineConfig() *PipelineConfig {
 		StopOnFirstFailure: false,
 		PassConfigs: map[ValidationPass]*PassConfig{
 			PassInitial: {
-				Enabled:  true,
-				Timeout:  30 * time.Second,
-				MinScore: 0.6, // 60% for initial pass
+				Enabled:        true,
+				Timeout:        30 * time.Second,
+				MinScore:       0.6, // 60% for initial pass
 				RequiredChecks: []string{"syntax", "basic_correctness"},
 			},
 			PassValidation: {
-				Enabled:  true,
-				Timeout:  60 * time.Second,
-				MinScore: 0.75, // 75% for validation pass
+				Enabled:        true,
+				Timeout:        60 * time.Second,
+				MinScore:       0.75, // 75% for validation pass
 				RequiredChecks: []string{"logic", "edge_cases", "error_handling"},
 			},
 			PassPolish: {
-				Enabled:  true,
-				Timeout:  45 * time.Second,
-				MinScore: 0.85, // 85% for polish pass
+				Enabled:        true,
+				Timeout:        45 * time.Second,
+				MinScore:       0.85, // 85% for polish pass
 				RequiredChecks: []string{"style", "performance", "maintainability"},
 			},
 			PassFinal: {
-				Enabled:  true,
-				Timeout:  60 * time.Second,
-				MinScore: 0.9, // 90% for final pass
+				Enabled:        true,
+				Timeout:        60 * time.Second,
+				MinScore:       0.9, // 90% for final pass
 				RequiredChecks: []string{"security", "documentation", "best_practices"},
 			},
 		},
@@ -258,10 +258,10 @@ type Artifact struct {
 type ArtifactType string
 
 const (
-	ArtifactCode         ArtifactType = "code"
-	ArtifactArchitecture ArtifactType = "architecture"
+	ArtifactCode          ArtifactType = "code"
+	ArtifactArchitecture  ArtifactType = "architecture"
 	ArtifactDocumentation ArtifactType = "documentation"
-	ArtifactTest         ArtifactType = "test"
+	ArtifactTest          ArtifactType = "test"
 )
 
 // Validator performs validation for a specific pass.

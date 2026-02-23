@@ -234,11 +234,11 @@ func (d *DebateTestIntegration) determineWinner(
 
 // RoundResult contains results of a test-driven debate round.
 type RoundResult struct {
-	Round           int                            `json:"round"`
-	Solutions       []*Solution                    `json:"solutions"`
-	TestCases       []*TestCase                    `json:"test_cases"`
+	Round           int                             `json:"round"`
+	Solutions       []*Solution                     `json:"solutions"`
+	TestCases       []*TestCase                     `json:"test_cases"`
 	Results         map[string]*TestExecutionResult `json:"results"`
-	Analyses        []*ContrastiveAnalysis         `json:"analyses"`
-	Winner          string                         `json:"winner"`
-	Recommendations []*Recommendation              `json:"recommendations"`
+	Analyses        []*ContrastiveAnalysis          `json:"analyses"`
+	Winner          string                          `json:"winner"`
+	Recommendations []*Recommendation               `json:"recommendations"`
 }

@@ -7,8 +7,8 @@ import (
 	"time"
 
 	helixmem "dev.helix.agent/internal/memory"
-	modmem "digital.vasic.memory/pkg/store"
 	modentity "digital.vasic.memory/pkg/entity"
+	modmem "digital.vasic.memory/pkg/store"
 )
 
 // StoreAdapter adapts the module's MemoryStore interface to HelixAgent's MemoryStore.

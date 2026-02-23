@@ -16,10 +16,10 @@ import (
 )
 
 type Client struct {
-	baseURL            string
-	apiKey             string
-	client             *http.Client
-	ContainerAdapter   *containers.Adapter
+	baseURL          string
+	apiKey           string
+	client           *http.Client
+	ContainerAdapter *containers.Adapter
 }
 
 type MemoryRequest struct {

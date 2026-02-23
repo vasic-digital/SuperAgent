@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -93,7 +94,7 @@ type HubMetrics struct {
 	TaskQueueMetrics   *BrokerMetrics `json:"task_queue_metrics,omitempty"`
 	EventStreamMetrics *BrokerMetrics `json:"event_stream_metrics,omitempty"`
 	FallbackMetrics    *BrokerMetrics `json:"fallback_metrics,omitempty"`
-	FallbackUsages     int64          `json:"fallback_usages"`
+	FallbackUsages     atomic.Int64   `json:"fallback_usages"`
 }
 
 // NewHubMetrics creates new hub metrics.
@@ -297,7 +298,7 @@ func (h *MessagingHub) EnqueueTask(ctx context.Context, queue string, task *Task
 
 		// Fall back to in-memory if configured
 		if h.config.UseFallbackOnError && h.fallback != nil {
-			h.metrics.FallbackUsages++
+			h.metrics.FallbackUsages.Add(1)
 			return h.fallback.Publish(ctx, queue, task.ToMessage())
 		}
 		return err
@@ -305,7 +306,7 @@ func (h *MessagingHub) EnqueueTask(ctx context.Context, queue string, task *Task
 
 	// Use fallback
 	if h.fallback != nil {
-		h.metrics.FallbackUsages++
+		h.metrics.FallbackUsages.Add(1)
 		return h.fallback.Publish(ctx, queue, task.ToMessage())
 	}
 
@@ -320,7 +321,7 @@ func (h *MessagingHub) EnqueueTaskBatch(ctx context.Context, queue string, tasks
 
 	// Use fallback for batch
 	if h.fallback != nil {
-		h.metrics.FallbackUsages++
+		h.metrics.FallbackUsages.Add(1)
 		for _, task := range tasks {
 			if err := h.fallback.Publish(ctx, queue, task.ToMessage()); err != nil {
 				return err
@@ -350,7 +351,7 @@ func (h *MessagingHub) SubscribeTasks(ctx context.Context, queue string, handler
 
 	// Use fallback
 	if h.fallback != nil {
-		h.metrics.FallbackUsages++
+		h.metrics.FallbackUsages.Add(1)
 		sub, err = h.fallback.Subscribe(ctx, queue, func(ctx context.Context, msg *Message) error {
 			task, err := TaskFromMessage(msg)
 			if err != nil {
@@ -397,7 +398,7 @@ func (h *MessagingHub) PublishEvent(ctx context.Context, topic string, event *Ev
 
 		// Fall back to in-memory if configured
 		if h.config.UseFallbackOnError && h.fallback != nil {
-			h.metrics.FallbackUsages++
+			h.metrics.FallbackUsages.Add(1)
 			return h.fallback.Publish(ctx, topic, event.ToMessage())
 		}
 		return err
@@ -405,7 +406,7 @@ func (h *MessagingHub) PublishEvent(ctx context.Context, topic string, event *Ev
 
 	// Use fallback
 	if h.fallback != nil {
-		h.metrics.FallbackUsages++
+		h.metrics.FallbackUsages.Add(1)
 		return h.fallback.Publish(ctx, topic, event.ToMessage())
 	}
 
@@ -420,7 +421,7 @@ func (h *MessagingHub) PublishEventBatch(ctx context.Context, topic string, even
 
 	// Use fallback for batch
 	if h.fallback != nil {
-		h.metrics.FallbackUsages++
+		h.metrics.FallbackUsages.Add(1)
 		for _, event := range events {
 			if err := h.fallback.Publish(ctx, topic, event.ToMessage()); err != nil {
 				return err
@@ -450,7 +451,7 @@ func (h *MessagingHub) SubscribeEvents(ctx context.Context, topic string, handle
 
 	// Use fallback
 	if h.fallback != nil {
-		h.metrics.FallbackUsages++
+		h.metrics.FallbackUsages.Add(1)
 		sub, err = h.fallback.Subscribe(ctx, topic, func(ctx context.Context, msg *Message) error {
 			event, err := EventFromMessage(msg)
 			if err != nil {
