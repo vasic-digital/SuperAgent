@@ -96,10 +96,16 @@ func (bm *BootManager) GetResults() map[string]*BootResult {
 	return copy
 }
 
+// setResultLocked stores a BootResult directly into the map.
+// Caller MUST hold resultsMu.Lock() before calling this.
+func (bm *BootManager) setResultLocked(name string, result *BootResult) {
+	bm.Results[name] = result
+}
+
 // setResult stores a BootResult under the write lock.
 func (bm *BootManager) setResult(name string, result *BootResult) {
 	bm.resultsMu.Lock()
-	bm.Results[name] = result
+	bm.setResultLocked(name, result)
 	bm.resultsMu.Unlock()
 }
 
@@ -310,7 +316,7 @@ func (bm *BootManager) BootAll() error {
 					if result, ok := bm.Results[name]; ok {
 						result.Error = err
 					} else {
-						bm.Results[name] = &BootResult{Name: name, Status: "failed", Duration: duration, Error: err}
+						bm.setResultLocked(name, &BootResult{Name: name, Status: "failed", Duration: duration, Error: err})
 					}
 					bm.resultsMu.Unlock()
 				} else {
@@ -368,7 +374,7 @@ func (bm *BootManager) BootAll() error {
 					result.Status = "failed"
 				}
 			} else {
-				bm.Results[name] = &BootResult{Name: name, Status: "failed", Duration: duration, Error: err}
+				bm.setResultLocked(name, &BootResult{Name: name, Status: "failed", Duration: duration, Error: err})
 			}
 			bm.resultsMu.Unlock()
 		} else {
