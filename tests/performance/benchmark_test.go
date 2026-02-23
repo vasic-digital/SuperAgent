@@ -18,14 +18,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 
-	"dev.helix.agent/internal/adapters"
+	events "dev.helix.agent/internal/adapters"
 	"dev.helix.agent/internal/cache"
-	"digital.vasic.concurrency/pkg/pool"
+	concurrency "digital.vasic.concurrency/pkg/pool"
 )
-
-// Aliases for backward compatibility
-var events = adapters
-var concurrency = pool
 
 func init() {
 	gin.SetMode(gin.TestMode)
