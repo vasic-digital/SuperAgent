@@ -3,12 +3,15 @@ package llm
 import (
 	"context"
 	"errors"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
-	"dev.helix.agent/internal/models"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+
+	"dev.helix.agent/internal/models"
 )
 
 // failingProvider is a mock that can be configured to fail
@@ -452,4 +455,132 @@ func TestCircuitBreaker_ConcurrentAccess(t *testing.T) {
 
 	stats := cb.GetStats()
 	assert.Equal(t, int64(100), stats.TotalRequests)
+}
+
+// logrusWarnHook captures logrus Warn-level entries for test assertions.
+type logrusWarnHook struct {
+	mu      sync.Mutex
+	entries []string
+}
+
+func (h *logrusWarnHook) Levels() []logrus.Level {
+	return []logrus.Level{logrus.WarnLevel}
+}
+
+func (h *logrusWarnHook) Fire(entry *logrus.Entry) error {
+	h.mu.Lock()
+	h.entries = append(h.entries, entry.Message)
+	h.mu.Unlock()
+	return nil
+}
+
+func (h *logrusWarnHook) messages() []string {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	cp := make([]string, len(h.entries))
+	copy(cp, h.entries)
+	return cp
+}
+
+
+// TestCircuitBreaker_ListenerNotifyTimeout_TransitionTo verifies that a
+// slow listener triggers a warn log via transitionTo.
+func TestCircuitBreaker_ListenerNotifyTimeout_TransitionTo(t *testing.T) {
+	// Override the global timeout to a short value so the test finishes quickly.
+	orig := listenerNotifyTimeoutNs.Load()
+	listenerNotifyTimeoutNs.Store(int64(50 * time.Millisecond))
+	defer listenerNotifyTimeoutNs.Store(orig)
+
+	hook := &logrusWarnHook{}
+	logrus.AddHook(hook)
+	defer logrus.StandardLogger().ReplaceHooks(logrus.LevelHooks{})
+
+	config := CircuitBreakerConfig{
+		FailureThreshold:    1,
+		SuccessThreshold:    1,
+		Timeout:             500 * time.Millisecond,
+		HalfOpenMaxRequests: 1,
+	}
+	provider := &failingProvider{shouldFail: true}
+	cb := NewCircuitBreaker("timeout-test", provider, config)
+
+	// Register a listener that blocks longer than the notify timeout.
+	blockCh := make(chan struct{})
+	cb.AddListener(func(providerID string, oldState, newState CircuitState) {
+		<-blockCh // blocks until test closes the channel
+	})
+
+	// Force a state transition (closed → open) by recording a failure.
+	req := &models.LLMRequest{ID: "r1"}
+	_, _ = cb.Complete(context.Background(), req)
+
+	// Wait until the timeout fires plus a small margin.
+	time.Sleep(200 * time.Millisecond)
+	close(blockCh) // unblock the listener goroutine
+
+	msgs := hook.messages()
+	found := false
+	for _, m := range msgs {
+		if strings.Contains(m, "timed out") {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "expected a 'timed out' warn log, got: %v", msgs)
+}
+
+// TestCircuitBreaker_ListenerNotifyTimeout_Reset verifies that a slow
+// listener during Reset triggers a warn log.
+func TestCircuitBreaker_ListenerNotifyTimeout_Reset(t *testing.T) {
+	orig := listenerNotifyTimeoutNs.Load()
+	listenerNotifyTimeoutNs.Store(int64(50 * time.Millisecond))
+	defer listenerNotifyTimeoutNs.Store(orig)
+
+	hook := &logrusWarnHook{}
+	logrus.AddHook(hook)
+	defer logrus.StandardLogger().ReplaceHooks(logrus.LevelHooks{})
+
+	config := CircuitBreakerConfig{
+		FailureThreshold:    1,
+		SuccessThreshold:    1,
+		Timeout:             500 * time.Millisecond,
+		HalfOpenMaxRequests: 1,
+	}
+	provider := &failingProvider{shouldFail: true}
+	cb := NewCircuitBreaker("reset-timeout-test", provider, config)
+
+	// First listener unblocks immediately; second blocks to force Reset timeout.
+	blockCh := make(chan struct{})
+	cb.AddListener(func(providerID string, oldState, newState CircuitState) {
+		<-blockCh
+	})
+
+	// Open the circuit (triggers listener which blocks, then times out).
+	req := &models.LLMRequest{ID: "r1"}
+	_, _ = cb.Complete(context.Background(), req)
+
+	// Unblock the first (transitionTo) listener and wait for its goroutine to settle.
+	close(blockCh)
+	time.Sleep(100 * time.Millisecond)
+
+	// Add a fresh blocking listener specifically for the Reset notification.
+	blockCh2 := make(chan struct{})
+	cb.AddListener(func(providerID string, oldState, newState CircuitState) {
+		<-blockCh2
+	})
+
+	cb.Reset()
+
+	time.Sleep(200 * time.Millisecond)
+	close(blockCh2)
+
+	msgs := hook.messages()
+	found := false
+	for _, m := range msgs {
+		if strings.Contains(m, "timed out") {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "expected a 'timed out' warn log on reset, got: %v", msgs)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -19,6 +20,12 @@ const (
 	CircuitOpen     CircuitState = "open"      // Failing, rejecting requests
 	CircuitHalfOpen CircuitState = "half_open" // Testing with limited requests
 )
+
+// listenerNotifyTimeoutNs stores the listener notification timeout in nanoseconds.
+// Accessed via atomic operations so tests can override it safely from another goroutine.
+var listenerNotifyTimeoutNs atomic.Int64
+
+func init() { listenerNotifyTimeoutNs.Store(int64(5 * time.Second)) }
 
 // ErrCircuitOpen is returned when circuit is open
 var ErrCircuitOpen = errors.New("circuit breaker is open")
@@ -295,7 +302,7 @@ func (cb *CircuitBreaker) transitionTo(newState CircuitState) {
 			select {
 			case <-done:
 				// Listener completed
-			case <-time.After(5 * time.Second):
+			case <-time.After(time.Duration(listenerNotifyTimeoutNs.Load())):
 				logrus.WithFields(logrus.Fields{
 					"provider":  cb.providerID,
 					"old_state": string(oldState),
@@ -381,9 +388,10 @@ func (cb *CircuitBreaker) Reset() {
 
 			select {
 			case <-done:
-			case <-time.After(5 * time.Second):
+			case <-time.After(time.Duration(listenerNotifyTimeoutNs.Load())):
 				logrus.WithFields(logrus.Fields{
 					"provider":  providerID,
+					"old_state": string(oldState),
 					"new_state": string(CircuitClosed),
 				}).Warn("circuit breaker listener notification timed out on reset")
 			}
