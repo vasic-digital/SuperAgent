@@ -8,6 +8,7 @@ require (
 	dev.helix.agent/pkg/api v0.0.0-00010101000000-000000000000
 	digital.vasic.agentic v0.0.0-00010101000000-000000000000
 	digital.vasic.auth v0.0.0-00010101000000-000000000000
+	digital.vasic.benchmark v0.0.0-00010101000000-000000000000
 	digital.vasic.cache v0.0.0-00010101000000-000000000000
 	digital.vasic.challenges v0.0.0-00010101000000-000000000000
 	digital.vasic.concurrency v0.0.0-00010101000000-000000000000
@@ -15,13 +16,16 @@ require (
 	digital.vasic.database v0.0.0-00010101000000-000000000000
 	digital.vasic.eventbus v0.0.0-00010101000000-000000000000
 	digital.vasic.formatters v0.0.0-00010101000000-000000000000
+	digital.vasic.llmops v0.0.0-00010101000000-000000000000
 	digital.vasic.mcp v0.0.0-00010101000000-000000000000
 	digital.vasic.memory v0.0.0-00010101000000-000000000000
 	digital.vasic.messaging v0.0.0-00010101000000-000000000000
 	digital.vasic.optimization v0.0.0-00010101000000-000000000000
+	digital.vasic.planning v0.0.0-00010101000000-000000000000
 	digital.vasic.plugins v0.0.0-00010101000000-000000000000
 	digital.vasic.rag v0.0.0-00010101000000-000000000000
 	digital.vasic.security v0.0.0-00010101000000-000000000000
+	digital.vasic.selfimprove v0.0.0-00010101000000-000000000000
 	digital.vasic.storage v0.0.0-00010101000000-000000000000
 	digital.vasic.streaming v0.0.0-00010101000000-000000000000
 	digital.vasic.vectordb v0.0.0-00010101000000-000000000000
@@ -75,6 +79,14 @@ replace digital.vasic.containers => ./Containers
 replace digital.vasic.challenges => ./Challenges
 
 replace digital.vasic.agentic => ./Agentic
+
+replace digital.vasic.llmops => ./LLMOps
+
+replace digital.vasic.selfimprove => ./SelfImprove
+
+replace digital.vasic.planning => ./Planning
+
+replace digital.vasic.benchmark => ./Benchmark
 
 replace llm-verifier => ./LLMsVerifier/llm-verifier
 
