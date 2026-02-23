@@ -6,6 +6,7 @@ require github.com/gin-gonic/gin v1.11.0
 
 require (
 	dev.helix.agent/pkg/api v0.0.0-00010101000000-000000000000
+	digital.vasic.agentic v0.0.0-00010101000000-000000000000
 	digital.vasic.auth v0.0.0-00010101000000-000000000000
 	digital.vasic.cache v0.0.0-00010101000000-000000000000
 	digital.vasic.challenges v0.0.0-00010101000000-000000000000
@@ -72,6 +73,8 @@ replace dev.helix.agent/pkg/api => ./pkg/api
 replace digital.vasic.containers => ./Containers
 
 replace digital.vasic.challenges => ./Challenges
+
+replace digital.vasic.agentic => ./Agentic
 
 replace llm-verifier => ./LLMsVerifier/llm-verifier
 
