@@ -452,6 +452,26 @@ run_test "Makefile has test-e2e target" \
     "grep -q 'test-e2e' '$PROJECT_ROOT/HelixSpecifier/Makefile'"
 
 # ============================================================================
+# SECTION 15: 100% CODE COVERAGE (5 tests)
+# ============================================================================
+log_info "Section 15: 100% Code Coverage"
+
+run_test "All 21 core packages achieve 100% coverage" \
+    "cd '$PROJECT_ROOT/HelixSpecifier' && GOMAXPROCS=2 go test -count=1 -p 1 -coverprofile=/tmp/hs_cov.out ./pkg/... 2>&1 | grep -v '100.0%' | grep -c 'coverage:' | grep -q '^0$'"
+
+run_test "Coverage profile generated successfully" \
+    "test -f /tmp/hs_cov.out"
+
+run_test "Total coverage is 100%" \
+    "cd '$PROJECT_ROOT/HelixSpecifier' && go tool cover -func=/tmp/hs_cov.out 2>&1 | grep 'total:' | grep -q '100.0%'"
+
+run_test "Race detector passes on all packages" \
+    "cd '$PROJECT_ROOT/HelixSpecifier' && GOMAXPROCS=2 go test -count=1 -race -p 1 ./... >/dev/null 2>&1"
+
+run_test "More than 800 tests pass" \
+    "cd '$PROJECT_ROOT/HelixSpecifier' && GOMAXPROCS=2 go test -count=1 -p 1 -v ./... 2>&1 | grep -c 'PASS:' | awk '{exit (\$1 >= 800) ? 0 : 1}'"
+
+# ============================================================================
 # SUMMARY
 # ============================================================================
 log_info "Challenge complete"
