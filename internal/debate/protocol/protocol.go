@@ -1,5 +1,5 @@
-// Package protocol provides the 5-phase debate protocol implementation.
-// Implements: Proposal → Critique → Review → Optimization → Convergence
+// Package protocol provides the 8-phase debate protocol implementation.
+// Implements: Dehallucination → SelfEvolvement → Proposal → Critique → Review → Optimization → Adversarial → Convergence
 // Based on research findings from ACL 2025 MARBLE framework and Kimi studies.
 package protocol
 
@@ -221,9 +221,53 @@ func NewProtocol(config DebateConfig, topo topology.Topology, invoker AgentInvok
 
 // initializePhaseConfigs sets up default configurations for each phase.
 func (p *Protocol) initializePhaseConfigs() {
-	phaseTimeout := p.config.Timeout / 5 // Divide total timeout among phases
+	phaseTimeout := p.config.Timeout / 8 // Divide total timeout among 8 phases
 
-	// Phase 1: Proposal
+	// Pre-debate Phase 1: Dehallucination
+	p.phaseConfigs[topology.PhaseDehallucination] = &PhaseConfig{
+		Phase:          topology.PhaseDehallucination,
+		Timeout:        phaseTimeout,
+		MinResponses:   1,
+		MaxParallelism: 2,
+		RequiredRoles:  []topology.AgentRole{topology.RoleModerator},
+		Prompt: `You are in the DEHALLUCINATION phase of an AI debate.
+
+Topic: {{.Topic}}
+Context: {{.Context}}
+
+Your role is to proactively clarify the task before generation begins.
+Identify potential ambiguities and ask clarifying questions:
+1. What are the precise requirements?
+2. What constraints exist?
+3. What edge cases should be considered?
+4. What performance targets must be met?
+5. What integration points exist?
+
+Rate your understanding confidence (0-1).`,
+	}
+
+	// Pre-debate Phase 2: Self-Evolvement
+	p.phaseConfigs[topology.PhaseSelfEvolvement] = &PhaseConfig{
+		Phase:          topology.PhaseSelfEvolvement,
+		Timeout:        phaseTimeout,
+		MinResponses:   1,
+		MaxParallelism: 4,
+		RequiredRoles:  []topology.AgentRole{topology.RoleProposer, topology.RoleGenerator},
+		Prompt: `You are in the SELF-EVOLVEMENT phase of an AI debate.
+
+Topic: {{.Topic}}
+Context: {{.Context}}
+
+Your role is to self-test before entering the debate:
+1. Generate an initial solution draft
+2. Create test cases to validate your own solution
+3. Identify weaknesses in your own approach
+4. Refine your solution based on self-testing
+
+Output your refined approach with confidence level.`,
+	}
+
+	// Core Phase 3: Proposal
 	p.phaseConfigs[topology.PhaseProposal] = &PhaseConfig{
 		Phase:          topology.PhaseProposal,
 		Timeout:        phaseTimeout,
@@ -310,7 +354,29 @@ Your role is to synthesize and improve the best ideas:
 Focus on practical improvements, not theoretical perfection.`,
 	}
 
-	// Phase 5: Convergence
+	// Phase 7: Adversarial (Red/Blue Team)
+	p.phaseConfigs[topology.PhaseAdversarial] = &PhaseConfig{
+		Phase:          topology.PhaseAdversarial,
+		Timeout:        phaseTimeout,
+		MinResponses:   2,
+		MaxParallelism: 4,
+		RequiredRoles:  []topology.AgentRole{topology.RoleRedTeam, topology.RoleBlueTeam},
+		Prompt: `You are in the ADVERSARIAL phase of an AI debate.
+
+Topic: {{.Topic}}
+Optimized Solutions: {{.Optimizations}}
+
+Red Team: Identify vulnerabilities, edge cases, and stress scenarios.
+Blue Team: Defend the solution by patching identified issues.
+
+Output:
+- VULNERABILITIES: [list any security, logic, or robustness issues]
+- EDGE_CASES: [identify boundary conditions]
+- PATCHES: [proposed fixes for identified issues]
+- RISK_LEVEL: [0-1 overall risk assessment]`,
+	}
+
+	// Phase 8: Convergence
 	p.phaseConfigs[topology.PhaseConvergence] = &PhaseConfig{
 		Phase:          topology.PhaseConvergence,
 		Timeout:        phaseTimeout,
@@ -367,12 +433,15 @@ func (p *Protocol) Execute(ctx context.Context) (*DebateResult, error) {
 	for round := 1; round <= p.config.MaxRounds; round++ {
 		p.currentRound = round
 
-		// Execute all 5 phases
+		// Execute all 8 phases
 		phases := []topology.DebatePhase{
+			topology.PhaseDehallucination,
+			topology.PhaseSelfEvolvement,
 			topology.PhaseProposal,
 			topology.PhaseCritique,
 			topology.PhaseReview,
 			topology.PhaseOptimization,
+			topology.PhaseAdversarial,
 			topology.PhaseConvergence,
 		}
 

@@ -135,7 +135,7 @@ func TestNewProtocol(t *testing.T) {
 	assert.NotNil(t, p)
 	assert.Equal(t, config.Topic, p.config.Topic)
 	assert.NotNil(t, p.phaseConfigs)
-	assert.Len(t, p.phaseConfigs, 5) // All 5 phases configured
+	assert.Len(t, p.phaseConfigs, 8) // All 8 phases configured
 }
 
 func TestNewProtocol_GeneratesID(t *testing.T) {
@@ -800,8 +800,8 @@ func TestProtocol_FullDebateWithAllPhases(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, result)
 
-	// Verify all 5 phases were executed
-	assert.Len(t, result.Phases, 5)
+	// Verify all 8 phases were executed
+	assert.Len(t, result.Phases, 8)
 
 	phasesSeen := make(map[topology.DebatePhase]bool)
 	for _, phase := range result.Phases {
@@ -809,10 +809,13 @@ func TestProtocol_FullDebateWithAllPhases(t *testing.T) {
 		assert.Greater(t, len(phase.Responses), 0, "Phase %s should have responses", phase.Phase)
 	}
 
+	assert.True(t, phasesSeen[topology.PhaseDehallucination])
+	assert.True(t, phasesSeen[topology.PhaseSelfEvolvement])
 	assert.True(t, phasesSeen[topology.PhaseProposal])
 	assert.True(t, phasesSeen[topology.PhaseCritique])
 	assert.True(t, phasesSeen[topology.PhaseReview])
 	assert.True(t, phasesSeen[topology.PhaseOptimization])
+	assert.True(t, phasesSeen[topology.PhaseAdversarial])
 	assert.True(t, phasesSeen[topology.PhaseConvergence])
 
 	// Verify consensus was built
