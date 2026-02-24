@@ -219,7 +219,7 @@ func NewClaudeProviderWithOAuthAndRetry(baseURL, model string, retryConfig Retry
 		return nil, fmt.Errorf("no valid Claude OAuth credentials available: ensure you are logged in via Claude Code CLI")
 	}
 
-	return &ClaudeProvider{
+	p := &ClaudeProvider{
 		apiKey:  "", // Will use OAuth token instead
 		baseURL: baseURL,
 		model:   model,
@@ -229,7 +229,35 @@ func NewClaudeProviderWithOAuthAndRetry(baseURL, model string, retryConfig Retry
 		retryConfig:     retryConfig,
 		authType:        AuthTypeOAuth,
 		oauthCredReader: credReader,
-	}, nil
+	}
+
+	p.discoverer = discovery.NewDiscoverer(discovery.ProviderConfig{
+		ProviderName:   "claude",
+		ModelsEndpoint: "https://api.anthropic.com/v1/models",
+		ModelsDevID:    "anthropic",
+		APIKey:         "", // OAuth will supply the token at request time
+		AuthHeader:     "x-api-key",
+		AuthPrefix:     "",
+		ExtraHeaders: map[string]string{
+			"anthropic-version": "2023-06-01",
+		},
+		FallbackModels: []string{
+			"claude-opus-4-6",
+			"claude-opus-4-5-20251101",
+			"claude-sonnet-4-5-20250929",
+			"claude-haiku-4-5-20251001",
+			"claude-opus-4-20250514",
+			"claude-sonnet-4-20250514",
+			"claude-haiku-4-20250514",
+			"claude-3-5-sonnet-20241022",
+			"claude-3-5-haiku-20241022",
+			"claude-3-opus-20240229",
+			"claude-3-sonnet-20240229",
+			"claude-3-haiku-20240307",
+		},
+	})
+
+	return p, nil
 }
 
 // NewClaudeProviderAuto creates a Claude provider, automatically choosing OAuth if enabled and available

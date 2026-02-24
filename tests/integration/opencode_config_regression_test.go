@@ -415,9 +415,10 @@ func TestOpenCodeConfigAPIKeyHandling(t *testing.T) {
 		provider := openCodeConfig.Provider["helixagent"]
 		apiKey, ok := provider.Options["apiKey"].(string)
 		require.True(t, ok, "API key must be a string")
-		// Config uses env var template syntax, not literal values
-		assert.Equal(t, "{env:HELIXAGENT_API_KEY}", apiKey,
-			"Config must use environment variable template for API key")
+		// Config uses the real API key value (not env var template syntax)
+		// CLI agents do NOT support {env:VAR_NAME} syntax per project rules
+		assert.Equal(t, testKey, apiKey,
+			"Config must use real API key value (not env var template)")
 	})
 
 	t.Run("ConfigBaseURLIsCorrect", func(t *testing.T) {

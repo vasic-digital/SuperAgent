@@ -141,6 +141,9 @@ func TestModelsDevIntegration_APIEndpoints(t *testing.T) {
 	if !checkDatabaseAvailable(t) {
 		t.Skip("Database not available - run with test infrastructure")
 	}
+	if testing.Short() {
+		t.Skip("Skipping models.dev integration test requiring router init in short mode")
+	}
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
@@ -173,6 +176,9 @@ func TestModelsDevIntegration_APIEndpoints(t *testing.T) {
 func TestModelsDevIntegration_ModelMetadataEndpoints(t *testing.T) {
 	if !checkDatabaseAvailable(t) {
 		t.Skip("Database not available - run with test infrastructure")
+	}
+	if testing.Short() {
+		t.Skip("Skipping models.dev integration test requiring router init in short mode")
 	}
 
 	r, cleanup := setupTestRouter(t)
@@ -233,6 +239,9 @@ func TestModelsDevIntegration_ModelComparison(t *testing.T) {
 	if !checkDatabaseAvailable(t) {
 		t.Skip("Database not available - run with test infrastructure")
 	}
+	if testing.Short() {
+		t.Skip("Skipping models.dev integration test requiring router init in short mode")
+	}
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
@@ -288,6 +297,9 @@ func TestModelsDevIntegration_CapabilityEndpoints(t *testing.T) {
 	if !checkDatabaseAvailable(t) {
 		t.Skip("Database not available - run with test infrastructure")
 	}
+	if testing.Short() {
+		t.Skip("Skipping models.dev integration test requiring router init in short mode")
+	}
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
@@ -333,6 +345,9 @@ func TestModelsDevIntegration_ProviderEndpoints(t *testing.T) {
 	if !checkDatabaseAvailable(t) {
 		t.Skip("Database not available - run with test infrastructure")
 	}
+	if testing.Short() {
+		t.Skip("Skipping models.dev integration test requiring router init in short mode")
+	}
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
@@ -375,6 +390,9 @@ func TestModelsDevIntegration_BenchmarkEndpoints(t *testing.T) {
 	if !checkDatabaseAvailable(t) {
 		t.Skip("Database not available - run with test infrastructure")
 	}
+	if testing.Short() {
+		t.Skip("Skipping models.dev integration test requiring router init in short mode")
+	}
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
@@ -416,6 +434,9 @@ func TestModelsDevIntegration_AdminEndpoints(t *testing.T) {
 	if !checkDatabaseAvailable(t) {
 		t.Skip("Database not available - run with test infrastructure")
 	}
+	if testing.Short() {
+		t.Skip("Skipping models.dev integration test requiring router init in short mode")
+	}
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
@@ -444,6 +465,9 @@ func TestModelsDevIntegration_AdminEndpoints(t *testing.T) {
 func TestModelsDevIntegration_CacheBehavior(t *testing.T) {
 	if !checkDatabaseAvailable(t) {
 		t.Skip("Database not available - run with test infrastructure")
+	}
+	if testing.Short() {
+		t.Skip("Skipping models.dev integration test requiring router init in short mode")
 	}
 
 	r, cleanup := setupTestRouter(t)
@@ -482,6 +506,9 @@ func TestModelsDevIntegration_ResponseFormats(t *testing.T) {
 	if !checkDatabaseAvailable(t) {
 		t.Skip("Database not available - run with test infrastructure")
 	}
+	if testing.Short() {
+		t.Skip("Skipping models.dev integration test requiring router init in short mode")
+	}
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
@@ -515,6 +542,9 @@ func TestModelsDevIntegration_ResponseFormats(t *testing.T) {
 func TestModelsDevIntegration_ErrorHandling(t *testing.T) {
 	if !checkDatabaseAvailable(t) {
 		t.Skip("Database not available - run with test infrastructure")
+	}
+	if testing.Short() {
+		t.Skip("Skipping models.dev integration test requiring router init in short mode")
 	}
 
 	r, cleanup := setupTestRouter(t)
@@ -557,6 +587,9 @@ func TestModelsDevIntegration_ErrorHandling(t *testing.T) {
 func TestModelsDevIntegration_EndToEndWorkflow(t *testing.T) {
 	if !checkDatabaseAvailable(t) {
 		t.Skip("Database not available - run with test infrastructure")
+	}
+	if testing.Short() {
+		t.Skip("Skipping models.dev integration test requiring router init in short mode")
 	}
 
 	r, cleanup := setupTestRouter(t)
@@ -619,6 +652,9 @@ func TestModelsDevIntegration_Performance(t *testing.T) {
 	if !checkDatabaseAvailable(t) {
 		t.Skip("Database not available - run with test infrastructure")
 	}
+	if testing.Short() {
+		t.Skip("Skipping models.dev integration test requiring router init in short mode")
+	}
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
@@ -651,17 +687,14 @@ func TestModelsDevIntegration_Performance(t *testing.T) {
 		duration := 1 * time.Second
 		requestCount := 0
 		done := make(chan bool)
+		start := time.Now()
 
 		go func() {
-			for {
+			for time.Since(start) < duration {
 				req, _ := http.NewRequest("GET", "/v1/models/metadata?page=1&limit=20", nil)
 				w := httptest.NewRecorder()
 				r.ServeHTTP(w, req)
-
 				requestCount++
-				if time.Since(time.Now()) >= duration {
-					break
-				}
 			}
 			done <- true
 		}()
@@ -674,6 +707,9 @@ func TestModelsDevIntegration_Performance(t *testing.T) {
 func TestModelsDevIntegration_ConcurrentRequests(t *testing.T) {
 	if !checkDatabaseAvailable(t) {
 		t.Skip("Database not available - run with test infrastructure")
+	}
+	if testing.Short() {
+		t.Skip("Skipping models.dev integration test requiring router init in short mode")
 	}
 
 	r, cleanup := setupTestRouter(t)
@@ -728,6 +764,9 @@ func TestModelsDevIntegration_ConcurrentRequests(t *testing.T) {
 func TestModelsDevIntegration_DataIntegrity(t *testing.T) {
 	if !checkDatabaseAvailable(t) {
 		t.Skip("Database not available - run with test infrastructure")
+	}
+	if testing.Short() {
+		t.Skip("Skipping models.dev integration test requiring router init in short mode")
 	}
 
 	r, cleanup := setupTestRouter(t)
@@ -785,6 +824,9 @@ func TestModelsDevIntegration_DataIntegrity(t *testing.T) {
 func TestModelsDevIntegration_ServiceAvailability(t *testing.T) {
 	if !checkDatabaseAvailable(t) {
 		t.Skip("Database not available - run with test infrastructure")
+	}
+	if testing.Short() {
+		t.Skip("Skipping models.dev integration test requiring router init in short mode")
 	}
 
 	r, cleanup := setupTestRouter(t)

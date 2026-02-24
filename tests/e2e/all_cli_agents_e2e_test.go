@@ -370,7 +370,7 @@ func TestEmbeddingsE2E(t *testing.T) {
 		req.Header.Set("Content-Type", "application/json")
 
 		// Add API key from environment
-		apiKey := os.Getenv("HELIXAGENT_API_KEY")
+		apiKey := getE2EAPIKey()
 		if apiKey != "" {
 			req.Header.Set("Authorization", "Bearer "+apiKey)
 		}
@@ -402,7 +402,7 @@ func TestEmbeddingsE2E(t *testing.T) {
 		req.Header.Set("Content-Type", "application/json")
 
 		// Add API key from environment
-		apiKey := os.Getenv("HELIXAGENT_API_KEY")
+		apiKey := getE2EAPIKey()
 		if apiKey != "" {
 			req.Header.Set("Authorization", "Bearer "+apiKey)
 		}

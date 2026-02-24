@@ -218,6 +218,9 @@ func cleanupTestConfig(t *testing.T, config *TestConfig) {
 
 // TestGenerateAPIKeyCommand tests the -generate-api-key CLI command
 func TestGenerateAPIKeyCommand(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping binary command test in short mode")
+	}
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
 
@@ -329,6 +332,9 @@ func TestGenerateAPIKeyCommand(t *testing.T) {
 
 // TestGenerateOpenCodeConfigCommand tests the -generate-opencode-config CLI command
 func TestGenerateOpenCodeConfigCommand(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping binary command test in short mode")
+	}
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
 
@@ -412,8 +418,8 @@ func TestGenerateOpenCodeConfigCommand(t *testing.T) {
 		err = json.Unmarshal(output, &openCodeConfig)
 		require.NoError(t, err)
 
-		// Config uses env var template syntax, not literal values
-		assert.Equal(t, "{env:HELIXAGENT_API_KEY}", openCodeConfig.Provider["helixagent"].Options["apiKey"])
+		// Config uses real API key value (CLI agents do NOT support {env:VAR_NAME} syntax per CLAUDE.md)
+		assert.Equal(t, testAPIKey, openCodeConfig.Provider["helixagent"].Options["apiKey"])
 	})
 
 	t.Run("GenerateConfigWithCustomHostPort", func(t *testing.T) {
@@ -447,6 +453,9 @@ func TestGenerateOpenCodeConfigCommand(t *testing.T) {
 
 // TestHelpCommand tests the -help CLI command
 func TestHelpCommand(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping binary command test in short mode")
+	}
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
 
@@ -492,6 +501,9 @@ func skipIfNoServer(t *testing.T, config *TestConfig) {
 
 // TestModelsEndpoint tests GET /v1/models
 func TestModelsEndpoint(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping live server test in short mode")
+	}
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
 	skipIfNoServer(t, config)
@@ -1352,6 +1364,9 @@ func TestOpenCodeConfigValidation(t *testing.T) {
 
 // TestErrorHandling tests various error scenarios
 func TestErrorHandling(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping live server test in short mode")
+	}
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
 	skipIfNoServer(t, config)

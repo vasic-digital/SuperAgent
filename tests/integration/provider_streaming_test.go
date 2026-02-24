@@ -145,6 +145,9 @@ func getAPIKey(envKey string) string {
 
 // TestProviderStreamingOpenAICompatible tests streaming for OpenAI-compatible providers
 func TestProviderStreamingOpenAICompatible(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping live streaming provider test in short mode")
+	}
 	loadEnvFile(t)
 
 	providers := []ProviderConfig{
@@ -179,6 +182,9 @@ func TestProviderStreamingOpenAICompatible(t *testing.T) {
 
 // TestProviderNonStreamingOpenAICompatible tests non-streaming for OpenAI-compatible providers
 func TestProviderNonStreamingOpenAICompatible(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping live streaming provider test in short mode")
+	}
 	loadEnvFile(t)
 
 	providers := []ProviderConfig{
@@ -213,6 +219,9 @@ func TestProviderNonStreamingOpenAICompatible(t *testing.T) {
 
 // TestGeminiNativeStreaming tests Gemini's native API streaming
 func TestGeminiNativeStreaming(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping live streaming provider test in short mode")
+	}
 	loadEnvFile(t)
 
 	apiKey := getAPIKey("GEMINI_API_KEY")
@@ -225,6 +234,9 @@ func TestGeminiNativeStreaming(t *testing.T) {
 
 // TestGeminiNativeNonStreaming tests Gemini's native API non-streaming
 func TestGeminiNativeNonStreaming(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping live streaming provider test in short mode")
+	}
 	loadEnvFile(t)
 
 	apiKey := getAPIKey("GEMINI_API_KEY")
@@ -237,6 +249,9 @@ func TestGeminiNativeNonStreaming(t *testing.T) {
 
 // TestHelixAgentEnsembleStreaming tests HelixAgent's ensemble streaming
 func TestHelixAgentEnsembleStreaming(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping live streaming provider test in short mode")
+	}
 	loadEnvFile(t)
 
 	// Check if HelixAgent is running
@@ -254,6 +269,9 @@ func TestHelixAgentEnsembleStreaming(t *testing.T) {
 
 // TestHelixAgentEnsembleNonStreaming tests HelixAgent's ensemble non-streaming
 func TestHelixAgentEnsembleNonStreaming(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping live streaming provider test in short mode")
+	}
 	loadEnvFile(t)
 
 	// Check if HelixAgent is running
@@ -271,6 +289,9 @@ func TestHelixAgentEnsembleNonStreaming(t *testing.T) {
 
 // TestHTTPErrorHandling tests that providers properly handle HTTP errors
 func TestHTTPErrorHandling(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping live streaming provider test in short mode")
+	}
 	loadEnvFile(t)
 
 	t.Run("DeepSeek_InvalidAPIKey", func(t *testing.T) {
@@ -298,6 +319,9 @@ func TestHTTPErrorHandling(t *testing.T) {
 
 // TestAllProvidersParallel tests all providers in parallel
 func TestAllProvidersParallel(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping live streaming provider test in short mode")
+	}
 	loadEnvFile(t)
 
 	var wg sync.WaitGroup
@@ -919,6 +943,9 @@ func testGeminiStreamingQuiet(t *testing.T, apiKey, model string) bool {
 
 // TestStreamingContentIntegrity verifies streaming returns correct content
 func TestStreamingContentIntegrity(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping live streaming provider test in short mode")
+	}
 	loadEnvFile(t)
 
 	testCases := []struct {
@@ -1008,6 +1035,9 @@ func TestStreamingContentIntegrity(t *testing.T) {
 
 // TestStreamingTimeout tests that streaming handles timeouts properly
 func TestStreamingTimeout(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping live streaming provider test in short mode")
+	}
 	loadEnvFile(t)
 
 	apiKey := getAPIKey("DEEPSEEK_API_KEY")

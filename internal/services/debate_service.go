@@ -364,6 +364,13 @@ func (ds *DebateService) ConductDebate(
 		return nil, fmt.Errorf("provider registry is required for debate: use NewDebateServiceWithDeps to create a properly configured debate service")
 	}
 
+	// Apply overall debate timeout to bound ALL operations including pre-processing
+	if config.Timeout > 0 {
+		var cancelFn context.CancelFunc
+		ctx, cancelFn = context.WithTimeout(ctx, config.Timeout)
+		defer cancelFn()
+	}
+
 	// NEW: Select specialized role based on task intent
 	specializedRole := ds.selectSpecializedRole(ctx, config.Topic, config.Metadata)
 	if specializedRole != "" {

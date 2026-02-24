@@ -68,6 +68,9 @@ func TestMonitoringLibraryExecutable(t *testing.T) {
 
 // TestMonitoringInitialization tests that monitoring initializes correctly
 func TestMonitoringInitialization(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping monitoring bash script test in short mode")
+	}
 	projectRoot := getProjectRoot(t)
 
 	// Create a test script that initializes monitoring
@@ -102,6 +105,9 @@ echo "REPORT_DIR=$MON_REPORT_DIR"
 
 // TestMonitoringLogCollection tests log collection functionality
 func TestMonitoringLogCollection(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping monitoring bash script test in short mode")
+	}
 	projectRoot := getProjectRoot(t)
 
 	// Create a test script that tests log collection
@@ -147,6 +153,9 @@ rm -f /tmp/helixagent.log
 
 // TestMonitoringResourceSampling tests resource sampling functionality
 func TestMonitoringResourceSampling(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping monitoring bash script test in short mode")
+	}
 	projectRoot := getProjectRoot(t)
 
 	testScript := `#!/bin/bash
@@ -190,6 +199,9 @@ fi
 
 // TestMonitoringMemoryLeakDetection tests memory leak detection
 func TestMonitoringMemoryLeakDetection(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping monitoring bash script test in short mode")
+	}
 	projectRoot := getProjectRoot(t)
 
 	testScript := `#!/bin/bash
@@ -226,6 +238,9 @@ fi
 
 // TestMonitoringLogAnalysis tests warning/error detection in logs
 func TestMonitoringLogAnalysis(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping monitoring bash script test in short mode")
+	}
 	projectRoot := getProjectRoot(t)
 
 	testScript := `#!/bin/bash
@@ -278,6 +293,9 @@ echo "ERRORS_COUNT=$MON_ERRORS_COUNT"
 
 // TestMonitoringReportGeneration tests JSON and HTML report generation
 func TestMonitoringReportGeneration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping monitoring bash script test in short mode")
+	}
 	projectRoot := getProjectRoot(t)
 
 	testScript := `#!/bin/bash
@@ -356,6 +374,9 @@ fi
 
 // TestMonitoringIssueRecording tests issue and fix recording
 func TestMonitoringIssueRecording(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping monitoring bash script test in short mode")
+	}
 	projectRoot := getProjectRoot(t)
 
 	testScript := `#!/bin/bash
@@ -402,6 +423,9 @@ echo "FIXES_COUNT=$MON_FIXES_COUNT"
 
 // TestMonitoringBackgroundMonitoring tests background monitoring start/stop
 func TestMonitoringBackgroundMonitoring(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping monitoring bash script test in short mode")
+	}
 	projectRoot := getProjectRoot(t)
 
 	testScript := `#!/bin/bash
@@ -449,6 +473,9 @@ fi
 
 // TestMonitoringFinalization tests finalization and summary generation
 func TestMonitoringFinalization(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping monitoring bash script test in short mode")
+	}
 	projectRoot := getProjectRoot(t)
 
 	testScript := `#!/bin/bash
@@ -500,6 +527,9 @@ exit 0
 
 // TestMonitoringErrorPatternDetection tests error pattern detection
 func TestMonitoringErrorPatternDetection(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping monitoring bash script test in short mode")
+	}
 	projectRoot := getProjectRoot(t)
 
 	// Test various error patterns
@@ -564,6 +594,9 @@ echo "ERRORS=$MON_ERRORS_COUNT"
 
 // TestMonitoringIgnorePatterns tests that false positives are ignored
 func TestMonitoringIgnorePatterns(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping monitoring bash script test in short mode")
+	}
 	projectRoot := getProjectRoot(t)
 
 	testScript := `#!/bin/bash
@@ -610,6 +643,9 @@ echo "ERRORS=$MON_ERRORS_COUNT"
 
 // TestMonitoringJSONReportStructure tests JSON report has correct structure
 func TestMonitoringJSONReportStructure(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping monitoring bash script test in short mode")
+	}
 	projectRoot := getProjectRoot(t)
 
 	testScript := `#!/bin/bash
@@ -693,6 +729,9 @@ rm -f "/tmp/test_report_$$.json"
 
 // TestMonitoringProcessTracking tests process tracking functionality
 func TestMonitoringProcessTracking(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping monitoring bash script test in short mode")
+	}
 	projectRoot := getProjectRoot(t)
 
 	testScript := `#!/bin/bash
@@ -773,6 +812,9 @@ func TestMonitoredChallengeScriptExists(t *testing.T) {
 
 // TestMonitoringDirectoryStructure verifies directory structure is created
 func TestMonitoringDirectoryStructure(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping monitoring bash script test in short mode")
+	}
 	projectRoot := getProjectRoot(t)
 
 	testScript := `#!/bin/bash
@@ -827,6 +869,9 @@ mon_init "dir_test" 2>/dev/null
 
 // TestMonitoringConcurrentAccess tests thread safety of monitoring
 func TestMonitoringConcurrentAccess(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping monitoring bash script test in short mode")
+	}
 	projectRoot := getProjectRoot(t)
 
 	testScript := `#!/bin/bash
@@ -877,6 +922,9 @@ fi
 
 // TestMonitoringTimestamps tests timestamp accuracy
 func TestMonitoringTimestamps(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping monitoring bash script test in short mode")
+	}
 	projectRoot := getProjectRoot(t)
 
 	before := time.Now()

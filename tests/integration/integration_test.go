@@ -17,6 +17,9 @@ import (
 )
 
 func TestMultiProviderIntegration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping multi-provider integration test in short mode (makes live API calls)")
+	}
 	// Setup test configuration
 	cfg := &config.Config{
 		Server: config.ServerConfig{

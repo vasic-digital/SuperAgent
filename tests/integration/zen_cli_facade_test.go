@@ -23,6 +23,9 @@ import (
 
 // TestZenCLIFacade_EndToEnd tests the complete CLI facade flow
 func TestZenCLIFacade_EndToEnd(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Zen CLI test in short mode (makes live CLI calls)")
+	}
 	if !zen.IsOpenCodeInstalled() {
 		t.Skip("Skipping integration test - OpenCode CLI not installed")
 	}
@@ -69,6 +72,9 @@ func TestZenCLIFacade_EndToEnd(t *testing.T) {
 
 // TestZenCLIFacade_FailedAPIModelTracking tests tracking of failed API models
 func TestZenCLIFacade_FailedAPIModelTracking(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Zen CLI test in short mode (makes live CLI calls)")
+	}
 	if !zen.IsOpenCodeInstalled() {
 		t.Skip("Skipping integration test - OpenCode CLI not installed")
 	}
@@ -115,6 +121,9 @@ func TestZenCLIFacade_FailedAPIModelTracking(t *testing.T) {
 
 // TestZenCLIFacade_FreeAdapterIntegration tests integration with FreeProviderAdapter
 func TestZenCLIFacade_FreeAdapterIntegration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Zen CLI test in short mode (makes live CLI calls)")
+	}
 	adapter := adapters.NewFreeProviderAdapter(nil, nil)
 
 	t.Run("adapter has CLI facade available if opencode installed", func(t *testing.T) {
@@ -203,6 +212,9 @@ func TestZenCLIFacade_VerificationWithFallback(t *testing.T) {
 
 // TestZenCLIFacade_CompleteRequest tests actual completion via CLI
 func TestZenCLIFacade_CompleteRequest(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Zen CLI test in short mode (makes live CLI calls)")
+	}
 	if !zen.IsOpenCodeInstalled() {
 		t.Skip("Skipping integration test - OpenCode CLI not installed")
 	}
@@ -265,6 +277,9 @@ func TestZenCLIFacade_CompleteRequest(t *testing.T) {
 
 // TestZenCLIFacade_StreamingRequest tests streaming completion via CLI
 func TestZenCLIFacade_StreamingRequest(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Zen CLI test in short mode (makes live CLI calls)")
+	}
 	if !zen.IsOpenCodeInstalled() {
 		t.Skip("Skipping integration test - OpenCode CLI not installed")
 	}
@@ -310,6 +325,9 @@ func TestZenCLIFacade_StreamingRequest(t *testing.T) {
 
 // TestZenCLIFacade_ModelSwitching tests switching between models
 func TestZenCLIFacade_ModelSwitching(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Zen CLI test in short mode (makes live CLI calls)")
+	}
 	if !zen.IsOpenCodeInstalled() {
 		t.Skip("Skipping integration test - OpenCode CLI not installed")
 	}
@@ -329,6 +347,9 @@ func TestZenCLIFacade_ModelSwitching(t *testing.T) {
 
 // TestZenCLIFacade_UnifiedProviderCreation tests creating UnifiedProvider from CLI provider
 func TestZenCLIFacade_UnifiedProviderCreation(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Zen CLI test in short mode (makes live CLI calls)")
+	}
 	if !zen.IsOpenCodeInstalled() {
 		t.Skip("Skipping - OpenCode CLI not installed")
 	}
@@ -370,6 +391,9 @@ func TestZenCLIFacade_UnifiedProviderCreation(t *testing.T) {
 
 // TestZenCLIFacade_ErrorHandling tests error handling scenarios
 func TestZenCLIFacade_ErrorHandling(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Zen CLI test in short mode (makes live CLI calls)")
+	}
 	t.Run("unavailable CLI returns proper error", func(t *testing.T) {
 		provider := zen.NewZenCLIProviderWithUnavailableCLI("test", assert.AnError)
 
@@ -420,6 +444,9 @@ func TestZenCLIFacade_ErrorHandling(t *testing.T) {
 
 // TestZenCLIFacade_FreeAdapterCLIModelTracking tests that adapter properly tracks CLI models
 func TestZenCLIFacade_FreeAdapterCLIModelTracking(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Zen CLI test in short mode (makes live CLI calls)")
+	}
 	adapter := adapters.NewFreeProviderAdapter(nil, nil)
 
 	t.Run("IsModelUsingCLIFacade returns false for non-existent model", func(t *testing.T) {

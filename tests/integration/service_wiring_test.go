@@ -806,6 +806,9 @@ func TestServiceWiring_EmbeddingService(t *testing.T) {
 // properly uses StartupVerifier when available (CRITICAL: OAuth providers like
 // Claude and Qwen will NOT be included in the debate team without this!)
 func TestDebateTeamConfig_StartupVerifierIntegration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping startup verifier integration test in short mode (makes live API calls)")
+	}
 	logger := logrus.New()
 	logger.SetLevel(logrus.WarnLevel)
 

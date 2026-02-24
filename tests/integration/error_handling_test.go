@@ -421,6 +421,9 @@ func TestErrorHandlerIntegration(t *testing.T) {
 
 // TestLiveChatCompletionsErrorHandling tests error handling with actual server
 func TestLiveChatCompletionsErrorHandling(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping live error handling test requiring running server in short mode")
+	}
 	config := loadErrorTestConfig(t)
 
 	// Skip if server not running - use a short timeout for the health check

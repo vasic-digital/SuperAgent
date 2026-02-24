@@ -243,6 +243,9 @@ func TestOpenCodeSchemaValidation(t *testing.T) {
 
 // TestOpenCodeSchemaValidationWithBinary actually runs OpenCode to validate the config
 func TestOpenCodeSchemaValidationWithBinary(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping opencode binary validation in short mode")
+	}
 	// Check if OpenCode binary is available
 	_, err := exec.LookPath("opencode")
 	if err != nil {
@@ -316,6 +319,9 @@ func TestAllCLIAgentsSchemaValidation(t *testing.T) {
 
 // TestGeneratedConfigHasNoInvalidFields ensures the generator doesn't produce invalid configs
 func TestGeneratedConfigHasNoInvalidFields(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping binary-dependent test in short mode")
+	}
 	// Generate a fresh config
 	cmd := exec.Command("./bin/helixagent", "-generate-opencode-config", "-opencode-output", "/tmp/test_opencode_config.json")
 	cmd.Dir = "/run/media/milosvasic/DATA4TB/Projects/HelixAgent"

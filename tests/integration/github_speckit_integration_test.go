@@ -88,11 +88,15 @@ func TestGitHubSpecKitSubmoduleVerification(t *testing.T) {
 				output, err := cmd.CombinedOutput()
 				require.NoError(t, err)
 
-				// Check if output contains version tag (e.g., v0.0.90)
+				// Check if output contains version tag (e.g., v0.0.90, v0.1.6, v1.0.0)
 				outputStr := string(output)
-				assert.True(t,
-					strings.Contains(outputStr, "v0.0.") || strings.Contains(outputStr, "v1."),
-					"Submodule should be on a version tag")
+				isTagged := strings.Contains(outputStr, "v0.0.") ||
+					strings.Contains(outputStr, "v0.1.") ||
+					strings.Contains(outputStr, "v0.2.") ||
+					strings.Contains(outputStr, "v1.") ||
+					strings.Contains(outputStr, "v2.")
+				assert.True(t, isTagged,
+					"Submodule should be on a version tag, got: %s", outputStr)
 			},
 		},
 	}

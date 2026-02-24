@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"sync"
 	"testing"
 	"time"
@@ -170,11 +169,8 @@ func TestDebateFullFlow_CreateDebate(t *testing.T) {
 	require.NoError(t, err, "Failed to create POST request")
 	req.Header.Set("Content-Type", "application/json")
 
-	// Add API key from environment
-	apiKey := os.Getenv("HELIXAGENT_API_KEY")
-	if apiKey != "" {
-		req.Header.Set("Authorization", "Bearer "+apiKey)
-	}
+	// Add JWT token for authentication
+	req.Header.Set("Authorization", "Bearer "+getTestAPIKey())
 
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err, "POST /v1/debates request failed")
@@ -228,11 +224,8 @@ func TestDebateFullFlow_DebateStatus(t *testing.T) {
 	require.NoError(t, err)
 	createReq.Header.Set("Content-Type", "application/json")
 
-	// Add API key from environment
-	apiKey := os.Getenv("HELIXAGENT_API_KEY")
-	if apiKey != "" {
-		createReq.Header.Set("Authorization", "Bearer "+apiKey)
-	}
+	// Add JWT token for authentication
+	createReq.Header.Set("Authorization", "Bearer "+getTestAPIKey())
 
 	createResp, err := http.DefaultClient.Do(createReq)
 	require.NoError(t, err, "Failed to create debate for status test")
@@ -256,6 +249,7 @@ func TestDebateFullFlow_DebateStatus(t *testing.T) {
 	statusReq, err := http.NewRequestWithContext(statusCtx, http.MethodGet,
 		statusURL, nil)
 	require.NoError(t, err)
+	statusReq.Header.Set("Authorization", "Bearer "+getTestAPIKey())
 
 	statusResp, err := http.DefaultClient.Do(statusReq)
 	require.NoError(t, err, "GET status request failed")
@@ -303,11 +297,8 @@ func TestDebateFullFlow_DebateComplete(t *testing.T) {
 	require.NoError(t, err)
 	createReq.Header.Set("Content-Type", "application/json")
 
-	// Add API key from environment
-	apiKey := os.Getenv("HELIXAGENT_API_KEY")
-	if apiKey != "" {
-		createReq.Header.Set("Authorization", "Bearer "+apiKey)
-	}
+	// Add JWT token for authentication
+	createReq.Header.Set("Authorization", "Bearer "+getTestAPIKey())
 
 	createResp, err := http.DefaultClient.Do(createReq)
 	require.NoError(t, err, "Failed to create debate")
@@ -341,6 +332,7 @@ func TestDebateFullFlow_DebateComplete(t *testing.T) {
 			statusReq, reqErr := http.NewRequestWithContext(
 				pollCtx, http.MethodGet, statusURL, nil)
 			require.NoError(t, reqErr)
+			statusReq.Header.Set("Authorization", "Bearer "+getTestAPIKey())
 
 			statusResp, respErr := http.DefaultClient.Do(statusReq)
 			if respErr != nil {
@@ -382,6 +374,7 @@ done:
 	resultsReq, err := http.NewRequestWithContext(
 		resultsCtx, http.MethodGet, resultsURL, nil)
 	require.NoError(t, err)
+	resultsReq.Header.Set("Authorization", "Bearer "+getTestAPIKey())
 
 	resultsResp, err := http.DefaultClient.Do(resultsReq)
 	require.NoError(t, err, "GET results request failed")
@@ -439,11 +432,8 @@ func TestDebateFullFlow_ConcurrentDebates(t *testing.T) {
 			}
 			req.Header.Set("Content-Type", "application/json")
 
-			// Add API key from environment
-			apiKey := os.Getenv("HELIXAGENT_API_KEY")
-			if apiKey != "" {
-				req.Header.Set("Authorization", "Bearer "+apiKey)
-			}
+			// Add JWT token for authentication
+			req.Header.Set("Authorization", "Bearer "+getTestAPIKey())
 
 			resp, err := http.DefaultClient.Do(req)
 			if err != nil {
@@ -495,6 +485,7 @@ func TestDebateFullFlow_ConcurrentDebates(t *testing.T) {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet,
 			statusURL, nil)
 		require.NoError(t, err)
+		req.Header.Set("Authorization", "Bearer "+getTestAPIKey())
 
 		resp, err := http.DefaultClient.Do(req)
 		if err == nil {
@@ -589,11 +580,8 @@ func TestDebateFullFlow_InvalidTopic(t *testing.T) {
 			require.NoError(t, err)
 			req.Header.Set("Content-Type", "application/json")
 
-			// Add API key from environment
-			apiKey := os.Getenv("HELIXAGENT_API_KEY")
-			if apiKey != "" {
-				req.Header.Set("Authorization", "Bearer "+apiKey)
-			}
+			// Add JWT token for authentication
+			req.Header.Set("Authorization", "Bearer "+getTestAPIKey())
 
 			resp, err := http.DefaultClient.Do(req)
 			require.NoError(t, err, "POST request failed")

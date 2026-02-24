@@ -141,19 +141,19 @@ func TestZenModelNormalization(t *testing.T) {
 	}{
 		// With opencode/ prefix - current free models
 		{"opencode/big-pickle", "big-pickle", true},
-		{"opencode/gpt-5-nano", "gpt-5-nano", true},
-		// With opencode/ prefix - deprecated models (normalization should still work)
+		// With opencode/ prefix - deprecated/removed models (normalization should still work)
+		{"opencode/gpt-5-nano", "gpt-5-nano", false},  // gpt-5-nano removed from free list
 		{"opencode/grok-code", "grok-code", false},
 		{"opencode/glm-4.7-free", "glm-4.7-free", false},
 		// With opencode- prefix - current free models
 		{"opencode-big-pickle", "big-pickle", true},
-		{"opencode-gpt-5-nano", "gpt-5-nano", true},
+		{"opencode-gpt-5-nano", "gpt-5-nano", false},  // gpt-5-nano removed from free list
 		// With opencode- prefix - deprecated models
 		{"opencode-grok-code", "grok-code", false},
 		{"opencode-glm-4.7-free", "glm-4.7-free", false},
 		// Already normalized - current free models
 		{"big-pickle", "big-pickle", true},
-		{"gpt-5-nano", "gpt-5-nano", true},
+		{"gpt-5-nano", "gpt-5-nano", false},  // gpt-5-nano removed from free list
 		// Already normalized - deprecated models
 		{"grok-code", "grok-code", false},
 		{"glm-4.7-free", "glm-4.7-free", false},
@@ -180,15 +180,14 @@ func TestZenModelNormalization(t *testing.T) {
 
 // TestZenProviderCapabilities tests that Zen provider reports correct capabilities
 func TestZenProviderCapabilities(t *testing.T) {
-	provider := zen.NewZenProviderAnonymous(zen.ModelGrokCodeFast)
+	provider := zen.NewZenProviderAnonymous(zen.ModelBigPickle)
 
 	caps := provider.GetCapabilities()
 	require.NotNil(t, caps, "Capabilities should not be nil")
 
-	// Check supported models
+	// Check supported models (using current free models, not deprecated ones)
 	assert.Contains(t, caps.SupportedModels, zen.ModelBigPickle)
-	assert.Contains(t, caps.SupportedModels, zen.ModelGrokCodeFast)
-	assert.Contains(t, caps.SupportedModels, zen.ModelGLM47Free)
+	assert.Contains(t, caps.SupportedModels, zen.ModelGLM5Free)
 	assert.Contains(t, caps.SupportedModels, zen.ModelTrinityLargePreviewFree)
 
 	// Check features

@@ -78,7 +78,7 @@ func createDebate(t *testing.T, topic string, maxRounds int) (*http.Response, De
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 
-	apiKey := os.Getenv("HELIXAGENT_API_KEY")
+	apiKey := getE2EAPIKey()
 	if apiKey != "" {
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 	}
@@ -205,7 +205,7 @@ func TestDebateE2E_IntegratedFeatures(t *testing.T) {
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 
-	apiKey := os.Getenv("HELIXAGENT_API_KEY")
+	apiKey := getE2EAPIKey()
 	if apiKey != "" {
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 	}

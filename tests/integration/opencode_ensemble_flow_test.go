@@ -342,6 +342,9 @@ func TestResponseMetadataValidation(t *testing.T) {
 
 // TestOpenCodeAPIIntegration tests the full API flow with real HTTP requests
 func TestOpenCodeAPIIntegration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping live server ensemble test in short mode")
+	}
 	// Skip if no server is running
 	serverURL := os.Getenv("HELIXAGENT_TEST_URL")
 	if serverURL == "" {
