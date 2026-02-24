@@ -578,9 +578,9 @@ Key environment variables (see `.env.example`):
   - Example: `feat(llm): add ensemble voting strategy`
 - Always run `make fmt vet lint test` before committing.
 
-## Extracted Modules (25 Independent Go Modules)
+## Extracted Modules (26 Independent Go Modules)
 
-HelixAgent's functionality is decomposed into 25 independent Go modules. Full catalog: `docs/MODULES.md`.
+HelixAgent's functionality is decomposed into 26 independent Go modules. Full catalog: `docs/MODULES.md`.
 
 | Phase | Modules |
 |-------|---------|
@@ -588,16 +588,40 @@ HelixAgent's functionality is decomposed into 25 independent Go modules. Full ca
 | Infrastructure | Security, VectorDB, Embeddings, Database, Cache |
 | Services | Messaging, Formatters, MCP |
 | Integration | RAG, Memory, Optimization, Plugins |
+| Cognitive | **HelixMemory** (unified Mem0+Cognee+Letta+Graphiti fusion) |
 | AI/ML | Agentic, LLMOps, SelfImprove, Planning, Benchmark |
 | Pre-existing | Containers, Challenges |
 
 Each module: `go.mod` (`digital.vasic.<name>`), `CLAUDE.md`, `README.md`, `AGENTS.md`, `challenges/scripts/`, `replace` in root `go.mod`.
 Bridge adapters in `internal/adapters/<name>/adapter.go`.
 
+### HelixMemory — Unified Cognitive Memory Engine
+
+**Module**: `digital.vasic.helixmemory` | **Path**: `HelixMemory/` | **Build tag**: `helixmemory`
+
+Proprietary unified cognitive memory engine that orchestrates four backends through a 3-stage fusion pipeline. Implements `digital.vasic.memory/pkg/store.MemoryStore` for drop-in replacement.
+
+| Backend | Role | Port | Source |
+|---------|------|------|--------|
+| Mem0 | Dynamic fact extraction | :8001 | `SourceMem0` |
+| Cognee | Semantic knowledge graphs (ECL) | :8000 | `SourceCognee` |
+| Letta | Stateful agent runtime, core memory | :8283 | `SourceLetta` |
+| Graphiti | Temporal knowledge graph, bi-temporal | :8003 | `SourceGraphiti` |
+
+**Fusion**: Collection → Deduplication (cosine ≥ 0.92) → Cross-Source Re-Ranking (`relevance*0.40 + recency*0.25 + source*0.20 + type*0.15`).
+
+**Key packages**: `pkg/types`, `pkg/config`, `pkg/clients/{mem0,cognee,letta,graphiti}`, `pkg/fusion`, `pkg/routing`, `pkg/provider`, `pkg/consolidation`, `pkg/metrics`, `pkg/features/*` (12 power features).
+
+**Conditional selection**: Build with `-tags helixmemory` to use. Without the tag, standard Memory module is used. Bridge adapter: `internal/adapters/memory/factory_helixmemory.go`.
+
+**Config prefix**: `HELIX_MEMORY_*` env vars. Docker Compose: `HelixMemory/docker/docker-compose.yml`.
+
+**Challenge**: `./challenges/scripts/helixmemory_challenge.sh`
+
 ## Additional Resources
 
 - `CLAUDE.md` – Detailed project overview and architecture.
-- `docs/MODULES.md` – Full extracted modules catalog (25 modules, 123 packages).
+- `docs/MODULES.md` – Full extracted modules catalog (26 modules, 130+ packages).
 - `Makefile` – Complete list of available commands.
 - `go.mod` – Go module dependencies.
 - `docs/` – Project documentation.

@@ -8,7 +8,7 @@ HelixAgent is an AI-powered ensemble LLM service written in Go that combines res
 
 **Module**: `dev.helix.agent` (Go 1.24+, toolchain go1.24.11)
 
-Subprojects: **Toolkit** (`Toolkit/`) — Go library for AI apps. **LLMsVerifier** (`LLMsVerifier/`) — provider accuracy verification. Plus **25 extracted modules** (see [Extracted Modules](#extracted-modules-submodules) below) covering containers, challenges, concurrency, observability, auth, storage, streaming, security, vector databases, embeddings, database, cache, messaging, formatters, MCP, RAG, memory, optimization, plugins, event bus, agentic workflows, LLM operations, self-improvement, planning algorithms, and benchmarking.
+Subprojects: **Toolkit** (`Toolkit/`) — Go library for AI apps. **LLMsVerifier** (`LLMsVerifier/`) — provider accuracy verification. Plus **26 extracted modules** (see [Extracted Modules](#extracted-modules-submodules) below) covering containers, challenges, concurrency, observability, auth, storage, streaming, security, vector databases, embeddings, database, cache, messaging, formatters, MCP, RAG, memory, optimization, plugins, event bus, agentic workflows, LLM operations, self-improvement, planning algorithms, benchmarking, and **HelixMemory** (unified cognitive memory engine).
 
 ## Mandatory Development Standards
 
@@ -207,6 +207,9 @@ Each module is an independent Go module with its own go.mod, tests, CLAUDE.md, A
 - **Planning** (`Planning/`, `digital.vasic.planning`) — AI planning algorithms: hierarchical planning (HiPlan), Monte Carlo Tree Search (MCTS), Tree of Thoughts. 1 package (3 files).
 - **Benchmark** (`Benchmark/`, `digital.vasic.benchmark`) — LLM benchmarking: SWE-bench, HumanEval, MMLU and custom benchmarks; leaderboard, provider comparison. 1 package (3 files).
 
+**Cognitive (Phase 6 — unified memory fusion):**
+- **HelixMemory** (`HelixMemory/`, `digital.vasic.helixmemory`) — Unified cognitive memory engine: orchestrates Mem0 (facts), Cognee (knowledge graphs), Letta (stateful agent runtime), Graphiti (temporal graph) through 3-stage fusion pipeline. 12 power features, circuit breakers, Prometheus metrics. Build with `-tags helixmemory`. 9+ packages.
+
 **Pre-existing:**
 - **Containers** (`Containers/`, `digital.vasic.containers`) — Generic container orchestration: runtime abstraction (Docker/Podman/K8s), health checking, compose orchestration, lifecycle management. 12 packages.
 - **Challenges** (`Challenges/`, `digital.vasic.challenges`) — Generic challenge framework: assertion engine, registry, runner, reporting, monitoring, metrics, plugin system. 12 packages.
@@ -357,6 +360,7 @@ Registry: `internal/agents/registry.go`. Generate configs: `./bin/helixagent --g
 ./challenges/scripts/debate_provenance_audit_challenge.sh       # 12 tests
 ./challenges/scripts/debate_deadlock_detection_challenge.sh     # 8 tests
 ./challenges/scripts/debate_git_integration_challenge.sh        # 11 tests
+./challenges/scripts/helixmemory_challenge.sh                   # 80+ tests
 ```
 
 ## LLMsVerifier
