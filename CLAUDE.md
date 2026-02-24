@@ -211,7 +211,7 @@ Each module is an independent Go module with its own go.mod, tests, CLAUDE.md, A
 - **HelixMemory** (`HelixMemory/`, `digital.vasic.helixmemory`) — **DEFAULT** unified cognitive memory engine for HelixAgent and AI debate ensemble. Orchestrates Mem0 (facts), Cognee (knowledge graphs), Letta (stateful agent runtime), Graphiti (temporal graph) through 3-stage fusion pipeline. 12 power features, circuit breakers, Prometheus metrics, infra bridge. Active by default; opt out with `-tags nohelixmemory`. 12+ packages.
 
 **Specification (Phase 7 — spec-driven development):**
-- **HelixSpecifier** (`HelixSpecifier/`, `digital.vasic.helixspecifier`) — Spec-Driven Development Fusion Engine: 3-pillar architecture (SpecKit 7-phase SDD, Superpowers TDD/subagents, GSD milestones), adaptive ceremony scaling, effort classification, CLI agent adapters, spec memory. 21 packages. Active by default; opt out with `-tags nohelixspecifier`.
+- **HelixSpecifier** (`HelixSpecifier/`, `digital.vasic.helixspecifier`) — Spec-Driven Development Fusion Engine: 3-pillar architecture (SpecKit 7-phase SDD, Superpowers TDD/subagents, GSD milestones), adaptive ceremony scaling, effort classification, CLI agent adapters, 10 power features, spec memory. 27 packages (21 core + 6 test suites). 773 tests (unit, integration, E2E, security, stress, benchmark, automation). Active by default; opt out with `-tags nohelixspecifier`.
 
 **Pre-existing:**
 - **Containers** (`Containers/`, `digital.vasic.containers`) — Generic container orchestration: runtime abstraction (Docker/Podman/K8s), health checking, compose orchestration, lifecycle management. 12 packages.
@@ -364,7 +364,7 @@ Registry: `internal/agents/registry.go`. Generate configs: `./bin/helixagent --g
 ./challenges/scripts/debate_deadlock_detection_challenge.sh     # 8 tests
 ./challenges/scripts/debate_git_integration_challenge.sh        # 11 tests
 ./challenges/scripts/helixmemory_challenge.sh                   # 80+ tests
-./challenges/scripts/helixspecifier_challenge.sh                # HelixSpecifier verification
+./challenges/scripts/helixspecifier_challenge.sh                # 115 tests
 ```
 
 ## LLMsVerifier

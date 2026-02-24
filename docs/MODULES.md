@@ -32,9 +32,9 @@ HelixAgent's functionality is decomposed into **27 independent Go modules**, eac
 | 24 | Planning | `digital.vasic.planning` | `Planning/` | 1 | AI/ML |
 | 25 | Benchmark | `digital.vasic.benchmark` | `Benchmark/` | 1 | AI/ML |
 | 26 | HelixMemory | `digital.vasic.helixmemory` | `HelixMemory/` | 12+ | Cognitive |
-| 27 | HelixSpecifier | `digital.vasic.helixspecifier` | `HelixSpecifier/` | 21 | Specification |
+| 27 | HelixSpecifier | `digital.vasic.helixspecifier` | `HelixSpecifier/` | 27 | Specification |
 
-**Total: 27 modules, 156+ packages**
+**Total: 27 modules, 162+ packages**
 
 ---
 
@@ -394,35 +394,41 @@ Unified cognitive memory engine fusing Mem0, Cognee, Letta, and Graphiti into a 
 
 ### HelixSpecifier (`digital.vasic.helixspecifier`)
 
-Spec-Driven Development Fusion Engine: 3-pillar architecture (SpecKit, Superpowers, GSD), adaptive ceremony scaling, 10 power features. 21 packages.
+Spec-Driven Development Fusion Engine: 3-pillar architecture (SpecKit, Superpowers, GSD), adaptive ceremony scaling, 10 power features. 27 packages (21 core + 6 test suites). 773 tests.
 
 | Package | Purpose |
 |---------|---------|
-| `pkg/types` | Core types: Spec, Phase, Pillar, CeremonyLevel, EffortClass |
+| `pkg/types` | Core types, 7 interfaces, enums (EffortLevel, FusionStage, SpecKitPhase, CeremonyLevel) |
 | `pkg/config` | Configuration from HELIX_SPECIFIER_* env vars with defaults |
-| `pkg/speckit` | SpecKit 7-phase SDD engine (Constitution, Specify, Clarify, Plan, Tasks, Analyze, Implement) |
-| `pkg/superpowers` | Superpowers TDD and subagent orchestration |
-| `pkg/gsd` | GSD milestone tracking and progress management |
-| `pkg/ceremony` | Adaptive ceremony scaling based on effort classification |
-| `pkg/effort` | Effort classification engine (5 granularity levels) |
-| `pkg/fusion` | 3-pillar fusion coordinator |
-| `pkg/memory` | Spec memory for phase caching and resumption |
-| `pkg/adapters` | CLI agent adapters for spec-driven workflows |
-| `pkg/features/auto-activation` | Automatic SDD activation for large changes |
-| `pkg/features/phase-cache` | Phase caching for workflow resumption |
-| `pkg/features/effort-detect` | Work granularity detection |
-| `pkg/features/ceremony-scale` | Dynamic ceremony level adjustment |
-| `pkg/features/pillar-fusion` | Cross-pillar intelligence fusion |
-| `pkg/features/spec-memory` | Persistent spec memory across sessions |
-| `pkg/features/agent-bridge` | CLI agent integration bridge |
-| `pkg/features/tdd-orchestrator` | TDD workflow orchestration |
-| `pkg/features/milestone-tracker` | GSD milestone progress tracking |
-| `pkg/features/constitution-sync` | Constitution synchronization |
-| `pkg/metrics` | Prometheus metrics for spec workflows |
+| `pkg/engine` | FusionEngine orchestrating the 3-pillar SDD flow |
+| `pkg/speckit` | SpecKit pillar: 7-phase debate-backed SDD workflow |
+| `pkg/superpowers` | Superpowers pillar: TDD execution and parallel subagent dispatch |
+| `pkg/gsd` | GSD pillar: milestone lifecycle creation and progress tracking |
+| `pkg/intent` | Effort classifier: signal-based request analysis |
+| `pkg/ceremony` | Adaptive ceremony scaler with boost and quality-based adjustment |
+| `pkg/memory` | Spec memory store: specification storage and pattern learning |
+| `pkg/adapters` | CLI agent output adapters (markdown, TOML, GitHub, minimal, generic) |
+| `pkg/metrics` | Operational metrics: flow, phase, effort, and ceremony tracking |
+| `pkg/features/parallel_execution` | Bounded-concurrency parallel task executor |
+| `pkg/features/constitution_code` | Constitution rule management and compliance validation |
+| `pkg/features/nyquist_tdd` | Nyquist-frequency TDD ratio tracker (test >= 2x impl) |
+| `pkg/features/debate_architecture` | Multi-round debate orchestration for spec refinement |
+| `pkg/features/skill_learning` | Adaptive skill acquisition with proficiency tracking |
+| `pkg/features/brownfield` | Existing codebase pattern analysis for spec generation |
+| `pkg/features/predictive_spec` | Predictive specification from historical patterns |
+| `pkg/features/cross_project` | Cross-project knowledge transfer engine |
+| `pkg/features/adaptive_ceremony` | Dynamic ceremony adjustment from real-time quality metrics |
+| `pkg/features/spec_memory` | Persistent spec memory index with access tracking |
+| `tests/integration` | Cross-package workflow and lifecycle tests (26 functions) |
+| `tests/e2e` | Full user workflow simulation tests (18 functions) |
+| `tests/security` | Security validation and penetration tests (26 functions) |
+| `tests/stress` | Concurrent load and saturation tests (12 functions) |
+| `tests/benchmark` | Performance measurement benchmarks (22 functions) |
+| `tests/automation` | Project structure and API contract verification (14 functions) |
 
-**Patterns**: Strategy, Facade, Template Method, Observer, State Machine, Chain of Responsibility
+**Patterns**: Strategy, Facade, Template Method, Observer, Factory, Adapter, Semaphore
 
-**Adapter**: `internal/adapters/helixspecifier/adapter.go` (build tag `helixspecifier`)
+**Adapter**: `internal/adapters/specifier/adapter.go` (build tag `!nohelixspecifier`)
 
 ---
 
