@@ -146,7 +146,8 @@ func TestProviderURLConsistency_CohereUsesCorrectDomain(t *testing.T) {
 // --- Test 3: ZAI URL Consistency ---
 
 func TestProviderURLConsistency_ZAIUsesCorrectDomain(t *testing.T) {
-	// ZAI (Zhipu GLM) uses open.bigmodel.cn across all source files.
+	// ZAI (Zhipu GLM) uses api.z.ai (international endpoint) across all source files.
+	// Switched from open.bigmodel.cn (China endpoint) to api.z.ai in commit 189f830e.
 
 	filesToCheck := []string{
 		"internal/verifier/provider_types.go",
@@ -159,14 +160,14 @@ func TestProviderURLConsistency_ZAIUsesCorrectDomain(t *testing.T) {
 			content := readSourceFile(t, relPath)
 
 			if strings.Contains(content, `"zai"`) {
-				// All ZAI URLs must reference open.bigmodel.cn
-				correctCount := strings.Count(content, "open.bigmodel.cn")
+				// All ZAI URLs must reference api.z.ai (international endpoint)
+				correctCount := strings.Count(content, "api.z.ai")
 				assert.Greater(t, correctCount, 0,
-					"%s references zai provider but does not contain open.bigmodel.cn", relPath)
+					"%s references zai provider but does not contain api.z.ai", relPath)
 
-				// No other ZAI-related domains should appear
+				// No other ZAI-related legacy domains should appear
 				assert.False(t, strings.Contains(content, "api.zhipu.ai"),
-					"%s contains incorrect domain api.zhipu.ai; should be open.bigmodel.cn", relPath)
+					"%s contains incorrect domain api.zhipu.ai; should be api.z.ai", relPath)
 			}
 		})
 	}
@@ -398,7 +399,7 @@ func TestProviderURLConsistency_NoMixedDomains(t *testing.T) {
 		},
 		{
 			name:            "zai",
-			expectedDomain:  "open.bigmodel.cn",
+			expectedDomain:  "api.z.ai",
 			forbiddenDomain: "api.zhipu.ai",
 		},
 		{

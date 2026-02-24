@@ -129,25 +129,25 @@ fi
 #===============================================================================
 section "Section 3: ZAI Provider URLs"
 
-# Test 3.1: ZAI uses open.bigmodel.cn in provider_types.go
-if grep -A10 '"zai":' "$PROVIDER_TYPES" | grep -q 'open\.bigmodel\.cn'; then
-    pass "ZAI uses open.bigmodel.cn in provider_types.go"
+# Test 3.1: ZAI uses api.z.ai in provider_types.go
+if grep -A10 '"zai":' "$PROVIDER_TYPES" | grep -q 'api\.z\.ai'; then
+    pass "ZAI uses api.z.ai in provider_types.go"
 else
-    fail "ZAI does not use open.bigmodel.cn in provider_types.go"
+    fail "ZAI does not use api.z.ai in provider_types.go"
 fi
 
-# Test 3.2: ZAI uses open.bigmodel.cn in provider_discovery.go
-if grep 'ProviderType: "zai"' "$PROVIDER_DISCOVERY" | grep -q 'open\.bigmodel\.cn'; then
-    pass "ZAI uses open.bigmodel.cn in provider_discovery.go"
+# Test 3.2: ZAI uses api.z.ai in provider_discovery.go
+if grep 'ProviderType: "zai"' "$PROVIDER_DISCOVERY" | grep -q 'api\.z\.ai'; then
+    pass "ZAI uses api.z.ai in provider_discovery.go"
 else
-    fail "ZAI does not use open.bigmodel.cn in provider_discovery.go"
+    fail "ZAI does not use api.z.ai in provider_discovery.go"
 fi
 
-# Test 3.3: ZAI uses open.bigmodel.cn in provider_access.go
-if grep -A15 '"zai":' "$PROVIDER_ACCESS" | grep -q 'open\.bigmodel\.cn'; then
-    pass "ZAI uses open.bigmodel.cn in provider_access.go"
+# Test 3.3: ZAI uses api.z.ai in provider_access.go
+if grep -A15 '"zai":' "$PROVIDER_ACCESS" | grep -q 'api\.z\.ai'; then
+    pass "ZAI uses api.z.ai in provider_access.go"
 else
-    fail "ZAI does not use open.bigmodel.cn in provider_access.go"
+    fail "ZAI does not use api.z.ai in provider_access.go"
 fi
 
 #===============================================================================

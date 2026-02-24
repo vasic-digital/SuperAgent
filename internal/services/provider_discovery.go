@@ -157,11 +157,11 @@ var providerMappings = []ProviderMapping{
 
 	// ZAI/Zhipu/GLM - Multiple key name variations (GLM-4.7 is latest model)
 	// Tier 2 providers have Priority 3
-	{EnvVar: "ZAI_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4.7", Priority: 3},
-	{EnvVar: "ApiKey_ZAI", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4.7", Priority: 3},
-	{EnvVar: "ZHIPU_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4.7", Priority: 3},
-	{EnvVar: "GLM_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4.7", Priority: 3},
-	{EnvVar: "BIGMODEL_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4.7", Priority: 3},
+	{EnvVar: "ZAI_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://api.z.ai/api/paas/v4", DefaultModel: "glm-4.7", Priority: 3},
+	{EnvVar: "ApiKey_ZAI", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://api.z.ai/api/paas/v4", DefaultModel: "glm-4.7", Priority: 3},
+	{EnvVar: "ZHIPU_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://api.z.ai/api/paas/v4", DefaultModel: "glm-4.7", Priority: 3},
+	{EnvVar: "GLM_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://api.z.ai/api/paas/v4", DefaultModel: "glm-4.7", Priority: 3},
+	{EnvVar: "BIGMODEL_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://api.z.ai/api/paas/v4", DefaultModel: "glm-4.7", Priority: 3},
 
 	// Cohere - Multiple key name variations
 	{EnvVar: "COHERE_API_KEY", ProviderType: "cohere", ProviderName: "cohere", BaseURL: "https://api.cohere.com/v2", DefaultModel: "command-r-plus", Priority: 4},
@@ -670,7 +670,7 @@ func (pd *ProviderDiscovery) createProvider(mapping ProviderMapping, apiKey stri
 		// Use native ZAI provider for Zhipu/GLM models
 		baseURL := mapping.BaseURL
 		if baseURL == "" {
-			baseURL = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
+			baseURL = "https://api.z.ai/api/paas/v4/chat/completions"
 		}
 		return zai.NewZAIProvider(apiKey, baseURL, mapping.DefaultModel), nil
 
