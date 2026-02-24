@@ -1,6 +1,6 @@
 # Extracted Modules Catalog
 
-HelixAgent's functionality is decomposed into **25 independent Go modules**, each with its own repository, tests, and documentation. All modules are integrated as git submodules with `replace` directives in the root `go.mod` for local development.
+HelixAgent's functionality is decomposed into **26 independent Go modules**, each with its own repository, tests, and documentation. All modules are integrated as git submodules with `replace` directives in the root `go.mod` for local development.
 
 ## Module Index
 
@@ -31,8 +31,9 @@ HelixAgent's functionality is decomposed into **25 independent Go modules**, eac
 | 23 | SelfImprove | `digital.vasic.selfimprove` | `SelfImprove/` | 1 | AI/ML |
 | 24 | Planning | `digital.vasic.planning` | `Planning/` | 1 | AI/ML |
 | 25 | Benchmark | `digital.vasic.benchmark` | `Benchmark/` | 1 | AI/ML |
+| 26 | HelixMemory | `digital.vasic.helixmemory` | `HelixMemory/` | 12+ | Cognitive |
 
-**Total: 25 modules, 123 packages**
+**Total: 26 modules, 135+ packages**
 
 ---
 
@@ -358,6 +359,36 @@ LLM benchmarking framework. 1 package (3 files) covering industry-standard bench
 
 ---
 
+## Phase 6: Cognitive Modules
+
+### HelixMemory (`digital.vasic.helixmemory`)
+
+Unified cognitive memory engine fusing Mem0, Cognee, Letta, and Graphiti into a single orchestrated system. 4 backend clients, 3-stage fusion pipeline (collect→dedup→rerank), intelligent routing, and 12 power features.
+
+| Package | Purpose |
+|---------|---------|
+| `pkg/types` | Core types: MemoryEntry, MemoryType, MemorySource, interfaces |
+| `pkg/config` | Configuration from HELIX_MEMORY_* env vars with defaults |
+| `pkg/clients/mem0` | Mem0 REST API client with circuit breaker |
+| `pkg/clients/cognee` | Cognee ECL pipeline client with circuit breaker |
+| `pkg/clients/letta` | Letta agent runtime client with core memory |
+| `pkg/clients/graphiti` | Graphiti temporal graph client |
+| `pkg/fusion` | 3-stage fusion engine (collect, dedup, rerank) |
+| `pkg/routing` | Intelligent memory routing and type classification |
+| `pkg/provider` | UnifiedMemoryProvider + MemoryStore adapter |
+| `pkg/consolidation` | Sleep-time compute engine |
+| `pkg/metrics` | Prometheus metrics |
+| `pkg/infra` | Container infrastructure bridge |
+| `pkg/features/*` | 12 power features (codebase DNA, procedural, mesh, temporal, debate, context window, cross-project, MCP bridge, code gen, confidence, quality loop, snapshots) |
+
+**Fusion Score**: `score = relevance * 0.40 + recency * 0.25 + source * 0.20 + type * 0.15`
+
+**Patterns**: Strategy, Adapter, Facade, Circuit Breaker, Observer, Template Method
+
+**Adapter**: `internal/adapters/memory/factory_helixmemory.go` (build tag `helixmemory`)
+
+---
+
 ## Pre-existing Modules
 
 ### Containers (`digital.vasic.containers`)
@@ -382,7 +413,7 @@ cd EventBus && go test ./... -count=1 -race && cd ..
 for mod in EventBus Concurrency Observability Auth Storage Streaming \
            Security VectorDB Embeddings Database Cache \
            Messaging Formatters MCP_Module RAG Memory Optimization Plugins \
-           Agentic LLMOps SelfImprove Planning Benchmark; do
+           Agentic LLMOps SelfImprove Planning Benchmark HelixMemory; do
   echo "Testing $mod..."
   (cd $mod && go test ./... -count=1 -race -short)
 done
@@ -445,6 +476,8 @@ HelixAgent (dev.helix.agent)
 │   ├── SelfImprove ─── Reward model, RLHF
 │   ├── Planning ─── HiPlan, MCTS, Tree of Thoughts
 │   └── Benchmark ─── LLM benchmarking, leaderboards
+├── Cognitive Layer
+│   └── HelixMemory ─── Unified memory (Mem0+Cognee+Letta+Graphiti)
 └── Pre-existing
     ├── Containers ─── Container orchestration
     └── Challenges ─── Challenge framework
@@ -486,6 +519,7 @@ HelixAgent's `internal/adapters/` package bridges internal types to the extracte
 | `selfimprove/adapter.go` | digital.vasic.selfimprove | Reward model training |
 | `planning/adapter.go` | digital.vasic.planning | HiPlan, MCTS, Tree of Thoughts |
 | `benchmark/adapter.go` | digital.vasic.benchmark | Benchmark runner and leaderboards |
+| `memory/factory_helixmemory.go` | digital.vasic.helixmemory | Conditional HelixMemory activation via build tag |
 
 ### Usage Pattern
 

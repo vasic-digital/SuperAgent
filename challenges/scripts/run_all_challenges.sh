@@ -5,7 +5,7 @@
 # This script automatically:
 # 1. Builds HelixAgent binary if needed
 # 2. Starts all required infrastructure (HelixAgent server)
-# 3. Runs all 49 challenges
+# 3. Runs all 50 challenges
 # 4. Reports final results
 
 set -e
@@ -297,6 +297,9 @@ CHALLENGES=(
     "selfimprove_challenge"
     "planning_challenge"
     "benchmark_challenge"
+
+    # Cognitive modules (Phase 6)
+    "helixmemory"
 
     # Quality assurance
     "lazy_init_challenge"
