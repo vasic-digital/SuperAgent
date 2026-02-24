@@ -15,6 +15,7 @@ import (
 	"golang.org/x/text/language"
 
 	memoryadapter "dev.helix.agent/internal/adapters/memory"
+	specifieradapter "dev.helix.agent/internal/adapters/specifier"
 	"dev.helix.agent/internal/database"
 	"dev.helix.agent/internal/llm"
 	helixmem "dev.helix.agent/internal/memory"
@@ -38,7 +39,8 @@ type DebateService struct {
 	logger           *logrus.Logger
 	providerRegistry *ProviderRegistry
 	cogneeService    *CogneeService
-	memoryAdapter    *memoryadapter.StoreAdapter // HelixMemory unified memory (default)
+	memoryAdapter    *memoryadapter.StoreAdapter            // HelixMemory unified memory (default)
+	specifierAdapter *specifieradapter.SpecAdapter          // HelixSpecifier fusion engine (default)
 	logRepository    DebateLogRepository                    // Optional: for persistent logging
 	teamConfig       *DebateTeamConfig                      // Team configuration with Claude/Qwen roles
 	commLogger       *DebateCommLogger                      // Retrofit-like communication logger
@@ -220,13 +222,24 @@ func NewDebateServiceWithDeps(
 		}
 	}
 
-	logger.Info("[Debate Service] Initialized with integrated features: Test-Driven, 4-Pass Validation, Tool Integration, Enhanced Intent, SpecKit, Reflexion, Adversarial, Approval Gates, Provenance")
+	// Initialize HelixSpecifier spec-driven development fusion engine (default)
+	var specAdapter *specifieradapter.SpecAdapter
+	if specifieradapter.IsHelixSpecifierEnabled() {
+		specAdapter = specifieradapter.NewOptimalSpecAdapter()
+		if specAdapter != nil {
+			logger.WithField("backend", specifieradapter.SpecifierBackendName()).
+				Info("[Debate Service] HelixSpecifier fusion engine initialized as default spec engine")
+		}
+	}
+
+	logger.Info("[Debate Service] Initialized with integrated features: Test-Driven, 4-Pass Validation, Tool Integration, Enhanced Intent, HelixSpecifier, SpecKit, Reflexion, Adversarial, Approval Gates, Provenance")
 
 	return &DebateService{
 		logger:           logger,
 		providerRegistry: providerRegistry,
 		cogneeService:    cogneeService,
 		memoryAdapter:    memAdapter,
+		specifierAdapter: specAdapter,
 		commLogger:       NewDebateCommLogger(logger),
 
 		// NEW: Integrated AI Debate Features
@@ -278,6 +291,21 @@ func (ds *DebateService) GetMemoryBackendName() string {
 // IsHelixMemoryActive returns true if HelixMemory is the active memory backend.
 func (ds *DebateService) IsHelixMemoryActive() bool {
 	return memoryadapter.IsHelixMemoryEnabled() && ds.memoryAdapter != nil
+}
+
+// SetSpecifierAdapter sets the HelixSpecifier adapter for spec-driven development.
+func (ds *DebateService) SetSpecifierAdapter(adapter *specifieradapter.SpecAdapter) {
+	ds.specifierAdapter = adapter
+}
+
+// GetSpecifierBackendName returns the name of the active specifier backend.
+func (ds *DebateService) GetSpecifierBackendName() string {
+	return specifieradapter.SpecifierBackendName()
+}
+
+// IsHelixSpecifierActive returns true if HelixSpecifier is the active spec engine.
+func (ds *DebateService) IsHelixSpecifierActive() bool {
+	return specifieradapter.IsHelixSpecifierEnabled() && ds.specifierAdapter != nil
 }
 
 // SetLogRepository sets the log repository for persistent logging
@@ -456,18 +484,31 @@ func (ds *DebateService) ConductDebate(
 		return ds.conductTestDrivenDebate(ctx, config, startTime, sessionID)
 	}
 
-	// NEW: Enhanced Intent Detection with SpecKit Auto-Activation
-	if ds.enhancedIntentClassifier != nil && ds.speckitOrchestrator != nil {
+	// Enhanced Intent Detection with HelixSpecifier / SpecKit Auto-Activation
+	if ds.enhancedIntentClassifier != nil {
 		intentResult, err := ds.classifyIntentWithGranularity(ctx, config.Topic, config.Metadata)
 		if err != nil {
-			ds.logger.WithError(err).Warn("[SpecKit Auto-Activation] Intent classification failed, proceeding with standard debate")
+			ds.logger.WithError(err).Warn("[Spec Auto-Activation] Intent classification failed, proceeding with standard debate")
 		} else if intentResult.RequiresSpecKit {
-			ds.logger.WithFields(logrus.Fields{
-				"granularity": intentResult.Granularity,
-				"action_type": intentResult.ActionType,
-				"reason":      intentResult.SpecKitReason,
-			}).Info("[SpecKit Auto-Activation] Routing through SpecKit flow")
-			return ds.conductSpecKitDebate(ctx, config, intentResult, startTime, sessionID)
+			// Prefer HelixSpecifier fusion engine (default)
+			if ds.specifierAdapter != nil && ds.specifierAdapter.IsReady() {
+				ds.logger.WithFields(logrus.Fields{
+					"granularity": intentResult.Granularity,
+					"action_type": intentResult.ActionType,
+					"reason":      intentResult.SpecKitReason,
+					"engine":      ds.specifierAdapter.Name(),
+				}).Info("[HelixSpecifier] Routing through fusion engine")
+				return ds.conductHelixSpecifierDebate(ctx, config, intentResult, startTime, sessionID)
+			}
+			// Fallback to inline SpecKit orchestrator
+			if ds.speckitOrchestrator != nil {
+				ds.logger.WithFields(logrus.Fields{
+					"granularity": intentResult.Granularity,
+					"action_type": intentResult.ActionType,
+					"reason":      intentResult.SpecKitReason,
+				}).Info("[SpecKit Auto-Activation] Routing through SpecKit flow (fallback)")
+				return ds.conductSpecKitDebate(ctx, config, intentResult, startTime, sessionID)
+			}
 		}
 	}
 
@@ -3571,4 +3612,121 @@ func (ds *DebateService) calculateSpecKitQualityScore(flowResult *SpecKitFlowRes
 	}
 
 	return totalScore / float64(len(flowResult.Phases))
+}
+
+// conductHelixSpecifierDebate executes the HelixSpecifier fusion engine flow
+// and converts the result to a DebateResult. This is the preferred path when
+// HelixSpecifier is available (default). Falls back to conductSpecKitDebate
+// if HelixSpecifier is not initialized.
+func (ds *DebateService) conductHelixSpecifierDebate(
+	ctx context.Context,
+	config *DebateConfig,
+	intentResult *EnhancedIntentResult,
+	startTime time.Time,
+	sessionID string,
+) (*DebateResult, error) {
+	ds.logger.WithFields(logrus.Fields{
+		"session_id":  sessionID,
+		"granularity": intentResult.Granularity,
+		"action_type": intentResult.ActionType,
+		"engine":      ds.specifierAdapter.Name(),
+		"version":     ds.specifierAdapter.Version(),
+	}).Info("[HelixSpecifier Flow] Starting spec-driven development flow")
+
+	// Classify effort via HelixSpecifier
+	classification, err := ds.specifierAdapter.ClassifyEffort(ctx, config.Topic)
+	if err != nil {
+		ds.logger.WithError(err).Warn("[HelixSpecifier Flow] Effort classification failed, falling back to SpecKit")
+		if ds.speckitOrchestrator != nil {
+			return ds.conductSpecKitDebate(ctx, config, intentResult, startTime, sessionID)
+		}
+		return nil, fmt.Errorf("HelixSpecifier effort classification failed: %w", err)
+	}
+
+	// Execute the fusion engine flow
+	flowResult, err := ds.specifierAdapter.ExecuteFlow(ctx, config.Topic, classification)
+	if err != nil {
+		ds.logger.WithError(err).Warn("[HelixSpecifier Flow] Flow execution failed, falling back to SpecKit")
+		if ds.speckitOrchestrator != nil {
+			return ds.conductSpecKitDebate(ctx, config, intentResult, startTime, sessionID)
+		}
+		return nil, fmt.Errorf("HelixSpecifier flow execution failed: %w", err)
+	}
+
+	endTime := time.Now()
+
+	// Convert HelixSpecifier flow result to DebateResult
+	responses := make([]ParticipantResponse, 0, len(flowResult.PhaseResults))
+	for i, pr := range flowResult.PhaseResults {
+		responses = append(responses, ParticipantResponse{
+			ParticipantID: fmt.Sprintf("helixspecifier-%s", pr.Phase),
+			Role:          string(pr.Phase),
+			LLMProvider:   "helixspecifier",
+			LLMModel:      "fusion-engine",
+			Content:       pr.Output,
+			Confidence:    pr.QualityScore,
+			ResponseTime:  pr.Duration,
+			Round:         i + 1,
+		})
+	}
+
+	var bestResponse *ParticipantResponse
+	if len(responses) > 0 {
+		last := responses[len(responses)-1]
+		bestResponse = &last
+	}
+
+	result := &DebateResult{
+		DebateID:        config.DebateID,
+		SessionID:       sessionID,
+		Topic:           config.Topic,
+		StartTime:       startTime,
+		EndTime:         endTime,
+		Duration:        endTime.Sub(startTime),
+		TotalRounds:     len(flowResult.PhaseResults),
+		RoundsConducted: len(flowResult.PhaseResults),
+		AllResponses:    responses,
+		BestResponse:    bestResponse,
+		Consensus: &ConsensusResult{
+			Achieved:       flowResult.Success,
+			Confidence:     flowResult.OverallQualityScore,
+			AgreementLevel: flowResult.OverallQualityScore,
+			FinalPosition:  flowResult.FinalArtifact,
+			KeyPoints:      []string{"HelixSpecifier fusion engine flow completed"},
+			Disagreements:  []string{},
+			Summary: fmt.Sprintf(
+				"HelixSpecifier flow: effort=%s ceremony=%s phases=%d quality=%.2f",
+				flowResult.EffortLevel, flowResult.CeremonyLevel,
+				len(flowResult.PhaseResults), flowResult.OverallQualityScore,
+			),
+			Timestamp:    endTime,
+			QualityScore: flowResult.OverallQualityScore,
+		},
+		QualityScore: flowResult.OverallQualityScore,
+		FinalScore:   flowResult.OverallQualityScore,
+		Success:      flowResult.Success,
+		Metadata: map[string]interface{}{
+			"helixspecifier_flow": true,
+			"effort_level":       string(flowResult.EffortLevel),
+			"ceremony_level":     string(flowResult.CeremonyLevel),
+			"granularity":        intentResult.Granularity,
+			"action_type":        intentResult.ActionType,
+			"requires_speckit":   intentResult.RequiresSpecKit,
+			"speckit_reason":     intentResult.SpecKitReason,
+			"phases_completed":   len(flowResult.PhaseResults),
+			"engine_name":        ds.specifierAdapter.Name(),
+			"engine_version":     ds.specifierAdapter.Version(),
+		},
+	}
+
+	ds.logger.WithFields(logrus.Fields{
+		"session_id":    sessionID,
+		"duration":      result.Duration,
+		"quality_score": result.QualityScore,
+		"effort":        flowResult.EffortLevel,
+		"ceremony":      flowResult.CeremonyLevel,
+		"phases":        len(flowResult.PhaseResults),
+	}).Info("[HelixSpecifier Flow] Spec-driven development flow completed")
+
+	return result, nil
 }

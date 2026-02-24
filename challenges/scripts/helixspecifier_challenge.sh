@@ -356,6 +356,29 @@ run_test "Ceremony scaler has Scale method" \
     "grep -q 'func.*Scaler.*Scale' '$PROJECT_ROOT/HelixSpecifier/pkg/ceremony/ceremony.go'"
 
 # ============================================================================
+# SECTION 12: DEBATE SERVICE INTEGRATION (6 tests)
+# ============================================================================
+log_info "Section 12: Debate Service Integration"
+
+run_test "Debate service imports specifier adapter" \
+    "grep -q 'specifieradapter.*internal/adapters/specifier' '$PROJECT_ROOT/internal/services/debate_service.go'"
+
+run_test "Debate service has specifierAdapter field" \
+    "grep -q 'specifierAdapter.*SpecAdapter' '$PROJECT_ROOT/internal/services/debate_service.go'"
+
+run_test "Debate service has IsHelixSpecifierActive method" \
+    "grep -q 'func.*DebateService.*IsHelixSpecifierActive' '$PROJECT_ROOT/internal/services/debate_service.go'"
+
+run_test "Debate service has conductHelixSpecifierDebate method" \
+    "grep -q 'func.*DebateService.*conductHelixSpecifierDebate' '$PROJECT_ROOT/internal/services/debate_service.go'"
+
+run_test "HelixSpecifier preferred over SpecKit fallback" \
+    "grep -q 'specifierAdapter.*IsReady' '$PROJECT_ROOT/internal/services/debate_service.go'"
+
+run_test "Security tests exist" \
+    "test -f '$PROJECT_ROOT/HelixSpecifier/tests/security/specifier_security_test.go'"
+
+# ============================================================================
 # SUMMARY
 # ============================================================================
 log_info "Challenge complete"
