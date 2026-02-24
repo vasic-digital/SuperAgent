@@ -501,6 +501,41 @@ run_test "Router calls InitializeHelixSpecifierDebate" \
     "grep -q 'InitializeHelixSpecifierDebate' '$PROJECT_ROOT/internal/router/router.go'"
 
 # ============================================================================
+# SECTION 17: 3-PILLAR FUSION (10 tests)
+# ============================================================================
+log_info "Section 17: 3-Pillar Fusion"
+
+run_test "EffortClassifierFunc type defined in types" \
+    "grep -q 'type EffortClassifierFunc func' '$PROJECT_ROOT/HelixSpecifier/pkg/types/types.go'"
+
+run_test "FusionEngine has classifier field" \
+    "grep -q 'classifier.*types.EffortClassifierFunc' '$PROJECT_ROOT/HelixSpecifier/pkg/engine/engine.go'"
+
+run_test "FusionEngine has RegisterClassifier method" \
+    "grep -q 'func.*FusionEngine.*RegisterClassifier' '$PROJECT_ROOT/HelixSpecifier/pkg/engine/engine.go'"
+
+run_test "ClassifyEffort uses registered classifier" \
+    "grep -q 'e.classifier != nil' '$PROJECT_ROOT/HelixSpecifier/pkg/engine/engine.go'"
+
+run_test "ExecuteFlow builds Specification" \
+    "grep -q 'buildSpecification' '$PROJECT_ROOT/HelixSpecifier/pkg/engine/engine.go'"
+
+run_test "ExecuteFlow dispatches Superpowers" \
+    "grep -q 'e.powers.DispatchSubagents' '$PROJECT_ROOT/HelixSpecifier/pkg/engine/engine.go'"
+
+run_test "ExecuteFlow creates GSD milestones" \
+    "grep -q 'e.gsd.CreateMilestones' '$PROJECT_ROOT/HelixSpecifier/pkg/engine/engine.go'"
+
+run_test "ExecuteFlow sets FinalArtifact" \
+    "grep -q 'FinalArtifact' '$PROJECT_ROOT/HelixSpecifier/pkg/engine/engine.go'"
+
+run_test "Factory registers intent classifier" \
+    "grep -q 'engine.RegisterClassifier' '$PROJECT_ROOT/internal/adapters/specifier/factory_helixspecifier.go'"
+
+run_test "Engine tests cover 3-pillar fusion (45+ tests)" \
+    "cd '$PROJECT_ROOT/HelixSpecifier' && GOMAXPROCS=2 go test -count=1 -v ./pkg/engine/ 2>&1 | grep -c 'PASS:' | awk '{exit (\$1 >= 45) ? 0 : 1}'"
+
+# ============================================================================
 # SUMMARY
 # ============================================================================
 log_info "Challenge complete"

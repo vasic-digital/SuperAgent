@@ -54,8 +54,9 @@ func NewOptimalSpecAdapter() *SpecAdapter {
 	// Create metrics (for monitoring)
 	_ = helixmetrics.NewMetrics()
 
-	// Create intent classifier (for effort classification)
-	_ = helixintent.NewClassifier()
+	// Create intent classifier and wire into engine
+	ic := helixintent.NewClassifier()
+	engine.RegisterClassifier(ic.Classify)
 
 	return NewSpecAdapter(engine)
 }
