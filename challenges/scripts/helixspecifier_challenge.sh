@@ -472,6 +472,35 @@ run_test "More than 800 tests pass" \
     "cd '$PROJECT_ROOT/HelixSpecifier' && GOMAXPROCS=2 go test -count=1 -p 1 -v ./... 2>&1 | grep -c 'PASS:' | awk '{exit (\$1 >= 800) ? 0 : 1}'"
 
 # ============================================================================
+# SECTION 16: DEBATE FUNCTION INJECTION (8 tests)
+# ============================================================================
+log_info "Section 16: Debate Function Injection"
+
+run_test "DebateFunc type defined in types" \
+    "grep -q 'type DebateFunc func' '$PROJECT_ROOT/HelixSpecifier/pkg/types/types.go'"
+
+run_test "DebateFuncSetter interface defined in types" \
+    "grep -q 'type DebateFuncSetter interface' '$PROJECT_ROOT/HelixSpecifier/pkg/types/types.go'"
+
+run_test "FusionEngine has SetDebateFunc method" \
+    "grep -q 'func.*FusionEngine.*SetDebateFunc' '$PROJECT_ROOT/HelixSpecifier/pkg/engine/engine.go'"
+
+run_test "SpecKit pillar uses types.DebateFunc" \
+    "grep -q 'DebateFunc types.DebateFunc' '$PROJECT_ROOT/HelixSpecifier/pkg/speckit/speckit.go'"
+
+run_test "SpecAdapter exposes SetDebateFunc" \
+    "grep -q 'func.*SpecAdapter.*SetDebateFunc' '$PROJECT_ROOT/internal/adapters/specifier/adapter.go'"
+
+run_test "Debate service has InitializeHelixSpecifierDebate" \
+    "grep -q 'func.*DebateService.*InitializeHelixSpecifierDebate' '$PROJECT_ROOT/internal/services/debate_service.go'"
+
+run_test "Debate service has executeSpecifierDebateRound" \
+    "grep -q 'func.*DebateService.*executeSpecifierDebateRound' '$PROJECT_ROOT/internal/services/debate_service.go'"
+
+run_test "Router calls InitializeHelixSpecifierDebate" \
+    "grep -q 'InitializeHelixSpecifierDebate' '$PROJECT_ROOT/internal/router/router.go'"
+
+# ============================================================================
 # SUMMARY
 # ============================================================================
 log_info "Challenge complete"

@@ -71,3 +71,15 @@ func (a *SpecAdapter) Version() string {
 func (a *SpecAdapter) IsReady() bool {
 	return a.engine != nil
 }
+
+// SetDebateFunc injects a debate execution function into the
+// underlying engine. Returns true if injection succeeded.
+func (a *SpecAdapter) SetDebateFunc(
+	fn helixspec.DebateFunc,
+) bool {
+	if setter, ok := a.engine.(helixspec.DebateFuncSetter); ok {
+		setter.SetDebateFunc(fn)
+		return true
+	}
+	return false
+}

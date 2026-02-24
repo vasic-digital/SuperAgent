@@ -95,3 +95,46 @@ func TestSpecAdapter_ClassifyEffort(t *testing.T) {
 	assert.NotNil(t, cl)
 	assert.NotEmpty(t, cl.Level)
 }
+
+func TestSpecAdapter_SetDebateFunc(t *testing.T) {
+	if !adapter.IsHelixSpecifierEnabled() {
+		t.Skip("HelixSpecifier not active")
+	}
+	sa := adapter.NewOptimalSpecAdapter()
+	assert.NotNil(t, sa)
+
+	called := false
+	fn := func(
+		ctx context.Context,
+		topic string,
+		rounds int,
+		metadata map[string]interface{},
+	) (string, float64, string, error) {
+		called = true
+		return "test output", 0.95, "test-id", nil
+	}
+
+	ok := sa.SetDebateFunc(fn)
+	assert.True(t, ok,
+		"SetDebateFunc should succeed on real "+
+			"HelixSpecifier engine")
+
+	// Verify function is used by running a flow
+	cl, err := sa.ClassifyEffort(
+		context.Background(),
+		"Build auth system",
+	)
+	assert.NoError(t, err)
+
+	result, err := sa.ExecuteFlow(
+		context.Background(),
+		"Build auth system",
+		cl,
+	)
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.True(t, called,
+		"Injected debate function should have been called")
+	assert.Greater(t, result.OverallQualityScore, 0.75,
+		"Score should reflect real debate function")
+}

@@ -796,6 +796,10 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 			logger.WithField("project_root", projectRoot).Info("Constitution Watcher initialized")
 		}
 
+		// Inject real debate function into HelixSpecifier engine
+		// (must happen after DebateService is fully constructed)
+		debateService.InitializeHelixSpecifierDebate()
+
 		debateHandler.RegisterRoutes(protected)
 
 		// Add debate team configuration endpoint
