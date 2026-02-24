@@ -379,6 +379,38 @@ run_test "Security tests exist" \
     "test -f '$PROJECT_ROOT/HelixSpecifier/tests/security/specifier_security_test.go'"
 
 # ============================================================================
+# SECTION 13: COMPREHENSIVE TEST SUITES (9 tests)
+# ============================================================================
+log_info "Section 13: Comprehensive Test Suites"
+
+run_test "Integration tests exist" \
+    "test -f '$PROJECT_ROOT/HelixSpecifier/tests/integration/integration_test.go'"
+
+run_test "Stress tests exist" \
+    "test -f '$PROJECT_ROOT/HelixSpecifier/tests/stress/stress_test.go'"
+
+run_test "Benchmark tests exist" \
+    "test -f '$PROJECT_ROOT/HelixSpecifier/tests/benchmark/benchmark_test.go'"
+
+run_test "Integration tests cover full flow" \
+    "grep -q 'TestFullFlowIntegration' '$PROJECT_ROOT/HelixSpecifier/tests/integration/integration_test.go'"
+
+run_test "Integration tests cover thread safety" \
+    "grep -q 'TestCrossComponentThreadSafety' '$PROJECT_ROOT/HelixSpecifier/tests/integration/integration_test.go'"
+
+run_test "Stress tests cover concurrent flow execution" \
+    "grep -q 'TestStress_ConcurrentFlowExecution' '$PROJECT_ROOT/HelixSpecifier/tests/stress/stress_test.go'"
+
+run_test "Stress tests use GOMAXPROCS resource limiting" \
+    "grep -q 'runtime.GOMAXPROCS(2)' '$PROJECT_ROOT/HelixSpecifier/tests/stress/stress_test.go'"
+
+run_test "Benchmarks cover engine execution" \
+    "grep -q 'BenchmarkEngine_ExecuteFlow' '$PROJECT_ROOT/HelixSpecifier/tests/benchmark/benchmark_test.go'"
+
+run_test "All 25 packages build and test cleanly" \
+    "cd '$PROJECT_ROOT/HelixSpecifier' && GOMAXPROCS=2 go test -count=1 -p 1 ./... >/dev/null 2>&1"
+
+# ============================================================================
 # SUMMARY
 # ============================================================================
 log_info "Challenge complete"
