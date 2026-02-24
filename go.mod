@@ -15,6 +15,7 @@ require (
 	digital.vasic.containers v0.0.0-00010101000000-000000000000
 	digital.vasic.database v0.0.0-00010101000000-000000000000
 	digital.vasic.eventbus v0.0.0-00010101000000-000000000000
+	digital.vasic.helixmemory v0.0.0-00010101000000-000000000000
 	digital.vasic.formatters v0.0.0-00010101000000-000000000000
 	digital.vasic.llmops v0.0.0-00010101000000-000000000000
 	digital.vasic.mcp v0.0.0-00010101000000-000000000000
@@ -101,6 +102,8 @@ replace digital.vasic.database => ./Database
 replace digital.vasic.embeddings => ./Embeddings
 
 replace digital.vasic.eventbus => ./EventBus
+
+replace digital.vasic.helixmemory => ./HelixMemory
 
 replace digital.vasic.formatters => ./Formatters
 
