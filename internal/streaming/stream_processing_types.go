@@ -67,8 +67,9 @@ type ConversationState struct {
 	MessageCount      int                    `json:"message_count"`
 	EntityCount       int                    `json:"entity_count"`
 	TotalTokens       int64                  `json:"total_tokens"`
-	DebateRoundCount  int                    `json:"debate_round_count"`
-	StartedAt         time.Time              `json:"started_at"`
+	DebateRoundCount   int                    `json:"debate_round_count"`
+	TotalResponseTimeMs int64                 `json:"total_response_time_ms"`
+	StartedAt          time.Time              `json:"started_at"`
 	LastUpdatedAt     time.Time              `json:"last_updated_at"`
 	Entities          map[string]EntityData  `json:"entities"`
 	ProviderUsage     map[string]int         `json:"provider_usage"`

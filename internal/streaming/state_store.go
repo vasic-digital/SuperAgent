@@ -134,18 +134,19 @@ func (s *InMemoryStateStore) cloneState(state *ConversationState) *ConversationS
 	}
 
 	clone := &ConversationState{
-		ConversationID:   state.ConversationID,
-		UserID:           state.UserID,
-		SessionID:        state.SessionID,
-		MessageCount:     state.MessageCount,
-		EntityCount:      state.EntityCount,
-		TotalTokens:      state.TotalTokens,
-		DebateRoundCount: state.DebateRoundCount,
-		StartedAt:        state.StartedAt,
-		LastUpdatedAt:    state.LastUpdatedAt,
-		Version:          state.Version,
-		Entities:         make(map[string]EntityData),
-		ProviderUsage:    make(map[string]int),
+		ConversationID:    state.ConversationID,
+		UserID:            state.UserID,
+		SessionID:         state.SessionID,
+		MessageCount:      state.MessageCount,
+		EntityCount:       state.EntityCount,
+		TotalTokens:       state.TotalTokens,
+		DebateRoundCount:  state.DebateRoundCount,
+		TotalResponseTimeMs: state.TotalResponseTimeMs,
+		StartedAt:         state.StartedAt,
+		LastUpdatedAt:     state.LastUpdatedAt,
+		Version:           state.Version,
+		Entities:          make(map[string]EntityData),
+		ProviderUsage:     make(map[string]int),
 	}
 
 	for k, v := range state.Entities {

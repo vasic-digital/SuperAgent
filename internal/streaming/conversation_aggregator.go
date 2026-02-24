@@ -116,11 +116,20 @@ func (ca *ConversationAggregator) AggregateWindow(ctx context.Context, conversat
 		knowledgeDensity = float64(state.EntityCount) / float64(state.MessageCount)
 	}
 
-	// Calculate average response time (simplified - would need more data in practice)
+	// Calculate average response time from accumulated debate round data.
+	// When TotalResponseTimeMs has been populated (by the stream processor
+	// as debate rounds arrive), compute the real average. When no timing
+	// data has been accumulated yet (legacy states or states built without
+	// the stream processor), fall back to a conservative default estimate
+	// of 500ms per round which is a typical LLM provider response latency.
 	avgResponseTime := float64(0)
 	if state.DebateRoundCount > 0 {
-		// This would typically be calculated from actual debate round data
-		avgResponseTime = 500.0 // Placeholder
+		if state.TotalResponseTimeMs > 0 {
+			avgResponseTime = float64(state.TotalResponseTimeMs) / float64(state.DebateRoundCount)
+		} else {
+			// Default estimate for states without accumulated timing data
+			avgResponseTime = 500.0
+		}
 	}
 
 	analytics := &WindowedAnalytics{
@@ -178,6 +187,7 @@ func (ca *ConversationAggregator) MergeStates(states ...*ConversationState) *Con
 		merged.MessageCount += state.MessageCount
 		merged.TotalTokens += state.TotalTokens
 		merged.DebateRoundCount += state.DebateRoundCount
+		merged.TotalResponseTimeMs += state.TotalResponseTimeMs
 
 		// Merge entities
 		for id, entity := range state.Entities {

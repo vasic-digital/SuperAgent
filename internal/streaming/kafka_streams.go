@@ -261,6 +261,7 @@ func (csp *ConversationStreamProcessor) handleDebateRound(ctx context.Context, e
 
 	// Update state with debate round info
 	state.DebateRoundCount++
+	state.TotalResponseTimeMs += event.DebateRound.ResponseTimeMs
 	state.ProviderUsage[event.DebateRound.Provider]++
 	state.TotalTokens += int64(event.DebateRound.TokensUsed)
 	state.LastUpdatedAt = time.Now()
