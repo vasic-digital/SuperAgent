@@ -47,7 +47,7 @@ Debate responses undergo re-evaluation, polishing, and improvement before final 
 
 ### AI Debate Orchestrator Framework
 
-New framework with multi-topology support (mesh, star, chain), phase-based protocol (Proposal → Critique → Review → Synthesis), learning system (extracts lessons from debates), and automatic fallback to legacy services.
+Full-spec debate framework with multi-topology support (mesh, star, chain, tree), 8-phase protocol (Dehallucination → SelfEvolvement → Proposal → Critique → Review → Optimization → Adversarial → Convergence), Reflexion framework (episodic memory, verbal reflection, retry-and-learn loop, accumulated wisdom), Red/Blue adversarial dynamics, 6 voting methods (Weighted, Majority, Borda, Condorcet, Plurality, Unanimous), configurable approval gates, provenance audit trail, benchmark bridge (SWE-bench/HumanEval/MMLU), CI/CD hooks, git worktree tool, and PostgreSQL persistence (debate_sessions, debate_turns, code_versions tables). 21 agent roles with 23 templates. 13 packages in `internal/debate/`. Automatic fallback to legacy services.
 
 ### Verification Failure Tracking
 When a provider fails verification, detailed failure information is captured in `UnifiedProvider`:
@@ -162,6 +162,13 @@ Always run `make fmt vet lint` before committing.
 - `tests/integration/mem0_migration_test.go` – Cognee-to-Mem0 migration verification
 - `tests/integration/grpc_integration_test.go` – 21 gRPC service integration tests
 - `tests/integration/debate_full_flow_test.go` – 7 debate lifecycle integration tests
+- `tests/integration/debate_full_protocol_integration_test.go` – Full 8-phase protocol integration
+- `tests/integration/debate_reflexion_integration_test.go` – Reflexion framework integration
+- `tests/integration/debate_adversarial_integration_test.go` – Adversarial dynamics integration
+- `tests/e2e/debate_full_workflow_e2e_test.go` – Complete debate workflow E2E
+- `tests/security/debate_security_test.go` – Debate input validation and injection prevention
+- `tests/stress/debate_stress_test.go` – Debate concurrent session stress tests
+- `tests/performance/debate_benchmark_test.go` – Debate component benchmarks
 - `tests/integration/comprehensive_monitoring_test.go` – Full monitoring stack validation
 - `tests/stress/bigdata_stress_test.go` – BigData concurrent stress tests
 - `tests/stress/formatters_stress_test.go` – Formatters concurrent stress tests
@@ -301,6 +308,18 @@ go test -v -coverprofile=coverage.out ./internal/llm
 - `./challenges/scripts/security_scanning_challenge.sh` – 10 tests - Security scanning tools
 - `./challenges/scripts/constitution_watcher_challenge.sh` – 12 tests - Constitution auto-update
 - `./challenges/scripts/speckit_auto_activation_challenge.sh` – 15 tests - SpecKit 7-phase flow
+- `./challenges/scripts/debate_reflexion_challenge.sh` – 12 tests - Reflexion framework
+- `./challenges/scripts/debate_adversarial_dynamics_challenge.sh` – 10 tests - Red/Blue team dynamics
+- `./challenges/scripts/debate_tree_topology_challenge.sh` – 10 tests - Tree topology
+- `./challenges/scripts/debate_dehallucination_challenge.sh` – 10 tests - Dehallucination phase
+- `./challenges/scripts/debate_self_evolvement_challenge.sh` – 10 tests - Self-evolvement phase
+- `./challenges/scripts/debate_condorcet_voting_challenge.sh` – 10 tests - Condorcet/Plurality/Unanimous voting
+- `./challenges/scripts/debate_approval_gate_challenge.sh` – 12 tests - Human-in-the-loop gates
+- `./challenges/scripts/debate_persistence_challenge.sh` – 13 tests - PostgreSQL debate persistence
+- `./challenges/scripts/debate_benchmark_integration_challenge.sh` – 10 tests - Benchmark bridge
+- `./challenges/scripts/debate_provenance_audit_challenge.sh` – 12 tests - Provenance audit trail
+- `./challenges/scripts/debate_deadlock_detection_challenge.sh` – 8 tests - Deadlock detection
+- `./challenges/scripts/debate_git_integration_challenge.sh` – 11 tests - Git worktree tool
 
 ### Formatters System
 - `make formatters` – (if exists) Start formatters system

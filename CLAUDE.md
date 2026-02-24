@@ -153,7 +153,7 @@ make monitoring-reset-circuits / force-health-check
 - `handlers/` — HTTP handlers | `middleware/` — Auth, rate limiting, CORS
 - `background/` — Task queue, worker pool, resource monitor | `notifications/` — SSE, WebSocket, Webhooks
 - `cache/` — Redis + in-memory | `database/` — PostgreSQL/pgx | `models/` — Data models/enums
-- `debate/` — Orchestrator framework: agents, topology, protocol, voting, cognitive, knowledge (8 packages)
+- `debate/` — Orchestrator framework: agents, topology, protocol, voting, cognitive, knowledge, reflexion, gates, evaluation, audit, tools (13 packages)
 - `formatters/` — 32+ code formatters, REST API, middleware executor
 - `tools/` — Tool schema registry (21 tools) | `agents/` — CLI agent registry (48 agents)
 - `embedding/` — 6 providers (OpenAI, Cohere, Voyage, Jina, Google, Bedrock)
@@ -231,7 +231,16 @@ Each module is an independent Go module with its own go.mod, tests, CLAUDE.md, A
 - **Provider Registry**: Unified multi-provider interface with credential management
 - **Ensemble Strategy**: Confidence-weighted voting, majority vote, parallel execution
 - **AI Debate**: Multi-round debate, 5 positions × 5 LLMs = 25 total, multi-pass validation (Initial → Validation → Polish → Final)
-- **Debate Orchestrator**: Multi-topology (mesh/star/chain), phase protocol (Proposal → Critique → Review → Synthesis), cross-debate learning, auto-fallback to legacy
+- **Debate Orchestrator**: Multi-topology (mesh/star/chain/tree), 8-phase protocol (Dehallucination → SelfEvolvement → Proposal → Critique → Review → Optimization → Adversarial → Convergence), cross-debate learning, auto-fallback to legacy
+- **Debate Reflexion Framework**: Episodic memory buffer, verbal reflection generator, retry-and-learn loop, accumulated wisdom for cross-session learning
+- **Debate Adversarial Dynamics**: Red/Blue team multi-round attack-defend cycles with structured reports
+- **Debate Approval Gates**: Configurable human-in-the-loop gates with REST API (approve/reject/gates endpoints), disabled by default
+- **Debate Voting Methods**: 6 methods — Weighted (MiniMax), Majority, Borda Count, Condorcet (cycle detection + Borda fallback), Plurality, Unanimous + AutoSelectMethod
+- **Debate Persistence**: PostgreSQL tables (debate_sessions, debate_turns, code_versions) with full repositories
+- **Debate Provenance & Audit**: Full reproducibility tracking with 14 event types, session summaries, JSON export
+- **Debate Benchmark Bridge**: SWE-bench/HumanEval/MMLU evaluation with static code analysis for 5 metrics
+- **Debate CI/CD Hooks**: Configurable validation pipelines per phase (tests, linting, static analysis, security scan)
+- **Debate Git Worktree Tool**: Isolated session version control with snapshot commits and diff generation
 - **SpecKit Auto-Activation**: 7-phase development flow (Constitution → Specify → Clarify → Plan → Tasks → Analyze → Implement) triggered automatically for large changes/refactoring based on work granularity detection (5 levels: single action, small creation, big creation, whole functionality, refactoring). Phase caching for resumption. Key files: `internal/services/speckit_orchestrator.go`, `enhanced_intent_classifier.go`, `debate_service_speckit_e2e_test.go`
 - **Constitution Management**: Auto-update Constitution on project changes (new modules, documentation changes, structure changes). Background watcher monitors filesystem. Key files: `internal/services/constitution_watcher.go`, `constitution_manager.go`, `documentation_sync.go`
 - **Circuit Breaker**: Fault tolerance for provider failures
@@ -336,6 +345,18 @@ Registry: `internal/agents/registry.go`. Generate configs: `./bin/helixagent --g
 ./challenges/scripts/provider_comprehensive_challenge.sh        # 40 tests
 ./challenges/scripts/provider_url_consistency_challenge.sh      # 20 tests
 ./challenges/scripts/cli_agent_config_challenge.sh              # 60 tests
+./challenges/scripts/debate_reflexion_challenge.sh              # 12 tests
+./challenges/scripts/debate_adversarial_dynamics_challenge.sh   # 10 tests
+./challenges/scripts/debate_tree_topology_challenge.sh          # 10 tests
+./challenges/scripts/debate_dehallucination_challenge.sh        # 10 tests
+./challenges/scripts/debate_self_evolvement_challenge.sh        # 10 tests
+./challenges/scripts/debate_condorcet_voting_challenge.sh       # 10 tests
+./challenges/scripts/debate_approval_gate_challenge.sh          # 12 tests
+./challenges/scripts/debate_persistence_challenge.sh            # 13 tests
+./challenges/scripts/debate_benchmark_integration_challenge.sh  # 10 tests
+./challenges/scripts/debate_provenance_audit_challenge.sh       # 12 tests
+./challenges/scripts/debate_deadlock_detection_challenge.sh     # 8 tests
+./challenges/scripts/debate_git_integration_challenge.sh        # 11 tests
 ```
 
 ## LLMsVerifier
