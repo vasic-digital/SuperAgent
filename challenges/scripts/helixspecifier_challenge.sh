@@ -407,8 +407,49 @@ run_test "Stress tests use GOMAXPROCS resource limiting" \
 run_test "Benchmarks cover engine execution" \
     "grep -q 'BenchmarkEngine_ExecuteFlow' '$PROJECT_ROOT/HelixSpecifier/tests/benchmark/benchmark_test.go'"
 
-run_test "All 25 packages build and test cleanly" \
+run_test "All 27 packages build and test cleanly" \
     "cd '$PROJECT_ROOT/HelixSpecifier' && GOMAXPROCS=2 go test -count=1 -p 1 ./... >/dev/null 2>&1"
+
+# ============================================================================
+# SECTION 14: E2E AND AUTOMATION TESTS (12 tests)
+# ============================================================================
+log_info "Section 14: E2E and Automation Tests"
+
+run_test "E2E tests exist" \
+    "test -f '$PROJECT_ROOT/HelixSpecifier/tests/e2e/e2e_test.go'"
+
+run_test "Automation tests exist" \
+    "test -f '$PROJECT_ROOT/HelixSpecifier/tests/automation/automation_test.go'"
+
+run_test "E2E tests cover quick fix workflow" \
+    "grep -q 'TestE2E_QuickFixWorkflow' '$PROJECT_ROOT/HelixSpecifier/tests/e2e/e2e_test.go'"
+
+run_test "E2E tests cover large implementation workflow" \
+    "grep -q 'TestE2E_LargeImplementationWorkflow' '$PROJECT_ROOT/HelixSpecifier/tests/e2e/e2e_test.go'"
+
+run_test "E2E tests cover all well-known adapters" \
+    "grep -q 'TestE2E_AllWellKnownAdapters' '$PROJECT_ROOT/HelixSpecifier/tests/e2e/e2e_test.go'"
+
+run_test "E2E tests cover concurrent user workflows" \
+    "grep -q 'TestE2E_ConcurrentUserWorkflows' '$PROJECT_ROOT/HelixSpecifier/tests/e2e/e2e_test.go'"
+
+run_test "Automation tests verify project structure" \
+    "grep -q 'TestAutomation_ProjectStructure' '$PROJECT_ROOT/HelixSpecifier/tests/automation/automation_test.go'"
+
+run_test "Automation tests verify interface contracts" \
+    "grep -q 'TestAutomation_InterfaceContracts' '$PROJECT_ROOT/HelixSpecifier/tests/automation/automation_test.go'"
+
+run_test "Automation tests verify enum completeness" \
+    "grep -q 'TestAutomation_EnumCompleteness' '$PROJECT_ROOT/HelixSpecifier/tests/automation/automation_test.go'"
+
+run_test "Automation tests verify no exported globals" \
+    "grep -q 'TestAutomation_NoExportedGlobals' '$PROJECT_ROOT/HelixSpecifier/tests/automation/automation_test.go'"
+
+run_test "Makefile has test-unit target" \
+    "grep -q 'test-unit' '$PROJECT_ROOT/HelixSpecifier/Makefile'"
+
+run_test "Makefile has test-e2e target" \
+    "grep -q 'test-e2e' '$PROJECT_ROOT/HelixSpecifier/Makefile'"
 
 # ============================================================================
 # SUMMARY
