@@ -1,7 +1,12 @@
 // Package memory provides adapters between HelixAgent's internal/memory types
 // and the extracted digital.vasic.memory module.
 //
-//go:build helixmemory
+// This is the DEFAULT memory implementation using the HelixMemory unified
+// cognitive engine. It is active unless you explicitly opt out with:
+//
+//	go build -tags nohelixmemory
+//
+//go:build !nohelixmemory
 
 package memory
 

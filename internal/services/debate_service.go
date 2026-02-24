@@ -14,8 +14,10 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
+	memoryadapter "dev.helix.agent/internal/adapters/memory"
 	"dev.helix.agent/internal/database"
 	"dev.helix.agent/internal/llm"
+	helixmem "dev.helix.agent/internal/memory"
 	"dev.helix.agent/internal/models"
 
 	// NEW: Integrated AI Debate Features
@@ -36,6 +38,7 @@ type DebateService struct {
 	logger           *logrus.Logger
 	providerRegistry *ProviderRegistry
 	cogneeService    *CogneeService
+	memoryAdapter    *memoryadapter.StoreAdapter // HelixMemory unified memory (default)
 	logRepository    DebateLogRepository                    // Optional: for persistent logging
 	teamConfig       *DebateTeamConfig                      // Team configuration with Claude/Qwen roles
 	commLogger       *DebateCommLogger                      // Retrofit-like communication logger
@@ -207,12 +210,23 @@ func NewDebateServiceWithDeps(
 	provenanceTrackerInst := audit.NewProvenanceTracker()
 	benchmarkBridgeInst := evaluation.NewBenchmarkBridge()
 
+	// Initialize HelixMemory unified cognitive memory engine (default memory system)
+	var memAdapter *memoryadapter.StoreAdapter
+	if memoryadapter.IsHelixMemoryEnabled() {
+		memAdapter = memoryadapter.NewOptimalStoreAdapter()
+		if memAdapter != nil {
+			logger.WithField("backend", memoryadapter.MemoryBackendName()).
+				Info("[Debate Service] HelixMemory unified engine initialized as default memory")
+		}
+	}
+
 	logger.Info("[Debate Service] Initialized with integrated features: Test-Driven, 4-Pass Validation, Tool Integration, Enhanced Intent, SpecKit, Reflexion, Adversarial, Approval Gates, Provenance")
 
 	return &DebateService{
 		logger:           logger,
 		providerRegistry: providerRegistry,
 		cogneeService:    cogneeService,
+		memoryAdapter:    memAdapter,
 		commLogger:       NewDebateCommLogger(logger),
 
 		// NEW: Integrated AI Debate Features
@@ -249,6 +263,21 @@ func (ds *DebateService) SetProviderRegistry(registry *ProviderRegistry) {
 // SetCogneeService sets the Cognee service for enhanced insights
 func (ds *DebateService) SetCogneeService(service *CogneeService) {
 	ds.cogneeService = service
+}
+
+// SetMemoryAdapter sets the HelixMemory adapter for unified memory operations.
+func (ds *DebateService) SetMemoryAdapter(adapter *memoryadapter.StoreAdapter) {
+	ds.memoryAdapter = adapter
+}
+
+// GetMemoryBackendName returns the name of the active memory backend.
+func (ds *DebateService) GetMemoryBackendName() string {
+	return memoryadapter.MemoryBackendName()
+}
+
+// IsHelixMemoryActive returns true if HelixMemory is the active memory backend.
+func (ds *DebateService) IsHelixMemoryActive() bool {
+	return memoryadapter.IsHelixMemoryEnabled() && ds.memoryAdapter != nil
 }
 
 // SetLogRepository sets the log repository for persistent logging
@@ -1711,32 +1740,119 @@ func (ds *DebateService) calculateAvgResponseTime(responses []ParticipantRespons
 	return total / time.Duration(len(responses))
 }
 
-// analyzeWithCognee analyzes a response with Cognee
+// analyzeWithCognee analyzes a response with Cognee (or HelixMemory if available)
 func (ds *DebateService) analyzeWithCognee(ctx context.Context, content string) (*CogneeAnalysis, error) {
-	if ds.cogneeService == nil {
-		return nil, fmt.Errorf("cognee service not configured")
+	// Prefer HelixMemory unified engine (searches all 4 backends: Mem0, Cognee, Letta, Graphiti)
+	if ds.memoryAdapter != nil {
+		return ds.analyzeWithHelixMemory(ctx, content)
 	}
 
+	// Fallback to direct CogneeService
+	if ds.cogneeService == nil {
+		return nil, fmt.Errorf("no memory service configured")
+	}
+
+	return ds.analyzeWithCogneeDirect(ctx, content)
+}
+
+// analyzeWithHelixMemory uses the HelixMemory unified engine for analysis.
+// This searches across all 4 backends (Mem0, Cognee, Letta, Graphiti) via
+// the fusion engine for comprehensive memory-enhanced analysis.
+func (ds *DebateService) analyzeWithHelixMemory(ctx context.Context, content string) (*CogneeAnalysis, error) {
 	startTime := time.Now()
 
-	// Search for relevant context
+	// Search unified memory (all backends: Mem0 facts, Cognee graphs, Letta core, Graphiti temporal)
+	searchOpts := &helixmem.SearchOptions{TopK: 5}
+	memories, err := ds.memoryAdapter.Search(ctx, content, searchOpts)
+	if err != nil {
+		ds.logger.WithError(err).Warn("[HelixMemory] Unified search failed, falling back to CogneeService")
+		if ds.cogneeService != nil {
+			return ds.analyzeWithCogneeDirect(ctx, content)
+		}
+		return nil, fmt.Errorf("helixmemory search failed: %w", err)
+	}
+
+	// Extract entities from search results
+	entities := make([]string, 0, len(memories))
+	for _, mem := range memories {
+		if len(entities) < 10 {
+			snippet := mem.Content
+			if len(snippet) > 50 {
+				snippet = snippet[:50]
+			}
+			entities = append(entities, snippet)
+		}
+	}
+
+	// Extract key phrases from content
+	keyPhrases := make([]string, 0)
+	sentences := strings.Split(content, ".")
+	for i, s := range sentences {
+		if i >= 5 {
+			break
+		}
+		s = strings.TrimSpace(s)
+		if len(s) > 10 {
+			keyPhrases = append(keyPhrases, s)
+		}
+	}
+
+	// Calculate relevance from top result
+	relevance := 0.0
+	if len(memories) > 0 {
+		relevance = memories[0].Importance
+	}
+
+	sentiment := ds.analyzeSentiment(content)
+
+	// Store debate analysis result in HelixMemory for future reference
+	go func() {
+		storeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		debateMemory := &helixmem.Memory{
+			Content:    content,
+			Type:       helixmem.MemoryTypeSemantic,
+			Category:   "debate_analysis",
+			Importance: relevance,
+			Metadata: map[string]interface{}{
+				"type":       "debate_analysis",
+				"sentiment":  sentiment,
+				"confidence": relevance,
+			},
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+		_ = ds.memoryAdapter.Add(storeCtx, debateMemory)
+	}()
+
+	return &CogneeAnalysis{
+		Enhanced:         true,
+		OriginalResponse: content,
+		Sentiment:        sentiment,
+		Entities:         entities,
+		KeyPhrases:       keyPhrases,
+		Confidence:       relevance,
+		ProcessingTime:   time.Since(startTime),
+	}, nil
+}
+
+// analyzeWithCogneeDirect is the original CogneeService-based analysis (fallback).
+func (ds *DebateService) analyzeWithCogneeDirect(ctx context.Context, content string) (*CogneeAnalysis, error) {
+	startTime := time.Now()
+
 	searchResult, err := ds.cogneeService.SearchMemory(ctx, content, "", 5)
 	if err != nil {
 		return nil, fmt.Errorf("cognee search failed: %w", err)
 	}
 
-	// Extract entities and key phrases
 	entities := make([]string, 0)
-	keyPhrases := make([]string, 0)
-
-	// Extract from vector results
 	for _, mem := range searchResult.VectorResults {
 		if len(entities) < 10 {
 			entities = append(entities, mem.Content[:min(50, len(mem.Content))])
 		}
 	}
 
-	// Extract key phrases from content
+	keyPhrases := make([]string, 0)
 	sentences := strings.Split(content, ".")
 	for i, s := range sentences {
 		if i >= 5 {
@@ -1804,8 +1920,8 @@ func (ds *DebateService) generateCogneeInsights(
 	config *DebateConfig,
 	responses []ParticipantResponse,
 ) (*CogneeInsights, error) {
-	if ds.cogneeService == nil {
-		return nil, fmt.Errorf("cognee service not configured")
+	if ds.memoryAdapter == nil && ds.cogneeService == nil {
+		return nil, fmt.Errorf("no memory service configured (neither HelixMemory nor CogneeService)")
 	}
 
 	startTime := time.Now()
@@ -1817,18 +1933,26 @@ func (ds *DebateService) generateCogneeInsights(
 		combinedContent.WriteString("\n\n")
 	}
 
-	// Search for insights
-	searchResult, err := ds.cogneeService.SearchMemory(ctx, combinedContent.String(), "", 10)
-	if err != nil {
-		ds.logger.WithError(err).Warn("Cognee search failed during insights generation")
-	}
+	// Search for insights using HelixMemory (preferred) or CogneeService (fallback)
+	var searchRelevanceScore float64
 
-	// Get graph insights if available
-	var graphResults []map[string]interface{}
-	if searchResult != nil {
-		graphResults = searchResult.GraphResults
+	if ds.memoryAdapter != nil {
+		// Use HelixMemory unified search (all 4 backends)
+		searchOpts := &helixmem.SearchOptions{TopK: 10}
+		memories, err := ds.memoryAdapter.Search(ctx, combinedContent.String(), searchOpts)
+		if err != nil {
+			ds.logger.WithError(err).Warn("[HelixMemory] Unified search failed during insights")
+		} else if len(memories) > 0 {
+			searchRelevanceScore = memories[0].Importance
+		}
+	} else if ds.cogneeService != nil {
+		searchResult, err := ds.cogneeService.SearchMemory(ctx, combinedContent.String(), "", 10)
+		if err != nil {
+			ds.logger.WithError(err).Warn("Cognee search failed during insights generation")
+		} else if searchResult != nil {
+			searchRelevanceScore = searchResult.RelevanceScore
+		}
 	}
-	_ = graphResults // Used for future knowledge graph integration
 
 	// Extract entities from responses
 	entities := make([]Entity, 0)
@@ -1901,10 +2025,7 @@ func (ds *DebateService) generateCogneeInsights(
 	topicModeling["discussion"] = 0.7
 
 	// Calculate relevance and innovation scores
-	relevanceScore := 0.0
-	if searchResult != nil {
-		relevanceScore = searchResult.RelevanceScore
-	}
+	relevanceScore := searchRelevanceScore
 	if relevanceScore == 0 {
 		relevanceScore = avgQuality * 0.9
 	}

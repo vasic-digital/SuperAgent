@@ -207,11 +207,11 @@ BUILD_END=$(date +%s%N)
 BUILD_DURATION_MS=$(( (BUILD_END - BUILD_START) / 1000000 ))
 record_metric "helixmemory_build_time_ms" "$BUILD_DURATION_MS"
 
-run_test "Main project builds (standard)" \
+run_test "Main project builds (default = HelixMemory)" \
     "cd '$PROJECT_ROOT' && go build ./cmd/... ./internal/..."
 
-run_test "Main project builds (helixmemory tag)" \
-    "cd '$PROJECT_ROOT' && go build -tags helixmemory ./cmd/... ./internal/..."
+run_test "Main project builds (opt-out nohelixmemory tag)" \
+    "cd '$PROJECT_ROOT' && go build -tags nohelixmemory ./cmd/... ./internal/..."
 
 # ============================================================================
 # SECTION 7: UNIT TESTS
@@ -241,8 +241,8 @@ run_test "All HelixMemory tests pass ($PASSED_PKGS packages)" \
 TOTAL_TESTS=$(echo "$TEST_OUTPUT" | grep -c "^--- PASS" || true)
 record_metric "total_tests" "$TOTAL_TESTS"
 
-run_test "Minimum 200 unit tests exist (found: $TOTAL_TESTS)" \
-    "test '$TOTAL_TESTS' -ge 200"
+run_test "Minimum 250 unit tests exist (found: $TOTAL_TESTS)" \
+    "test '$TOTAL_TESTS' -ge 250"
 
 # ============================================================================
 # SECTION 8: BUILD TAG CONDITIONAL SELECTION
@@ -255,20 +255,35 @@ run_test "factory_standard.go exists" \
 run_test "factory_helixmemory.go exists" \
     "test -f '$PROJECT_ROOT/internal/adapters/memory/factory_helixmemory.go'"
 
-run_test "factory_standard.go has correct build tag" \
-    "grep -q '//go:build !helixmemory' '$PROJECT_ROOT/internal/adapters/memory/factory_standard.go'"
+run_test "factory_standard.go has correct build tag (opt-out)" \
+    "grep -q '//go:build nohelixmemory' '$PROJECT_ROOT/internal/adapters/memory/factory_standard.go'"
 
-run_test "factory_helixmemory.go has correct build tag" \
-    "grep -q '//go:build helixmemory' '$PROJECT_ROOT/internal/adapters/memory/factory_helixmemory.go'"
+run_test "factory_helixmemory.go has correct build tag (default)" \
+    "grep -q '//go:build !nohelixmemory' '$PROJECT_ROOT/internal/adapters/memory/factory_helixmemory.go'"
 
 run_test "factory_helixmemory.go imports HelixMemory" \
     "grep -q 'digital.vasic.helixmemory' '$PROJECT_ROOT/internal/adapters/memory/factory_helixmemory.go'"
 
-run_test "Adapter tests pass (standard)" \
+run_test "Adapter tests pass (default = HelixMemory)" \
     "cd '$PROJECT_ROOT' && GOMAXPROCS=2 go test -count=1 -race -p 1 ./internal/adapters/memory/"
 
-run_test "Adapter tests pass (helixmemory tag)" \
-    "cd '$PROJECT_ROOT' && GOMAXPROCS=2 go test -count=1 -race -p 1 -tags helixmemory ./internal/adapters/memory/"
+run_test "Adapter tests pass (opt-out nohelixmemory tag)" \
+    "cd '$PROJECT_ROOT' && GOMAXPROCS=2 go test -count=1 -race -p 1 -tags nohelixmemory ./internal/adapters/memory/"
+
+run_test "HelixMemory is DEFAULT (IsHelixMemoryEnabled=true)" \
+    "cd '$PROJECT_ROOT' && go test -count=1 -run TestHelixMemoryIsDefault ./internal/adapters/memory/"
+
+run_test "Debate service imports HelixMemory adapter" \
+    "grep -q 'memoryadapter.*internal/adapters/memory' '$PROJECT_ROOT/internal/services/debate_service.go'"
+
+run_test "Debate service has memoryAdapter field" \
+    "grep -q 'memoryAdapter.*StoreAdapter' '$PROJECT_ROOT/internal/services/debate_service.go'"
+
+run_test "Debate service has IsHelixMemoryActive method" \
+    "grep -q 'func.*DebateService.*IsHelixMemoryActive' '$PROJECT_ROOT/internal/services/debate_service.go'"
+
+run_test "Debate service has analyzeWithHelixMemory method" \
+    "grep -q 'func.*DebateService.*analyzeWithHelixMemory' '$PROJECT_ROOT/internal/services/debate_service.go'"
 
 # ============================================================================
 # SECTION 9: FUSION ENGINE VALIDATION

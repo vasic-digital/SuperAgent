@@ -1,4 +1,4 @@
-.PHONY: all build test run fmt lint security-scan security-scan-all security-scan-snyk security-scan-sonarqube security-scan-trivy security-scan-gosec security-scan-go security-scan-stop docker-build docker-run docker-stop docker-clean docker-logs docker-test docker-dev docker-prod coverage docker-clean-all install-deps help docs check-deps test-all test-all-docker container-detect container-build container-start container-stop container-logs container-status container-test podman-build podman-run podman-stop podman-logs podman-clean podman-full test-no-skip test-all-must-pass test-performance test-performance-bench test-challenges test-coverage-100
+.PHONY: all build build-legacy-memory test run fmt lint security-scan security-scan-all security-scan-snyk security-scan-sonarqube security-scan-trivy security-scan-gosec security-scan-go security-scan-stop docker-build docker-run docker-stop docker-clean docker-logs docker-test docker-dev docker-prod coverage docker-clean-all install-deps help docs check-deps test-all test-all-docker container-detect container-build container-start container-stop container-logs container-status container-test podman-build podman-run podman-stop podman-logs podman-clean podman-full test-no-skip test-all-must-pass test-performance test-performance-bench test-challenges test-coverage-100
 
 # =============================================================================
 # MAIN TARGETS
@@ -19,6 +19,10 @@ build:
 build-debug:
 	@echo "🐛 Building HelixAgent (debug)..."
 	go build -mod=mod -gcflags="all=-N -l" -o bin/helixagent-debug ./cmd/helixagent
+
+build-legacy-memory:
+	@echo "Building HelixAgent (legacy memory, no HelixMemory)..."
+	go build -mod=mod -tags nohelixmemory -ldflags="-w -s" -o bin/helixagent ./cmd/helixagent
 
 build-all:
 	@echo "🔨 Building all architectures..."

@@ -1,22 +1,27 @@
 // Package memory provides adapters between HelixAgent's internal/memory types
 // and the extracted digital.vasic.memory module.
 //
-//go:build !helixmemory
+// This is the opt-out fallback implementation using the standard Memory module.
+// It is only active when you explicitly build with:
+//
+//	go build -tags nohelixmemory
+//
+//go:build nohelixmemory
 
 package memory
 
 import "log"
 
-// NewOptimalStoreAdapter creates a StoreAdapter using the default Memory module.
-// When building without the helixmemory tag, the standard digital.vasic.memory
-// module is used. The caller must provide their own modmem.MemoryStore
-// implementation via NewStoreAdapter directly, or use this function which
-// returns nil (no default store available without explicit configuration).
+// NewOptimalStoreAdapter creates a StoreAdapter using the standard Memory module.
+// This opt-out fallback is only active when building with -tags nohelixmemory.
+// The caller must provide their own modmem.MemoryStore implementation via
+// NewStoreAdapter directly, or use this function which returns nil (no default
+// store available without explicit configuration).
 //
-// To use the enhanced HelixMemory system with Mem0, Cognee, Letta, and Graphiti
-// fusion, build with: go build -tags helixmemory
+// To restore the default HelixMemory unified engine, simply build without
+// the nohelixmemory tag: go build
 func NewOptimalStoreAdapter() *StoreAdapter {
-	log.Println("[memory] Using standard Memory module (default)")
+	log.Println("[memory] Using standard Memory module (opt-out fallback)")
 	return nil
 }
 

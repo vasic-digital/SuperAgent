@@ -208,7 +208,7 @@ Each module is an independent Go module with its own go.mod, tests, CLAUDE.md, A
 - **Benchmark** (`Benchmark/`, `digital.vasic.benchmark`) — LLM benchmarking: SWE-bench, HumanEval, MMLU and custom benchmarks; leaderboard, provider comparison. 1 package (3 files).
 
 **Cognitive (Phase 6 — unified memory fusion):**
-- **HelixMemory** (`HelixMemory/`, `digital.vasic.helixmemory`) — Unified cognitive memory engine: orchestrates Mem0 (facts), Cognee (knowledge graphs), Letta (stateful agent runtime), Graphiti (temporal graph) through 3-stage fusion pipeline. 12 power features, circuit breakers, Prometheus metrics. Build with `-tags helixmemory`. 9+ packages.
+- **HelixMemory** (`HelixMemory/`, `digital.vasic.helixmemory`) — **DEFAULT** unified cognitive memory engine for HelixAgent and AI debate ensemble. Orchestrates Mem0 (facts), Cognee (knowledge graphs), Letta (stateful agent runtime), Graphiti (temporal graph) through 3-stage fusion pipeline. 12 power features, circuit breakers, Prometheus metrics, infra bridge. Active by default; opt out with `-tags nohelixmemory`. 12+ packages.
 
 **Pre-existing:**
 - **Containers** (`Containers/`, `digital.vasic.containers`) — Generic container orchestration: runtime abstraction (Docker/Podman/K8s), health checking, compose orchestration, lifecycle management. 12 packages.
