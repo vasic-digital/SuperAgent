@@ -75,35 +75,86 @@ type AdapterMetadata struct {
 	Supported   bool            `json:"supported"` // Fully supported by HelixAgent
 }
 
+// AdapterFactory is a function that creates an MCPAdapter on demand.
+// It is called at most once per adapter, on first access.
+type AdapterFactory func() (MCPAdapter, error)
+
+// lazyAdapter holds a factory and its sync.Once for deferred initialization.
+type lazyAdapter struct {
+	factory  AdapterFactory
+	once     sync.Once
+	adapter  MCPAdapter
+	initErr  error
+}
+
+// get returns the initialized adapter, calling the factory on first access.
+func (la *lazyAdapter) get() (MCPAdapter, error) {
+	la.once.Do(func() {
+		la.adapter, la.initErr = la.factory()
+	})
+	return la.adapter, la.initErr
+}
+
 // AdapterRegistry manages MCP adapters.
 type AdapterRegistry struct {
-	adapters map[string]MCPAdapter
-	metadata map[string]AdapterMetadata
-	mu       sync.RWMutex
+	adapters     map[string]MCPAdapter
+	lazyAdapters map[string]*lazyAdapter
+	metadata     map[string]AdapterMetadata
+	mu           sync.RWMutex
 }
 
 // NewAdapterRegistry creates a new adapter registry.
 func NewAdapterRegistry() *AdapterRegistry {
 	return &AdapterRegistry{
-		adapters: make(map[string]MCPAdapter),
-		metadata: make(map[string]AdapterMetadata),
+		adapters:     make(map[string]MCPAdapter),
+		lazyAdapters: make(map[string]*lazyAdapter),
+		metadata:     make(map[string]AdapterMetadata),
 	}
 }
 
-// Register registers an adapter.
+// Register registers an adapter eagerly (immediately available).
 func (r *AdapterRegistry) Register(name string, adapter MCPAdapter, metadata AdapterMetadata) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.adapters[name] = adapter
 	r.metadata[name] = metadata
+	// Remove any lazy registration for the same name to avoid confusion
+	delete(r.lazyAdapters, name)
 }
 
-// Get retrieves an adapter by name.
+// RegisterLazy registers an adapter factory for deferred initialization.
+// The factory is called at most once, when the adapter is first accessed
+// via Get or CallTool. This avoids initialization overhead for adapters
+// that may never be used during a session.
+func (r *AdapterRegistry) RegisterLazy(name string, factory AdapterFactory, metadata AdapterMetadata) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.lazyAdapters[name] = &lazyAdapter{factory: factory}
+	r.metadata[name] = metadata
+	// Remove any eager registration for the same name
+	delete(r.adapters, name)
+}
+
+// Get retrieves an adapter by name. For lazily registered adapters,
+// this triggers initialization on the first call.
 func (r *AdapterRegistry) Get(name string) (MCPAdapter, bool) {
 	r.mu.RLock()
-	defer r.mu.RUnlock()
-	adapter, ok := r.adapters[name]
-	return adapter, ok
+	// Check eagerly registered adapters first
+	if adapter, ok := r.adapters[name]; ok {
+		r.mu.RUnlock()
+		return adapter, true
+	}
+	// Check lazily registered adapters
+	la, ok := r.lazyAdapters[name]
+	r.mu.RUnlock()
+	if !ok {
+		return nil, false
+	}
+	adapter, err := la.get()
+	if err != nil {
+		return nil, false
+	}
+	return adapter, true
 }
 
 // GetMetadata retrieves adapter metadata.
@@ -114,14 +165,21 @@ func (r *AdapterRegistry) GetMetadata(name string) (AdapterMetadata, bool) {
 	return metadata, ok
 }
 
-// List returns all registered adapter names.
+// List returns all registered adapter names (both eager and lazy).
 func (r *AdapterRegistry) List() []string {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	names := make([]string, 0, len(r.adapters))
+	seen := make(map[string]struct{}, len(r.adapters)+len(r.lazyAdapters))
+	names := make([]string, 0, len(r.adapters)+len(r.lazyAdapters))
 	for name := range r.adapters {
 		names = append(names, name)
+		seen[name] = struct{}{}
+	}
+	for name := range r.lazyAdapters {
+		if _, ok := seen[name]; !ok {
+			names = append(names, name)
+		}
 	}
 	return names
 }
