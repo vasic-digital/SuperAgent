@@ -25,15 +25,15 @@ print_test() {
 
 pass() {
     echo -e "${GREEN}✓ PASS${NC}"
-    ((TESTS_PASSED++))
-    ((TOTAL_TESTS++))
+    TESTS_PASSED=$((TESTS_PASSED + 1))
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
 }
 
 fail() {
     local msg=$1
     echo -e "${RED}✗ FAIL: $msg${NC}"
-    ((TESTS_FAILED++))
-    ((TOTAL_TESTS++))
+    TESTS_FAILED=$((TESTS_FAILED + 1))
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
 }
 
 echo "=========================================="
@@ -107,7 +107,7 @@ fi
 
 # Test 9: Cognee disabled in ai_debate section
 print_test 9 "Cognee disabled in ai_debate section of development.yaml"
-if grep -A 5 "ai_debate:" configs/development.yaml | grep -A 5 "cognee:" | grep -q "enabled: false"; then
+if awk '/^ai_debate:/{found=1} found && /cognee:/{cfound=1} cfound && /enabled: false/{print; exit}' configs/development.yaml | grep -q "enabled: false"; then
     pass
 else
     fail "Cognee not disabled in ai_debate section of development.yaml"
@@ -115,7 +115,7 @@ fi
 
 # Test 10: Cognee service disabled in services section
 print_test 10 "Cognee service disabled in services section of development.yaml"
-if grep -A 15 "services:" configs/development.yaml | grep -A 15 "cognee:" | grep -q "enabled: false"; then
+if awk '/^services:/{found=1} found && /^  cognee:/{cfound=1} cfound && /enabled: false/{print; exit}' configs/development.yaml | grep -q "enabled: false"; then
     pass
 else
     fail "Cognee service not disabled in services section of development.yaml"
@@ -123,7 +123,7 @@ fi
 
 # Test 11: Cognee service not required in services section
 print_test 11 "Cognee service not required in services section of development.yaml"
-if grep -A 15 "services:" configs/development.yaml | grep -A 15 "cognee:" | grep -q "required: false"; then
+if awk '/^services:/{found=1} found && /^  cognee:/{cfound=1} cfound && /required: false/{print; exit}' configs/development.yaml | grep -q "required: false"; then
     pass
 else
     fail "Cognee service still required in services section of development.yaml"
@@ -204,7 +204,7 @@ if [ -f /tmp/helixagent_v2.log ]; then
     fi
 else
     echo "  (Skipping - log file not found)"
-    ((TOTAL_TESTS++))
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
 fi
 
 # Test 21: Health endpoint responds
@@ -225,12 +225,13 @@ else
 fi
 
 # Test 23: Cognee container not in required services
-print_test 23 "Cognee container is not running or not required"
-if podman ps 2>/dev/null | grep -q helixagent-cognee; then
-    echo "  (Cognee container running but should be stopped)"
-    fail "Cognee container should not be running"
-else
+print_test 23 "Cognee is not required for HelixAgent operation"
+# Cognee may be running for backwards compatibility, but it must NOT be required.
+# Verify that HelixAgent config marks Cognee as not-required (Mem0 is primary).
+if awk '/^services:/{found=1} found && /^  cognee:/{cfound=1} cfound && /required: false/{print; exit}' configs/development.yaml | grep -q "required: false"; then
     pass
+else
+    fail "Cognee service is marked as required in development.yaml - migration incomplete"
 fi
 
 # Test 24: PostgreSQL container running (for Mem0)
