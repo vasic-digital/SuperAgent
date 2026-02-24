@@ -1,6 +1,6 @@
 # Extracted Modules Catalog
 
-HelixAgent's functionality is decomposed into **26 independent Go modules**, each with its own repository, tests, and documentation. All modules are integrated as git submodules with `replace` directives in the root `go.mod` for local development.
+HelixAgent's functionality is decomposed into **27 independent Go modules**, each with its own repository, tests, and documentation. All modules are integrated as git submodules with `replace` directives in the root `go.mod` for local development.
 
 ## Module Index
 
@@ -32,8 +32,9 @@ HelixAgent's functionality is decomposed into **26 independent Go modules**, eac
 | 24 | Planning | `digital.vasic.planning` | `Planning/` | 1 | AI/ML |
 | 25 | Benchmark | `digital.vasic.benchmark` | `Benchmark/` | 1 | AI/ML |
 | 26 | HelixMemory | `digital.vasic.helixmemory` | `HelixMemory/` | 12+ | Cognitive |
+| 27 | HelixSpecifier | `digital.vasic.helixspecifier` | `HelixSpecifier/` | 21 | Specification |
 
-**Total: 26 modules, 135+ packages**
+**Total: 27 modules, 156+ packages**
 
 ---
 
@@ -389,6 +390,42 @@ Unified cognitive memory engine fusing Mem0, Cognee, Letta, and Graphiti into a 
 
 ---
 
+## Phase 7: Specification Modules
+
+### HelixSpecifier (`digital.vasic.helixspecifier`)
+
+Spec-Driven Development Fusion Engine: 3-pillar architecture (SpecKit, Superpowers, GSD), adaptive ceremony scaling, 10 power features. 21 packages.
+
+| Package | Purpose |
+|---------|---------|
+| `pkg/types` | Core types: Spec, Phase, Pillar, CeremonyLevel, EffortClass |
+| `pkg/config` | Configuration from HELIX_SPECIFIER_* env vars with defaults |
+| `pkg/speckit` | SpecKit 7-phase SDD engine (Constitution, Specify, Clarify, Plan, Tasks, Analyze, Implement) |
+| `pkg/superpowers` | Superpowers TDD and subagent orchestration |
+| `pkg/gsd` | GSD milestone tracking and progress management |
+| `pkg/ceremony` | Adaptive ceremony scaling based on effort classification |
+| `pkg/effort` | Effort classification engine (5 granularity levels) |
+| `pkg/fusion` | 3-pillar fusion coordinator |
+| `pkg/memory` | Spec memory for phase caching and resumption |
+| `pkg/adapters` | CLI agent adapters for spec-driven workflows |
+| `pkg/features/auto-activation` | Automatic SDD activation for large changes |
+| `pkg/features/phase-cache` | Phase caching for workflow resumption |
+| `pkg/features/effort-detect` | Work granularity detection |
+| `pkg/features/ceremony-scale` | Dynamic ceremony level adjustment |
+| `pkg/features/pillar-fusion` | Cross-pillar intelligence fusion |
+| `pkg/features/spec-memory` | Persistent spec memory across sessions |
+| `pkg/features/agent-bridge` | CLI agent integration bridge |
+| `pkg/features/tdd-orchestrator` | TDD workflow orchestration |
+| `pkg/features/milestone-tracker` | GSD milestone progress tracking |
+| `pkg/features/constitution-sync` | Constitution synchronization |
+| `pkg/metrics` | Prometheus metrics for spec workflows |
+
+**Patterns**: Strategy, Facade, Template Method, Observer, State Machine, Chain of Responsibility
+
+**Adapter**: `internal/adapters/helixspecifier/adapter.go` (build tag `helixspecifier`)
+
+---
+
 ## Pre-existing Modules
 
 ### Containers (`digital.vasic.containers`)
@@ -413,7 +450,8 @@ cd EventBus && go test ./... -count=1 -race && cd ..
 for mod in EventBus Concurrency Observability Auth Storage Streaming \
            Security VectorDB Embeddings Database Cache \
            Messaging Formatters MCP_Module RAG Memory Optimization Plugins \
-           Agentic LLMOps SelfImprove Planning Benchmark HelixMemory; do
+           Agentic LLMOps SelfImprove Planning Benchmark HelixMemory \
+           HelixSpecifier; do
   echo "Testing $mod..."
   (cd $mod && go test ./... -count=1 -race -short)
 done
@@ -478,6 +516,8 @@ HelixAgent (dev.helix.agent)
 │   └── Benchmark ─── LLM benchmarking, leaderboards
 ├── Cognitive Layer
 │   └── HelixMemory ─── Unified memory (Mem0+Cognee+Letta+Graphiti)
+├── Specification Layer
+│   └── HelixSpecifier ─── Spec-Driven Development (SpecKit+Superpowers+GSD)
 └── Pre-existing
     ├── Containers ─── Container orchestration
     └── Challenges ─── Challenge framework

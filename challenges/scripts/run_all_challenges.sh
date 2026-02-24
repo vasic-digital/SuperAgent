@@ -301,6 +301,9 @@ CHALLENGES=(
     # Cognitive modules (Phase 6)
     "helixmemory"
 
+    # Specification modules (Phase 7)
+    "helixspecifier"
+
     # Quality assurance
     "lazy_init_challenge"
     "stress_responsiveness_challenge"

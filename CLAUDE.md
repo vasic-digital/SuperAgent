@@ -8,7 +8,7 @@ HelixAgent is an AI-powered ensemble LLM service written in Go that combines res
 
 **Module**: `dev.helix.agent` (Go 1.24+, toolchain go1.24.11)
 
-Subprojects: **Toolkit** (`Toolkit/`) — Go library for AI apps. **LLMsVerifier** (`LLMsVerifier/`) — provider accuracy verification. Plus **26 extracted modules** (see [Extracted Modules](#extracted-modules-submodules) below) covering containers, challenges, concurrency, observability, auth, storage, streaming, security, vector databases, embeddings, database, cache, messaging, formatters, MCP, RAG, memory, optimization, plugins, event bus, agentic workflows, LLM operations, self-improvement, planning algorithms, benchmarking, and **HelixMemory** (unified cognitive memory engine).
+Subprojects: **Toolkit** (`Toolkit/`) — Go library for AI apps. **LLMsVerifier** (`LLMsVerifier/`) — provider accuracy verification. Plus **27 extracted modules** (see [Extracted Modules](#extracted-modules-submodules) below) covering containers, challenges, concurrency, observability, auth, storage, streaming, security, vector databases, embeddings, database, cache, messaging, formatters, MCP, RAG, memory, optimization, plugins, event bus, agentic workflows, LLM operations, self-improvement, planning algorithms, benchmarking, **HelixMemory** (unified cognitive memory engine), and **HelixSpecifier** (spec-driven development fusion engine).
 
 ## Mandatory Development Standards
 
@@ -210,6 +210,9 @@ Each module is an independent Go module with its own go.mod, tests, CLAUDE.md, A
 **Cognitive (Phase 6 — unified memory fusion):**
 - **HelixMemory** (`HelixMemory/`, `digital.vasic.helixmemory`) — **DEFAULT** unified cognitive memory engine for HelixAgent and AI debate ensemble. Orchestrates Mem0 (facts), Cognee (knowledge graphs), Letta (stateful agent runtime), Graphiti (temporal graph) through 3-stage fusion pipeline. 12 power features, circuit breakers, Prometheus metrics, infra bridge. Active by default; opt out with `-tags nohelixmemory`. 12+ packages.
 
+**Specification (Phase 7 — spec-driven development):**
+- **HelixSpecifier** (`HelixSpecifier/`, `digital.vasic.helixspecifier`) — Spec-Driven Development Fusion Engine: 3-pillar architecture (SpecKit 7-phase SDD, Superpowers TDD/subagents, GSD milestones), adaptive ceremony scaling, effort classification, CLI agent adapters, spec memory. 21 packages. Active by default; opt out with `-tags nohelixspecifier`.
+
 **Pre-existing:**
 - **Containers** (`Containers/`, `digital.vasic.containers`) — Generic container orchestration: runtime abstraction (Docker/Podman/K8s), health checking, compose orchestration, lifecycle management. 12 packages.
 - **Challenges** (`Challenges/`, `digital.vasic.challenges`) — Generic challenge framework: assertion engine, registry, runner, reporting, monitoring, metrics, plugin system, userflow testing (API/browser/mobile/desktop/build adapters). 13 packages.
@@ -361,6 +364,7 @@ Registry: `internal/agents/registry.go`. Generate configs: `./bin/helixagent --g
 ./challenges/scripts/debate_deadlock_detection_challenge.sh     # 8 tests
 ./challenges/scripts/debate_git_integration_challenge.sh        # 11 tests
 ./challenges/scripts/helixmemory_challenge.sh                   # 80+ tests
+./challenges/scripts/helixspecifier_challenge.sh                # HelixSpecifier verification
 ```
 
 ## LLMsVerifier

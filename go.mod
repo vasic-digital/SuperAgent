@@ -15,8 +15,9 @@ require (
 	digital.vasic.containers v0.0.0-00010101000000-000000000000
 	digital.vasic.database v0.0.0-00010101000000-000000000000
 	digital.vasic.eventbus v0.0.0-00010101000000-000000000000
-	digital.vasic.helixmemory v0.0.0-00010101000000-000000000000
 	digital.vasic.formatters v0.0.0-00010101000000-000000000000
+	digital.vasic.helixmemory v0.0.0-00010101000000-000000000000
+	digital.vasic.helixspecifier v0.0.0-00010101000000-000000000000
 	digital.vasic.llmops v0.0.0-00010101000000-000000000000
 	digital.vasic.mcp v0.0.0-00010101000000-000000000000
 	digital.vasic.memory v0.0.0-00010101000000-000000000000
@@ -51,7 +52,7 @@ require (
 	github.com/redis/go-redis/v9 v9.17.2
 	github.com/segmentio/kafka-go v0.4.49
 	github.com/shirou/gopsutil/v3 v3.24.5
-	github.com/sirupsen/logrus v1.9.3
+	github.com/sirupsen/logrus v1.9.4
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/otel v1.40.0
@@ -104,6 +105,8 @@ replace digital.vasic.embeddings => ./Embeddings
 replace digital.vasic.eventbus => ./EventBus
 
 replace digital.vasic.helixmemory => ./HelixMemory
+
+replace digital.vasic.helixspecifier => ./HelixSpecifier
 
 replace digital.vasic.formatters => ./Formatters
 

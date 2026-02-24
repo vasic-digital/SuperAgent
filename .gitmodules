@@ -349,3 +349,6 @@
 [submodule "HelixMemory"]
 	path = HelixMemory
 	url = git@github.com:HelixDevelopment/HelixMemory.git
+[submodule "HelixSpecifier"]
+	path = HelixSpecifier
+	url = git@github.com:HelixDevelopment/HelixSpecifier.git
