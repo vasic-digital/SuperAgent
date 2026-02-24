@@ -678,10 +678,13 @@ func TestIntegration_FullDebateFlow(t *testing.T) {
 
 	// 2. Set cognitive expectations before execution
 	for _, phase := range []topology.DebatePhase{
+		topology.PhaseDehallucination,
+		topology.PhaseSelfEvolvement,
 		topology.PhaseProposal,
 		topology.PhaseCritique,
 		topology.PhaseReview,
 		topology.PhaseOptimization,
+		topology.PhaseAdversarial,
 		topology.PhaseConvergence,
 	} {
 		exp := planner.SetExpectation(ctx, phase, 1, agents)
@@ -747,14 +750,14 @@ func TestIntegration_FullDebateFlow(t *testing.T) {
 
 	// 7. Verify overall results
 	assert.True(t, result.Success, "Debate should succeed")
-	assert.Equal(t, 5, len(result.Phases), "Should have 5 phases")
+	assert.Equal(t, 8, len(result.Phases), "Should have 8 phases")
 	assert.Greater(t, result.Metrics.TotalResponses, 0, "Should have responses")
 
 	// 8. Verify cognitive learning occurred
 	metrics := planner.GetPlanningMetrics()
-	assert.Equal(t, 5, metrics.TotalExpectations)
-	assert.Equal(t, 5, metrics.TotalComparisons)
-	assert.Equal(t, 5, metrics.TotalRefinements)
+	assert.Equal(t, 8, metrics.TotalExpectations)
+	assert.Equal(t, 8, metrics.TotalComparisons)
+	assert.Equal(t, 8, metrics.TotalRefinements)
 }
 
 func TestIntegration_EarlyConsensusExit(t *testing.T) {
@@ -1050,7 +1053,7 @@ func TestIntegration_StressTest_ManyRounds(t *testing.T) {
 
 	assert.True(t, result.Success)
 	assert.Equal(t, 5, result.RoundsCompleted)
-	assert.Equal(t, 25, len(result.Phases), "5 rounds × 5 phases = 25 phase results")
+	assert.Equal(t, 40, len(result.Phases), "5 rounds × 8 phases = 40 phase results")
 }
 
 // =============================================================================
