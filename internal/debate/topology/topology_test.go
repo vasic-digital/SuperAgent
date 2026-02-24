@@ -147,11 +147,14 @@ func TestBaseTopology_GetNextPhase(t *testing.T) {
 		current  DebatePhase
 		expected DebatePhase
 	}{
+		{PhaseDehallucination, PhaseSelfEvolvement},
+		{PhaseSelfEvolvement, PhaseProposal},
 		{PhaseProposal, PhaseCritique},
 		{PhaseCritique, PhaseReview},
 		{PhaseReview, PhaseOptimization},
-		{PhaseOptimization, PhaseConvergence},
-		{PhaseConvergence, PhaseProposal}, // Cycles back
+		{PhaseOptimization, PhaseAdversarial},
+		{PhaseAdversarial, PhaseConvergence},
+		{PhaseConvergence, PhaseDehallucination}, // Cycles back
 	}
 
 	for _, tc := range testCases {
@@ -1149,10 +1152,13 @@ func TestMessage_Types(t *testing.T) {
 
 func TestDebatePhase_Order(t *testing.T) {
 	phases := []DebatePhase{
+		PhaseDehallucination,
+		PhaseSelfEvolvement,
 		PhaseProposal,
 		PhaseCritique,
 		PhaseReview,
 		PhaseOptimization,
+		PhaseAdversarial,
 		PhaseConvergence,
 	}
 
@@ -1228,8 +1234,12 @@ func TestTopology_FullDebateFlow(t *testing.T) {
 	nextPhase = gm.GetNextPhase(PhaseReview)
 	assert.Equal(t, PhaseOptimization, nextPhase)
 
-	// Phase 5: Convergence
+	// Phase 5: Adversarial
 	nextPhase = gm.GetNextPhase(PhaseOptimization)
+	assert.Equal(t, PhaseAdversarial, nextPhase)
+
+	// Phase 6: Convergence
+	nextPhase = gm.GetNextPhase(PhaseAdversarial)
 	assert.Equal(t, PhaseConvergence, nextPhase)
 
 	// Verify metrics

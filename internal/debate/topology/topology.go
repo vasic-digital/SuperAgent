@@ -18,6 +18,8 @@ const (
 	TopologyStar TopologyType = "star"
 	// TopologyChain - Sequential communication (deterministic but slow)
 	TopologyChain TopologyType = "chain"
+	// TopologyTree - Hierarchical parent-child communication (balanced delegation)
+	TopologyTree TopologyType = "tree"
 )
 
 // AgentRole defines the role of an agent in the debate.
@@ -52,6 +54,13 @@ const (
 
 	// Knowledge roles
 	RoleTeacher AgentRole = "teacher" // Knowledge transfer
+
+	// Extended specialized roles (from debate spec documents)
+	RoleCompiler    AgentRole = "compiler"    // Validates syntax, type safety, build correctness
+	RoleExecutor    AgentRole = "executor"    // Runs code in sandbox, collects runtime feedback
+	RoleJudge       AgentRole = "judge"       // Scores solutions objectively against rubric
+	RoleImplementer AgentRole = "implementer" // Turns specs into concrete code
+	RoleDesigner    AgentRole = "designer"    // High-level system design and decomposition
 )
 
 // Agent represents a participant in the debate topology.
@@ -143,11 +152,17 @@ const (
 type DebatePhase string
 
 const (
+	// Pre-debate phases
+	PhaseDehallucination DebatePhase = "dehallucination"  // Proactive clarification to reduce hallucination
+	PhaseSelfEvolvement  DebatePhase = "self_evolvement"  // Agents self-test and refine before debate
+
+	// Core debate phases
 	PhaseProposal     DebatePhase = "proposal"     // Initial solution generation
-	PhaseCritique     DebatePhase = "critique"     // Weakness identification
-	PhaseReview       DebatePhase = "review"       // Quality evaluation
-	PhaseOptimization DebatePhase = "optimization" // Solution improvement
-	PhaseConvergence  DebatePhase = "convergence"  // Final consensus
+	PhaseCritique     DebatePhase = "critique"      // Weakness identification
+	PhaseReview       DebatePhase = "review"        // Quality evaluation
+	PhaseOptimization DebatePhase = "optimization"  // Solution improvement
+	PhaseAdversarial  DebatePhase = "adversarial"   // Red/Blue Team attack-defend cycle
+	PhaseConvergence  DebatePhase = "convergence"   // Final consensus
 )
 
 // CommunicationChannel represents a communication pathway between agents.
@@ -435,6 +450,10 @@ func (bt *BaseTopology) GetNextPhase(currentPhase DebatePhase) DebatePhase {
 	bt.IncrementPhaseTransitions()
 
 	switch currentPhase {
+	case PhaseDehallucination:
+		return PhaseSelfEvolvement
+	case PhaseSelfEvolvement:
+		return PhaseProposal
 	case PhaseProposal:
 		return PhaseCritique
 	case PhaseCritique:
@@ -442,9 +461,11 @@ func (bt *BaseTopology) GetNextPhase(currentPhase DebatePhase) DebatePhase {
 	case PhaseReview:
 		return PhaseOptimization
 	case PhaseOptimization:
+		return PhaseAdversarial
+	case PhaseAdversarial:
 		return PhaseConvergence
 	case PhaseConvergence:
-		return PhaseProposal // Cycle back if needed
+		return PhaseDehallucination // Cycle back if needed
 	default:
 		return PhaseProposal
 	}
