@@ -25,7 +25,7 @@ HelixAgent's functionality is decomposed into **27 independent Go modules**, eac
 | 17 | Optimization | `digital.vasic.optimization` | `Optimization/` | 6 | Integration |
 | 18 | Plugins | `digital.vasic.plugins` | `Plugins/` | 5 | Integration |
 | 19 | Containers | `digital.vasic.containers` | `Containers/` | 12 | Pre-existing |
-| 20 | Challenges | `digital.vasic.challenges` | `Challenges/` | 12 | Pre-existing |
+| 20 | Challenges | `digital.vasic.challenges` | `Challenges/` | 15 | Pre-existing |
 | 21 | Agentic | `digital.vasic.agentic` | `Agentic/` | 1 | AI/ML |
 | 22 | LLMOps | `digital.vasic.llmops` | `LLMOps/` | 1 | AI/ML |
 | 23 | SelfImprove | `digital.vasic.selfimprove` | `SelfImprove/` | 1 | AI/ML |
@@ -440,7 +440,7 @@ Generic container orchestration framework. 12 packages covering runtime abstract
 
 ### Challenges (`digital.vasic.challenges`)
 
-Generic challenge framework. 12 packages covering challenge interface, assertion engine (16 evaluators), registry with dependency ordering, runner (sequential/parallel/pipeline), reporting (MD/JSON/HTML), structured logging, env management, live monitoring, metrics, and plugin system.
+Generic challenge framework. 15 packages covering challenge interface, assertion engine (19 evaluators), registry with dependency ordering, runner (sequential/parallel/pipeline), reporting (MD/JSON/HTML), structured logging, env management, live monitoring, metrics, plugin system v2.0.0, Panoptic integration (vision, recorder, testgen, error-analyzer adapters), and AI test generation/vision/recorded-flow challenge templates.
 
 ---
 

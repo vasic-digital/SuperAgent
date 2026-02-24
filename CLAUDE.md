@@ -215,7 +215,7 @@ Each module is an independent Go module with its own go.mod, tests, CLAUDE.md, A
 
 **Pre-existing:**
 - **Containers** (`Containers/`, `digital.vasic.containers`) — Generic container orchestration: runtime abstraction (Docker/Podman/K8s), health checking, compose orchestration, lifecycle management. 12 packages.
-- **Challenges** (`Challenges/`, `digital.vasic.challenges`) — Generic challenge framework: assertion engine, registry, runner, reporting, monitoring, metrics, plugin system, userflow testing (API/browser/mobile/desktop/build adapters). 13 packages.
+- **Challenges** (`Challenges/`, `digital.vasic.challenges`) — Generic challenge framework: assertion engine (19 evaluators), registry, runner, reporting, monitoring, metrics, plugin system v2.0.0, userflow testing (API/browser/mobile/desktop/build adapters), Panoptic vision/recorder/testgen/error-analyzer adapters, AI test generation challenges. 15 packages.
 
 ### Key Interfaces
 - `LLMProvider` — Provider contract (Complete, CompleteStream, HealthCheck, GetCapabilities, ValidateConfig)
