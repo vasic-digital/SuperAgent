@@ -2,6 +2,7 @@ package voting
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -665,4 +666,387 @@ func TestFullVotingWorkflow(t *testing.T) {
 	assert.Equal(t, 2, history.TotalVotes)
 	assert.Equal(t, 2, history.CorrectVotes)
 	assert.Equal(t, 1.0, history.Accuracy)
+}
+
+// ============================================================================
+// Condorcet Voting Tests
+// ============================================================================
+
+func TestCalculateCondorcet_ClearWinner(t *testing.T) {
+	config := DefaultVotingConfig()
+	config.MinimumVotes = 3
+	wvs := NewWeightedVotingSystem(config)
+
+	// A beats B (2-1), A beats C (3-0), B beats C (2-1) → A is Condorcet winner
+	rankings := map[string][]string{
+		"agent-1": {"A", "B", "C"},
+		"agent-2": {"A", "C", "B"},
+		"agent-3": {"B", "A", "C"},
+	}
+
+	ctx := context.Background()
+	result, err := wvs.CalculateCondorcet(ctx, rankings)
+
+	require.NoError(t, err)
+	assert.Equal(t, VotingMethodCondorcet, result.Method)
+	assert.Equal(t, "A", result.WinningChoice)
+	assert.Greater(t, result.Consensus, 0.0)
+}
+
+func TestCalculateCondorcet_Cycle(t *testing.T) {
+	config := DefaultVotingConfig()
+	config.MinimumVotes = 3
+	wvs := NewWeightedVotingSystem(config)
+
+	// Condorcet cycle: A>B>C>A (rock-paper-scissors)
+	rankings := map[string][]string{
+		"agent-1": {"A", "B", "C"},
+		"agent-2": {"B", "C", "A"},
+		"agent-3": {"C", "A", "B"},
+	}
+
+	ctx := context.Background()
+	result, err := wvs.CalculateCondorcet(ctx, rankings)
+
+	require.NoError(t, err)
+	assert.Equal(t, VotingMethodCondorcet, result.Method)
+	// Should have used Borda fallback
+	require.NotNil(t, result.Metadata)
+	assert.Equal(t, true, result.Metadata["fallback_used"])
+	assert.Equal(t, "condorcet_cycle", result.Metadata["fallback_reason"])
+}
+
+func TestCalculateCondorcet_TwoCandidates(t *testing.T) {
+	config := DefaultVotingConfig()
+	config.MinimumVotes = 3
+	wvs := NewWeightedVotingSystem(config)
+
+	rankings := map[string][]string{
+		"agent-1": {"A", "B"},
+		"agent-2": {"A", "B"},
+		"agent-3": {"B", "A"},
+	}
+
+	ctx := context.Background()
+	result, err := wvs.CalculateCondorcet(ctx, rankings)
+
+	require.NoError(t, err)
+	assert.Equal(t, "A", result.WinningChoice)
+}
+
+func TestCalculateCondorcet_SingleCandidate(t *testing.T) {
+	config := DefaultVotingConfig()
+	config.MinimumVotes = 3
+	wvs := NewWeightedVotingSystem(config)
+
+	rankings := map[string][]string{
+		"agent-1": {"A"},
+		"agent-2": {"A"},
+		"agent-3": {"A"},
+	}
+
+	ctx := context.Background()
+	result, err := wvs.CalculateCondorcet(ctx, rankings)
+
+	require.NoError(t, err)
+	assert.Equal(t, "A", result.WinningChoice)
+}
+
+func TestCalculateCondorcet_InsufficientRankings(t *testing.T) {
+	config := DefaultVotingConfig()
+	config.MinimumVotes = 3
+	wvs := NewWeightedVotingSystem(config)
+
+	rankings := map[string][]string{
+		"agent-1": {"A", "B"},
+	}
+
+	ctx := context.Background()
+	_, err := wvs.CalculateCondorcet(ctx, rankings)
+
+	assert.Error(t, err)
+}
+
+func TestBuildCondorcetMatrix(t *testing.T) {
+	config := DefaultVotingConfig()
+	wvs := NewWeightedVotingSystem(config)
+
+	rankings := map[string][]string{
+		"agent-1": {"A", "B", "C"},
+		"agent-2": {"B", "A", "C"},
+		"agent-3": {"A", "C", "B"},
+	}
+
+	matrix := wvs.buildCondorcetMatrix(rankings)
+
+	assert.Contains(t, matrix.Candidates, "A")
+	assert.Contains(t, matrix.Candidates, "B")
+	assert.Contains(t, matrix.Candidates, "C")
+
+	// A vs B: agent-1 prefers A, agent-2 prefers B, agent-3 prefers A → A wins 2-1
+	assert.Equal(t, 2, matrix.Wins["A"]["B"])
+	assert.Equal(t, 1, matrix.Wins["B"]["A"])
+
+	// A vs C: all 3 prefer A over C → A wins 3-0
+	assert.Equal(t, 3, matrix.Wins["A"]["C"])
+	assert.Equal(t, 0, matrix.Wins["C"]["A"])
+}
+
+func TestFindCondorcetWinner_Found(t *testing.T) {
+	config := DefaultVotingConfig()
+	wvs := NewWeightedVotingSystem(config)
+
+	matrix := &CondorcetMatrix{
+		Candidates: []string{"A", "B", "C"},
+		Wins: map[string]map[string]int{
+			"A": {"B": 2, "C": 3},
+			"B": {"A": 1, "C": 2},
+			"C": {"A": 0, "B": 1},
+		},
+	}
+
+	winner, found := wvs.findCondorcetWinner(matrix)
+	assert.True(t, found)
+	assert.Equal(t, "A", winner)
+}
+
+func TestFindCondorcetWinner_NotFound(t *testing.T) {
+	config := DefaultVotingConfig()
+	wvs := NewWeightedVotingSystem(config)
+
+	// Cycle: A>B, B>C, C>A
+	matrix := &CondorcetMatrix{
+		Candidates: []string{"A", "B", "C"},
+		Wins: map[string]map[string]int{
+			"A": {"B": 2, "C": 1},
+			"B": {"A": 1, "C": 2},
+			"C": {"A": 2, "B": 1},
+		},
+	}
+
+	winner, found := wvs.findCondorcetWinner(matrix)
+	assert.False(t, found)
+	assert.Empty(t, winner)
+}
+
+// ============================================================================
+// Plurality Voting Tests
+// ============================================================================
+
+func TestCalculatePlurality_ClearWinner(t *testing.T) {
+	config := DefaultVotingConfig()
+	config.MinimumVotes = 3
+	wvs := NewWeightedVotingSystem(config)
+
+	_ = wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.9})
+	_ = wvs.AddVote(&Vote{AgentID: "a2", Choice: "A", Confidence: 0.8})
+	_ = wvs.AddVote(&Vote{AgentID: "a3", Choice: "B", Confidence: 0.7})
+	_ = wvs.AddVote(&Vote{AgentID: "a4", Choice: "C", Confidence: 0.6})
+
+	ctx := context.Background()
+	result, err := wvs.CalculatePlurality(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, VotingMethodPlurality, result.Method)
+	assert.Equal(t, "A", result.WinningChoice)
+	assert.Equal(t, 4, result.TotalVotes)
+	assert.InDelta(t, 0.5, result.Consensus, 0.01) // 2/4
+}
+
+func TestCalculatePlurality_Tie(t *testing.T) {
+	config := DefaultVotingConfig()
+	config.MinimumVotes = 3
+	config.EnableTieBreaking = true
+	config.TieBreakMethod = TieBreakByHighestConfidence
+	wvs := NewWeightedVotingSystem(config)
+
+	_ = wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.9})
+	_ = wvs.AddVote(&Vote{AgentID: "a2", Choice: "B", Confidence: 0.8})
+	_ = wvs.AddVote(&Vote{AgentID: "a3", Choice: "C", Confidence: 0.7})
+
+	ctx := context.Background()
+	result, err := wvs.CalculatePlurality(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, VotingMethodPlurality, result.Method)
+	// Tie broken by highest confidence → A
+	assert.True(t, result.TieBreakUsed)
+}
+
+func TestCalculatePlurality_InsufficientVotes(t *testing.T) {
+	config := DefaultVotingConfig()
+	config.MinimumVotes = 3
+	wvs := NewWeightedVotingSystem(config)
+
+	_ = wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.9})
+
+	ctx := context.Background()
+	_, err := wvs.CalculatePlurality(ctx)
+
+	assert.Error(t, err)
+}
+
+func TestCalculatePlurality_NoMajorityNeeded(t *testing.T) {
+	config := DefaultVotingConfig()
+	config.MinimumVotes = 5
+	wvs := NewWeightedVotingSystem(config)
+
+	// 5 different choices, one has 2 votes — plurality winner without majority
+	_ = wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.9})
+	_ = wvs.AddVote(&Vote{AgentID: "a2", Choice: "A", Confidence: 0.8})
+	_ = wvs.AddVote(&Vote{AgentID: "a3", Choice: "B", Confidence: 0.7})
+	_ = wvs.AddVote(&Vote{AgentID: "a4", Choice: "C", Confidence: 0.6})
+	_ = wvs.AddVote(&Vote{AgentID: "a5", Choice: "D", Confidence: 0.5})
+
+	ctx := context.Background()
+	result, err := wvs.CalculatePlurality(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, "A", result.WinningChoice)
+	assert.InDelta(t, 0.4, result.Consensus, 0.01) // 2/5
+}
+
+// ============================================================================
+// Unanimous Voting Tests
+// ============================================================================
+
+func TestCalculateUnanimous_AllAgree(t *testing.T) {
+	config := DefaultVotingConfig()
+	config.MinimumVotes = 3
+	wvs := NewWeightedVotingSystem(config)
+
+	_ = wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.9})
+	_ = wvs.AddVote(&Vote{AgentID: "a2", Choice: "A", Confidence: 0.8})
+	_ = wvs.AddVote(&Vote{AgentID: "a3", Choice: "A", Confidence: 0.7})
+
+	ctx := context.Background()
+	result, err := wvs.CalculateUnanimous(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, VotingMethodUnanimous, result.Method)
+	assert.Equal(t, "A", result.WinningChoice)
+	assert.Equal(t, 1.0, result.Consensus)
+	assert.False(t, result.IsTie)
+}
+
+func TestCalculateUnanimous_Disagreement(t *testing.T) {
+	config := DefaultVotingConfig()
+	config.MinimumVotes = 3
+	wvs := NewWeightedVotingSystem(config)
+
+	_ = wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.9})
+	_ = wvs.AddVote(&Vote{AgentID: "a2", Choice: "A", Confidence: 0.8})
+	_ = wvs.AddVote(&Vote{AgentID: "a3", Choice: "B", Confidence: 0.7})
+
+	ctx := context.Background()
+	result, err := wvs.CalculateUnanimous(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, VotingMethodUnanimous, result.Method)
+	assert.True(t, result.IsTie) // No unanimity
+	assert.Less(t, result.Consensus, 1.0)
+	assert.Len(t, result.TieChoices, 2) // A and B
+	assert.Equal(t, "A", result.WinningChoice) // Still reports most-voted
+}
+
+func TestCalculateUnanimous_InsufficientVotes(t *testing.T) {
+	config := DefaultVotingConfig()
+	config.MinimumVotes = 3
+	wvs := NewWeightedVotingSystem(config)
+
+	_ = wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.9})
+
+	ctx := context.Background()
+	_, err := wvs.CalculateUnanimous(ctx)
+
+	assert.Error(t, err)
+}
+
+func TestCalculateUnanimous_LargeGroup(t *testing.T) {
+	config := DefaultVotingConfig()
+	config.MinimumVotes = 3
+	wvs := NewWeightedVotingSystem(config)
+
+	// All 10 agents agree
+	for i := 0; i < 10; i++ {
+		_ = wvs.AddVote(&Vote{
+			AgentID:    fmt.Sprintf("agent-%d", i),
+			Choice:     "consensus-choice",
+			Confidence: 0.8 + float64(i)*0.02,
+		})
+	}
+
+	ctx := context.Background()
+	result, err := wvs.CalculateUnanimous(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, "consensus-choice", result.WinningChoice)
+	assert.Equal(t, 1.0, result.Consensus)
+	assert.Equal(t, 10, result.TotalVotes)
+}
+
+// ============================================================================
+// Auto-Selection Tests
+// ============================================================================
+
+func TestAutoSelectMethod(t *testing.T) {
+	config := DefaultVotingConfig()
+	wvs := NewWeightedVotingSystem(config)
+
+	tests := []struct {
+		name       string
+		agentCount int
+		expected   VotingMethod
+	}{
+		{"single agent", 1, VotingMethodUnanimous},
+		{"two agents", 2, VotingMethodUnanimous},
+		{"three agents", 3, VotingMethodWeighted},
+		{"five agents", 5, VotingMethodWeighted},
+		{"six agents", 6, VotingMethodBorda},
+		{"ten agents", 10, VotingMethodBorda},
+		{"large group", 25, VotingMethodBorda},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			method := wvs.AutoSelectMethod(tc.agentCount)
+			assert.Equal(t, tc.expected, method)
+		})
+	}
+}
+
+// ============================================================================
+// Cross-Method Comparison Tests
+// ============================================================================
+
+func TestVotingMethods_SameData_DifferentResults(t *testing.T) {
+	config := DefaultVotingConfig()
+	config.MinimumVotes = 3
+	wvs := NewWeightedVotingSystem(config)
+
+	_ = wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.9, Score: 9.0})
+	_ = wvs.AddVote(&Vote{AgentID: "a2", Choice: "A", Confidence: 0.5, Score: 5.0})
+	_ = wvs.AddVote(&Vote{AgentID: "a3", Choice: "B", Confidence: 0.95, Score: 9.5})
+
+	ctx := context.Background()
+
+	// Weighted: B might win (higher confidence × score)
+	weighted, err := wvs.Calculate(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, VotingMethodWeighted, weighted.Method)
+
+	// Majority: A wins (2 vs 1)
+	majority, err := wvs.CalculateSimpleMajority(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "A", majority.WinningChoice)
+
+	// Plurality: A wins (2 vs 1)
+	plurality, err := wvs.CalculatePlurality(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "A", plurality.WinningChoice)
+
+	// Unanimous: No consensus
+	unanimous, err := wvs.CalculateUnanimous(ctx)
+	require.NoError(t, err)
+	assert.True(t, unanimous.IsTie)
 }

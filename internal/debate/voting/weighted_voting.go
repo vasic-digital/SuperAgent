@@ -92,6 +92,7 @@ type VotingResult struct {
 	TieBreakMethod   TieBreakMethod         `json:"tie_break_method,omitempty"`
 	Method           VotingMethod           `json:"method"`
 	Timestamp        time.Time              `json:"timestamp"`
+	Metadata         map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // VotingMethod identifies the voting method used.
@@ -701,4 +702,335 @@ func (wvs *WeightedVotingSystem) GetStatistics() *VotingStatistics {
 	}
 
 	return stats
+}
+
+// CondorcetMatrix holds pairwise comparison data.
+type CondorcetMatrix struct {
+	Candidates []string                  `json:"candidates"`
+	Wins       map[string]map[string]int `json:"wins"` // wins[A][B] = voters preferring A over B
+}
+
+// CalculateCondorcet calculates result using Condorcet method.
+// A Condorcet winner beats all other candidates in pairwise comparisons.
+// Falls back to Borda count if no Condorcet winner exists (cycle).
+func (wvs *WeightedVotingSystem) CalculateCondorcet(ctx context.Context, rankings map[string][]string) (*VotingResult, error) {
+	if len(rankings) < wvs.config.MinimumVotes {
+		return nil, fmt.Errorf("insufficient rankings: got %d, need %d",
+			len(rankings), wvs.config.MinimumVotes)
+	}
+
+	// Build pairwise comparison matrix
+	matrix := wvs.buildCondorcetMatrix(rankings)
+
+	// Attempt to find a Condorcet winner
+	winner, found := wvs.findCondorcetWinner(matrix)
+
+	// If no Condorcet winner (cycle), fall back to Borda count
+	if !found {
+		bordaResult, err := wvs.CalculateBordaCount(ctx, rankings)
+		if err != nil {
+			return nil, fmt.Errorf("condorcet cycle detected and borda fallback failed: %w", err)
+		}
+		bordaResult.Method = VotingMethodCondorcet
+		if bordaResult.Metadata == nil {
+			bordaResult.Metadata = make(map[string]interface{})
+		}
+		bordaResult.Metadata["fallback_used"] = true
+		bordaResult.Metadata["fallback_reason"] = "condorcet_cycle"
+		return bordaResult, nil
+	}
+
+	// Calculate choice scores from pairwise wins for the result
+	choiceScores := make(map[string]float64)
+	choiceVoteCounts := make(map[string]int)
+	for _, candidate := range matrix.Candidates {
+		totalWins := 0
+		for _, other := range matrix.Candidates {
+			if candidate == other {
+				continue
+			}
+			totalWins += matrix.Wins[candidate][other]
+		}
+		choiceScores[candidate] = float64(totalWins)
+	}
+
+	// Count first-place appearances for vote counts
+	for _, ranking := range rankings {
+		if len(ranking) > 0 {
+			choiceVoteCounts[ranking[0]]++
+		}
+	}
+
+	// Calculate consensus as winner's pairwise wins / total comparisons
+	totalComparisons := 0.0
+	winnerWins := 0.0
+	for _, other := range matrix.Candidates {
+		if winner == other {
+			continue
+		}
+		winnerWins += float64(matrix.Wins[winner][other])
+		totalComparisons += float64(matrix.Wins[winner][other] + matrix.Wins[other][winner])
+	}
+	consensus := 0.0
+	if totalComparisons > 0 {
+		consensus = winnerWins / totalComparisons
+	}
+
+	result := &VotingResult{
+		WinningChoice:    winner,
+		WinningScore:     choiceScores[winner],
+		TotalVotes:       len(rankings),
+		ValidVotes:       len(rankings),
+		ChoiceScores:     choiceScores,
+		ChoiceVoteCounts: choiceVoteCounts,
+		Consensus:        consensus,
+		Method:           VotingMethodCondorcet,
+		Timestamp:        time.Now(),
+	}
+
+	return result, nil
+}
+
+// buildCondorcetMatrix builds a pairwise comparison matrix from rankings.
+// For each pair (A, B), counts voters preferring A over B.
+func (wvs *WeightedVotingSystem) buildCondorcetMatrix(rankings map[string][]string) *CondorcetMatrix {
+	// Collect all unique candidates
+	candidateSet := make(map[string]bool)
+	for _, ranking := range rankings {
+		for _, choice := range ranking {
+			candidateSet[choice] = true
+		}
+	}
+
+	candidates := make([]string, 0, len(candidateSet))
+	for c := range candidateSet {
+		candidates = append(candidates, c)
+	}
+	sort.Strings(candidates)
+
+	// Initialize wins matrix
+	wins := make(map[string]map[string]int)
+	for _, c := range candidates {
+		wins[c] = make(map[string]int)
+	}
+
+	// For each voter's ranking, compare every pair
+	for _, ranking := range rankings {
+		// Build position lookup for this voter
+		position := make(map[string]int)
+		for i, choice := range ranking {
+			position[choice] = i
+		}
+
+		// Compare all pairs
+		for i := 0; i < len(candidates); i++ {
+			for j := i + 1; j < len(candidates); j++ {
+				a := candidates[i]
+				b := candidates[j]
+
+				posA, aRanked := position[a]
+				posB, bRanked := position[b]
+
+				if aRanked && bRanked {
+					// Both ranked: lower position index = higher preference
+					if posA < posB {
+						wins[a][b]++
+					} else if posB < posA {
+						wins[b][a]++
+					}
+				} else if aRanked && !bRanked {
+					// A ranked, B not: A preferred over B
+					wins[a][b]++
+				} else if !aRanked && bRanked {
+					// B ranked, A not: B preferred over A
+					wins[b][a]++
+				}
+			}
+		}
+	}
+
+	return &CondorcetMatrix{
+		Candidates: candidates,
+		Wins:       wins,
+	}
+}
+
+// findCondorcetWinner finds a candidate that beats all others in pairwise comparison.
+// Returns the winner and true if found, or empty string and false if a cycle exists.
+func (wvs *WeightedVotingSystem) findCondorcetWinner(matrix *CondorcetMatrix) (string, bool) {
+	for _, candidate := range matrix.Candidates {
+		isWinner := true
+		for _, other := range matrix.Candidates {
+			if candidate == other {
+				continue
+			}
+			// Condorcet winner must beat every other candidate head-to-head
+			if matrix.Wins[candidate][other] <= matrix.Wins[other][candidate] {
+				isWinner = false
+				break
+			}
+		}
+		if isWinner {
+			return candidate, true
+		}
+	}
+	return "", false
+}
+
+// CalculatePlurality calculates result using plurality (first-past-the-post).
+// Winner is the choice with the most votes, regardless of majority.
+func (wvs *WeightedVotingSystem) CalculatePlurality(ctx context.Context) (*VotingResult, error) {
+	wvs.mu.RLock()
+	defer wvs.mu.RUnlock()
+
+	if len(wvs.votes) < wvs.config.MinimumVotes {
+		return nil, fmt.Errorf("insufficient votes: got %d, need %d",
+			len(wvs.votes), wvs.config.MinimumVotes)
+	}
+
+	choiceCounts := make(map[string]int)
+	for _, vote := range wvs.votes {
+		choiceCounts[vote.Choice]++
+	}
+
+	// Find the choice with the most votes
+	winningChoice := ""
+	maxCount := 0
+	for choice, count := range choiceCounts {
+		if count > maxCount {
+			maxCount = count
+			winningChoice = choice
+		}
+	}
+
+	// Convert counts to float64 scores
+	choiceScores := make(map[string]float64)
+	for choice, count := range choiceCounts {
+		choiceScores[choice] = float64(count)
+	}
+
+	// Check for tie (multiple choices with same max count)
+	tieChoices := make([]string, 0)
+	for choice, count := range choiceCounts {
+		if count == maxCount {
+			tieChoices = append(tieChoices, choice)
+		}
+	}
+	sort.Strings(tieChoices)
+	isTie := len(tieChoices) > 1
+
+	// Handle tie breaking
+	tieBreakUsed := false
+	tieBreakMethod := TieBreakMethod("")
+	if isTie && wvs.config.EnableTieBreaking {
+		validVotes := wvs.filterVotes()
+		voteWeights := make(map[string]*VoteWeight)
+		for _, vote := range validVotes {
+			voteWeights[vote.AgentID] = wvs.calculateVoteWeight(vote, validVotes)
+		}
+		winningChoice, tieBreakMethod = wvs.breakTie(tieChoices, wvs.votes, voteWeights)
+		tieBreakUsed = true
+		isTie = false
+	}
+
+	// Consensus = winner count / total votes
+	consensus := float64(maxCount) / float64(len(wvs.votes))
+
+	result := &VotingResult{
+		WinningChoice:    winningChoice,
+		WinningScore:     float64(maxCount),
+		TotalVotes:       len(wvs.votes),
+		ValidVotes:       len(wvs.votes),
+		ChoiceScores:     choiceScores,
+		ChoiceVoteCounts: choiceCounts,
+		Consensus:        consensus,
+		IsTie:            isTie,
+		TieChoices:       tieChoices,
+		TieBreakUsed:     tieBreakUsed,
+		TieBreakMethod:   tieBreakMethod,
+		Method:           VotingMethodPlurality,
+		Timestamp:        time.Now(),
+	}
+
+	return result, nil
+}
+
+// CalculateUnanimous calculates result using unanimous agreement.
+// All voters must agree on the same choice for consensus to be reached.
+func (wvs *WeightedVotingSystem) CalculateUnanimous(ctx context.Context) (*VotingResult, error) {
+	wvs.mu.RLock()
+	defer wvs.mu.RUnlock()
+
+	if len(wvs.votes) < wvs.config.MinimumVotes {
+		return nil, fmt.Errorf("insufficient votes: got %d, need %d",
+			len(wvs.votes), wvs.config.MinimumVotes)
+	}
+
+	choiceCounts := make(map[string]int)
+	for _, vote := range wvs.votes {
+		choiceCounts[vote.Choice]++
+	}
+
+	// Find the most-voted choice (useful for fallback even without unanimity)
+	winningChoice := ""
+	maxCount := 0
+	for choice, count := range choiceCounts {
+		if count > maxCount {
+			maxCount = count
+			winningChoice = choice
+		}
+	}
+
+	// Convert counts to float64 scores
+	choiceScores := make(map[string]float64)
+	for choice, count := range choiceCounts {
+		choiceScores[choice] = float64(count)
+	}
+
+	// Check for unanimity: all votes must be for the same choice
+	isUnanimous := len(choiceCounts) == 1
+
+	var consensus float64
+	isTie := false
+	var tieChoices []string
+
+	if isUnanimous {
+		consensus = 1.0
+	} else {
+		// No unanimity: consensus is the proportion of the most-voted choice
+		consensus = float64(maxCount) / float64(len(wvs.votes))
+		isTie = true
+		tieChoices = make([]string, 0, len(choiceCounts))
+		for choice := range choiceCounts {
+			tieChoices = append(tieChoices, choice)
+		}
+		sort.Strings(tieChoices)
+	}
+
+	result := &VotingResult{
+		WinningChoice:    winningChoice,
+		WinningScore:     float64(maxCount),
+		TotalVotes:       len(wvs.votes),
+		ValidVotes:       len(wvs.votes),
+		ChoiceScores:     choiceScores,
+		ChoiceVoteCounts: choiceCounts,
+		Consensus:        consensus,
+		IsTie:            isTie,
+		TieChoices:       tieChoices,
+		Method:           VotingMethodUnanimous,
+		Timestamp:        time.Now(),
+	}
+
+	return result, nil
+}
+
+// AutoSelectMethod selects the best voting method based on agent count and context.
+func (wvs *WeightedVotingSystem) AutoSelectMethod(agentCount int) VotingMethod {
+	if agentCount < 3 {
+		return VotingMethodUnanimous
+	}
+	if agentCount <= 5 {
+		return VotingMethodWeighted
+	}
+	return VotingMethodBorda
 }
