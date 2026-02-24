@@ -136,6 +136,9 @@ func (d *DefaultStuckDetector) checkHeartbeatTimeout(task *models.BackgroundTask
 	}
 
 	if task.HasStaleHeartbeat(threshold) {
+		if task.LastHeartbeat == nil {
+			return fmt.Sprintf("no heartbeat ever received (threshold: %v)", threshold)
+		}
 		return fmt.Sprintf("no heartbeat for %v (threshold: %v)", time.Since(*task.LastHeartbeat).Round(time.Second), threshold)
 	}
 
