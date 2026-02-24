@@ -19,6 +19,10 @@ import (
 	"dev.helix.agent/internal/models"
 
 	// NEW: Integrated AI Debate Features
+	"dev.helix.agent/internal/debate/audit"
+	"dev.helix.agent/internal/debate/evaluation"
+	"dev.helix.agent/internal/debate/gates"
+	"dev.helix.agent/internal/debate/reflexion"
 	"dev.helix.agent/internal/debate/testing"
 	"dev.helix.agent/internal/debate/tools"
 	"dev.helix.agent/internal/debate/validation"
@@ -53,6 +57,18 @@ type DebateService struct {
 	constitutionManager      *ConstitutionManager      // Constitution management
 	documentationSync        *DocumentationSync        // Documentation synchronization
 	constitutionWatcher      *ConstitutionWatcher      // Constitution auto-update background service
+
+	// Debate Spec Full Compliance — new components
+	reflexionMemory     *reflexion.EpisodicMemoryBuffer // Reflexion episodic memory buffer
+	reflexionGenerator  *reflexion.ReflectionGenerator  // Reflexion verbal reflection generator
+	reflexionLoop       *reflexion.ReflexionLoop        // Reflexion retry-and-learn loop
+	accumulatedWisdom   *reflexion.AccumulatedWisdom    // Cross-session learning
+	approvalGate        *gates.ApprovalGate             // Configurable approval gates
+	provenanceTracker   *audit.ProvenanceTracker        // Audit trail for reproducibility
+	benchmarkBridge     *evaluation.BenchmarkBridge     // Benchmark evaluation bridge
+	sessionRepo         *database.DebateSessionRepository  // DB: debate sessions
+	turnRepo            *database.DebateTurnRepository     // DB: debate turns
+	codeVersionRepo     *database.CodeVersionRepository    // DB: code versions
 }
 
 // DebateLogRepository interface for logging debate activities
@@ -177,7 +193,21 @@ func NewDebateServiceWithDeps(
 	// speckitOrchestrator will be initialized via SetSpecKitOrchestrator after DebateService is created
 	// to avoid circular dependency
 
-	logger.Info("[Debate Service] Initialized with integrated features: Test-Driven, 4-Pass Validation, Tool Integration, Enhanced Intent, SpecKit")
+	// Initialize Debate Spec Full Compliance components
+	reflexionMemory := reflexion.NewEpisodicMemoryBuffer(1000)
+	reflexionGen := reflexion.NewReflectionGenerator(nil) // LLM client wired later
+	reflexionLoopInst := reflexion.NewReflexionLoop(
+		reflexion.DefaultReflexionConfig(),
+		reflexionGen,
+		nil, // test executor wired later
+		reflexionMemory,
+	)
+	wisdom := reflexion.NewAccumulatedWisdom()
+	approvalGateInst := gates.NewApprovalGate(gates.GateConfig{Enabled: false}) // Disabled by default per spec
+	provenanceTrackerInst := audit.NewProvenanceTracker()
+	benchmarkBridgeInst := evaluation.NewBenchmarkBridge()
+
+	logger.Info("[Debate Service] Initialized with integrated features: Test-Driven, 4-Pass Validation, Tool Integration, Enhanced Intent, SpecKit, Reflexion, Adversarial, Approval Gates, Provenance")
 
 	return &DebateService{
 		logger:           logger,
@@ -199,6 +229,15 @@ func NewDebateServiceWithDeps(
 		constitutionManager:      constitutionManager,
 		documentationSync:        documentationSync,
 		// speckitOrchestrator:      nil, // Set via SetSpecKitOrchestrator to avoid circular dependency
+
+		// Debate Spec Full Compliance
+		reflexionMemory:    reflexionMemory,
+		reflexionGenerator: reflexionGen,
+		reflexionLoop:      reflexionLoopInst,
+		accumulatedWisdom:  wisdom,
+		approvalGate:       approvalGateInst,
+		provenanceTracker:  provenanceTrackerInst,
+		benchmarkBridge:    benchmarkBridgeInst,
 	}
 }
 

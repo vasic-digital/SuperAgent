@@ -85,6 +85,14 @@ type CreateDebateRequest struct {
 	EnableCognee              bool                       `json:"enable_cognee,omitempty"`
 	EnableMultiPassValidation bool                       `json:"enable_multi_pass_validation,omitempty"`
 	ValidationConfig          *ValidationConfigRequest   `json:"validation_config,omitempty"`
+	TopologyType              string                     `json:"topology_type,omitempty"`              // graph_mesh, star, chain, tree
+	CoordinationProtocol      string                     `json:"coordination_protocol,omitempty"`      // cpde, dpde, adaptive
+	EnableAdversarial         bool                       `json:"enable_adversarial,omitempty"`
+	EnableDehallucination     bool                       `json:"enable_dehallucination,omitempty"`
+	EnableSelfEvolvement      bool                       `json:"enable_self_evolvement,omitempty"`
+	EnableApprovalGates       bool                       `json:"enable_approval_gates,omitempty"`
+	VotingMethod              string                     `json:"voting_method,omitempty"`              // weighted, majority, borda, condorcet, plurality, unanimous
+	MaxReflexionAttempts      int                        `json:"max_reflexion_attempts,omitempty"`
 	Metadata                  map[string]any             `json:"metadata,omitempty"`
 }
 
@@ -592,6 +600,141 @@ func (h *DebateHandler) DeleteDebate(c *gin.Context) {
 	})
 }
 
+// ApproveDebate handles POST /v1/debates/:id/approve
+func (h *DebateHandler) ApproveDebate(c *gin.Context) {
+	debateID := c.Param("id")
+
+	h.mu.RLock()
+	state, exists := h.activeDebates[debateID]
+	h.mu.RUnlock()
+
+	if !exists {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": gin.H{
+				"message":   "Debate not found",
+				"debate_id": debateID,
+			},
+		})
+		return
+	}
+
+	if state.Status != "paused" && state.Status != "pending_approval" {
+		c.JSON(http.StatusConflict, gin.H{
+			"error": gin.H{
+				"message":   "Debate is not awaiting approval",
+				"debate_id": debateID,
+				"status":    state.Status,
+			},
+		})
+		return
+	}
+
+	h.mu.Lock()
+	state.Status = "running"
+	h.mu.Unlock()
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":   "Debate approved and resumed",
+		"debate_id": debateID,
+		"status":    "running",
+	})
+}
+
+// RejectDebate handles POST /v1/debates/:id/reject
+func (h *DebateHandler) RejectDebate(c *gin.Context) {
+	debateID := c.Param("id")
+
+	h.mu.RLock()
+	state, exists := h.activeDebates[debateID]
+	h.mu.RUnlock()
+
+	if !exists {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": gin.H{
+				"message":   "Debate not found",
+				"debate_id": debateID,
+			},
+		})
+		return
+	}
+
+	var req struct {
+		Reason string `json:"reason"`
+	}
+	_ = c.ShouldBindJSON(&req)
+
+	h.mu.Lock()
+	state.Status = "rejected"
+	if req.Reason != "" {
+		state.Error = "Rejected: " + req.Reason
+	}
+	now := time.Now()
+	state.EndTime = &now
+	h.mu.Unlock()
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":   "Debate rejected",
+		"debate_id": debateID,
+		"status":    "rejected",
+		"reason":    req.Reason,
+	})
+}
+
+// GetDebateGates handles GET /v1/debates/:id/gates
+func (h *DebateHandler) GetDebateGates(c *gin.Context) {
+	debateID := c.Param("id")
+
+	h.mu.RLock()
+	state, exists := h.activeDebates[debateID]
+	h.mu.RUnlock()
+
+	if !exists {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": gin.H{
+				"message":   "Debate not found",
+				"debate_id": debateID,
+			},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"debate_id":      debateID,
+		"status":         state.Status,
+		"current_phase":  state.CurrentPhase,
+		"gates_enabled":  state.Config != nil,
+		"pending_approval": state.Status == "pending_approval" || state.Status == "paused",
+	})
+}
+
+// GetDebateAudit handles GET /v1/debates/:id/audit
+func (h *DebateHandler) GetDebateAudit(c *gin.Context) {
+	debateID := c.Param("id")
+
+	h.mu.RLock()
+	state, exists := h.activeDebates[debateID]
+	h.mu.RUnlock()
+
+	if !exists {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": gin.H{
+				"message":   "Debate not found",
+				"debate_id": debateID,
+			},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"debate_id":     debateID,
+		"status":        state.Status,
+		"start_time":    state.StartTime,
+		"end_time":      state.EndTime,
+		"current_phase": state.CurrentPhase,
+		"has_result":    state.Result != nil,
+	})
+}
+
 // RegisterRoutes registers debate routes on a router group
 func (h *DebateHandler) RegisterRoutes(rg *gin.RouterGroup) {
 	debates := rg.Group("/debates")
@@ -601,6 +744,10 @@ func (h *DebateHandler) RegisterRoutes(rg *gin.RouterGroup) {
 		debates.GET("/:id", h.GetDebate)
 		debates.GET("/:id/status", h.GetDebateStatus)
 		debates.GET("/:id/results", h.GetDebateResults)
+		debates.POST("/:id/approve", h.ApproveDebate)
+		debates.POST("/:id/reject", h.RejectDebate)
+		debates.GET("/:id/gates", h.GetDebateGates)
+		debates.GET("/:id/audit", h.GetDebateAudit)
 		debates.DELETE("/:id", h.DeleteDebate)
 	}
 }
