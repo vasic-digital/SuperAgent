@@ -17,6 +17,8 @@ func NewTopology(topologyType TopologyType, config TopologyConfig) (Topology, er
 		return NewStarTopology(config), nil
 	case TopologyChain:
 		return NewChainTopology(config), nil
+	case TopologyTree:
+		return NewTreeTopology(config), nil
 	default:
 		return nil, fmt.Errorf("unknown topology type: %s", topologyType)
 	}
@@ -50,10 +52,17 @@ type TopologyRequirements struct {
 	CentralizedControl bool `json:"centralized_control"`
 	// Deterministic requires deterministic behavior
 	Deterministic bool `json:"deterministic"`
+	// HierarchicalControl requires hierarchical parent-child delegation
+	HierarchicalControl bool `json:"hierarchical_control"`
 }
 
 // SelectTopologyType selects the best topology type based on requirements.
 func SelectTopologyType(agentCount int, req TopologyRequirements) TopologyType {
+	// If hierarchical control required, use Tree
+	if req.HierarchicalControl {
+		return TopologyTree
+	}
+
 	// If strict ordering or deterministic behavior required, use Chain
 	if req.RequireOrdering || req.Deterministic {
 		return TopologyChain
@@ -106,6 +115,7 @@ type TopologyComparison struct {
 	GraphMesh TopologyCharacteristics `json:"graph_mesh"`
 	Star      TopologyCharacteristics `json:"star"`
 	Chain     TopologyCharacteristics `json:"chain"`
+	Tree      TopologyCharacteristics `json:"tree"`
 }
 
 // TopologyCharacteristics describes a topology's characteristics.
@@ -148,6 +158,15 @@ func GetTopologyComparison() TopologyComparison {
 			Complexity:          "low",
 			BestFor:             []string{"deterministic workflows", "audit trails", "small teams"},
 			ResearchPerformance: "#3 - Slowest but most predictable",
+		},
+		Tree: TopologyCharacteristics{
+			Type:                TopologyTree,
+			MaxParallelism:      "subtree",
+			MessageOrdering:     "partial",
+			Bottleneck:          "root",
+			Complexity:          "medium",
+			BestFor:             []string{"hierarchical delegation", "task decomposition", "team-lead coordination"},
+			ResearchPerformance: "#2 - Good balance of delegation and parallelism",
 		},
 	}
 }
