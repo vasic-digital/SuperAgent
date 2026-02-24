@@ -1,0 +1,38 @@
+%% HelixAgent Debate: Tree Topology
+%% Hierarchical agent organization with root, team leads, and specialists.
+%% Communication flows up and down parent-child edges.
+%% Independent subtrees execute in parallel.
+
+graph TD
+    Root["Root (Level 0)<br/>Architect Agent<br/>Subtree: root<br/>Highest Score"]
+
+    Root --> SecurityLead["Security Lead (Level 1)<br/>Role: security<br/>Subtree: security"]
+    Root --> PerfLead["Performance Lead (Level 1)<br/>Role: performance_analyzer<br/>Subtree: performance"]
+    Root --> QualityLead["Quality Lead (Level 1)<br/>Role: critic<br/>Subtree: quality"]
+
+    SecurityLead --> RedTeam["Red Team Agent (Level 2)<br/>Role: red_team<br/>Subtree: security"]
+    SecurityLead --> BlueTeam["Blue Team Agent (Level 2)<br/>Role: blue_team<br/>Subtree: security"]
+
+    PerfLead --> Optimizer["Optimizer Agent (Level 2)<br/>Role: optimizer<br/>Subtree: performance"]
+    PerfLead --> Executor["Executor Agent (Level 2)<br/>Role: executor<br/>Subtree: performance"]
+
+    QualityLead --> Reviewer["Reviewer Agent (Level 2)<br/>Role: reviewer<br/>Subtree: quality"]
+    QualityLead --> Validator["Validator Agent (Level 2)<br/>Role: validator<br/>Subtree: quality"]
+
+    Root ---|"leader: Dehallucination,<br/>SelfEvolvement, Proposal,<br/>Review, Convergence"| LeaderNote1[ ]
+    SecurityLead ---|"leader: Critique,<br/>Adversarial"| LeaderNote2[ ]
+    PerfLead ---|"leader: Optimization"| LeaderNote3[ ]
+
+    style Root fill:#fff3e0,stroke:#e65100,stroke-width:3px
+    style SecurityLead fill:#ffebee,stroke:#c62828,stroke-width:2px
+    style PerfLead fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style QualityLead fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    style RedTeam fill:#ffcdd2,stroke:#b71c1c
+    style BlueTeam fill:#c8e6c9,stroke:#388e3c
+    style Optimizer fill:#dcedc8,stroke:#558b2f
+    style Executor fill:#dcedc8,stroke:#558b2f
+    style Reviewer fill:#bbdefb,stroke:#1565c0
+    style Validator fill:#bbdefb,stroke:#1565c0
+    style LeaderNote1 fill:none,stroke:none
+    style LeaderNote2 fill:none,stroke:none
+    style LeaderNote3 fill:none,stroke:none

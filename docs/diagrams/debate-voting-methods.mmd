@@ -1,0 +1,44 @@
+%% HelixAgent Debate: Voting Methods Comparison
+%% Shows the 6 voting methods available in the WeightedVotingSystem
+%% with their characteristics and use cases.
+
+graph LR
+    subgraph VotingSystem["WeightedVotingSystem"]
+        direction TB
+
+        subgraph Weighted["Weighted (MiniMax)"]
+            W_Desc["Formula: L* = argmax Sum ci * 1[ai = L]<br/>Weight = confidence x score x diversity x history<br/>Tie-break: highest_confidence / most_votes / leader_vote"]
+        end
+
+        subgraph Majority["Simple Majority"]
+            M_Desc["Winner needs > 50% of votes<br/>Each vote counts equally<br/>No confidence weighting"]
+        end
+
+        subgraph Plurality["Plurality"]
+            P_Desc["Most votes wins regardless of majority<br/>First-past-the-post<br/>Supports tie-breaking"]
+        end
+
+        subgraph Unanimous["Unanimous"]
+            U_Desc["All voters must agree on same choice<br/>Consensus = 1.0 if unanimous<br/>Reports disagreement if not"]
+        end
+
+        subgraph Borda["Borda Count"]
+            B_Desc["Ranked-choice: n-1 points for 1st place<br/>n-2 for 2nd, etc.<br/>Requires rankings not single votes"]
+        end
+
+        subgraph Condorcet["Condorcet"]
+            C_Desc["Pairwise comparison matrix<br/>Winner beats all others head-to-head<br/>Falls back to Borda if cycle detected"]
+        end
+    end
+
+    AutoSelect{AutoSelectMethod} -->|"< 3 agents"| Unanimous
+    AutoSelect -->|"3-5 agents"| Weighted
+    AutoSelect -->|"> 5 agents"| Borda
+
+    style Weighted fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style Majority fill:#e1f5fe,stroke:#0288d1
+    style Plurality fill:#fff3e0,stroke:#f57c00
+    style Unanimous fill:#f3e5f5,stroke:#7b1fa2
+    style Borda fill:#e0f2f1,stroke:#00695c
+    style Condorcet fill:#fce4ec,stroke:#c62828
+    style AutoSelect fill:#fff9c4,stroke:#f9a825,stroke-width:2px

@@ -1,0 +1,46 @@
+%% HelixAgent Debate: Adversarial Round (Red Team Attack -> Blue Team Defend)
+%% Sequence diagram showing the attack-defend cycle within a single round.
+
+sequenceDiagram
+    participant O as Orchestrator
+    participant RT as Red Team Agent
+    participant LLM as LLM Provider
+    participant BT as Blue Team Agent
+
+    Note over O: Round N begins
+
+    O->>RT: attack(currentCode, language, round, priorDefense)
+    RT->>LLM: Complete(attackPrompt)
+
+    alt LLM succeeds
+        LLM-->>RT: Structured response
+        RT->>RT: parseAttackResponse()
+    else LLM fails or unparseable
+        RT->>RT: generateFallbackAttack()<br/>Static pattern analysis
+    end
+
+    RT-->>O: AttackReport<br/>[vulnerabilities, edge_cases,<br/>stress_scenarios, overall_risk]
+
+    Note over O: Check termination conditions
+
+    alt vulnerabilities < MinVulnerabilities
+        O-->>O: STOP - solution hardened
+    else overall_risk < RiskThreshold
+        O-->>O: STOP - risk acceptable
+    else continue
+        O->>BT: defend(currentCode, language, attackReport)
+        BT->>LLM: Complete(defensePrompt)
+
+        alt LLM succeeds
+            LLM-->>BT: Structured response
+            BT->>BT: parseDefenseResponse()
+        else LLM fails or unparseable
+            BT->>BT: generateFallbackDefense()<br/>Generic fix descriptions
+        end
+
+        BT-->>O: DefenseReport<br/>[patched_vulns, patches,<br/>remaining_risks, patched_code]
+
+        O->>O: currentCode = patchedCode
+    end
+
+    Note over O: Round N complete.<br/>Feed defense into next round.

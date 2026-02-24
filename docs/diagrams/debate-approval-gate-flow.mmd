@@ -1,0 +1,46 @@
+%% HelixAgent Debate: Approval Gate Check Flow
+%% Shows the decision logic when CheckGate() is called at a phase boundary.
+
+graph TD
+    Start([CheckGate called<br/>debateID, sessionID, phase,<br/>summary, artifacts]) --> Enabled{Gates enabled?}
+
+    Enabled -->|no| AutoApprove["Return auto-approved decision<br/>reviewer: auto<br/>reason: gate not enabled"]
+
+    Enabled -->|yes| IsGatePoint{Phase in<br/>GatePoints list?}
+
+    IsGatePoint -->|no| AutoApprove
+
+    IsGatePoint -->|yes| CreateRequest["Create GateRequest<br/>ID: gate-debateID-phase-timestamp<br/>Status: pending"]
+
+    CreateRequest --> StoreRequest["Store request in map<br/>Create decision channel<br/>capacity: 1"]
+
+    StoreRequest --> Wait["SELECT: blocking wait"]
+
+    Wait --> Branch1{Decision received<br/>on channel?}
+    Wait --> Branch2{Timeout expired?}
+    Wait --> Branch3{Context cancelled?}
+
+    Branch1 -->|yes| ReturnDecision([Return GateDecision<br/>approved or rejected])
+
+    Branch2 -->|yes| MarkTimeout["Mark request status: timed_out<br/>Remove decision channel"]
+    MarkTimeout --> ReturnTimeout([Return GateDecision<br/>status: timed_out<br/>reason: approval gate timed out])
+
+    Branch3 -->|yes| Cleanup["Remove decision channel"]
+    Cleanup --> ReturnError([Return error<br/>approval gate cancelled])
+
+    subgraph ExternalAPI["External API (async)"]
+        Approve["POST .../approve<br/>reviewer, reason"] --> SubmitApprove
+        Reject["POST .../reject<br/>reviewer, reason"] --> SubmitReject
+
+        SubmitApprove["submitDecision<br/>status: approved"] --> SendChannel["Send decision<br/>to channel"]
+        SubmitReject["submitDecision<br/>status: rejected"] --> SendChannel
+    end
+
+    SendChannel -.-> Branch1
+
+    style AutoApprove fill:#c8e6c9,stroke:#2e7d32
+    style ReturnDecision fill:#c8e6c9,stroke:#2e7d32
+    style ReturnTimeout fill:#fff9c4,stroke:#f9a825
+    style ReturnError fill:#ffcdd2,stroke:#b71c1c
+    style Wait fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
+    style ExternalAPI fill:#f5f5f5,stroke:#9e9e9e,stroke-dasharray:5 5

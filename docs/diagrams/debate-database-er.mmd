@@ -1,0 +1,58 @@
+%% HelixAgent Debate: Database Entity-Relationship Diagram
+%% Shows the 3 debate tables with columns, keys, and relationships.
+
+erDiagram
+    debate_sessions {
+        UUID id PK "gen_random_uuid()"
+        VARCHAR debate_id "NOT NULL"
+        TEXT topic "NOT NULL"
+        VARCHAR status "NOT NULL DEFAULT pending"
+        VARCHAR topology_type "graph_mesh star chain tree"
+        VARCHAR coordination_protocol "cpde dpde adaptive"
+        JSONB config "DEFAULT {}"
+        VARCHAR initiated_by
+        TIMESTAMPTZ created_at "DEFAULT NOW()"
+        TIMESTAMPTZ updated_at "DEFAULT NOW() auto-trigger"
+        TIMESTAMPTZ completed_at
+        INTEGER total_rounds "DEFAULT 0"
+        DECIMAL final_consensus_score "DECIMAL(5,4)"
+        JSONB outcome "DEFAULT {}"
+        JSONB metadata "DEFAULT {}"
+    }
+
+    debate_turns {
+        UUID id PK "gen_random_uuid()"
+        UUID session_id FK "NOT NULL CASCADE"
+        INTEGER round "NOT NULL 1-based"
+        VARCHAR phase "NOT NULL CHECK constraint"
+        VARCHAR agent_id "NOT NULL"
+        VARCHAR agent_role
+        VARCHAR provider
+        VARCHAR model
+        TEXT content
+        DECIMAL confidence "DECIMAL(5,4)"
+        JSONB tool_calls "DEFAULT []"
+        JSONB test_results "DEFAULT {}"
+        JSONB reflections "DEFAULT [] Reflexion episodic memory"
+        JSONB metadata "DEFAULT {}"
+        TIMESTAMPTZ created_at "DEFAULT NOW()"
+        INTEGER response_time_ms
+    }
+
+    code_versions {
+        UUID id PK "gen_random_uuid()"
+        UUID session_id FK "NOT NULL CASCADE"
+        UUID turn_id FK "SET NULL on delete"
+        VARCHAR language
+        TEXT code "NOT NULL"
+        INTEGER version_number "NOT NULL"
+        DECIMAL quality_score "DECIMAL(5,4)"
+        DECIMAL test_pass_rate "DECIMAL(5,4)"
+        JSONB metrics "DEFAULT {}"
+        TEXT diff_from_previous
+        TIMESTAMPTZ created_at "DEFAULT NOW()"
+    }
+
+    debate_sessions ||--o{ debate_turns : "has many turns"
+    debate_sessions ||--o{ code_versions : "has many versions"
+    debate_turns ||--o{ code_versions : "may produce versions"

@@ -1,0 +1,44 @@
+%% HelixAgent Debate: Reflexion Loop (Verbal RL)
+%% Shows the retry-and-learn cycle with episodic memory and accumulated wisdom.
+
+graph TD
+    Start([ReflexionLoop.Execute]) --> HasCode{Initial code<br/>provided?}
+    HasCode -->|yes| RunTests
+    HasCode -->|no| GenInitial[CodeGenerator generates<br/>initial code]
+    GenInitial --> RunTests
+
+    RunTests[TestExecutor.Execute<br/>Run tests against current code] --> CheckPass{All tests<br/>passed?}
+
+    CheckPass -->|yes| CheckConf{Confidence >= threshold<br/>0.95 default?}
+    CheckConf -->|yes| Success([Return ReflexionResult<br/>AllPassed: true])
+    CheckConf -->|no| NeedImprove
+
+    CheckPass -->|no| NeedImprove[Collect error messages<br/>from failed tests]
+
+    NeedImprove --> GenReflection[ReflectionGenerator.Generate<br/>LLM analysis OR fallback]
+
+    GenReflection --> StoreEpisode[Store Episode in<br/>EpisodicMemoryBuffer]
+
+    StoreEpisode --> AccumReflection[Accumulate Reflection<br/>in reflections list]
+
+    AccumReflection --> CheckMax{Attempt >= MaxAttempts<br/>3 default?}
+
+    CheckMax -->|yes| MaxReached([Return ReflexionResult<br/>AllPassed: false])
+
+    CheckMax -->|no| GenImproved[CodeGenerator generates<br/>improved code using<br/>accumulated reflections]
+
+    GenImproved --> RunTests
+
+    RunTests -.->|timeout| TimedOut([Return ReflexionResult<br/>timed out])
+
+    StoreEpisode -.-> Wisdom[AccumulatedWisdom<br/>ExtractFromEpisodes]
+    Wisdom -.-> WisdomStore[(Cross-session<br/>Wisdom Store)]
+    WisdomStore -.->|GetRelevant| GenImproved
+
+    style Success fill:#c8e6c9,stroke:#2e7d32
+    style MaxReached fill:#fff9c4,stroke:#f9a825
+    style TimedOut fill:#ffcdd2,stroke:#b71c1c
+    style GenReflection fill:#e1f5fe,stroke:#0288d1
+    style StoreEpisode fill:#f3e5f5,stroke:#7b1fa2
+    style Wisdom fill:#e0f2f1,stroke:#00695c
+    style WisdomStore fill:#e0f2f1,stroke:#00695c

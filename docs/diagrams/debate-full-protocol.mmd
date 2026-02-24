@@ -1,0 +1,43 @@
+%% HelixAgent Debate: Full 8-Phase Protocol
+%% Shows the complete debate pipeline with decision points and round looping.
+
+graph TD
+    Start([Debate Initiated]) --> Config[Load DebateConfig<br/>topology, max_rounds, timeout]
+    Config --> Round{Round <= MaxRounds?}
+
+    Round -->|yes| P1[Phase 1: Dehallucination<br/>Clarify task, reduce ambiguity]
+    Round -->|no| FinalResult([Return DebateResult])
+
+    P1 --> P2[Phase 2: Self-Evolvement<br/>Self-test and refine before debate]
+    P2 --> P3[Phase 3: Proposal<br/>Generate initial solutions]
+    P3 --> P4[Phase 4: Critique<br/>Identify weaknesses and flaws]
+    P4 --> P5[Phase 5: Review<br/>Evaluate quality of proposals]
+    P5 --> P6[Phase 6: Optimization<br/>Synthesize and improve best ideas]
+    P6 --> P7[Phase 7: Adversarial<br/>Red Team attack / Blue Team defend]
+    P7 --> P8[Phase 8: Convergence<br/>Vote and build consensus]
+
+    P8 --> EarlyExit{Early exit enabled<br/>AND consensus >= threshold?}
+    EarlyExit -->|yes| EarlyResult([Return DebateResult<br/>early_consensus])
+    EarlyExit -->|no| NextRound[Increment Round]
+    NextRound --> Round
+
+    P1 -.->|timeout| Timeout([Return DebateResult<br/>timeout])
+    P2 -.->|timeout| Timeout
+    P3 -.->|timeout| Timeout
+    P4 -.->|timeout| Timeout
+    P5 -.->|timeout| Timeout
+    P6 -.->|timeout| Timeout
+    P7 -.->|timeout| Timeout
+    P8 -.->|timeout| Timeout
+
+    style P1 fill:#e1f5fe,stroke:#0288d1
+    style P2 fill:#e1f5fe,stroke:#0288d1
+    style P3 fill:#e8f5e9,stroke:#388e3c
+    style P4 fill:#fff3e0,stroke:#f57c00
+    style P5 fill:#f3e5f5,stroke:#7b1fa2
+    style P6 fill:#e8f5e9,stroke:#388e3c
+    style P7 fill:#ffebee,stroke:#c62828
+    style P8 fill:#e0f2f1,stroke:#00695c
+    style EarlyResult fill:#c8e6c9,stroke:#2e7d32
+    style FinalResult fill:#c8e6c9,stroke:#2e7d32
+    style Timeout fill:#ffcdd2,stroke:#b71c1c
