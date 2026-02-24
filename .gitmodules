@@ -346,3 +346,6 @@
 [submodule "cli_agents/opencode-cli"]
 	path = cli_agents/opencode-cli
 	url = https://github.com/anomalyco/opencode
+[submodule "HelixMemory"]
+	path = HelixMemory
+	url = git@github.com:HelixDevelopment/HelixMemory.git
