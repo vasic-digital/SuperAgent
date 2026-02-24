@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
@@ -168,9 +169,13 @@ func (h *DiscoveryHandler) TriggerDiscovery(c *gin.Context) {
 		}
 	}
 
-	// Trigger discovery in background
+	// Trigger discovery in background.
+	// The discovery service manages its own goroutine lifecycle via stopCh/wg,
+	// so cleanup happens when Stop() is called during server shutdown.
 	go func() {
-		_ = h.discoveryService.Start(credentials)
+		if err := h.discoveryService.Start(credentials); err != nil {
+			log.Printf("Discovery trigger failed: %v", err)
+		}
 	}()
 
 	c.JSON(http.StatusOK, gin.H{

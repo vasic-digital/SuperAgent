@@ -273,6 +273,8 @@ func (m *LLMMetrics) RecordRAGRetrieval(ctx context.Context, resultCount int, la
 var (
 	globalMetrics *LLMMetrics
 	metricsOnce   sync.Once
+	metricsMu     sync.Mutex
+	metricsClosed bool
 )
 
 // InitGlobalMetrics initializes the global metrics
@@ -290,4 +292,21 @@ func GetMetrics() *LLMMetrics {
 		globalMetrics, _ = NewLLMMetrics("helixagent")
 	}
 	return globalMetrics
+}
+
+// ShutdownMetrics gracefully shuts down the global metrics and releases resources.
+// It is safe to call multiple times (idempotent).
+func ShutdownMetrics() {
+	metricsMu.Lock()
+	defer metricsMu.Unlock()
+
+	if metricsClosed || globalMetrics == nil {
+		return
+	}
+	metricsClosed = true
+
+	// The OpenTelemetry meter does not require explicit Close,
+	// but we nil the global to prevent further metric recording
+	// after shutdown and to allow GC.
+	globalMetrics = nil
 }

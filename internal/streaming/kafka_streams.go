@@ -22,6 +22,7 @@ type ConversationStreamProcessor struct {
 	running     bool
 	mu          sync.RWMutex
 	stopChan    chan struct{}
+	stopOnce    sync.Once // Prevents double-close panic on stopChan
 	wg          sync.WaitGroup
 
 	// Stream processing workers
@@ -362,7 +363,7 @@ func (csp *ConversationStreamProcessor) publishAnalytics(ctx context.Context, an
 	return csp.kafkaBroker.Publish(ctx, TopicAnalyticsDebates, msg)
 }
 
-// Stop stops the stream processor
+// Stop stops the stream processor. It is safe to call multiple times.
 func (csp *ConversationStreamProcessor) Stop() error {
 	csp.mu.Lock()
 	defer csp.mu.Unlock()
@@ -373,7 +374,12 @@ func (csp *ConversationStreamProcessor) Stop() error {
 
 	csp.logger.Info("Stopping stream processor...")
 
-	close(csp.stopChan)
+	// Use sync.Once to prevent double-close panic on stopChan.
+	// This can happen when both the context cancellation goroutine
+	// (in Start) and an explicit Stop() call race.
+	csp.stopOnce.Do(func() {
+		close(csp.stopChan)
+	})
 	csp.wg.Wait()
 
 	// Close state store

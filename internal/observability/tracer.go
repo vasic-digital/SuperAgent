@@ -379,8 +379,10 @@ func (t *LLMTracer) StartToolExecution(ctx context.Context, toolName string) (co
 
 // Global tracer instance
 var (
-	globalTracer *LLMTracer
-	tracerOnce   sync.Once
+	globalTracer  *LLMTracer
+	tracerOnce    sync.Once
+	tracerMu      sync.Mutex
+	tracerClosed  bool
 )
 
 // InitGlobalTracer initializes the global tracer
@@ -399,4 +401,24 @@ func GetTracer() *LLMTracer {
 		globalTracer, _ = NewLLMTracer(nil)
 	}
 	return globalTracer
+}
+
+// ShutdownTracer gracefully shuts down the global tracer and releases resources.
+// It is safe to call multiple times (idempotent).
+func ShutdownTracer() {
+	tracerMu.Lock()
+	defer tracerMu.Unlock()
+
+	if tracerClosed || globalTracer == nil {
+		return
+	}
+	tracerClosed = true
+
+	// Reset the global tracer so GetTracer returns a fresh one if re-initialized.
+	// The sync.Once is intentionally not reset to prevent re-initialization races;
+	// callers should create a new tracer via NewLLMTracer if needed after shutdown.
+	globalTracer.mu.Lock()
+	globalTracer.initialized = false
+	globalTracer.mu.Unlock()
+	globalTracer = nil
 }

@@ -1,6 +1,7 @@
 package background
 
 import (
+	"context"
 	"fmt"
 	"runtime"
 	"sync"
@@ -327,7 +328,7 @@ func (m *ProcessResourceMonitor) monitorLoop(pm *processMonitor) {
 
 			// Save to repository
 			if m.repository != nil {
-				if err := m.repository.SaveResourceSnapshot(nil, snapshot); err != nil {
+				if err := m.repository.SaveResourceSnapshot(context.Background(), snapshot); err != nil {
 					m.logger.WithError(err).WithField("task_id", pm.taskID).Debug("Failed to save resource snapshot")
 				}
 			}

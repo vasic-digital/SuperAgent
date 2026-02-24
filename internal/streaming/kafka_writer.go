@@ -76,6 +76,7 @@ type KafkaStreamWriter struct {
 	index    int
 	eventCh  chan *StreamEvent
 	stopCh   chan struct{}
+	stopOnce sync.Once // Prevents double-close panic on Stop()
 	wg       sync.WaitGroup
 	mu       sync.Mutex
 	started  bool
@@ -125,11 +126,14 @@ func (w *KafkaStreamWriter) Start() {
 }
 
 // Stop stops the stream writer and flushes remaining events.
+// It is safe to call multiple times (idempotent).
 func (w *KafkaStreamWriter) Stop() {
-	close(w.stopCh)
-	if w.eventCh != nil {
-		close(w.eventCh)
-	}
+	w.stopOnce.Do(func() {
+		close(w.stopCh)
+		if w.eventCh != nil {
+			close(w.eventCh)
+		}
+	})
 	w.wg.Wait()
 }
 
