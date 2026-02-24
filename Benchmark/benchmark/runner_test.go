@@ -1985,3 +1985,712 @@ func TestStandardBenchmarkRunner_ConcurrentAccess(t *testing.T) {
 		t.Errorf("concurrent access error: %v", err)
 	}
 }
+
+// ===========================================================================
+// integration.go tests
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// DefaultBenchmarkSystemConfig
+// ---------------------------------------------------------------------------
+
+func TestDefaultBenchmarkSystemConfig_ReturnsNonNil(t *testing.T) {
+	cfg := DefaultBenchmarkSystemConfig()
+	require.NotNil(t, cfg)
+}
+
+func TestDefaultBenchmarkSystemConfig_Values(t *testing.T) {
+	cfg := DefaultBenchmarkSystemConfig()
+	assert.True(t, cfg.EnableDebateEvaluation)
+	assert.True(t, cfg.UseVerifierScores)
+	assert.True(t, cfg.AutoSelectProvider)
+	assert.Equal(t, 4, cfg.DefaultConcurrency)
+}
+
+// ---------------------------------------------------------------------------
+// Mock implementations for integration tests
+// ---------------------------------------------------------------------------
+
+type mockDebateServiceForBenchmark struct {
+	result *DebateResultForBenchmark
+	err    error
+}
+
+func (m *mockDebateServiceForBenchmark) RunDebate(_ context.Context, _ string) (*DebateResultForBenchmark, error) {
+	return m.result, m.err
+}
+
+type mockVerifierServiceForBenchmark struct {
+	scores     map[string]float64
+	healthy    map[string]bool
+	topProviders []string
+}
+
+func (m *mockVerifierServiceForBenchmark) GetProviderScore(name string) float64 {
+	if m.scores != nil {
+		return m.scores[name]
+	}
+	return 0
+}
+
+func (m *mockVerifierServiceForBenchmark) IsProviderHealthy(name string) bool {
+	if m.healthy != nil {
+		return m.healthy[name]
+	}
+	return false
+}
+
+func (m *mockVerifierServiceForBenchmark) GetTopProviders(_ int) []string {
+	return m.topProviders
+}
+
+type mockProviderServiceForBenchmark struct {
+	response string
+	tokens   int
+	err      error
+	provider LLMProvider
+}
+
+func (m *mockProviderServiceForBenchmark) Complete(_ context.Context, _, _, _, _ string) (string, int, error) {
+	return m.response, m.tokens, m.err
+}
+
+func (m *mockProviderServiceForBenchmark) GetProvider(_ string) LLMProvider {
+	return m.provider
+}
+
+// ---------------------------------------------------------------------------
+// NewDebateAdapterForBenchmark / EvaluateResponse
+// ---------------------------------------------------------------------------
+
+func TestNewDebateAdapterForBenchmark(t *testing.T) {
+	ds := &mockDebateServiceForBenchmark{}
+	adapter := NewDebateAdapterForBenchmark(ds, nil)
+	require.NotNil(t, adapter)
+	assert.NotNil(t, adapter.service)
+}
+
+func TestDebateAdapterForBenchmark_EvaluateResponse_NilService(t *testing.T) {
+	adapter := NewDebateAdapterForBenchmark(nil, nil)
+	_, _, err := adapter.EvaluateResponse(context.Background(), &BenchmarkTask{}, "response")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "debate service not available")
+}
+
+func TestDebateAdapterForBenchmark_EvaluateResponse_Success_JSON(t *testing.T) {
+	ds := &mockDebateServiceForBenchmark{
+		result: &DebateResultForBenchmark{
+			ID:         "d-1",
+			Consensus:  `The evaluation is: {"score": 0.85, "passed": true}`,
+			Confidence: 0.9,
+		},
+	}
+	adapter := NewDebateAdapterForBenchmark(ds, nil)
+
+	score, passed, err := adapter.EvaluateResponse(context.Background(), &BenchmarkTask{
+		Name:        "test task",
+		Description: "desc",
+		Expected:    "expected",
+	}, "response text")
+	require.NoError(t, err)
+	assert.Equal(t, 0.85, score)
+	assert.True(t, passed)
+}
+
+func TestDebateAdapterForBenchmark_EvaluateResponse_FallbackToConfidence(t *testing.T) {
+	ds := &mockDebateServiceForBenchmark{
+		result: &DebateResultForBenchmark{
+			ID:         "d-2",
+			Consensus:  "no json here at all",
+			Confidence: 0.75,
+		},
+	}
+	adapter := NewDebateAdapterForBenchmark(ds, nil)
+
+	score, passed, err := adapter.EvaluateResponse(context.Background(), &BenchmarkTask{}, "response")
+	require.NoError(t, err)
+	assert.Equal(t, 0.75, score)
+	assert.True(t, passed) // 0.75 >= 0.7
+}
+
+func TestDebateAdapterForBenchmark_EvaluateResponse_FallbackToConfidence_Below70(t *testing.T) {
+	ds := &mockDebateServiceForBenchmark{
+		result: &DebateResultForBenchmark{
+			Consensus:  "no json",
+			Confidence: 0.6,
+		},
+	}
+	adapter := NewDebateAdapterForBenchmark(ds, nil)
+
+	score, passed, err := adapter.EvaluateResponse(context.Background(), &BenchmarkTask{}, "response")
+	require.NoError(t, err)
+	assert.Equal(t, 0.6, score)
+	assert.False(t, passed) // 0.6 < 0.7
+}
+
+func TestDebateAdapterForBenchmark_EvaluateResponse_ServiceError(t *testing.T) {
+	ds := &mockDebateServiceForBenchmark{err: fmt.Errorf("debate failed")}
+	adapter := NewDebateAdapterForBenchmark(ds, nil)
+
+	_, _, err := adapter.EvaluateResponse(context.Background(), &BenchmarkTask{}, "response")
+	require.Error(t, err)
+}
+
+func TestDebateAdapterForBenchmark_ParseEvaluationResult_ValidJSON(t *testing.T) {
+	adapter := NewDebateAdapterForBenchmark(nil, nil)
+	score, passed := adapter.parseEvaluationResult(`{"score": 0.95, "passed": true}`, 0.5)
+	assert.Equal(t, 0.95, score)
+	assert.True(t, passed)
+}
+
+func TestDebateAdapterForBenchmark_ParseEvaluationResult_InvalidJSON(t *testing.T) {
+	adapter := NewDebateAdapterForBenchmark(nil, nil)
+	score, passed := adapter.parseEvaluationResult(`{invalid json}`, 0.8)
+	assert.Equal(t, 0.8, score) // Falls back to confidence
+	assert.True(t, passed)      // 0.8 >= 0.7
+}
+
+func TestDebateAdapterForBenchmark_ParseEvaluationResult_NoJSON(t *testing.T) {
+	adapter := NewDebateAdapterForBenchmark(nil, nil)
+	score, passed := adapter.parseEvaluationResult("just text no braces", 0.3)
+	assert.Equal(t, 0.3, score)
+	assert.False(t, passed) // 0.3 < 0.7
+}
+
+func TestDebateAdapterForBenchmark_ParseEvaluationResult_WrappedJSON(t *testing.T) {
+	adapter := NewDebateAdapterForBenchmark(nil, nil)
+	score, passed := adapter.parseEvaluationResult(
+		`Here is my evaluation: {"score": 0.72, "passed": false} done`, 0.5)
+	assert.Equal(t, 0.72, score)
+	assert.False(t, passed)
+}
+
+// ---------------------------------------------------------------------------
+// NewVerifierAdapterForBenchmark / SelectBestProvider
+// ---------------------------------------------------------------------------
+
+func TestNewVerifierAdapterForBenchmark(t *testing.T) {
+	vs := &mockVerifierServiceForBenchmark{}
+	adapter := NewVerifierAdapterForBenchmark(vs, nil)
+	require.NotNil(t, adapter)
+}
+
+func TestVerifierAdapterForBenchmark_SelectBestProvider_NilService(t *testing.T) {
+	adapter := NewVerifierAdapterForBenchmark(nil, nil)
+	name, score := adapter.SelectBestProvider()
+	assert.Empty(t, name)
+	assert.Equal(t, float64(0), score)
+}
+
+func TestVerifierAdapterForBenchmark_SelectBestProvider_NoProviders(t *testing.T) {
+	vs := &mockVerifierServiceForBenchmark{topProviders: []string{}}
+	adapter := NewVerifierAdapterForBenchmark(vs, nil)
+	name, score := adapter.SelectBestProvider()
+	assert.Empty(t, name)
+	assert.Equal(t, float64(0), score)
+}
+
+func TestVerifierAdapterForBenchmark_SelectBestProvider_SelectsHighestScore(t *testing.T) {
+	vs := &mockVerifierServiceForBenchmark{
+		topProviders: []string{"claude", "openai", "gemini"},
+		scores:       map[string]float64{"claude": 0.9, "openai": 0.8, "gemini": 0.85},
+		healthy:      map[string]bool{"claude": true, "openai": true, "gemini": true},
+	}
+	adapter := NewVerifierAdapterForBenchmark(vs, nil)
+	name, score := adapter.SelectBestProvider()
+	assert.Equal(t, "claude", name)
+	assert.Equal(t, 0.9, score)
+}
+
+func TestVerifierAdapterForBenchmark_SelectBestProvider_SkipsUnhealthy(t *testing.T) {
+	vs := &mockVerifierServiceForBenchmark{
+		topProviders: []string{"claude", "openai"},
+		scores:       map[string]float64{"claude": 0.9, "openai": 0.8},
+		healthy:      map[string]bool{"claude": false, "openai": true},
+	}
+	adapter := NewVerifierAdapterForBenchmark(vs, nil)
+	name, score := adapter.SelectBestProvider()
+	assert.Equal(t, "openai", name)
+	assert.Equal(t, 0.8, score)
+}
+
+func TestVerifierAdapterForBenchmark_SelectBestProvider_AllUnhealthy(t *testing.T) {
+	vs := &mockVerifierServiceForBenchmark{
+		topProviders: []string{"claude", "openai"},
+		scores:       map[string]float64{"claude": 0.9, "openai": 0.8},
+		healthy:      map[string]bool{"claude": false, "openai": false},
+	}
+	adapter := NewVerifierAdapterForBenchmark(vs, nil)
+	name, score := adapter.SelectBestProvider()
+	assert.Empty(t, name)
+	assert.Equal(t, float64(0), score)
+}
+
+func TestVerifierAdapterForBenchmark_GetProviderScoresForComparison_NilService(t *testing.T) {
+	adapter := NewVerifierAdapterForBenchmark(nil, nil)
+	scores := adapter.GetProviderScoresForComparison()
+	assert.Nil(t, scores)
+}
+
+func TestVerifierAdapterForBenchmark_GetProviderScoresForComparison_Success(t *testing.T) {
+	vs := &mockVerifierServiceForBenchmark{
+		topProviders: []string{"claude", "openai"},
+		scores:       map[string]float64{"claude": 0.9, "openai": 0.8},
+	}
+	adapter := NewVerifierAdapterForBenchmark(vs, nil)
+	scores := adapter.GetProviderScoresForComparison()
+	require.NotNil(t, scores)
+	assert.Len(t, scores, 2)
+	assert.Equal(t, 0.9, scores["claude"])
+	assert.Equal(t, 0.8, scores["openai"])
+}
+
+// ---------------------------------------------------------------------------
+// NewProviderAdapterForBenchmark / Complete / GetName
+// ---------------------------------------------------------------------------
+
+func TestNewProviderAdapterForBenchmark(t *testing.T) {
+	svc := &mockProviderServiceForBenchmark{}
+	adapter := NewProviderAdapterForBenchmark(svc, "claude", "sonnet", nil)
+	require.NotNil(t, adapter)
+	assert.Equal(t, "claude", adapter.providerName)
+	assert.Equal(t, "sonnet", adapter.modelName)
+}
+
+func TestProviderAdapterForBenchmark_Complete_NilService(t *testing.T) {
+	adapter := NewProviderAdapterForBenchmark(nil, "claude", "sonnet", nil)
+	_, _, err := adapter.Complete(context.Background(), "prompt", "system")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "provider service not available")
+}
+
+func TestProviderAdapterForBenchmark_Complete_Success(t *testing.T) {
+	svc := &mockProviderServiceForBenchmark{
+		response: "test response",
+		tokens:   50,
+	}
+	adapter := NewProviderAdapterForBenchmark(svc, "claude", "sonnet", nil)
+	resp, tokens, err := adapter.Complete(context.Background(), "prompt", "system")
+	require.NoError(t, err)
+	assert.Equal(t, "test response", resp)
+	assert.Equal(t, 50, tokens)
+}
+
+func TestProviderAdapterForBenchmark_GetName(t *testing.T) {
+	adapter := NewProviderAdapterForBenchmark(nil, "my-provider", "model", nil)
+	assert.Equal(t, "my-provider", adapter.GetName())
+}
+
+// ---------------------------------------------------------------------------
+// NewBenchmarkSystem
+// ---------------------------------------------------------------------------
+
+func TestNewBenchmarkSystem_NilConfig(t *testing.T) {
+	bs := NewBenchmarkSystem(nil, nil)
+	require.NotNil(t, bs)
+	assert.NotNil(t, bs.config)
+	assert.NotNil(t, bs.logger)
+}
+
+func TestNewBenchmarkSystem_CustomConfig(t *testing.T) {
+	cfg := &BenchmarkSystemConfig{
+		EnableDebateEvaluation: false,
+		DefaultConcurrency:     8,
+	}
+	bs := NewBenchmarkSystem(cfg, nil)
+	require.NotNil(t, bs)
+	assert.False(t, bs.config.EnableDebateEvaluation)
+	assert.Equal(t, 8, bs.config.DefaultConcurrency)
+}
+
+// ---------------------------------------------------------------------------
+// BenchmarkSystem.Initialize
+// ---------------------------------------------------------------------------
+
+func TestBenchmarkSystem_Initialize_NilProvider(t *testing.T) {
+	bs := NewBenchmarkSystem(nil, nil)
+	err := bs.Initialize(nil)
+	require.NoError(t, err)
+	assert.NotNil(t, bs.runner)
+}
+
+func TestBenchmarkSystem_Initialize_WithProvider(t *testing.T) {
+	svc := &mockProviderServiceForBenchmark{response: "test"}
+	adapter := NewProviderAdapterForBenchmark(svc, "claude", "sonnet", nil)
+	bs := NewBenchmarkSystem(nil, nil)
+	err := bs.Initialize(adapter)
+	require.NoError(t, err)
+	assert.NotNil(t, bs.runner)
+	assert.NotNil(t, bs.providerAdapter)
+}
+
+func TestBenchmarkSystem_Initialize_SetsDebateEvaluator(t *testing.T) {
+	debateSvc := &mockDebateServiceForBenchmark{
+		result: &DebateResultForBenchmark{Confidence: 0.8},
+	}
+	bs := NewBenchmarkSystem(nil, nil)
+	bs.SetDebateService(debateSvc)
+	err := bs.Initialize(nil)
+	require.NoError(t, err)
+	// The debate adapter should be set on the runner
+	runner, ok := bs.runner.(*StandardBenchmarkRunner)
+	require.True(t, ok)
+	assert.NotNil(t, runner.debateEval)
+}
+
+func TestBenchmarkSystem_Initialize_DebateDisabled(t *testing.T) {
+	debateSvc := &mockDebateServiceForBenchmark{
+		result: &DebateResultForBenchmark{Confidence: 0.8},
+	}
+	cfg := &BenchmarkSystemConfig{EnableDebateEvaluation: false}
+	bs := NewBenchmarkSystem(cfg, nil)
+	bs.SetDebateService(debateSvc)
+	err := bs.Initialize(nil)
+	require.NoError(t, err)
+	runner, ok := bs.runner.(*StandardBenchmarkRunner)
+	require.True(t, ok)
+	assert.Nil(t, runner.debateEval) // Debate disabled
+}
+
+// ---------------------------------------------------------------------------
+// BenchmarkSystem.SetDebateService
+// ---------------------------------------------------------------------------
+
+func TestBenchmarkSystem_SetDebateService_BeforeInit(t *testing.T) {
+	ds := &mockDebateServiceForBenchmark{}
+	bs := NewBenchmarkSystem(nil, nil)
+	bs.SetDebateService(ds)
+	assert.NotNil(t, bs.debateAdapter)
+}
+
+func TestBenchmarkSystem_SetDebateService_AfterInit(t *testing.T) {
+	ds := &mockDebateServiceForBenchmark{}
+	bs := NewBenchmarkSystem(nil, nil)
+	_ = bs.Initialize(nil)
+	bs.SetDebateService(ds)
+	assert.NotNil(t, bs.debateAdapter)
+	// Runner should have debate evaluator set
+	runner, ok := bs.runner.(*StandardBenchmarkRunner)
+	require.True(t, ok)
+	assert.NotNil(t, runner.debateEval)
+}
+
+// ---------------------------------------------------------------------------
+// BenchmarkSystem.SetVerifierService
+// ---------------------------------------------------------------------------
+
+func TestBenchmarkSystem_SetVerifierService(t *testing.T) {
+	vs := &mockVerifierServiceForBenchmark{}
+	bs := NewBenchmarkSystem(nil, nil)
+	bs.SetVerifierService(vs)
+	assert.NotNil(t, bs.verifierAdapter)
+}
+
+// ---------------------------------------------------------------------------
+// BenchmarkSystem.GetRunner
+// ---------------------------------------------------------------------------
+
+func TestBenchmarkSystem_GetRunner_BeforeInit(t *testing.T) {
+	bs := NewBenchmarkSystem(nil, nil)
+	assert.Nil(t, bs.GetRunner())
+}
+
+func TestBenchmarkSystem_GetRunner_AfterInit(t *testing.T) {
+	bs := NewBenchmarkSystem(nil, nil)
+	_ = bs.Initialize(nil)
+	assert.NotNil(t, bs.GetRunner())
+}
+
+// ---------------------------------------------------------------------------
+// BenchmarkSystem.RunBenchmarkWithBestProvider
+// ---------------------------------------------------------------------------
+
+func TestBenchmarkSystem_RunBenchmarkWithBestProvider_NoVerifier(t *testing.T) {
+	provider := &mockLLMProvider{name: "test", response: "B", tokens: 10}
+	bs := NewBenchmarkSystem(nil, nil)
+	bs.runner = NewStandardBenchmarkRunner(provider, nil)
+
+	run, err := bs.RunBenchmarkWithBestProvider(context.Background(), BenchmarkTypeMMLU, nil)
+	require.NoError(t, err)
+	require.NotNil(t, run)
+	assert.Equal(t, "default", run.ProviderName)
+	assert.Equal(t, BenchmarkTypeMMLU, run.BenchmarkType)
+}
+
+func TestBenchmarkSystem_RunBenchmarkWithBestProvider_WithVerifier(t *testing.T) {
+	provider := &mockLLMProvider{name: "test", response: "B", tokens: 10}
+	vs := &mockVerifierServiceForBenchmark{
+		topProviders: []string{"claude", "openai"},
+		scores:       map[string]float64{"claude": 0.9, "openai": 0.8},
+		healthy:      map[string]bool{"claude": true, "openai": true},
+	}
+	bs := NewBenchmarkSystem(nil, nil)
+	bs.runner = NewStandardBenchmarkRunner(provider, nil)
+	bs.verifierAdapter = NewVerifierAdapterForBenchmark(vs, nil)
+
+	run, err := bs.RunBenchmarkWithBestProvider(context.Background(), BenchmarkTypeMMLU, nil)
+	require.NoError(t, err)
+	require.NotNil(t, run)
+	assert.Equal(t, "claude", run.ProviderName)
+}
+
+func TestBenchmarkSystem_RunBenchmarkWithBestProvider_CustomConfig(t *testing.T) {
+	provider := &mockLLMProvider{name: "test", response: "B", tokens: 10}
+	bs := NewBenchmarkSystem(nil, nil)
+	bs.runner = NewStandardBenchmarkRunner(provider, nil)
+
+	cfg := DefaultBenchmarkConfig()
+	cfg.MaxTasks = 1
+	run, err := bs.RunBenchmarkWithBestProvider(context.Background(), BenchmarkTypeMMLU, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, run)
+}
+
+// ---------------------------------------------------------------------------
+// BenchmarkSystem.CompareProviders
+// ---------------------------------------------------------------------------
+
+func TestBenchmarkSystem_CompareProviders(t *testing.T) {
+	provider := &mockLLMProvider{name: "test", response: "B", tokens: 10}
+	bs := NewBenchmarkSystem(nil, nil)
+	bs.runner = NewStandardBenchmarkRunner(provider, nil)
+
+	runs, err := bs.CompareProviders(context.Background(), BenchmarkTypeMMLU,
+		[]string{"claude", "openai"}, nil)
+	require.NoError(t, err)
+	assert.Len(t, runs, 2)
+	assert.Equal(t, "claude", runs[0].ProviderName)
+	assert.Equal(t, "openai", runs[1].ProviderName)
+}
+
+func TestBenchmarkSystem_CompareProviders_NilConfig(t *testing.T) {
+	provider := &mockLLMProvider{name: "test", response: "B", tokens: 10}
+	bs := NewBenchmarkSystem(nil, nil)
+	bs.runner = NewStandardBenchmarkRunner(provider, nil)
+
+	runs, err := bs.CompareProviders(context.Background(), BenchmarkTypeMMLU,
+		[]string{"provider1"}, nil)
+	require.NoError(t, err)
+	assert.Len(t, runs, 1)
+}
+
+// ---------------------------------------------------------------------------
+// BenchmarkSystem.GenerateLeaderboard
+// ---------------------------------------------------------------------------
+
+func TestBenchmarkSystem_GenerateLeaderboard_NoRuns(t *testing.T) {
+	provider := &mockLLMProvider{name: "test", response: "B", tokens: 10}
+	bs := NewBenchmarkSystem(nil, nil)
+	bs.runner = NewStandardBenchmarkRunner(provider, nil)
+
+	lb, err := bs.GenerateLeaderboard(context.Background(), BenchmarkTypeMMLU)
+	require.NoError(t, err)
+	require.NotNil(t, lb)
+	assert.Equal(t, BenchmarkTypeMMLU, lb.BenchmarkType)
+	assert.Empty(t, lb.Entries)
+}
+
+func TestBenchmarkSystem_GenerateLeaderboard_WithCompletedRuns(t *testing.T) {
+	provider := &mockLLMProvider{name: "test", response: "B", tokens: 10}
+	bs := NewBenchmarkSystem(nil, nil)
+	runner := NewStandardBenchmarkRunner(provider, nil)
+	bs.runner = runner
+
+	// Create and manually populate completed runs
+	now := time.Now()
+	run1 := &BenchmarkRun{
+		ID:            "run-1",
+		BenchmarkType: BenchmarkTypeMMLU,
+		ProviderName:  "claude",
+		ModelName:     "sonnet",
+		Status:        BenchmarkStatusCompleted,
+		Summary: &BenchmarkSummary{
+			TotalTasks:     10,
+			PassedTasks:    8,
+			PassRate:       0.8,
+			AverageScore:   0.85,
+			AverageLatency: 100 * time.Millisecond,
+		},
+		CreatedAt: now,
+	}
+	run2 := &BenchmarkRun{
+		ID:            "run-2",
+		BenchmarkType: BenchmarkTypeMMLU,
+		ProviderName:  "openai",
+		ModelName:     "gpt-4",
+		Status:        BenchmarkStatusCompleted,
+		Summary: &BenchmarkSummary{
+			TotalTasks:     10,
+			PassedTasks:    9,
+			PassRate:       0.9,
+			AverageScore:   0.92,
+			AverageLatency: 200 * time.Millisecond,
+		},
+		CreatedAt: now,
+	}
+
+	runner.mu.Lock()
+	runner.runs["run-1"] = run1
+	runner.runs["run-2"] = run2
+	runner.mu.Unlock()
+
+	lb, err := bs.GenerateLeaderboard(context.Background(), BenchmarkTypeMMLU)
+	require.NoError(t, err)
+	require.NotNil(t, lb)
+	assert.Len(t, lb.Entries, 2)
+	// Sorted by pass rate, openai (0.9) should be first
+	assert.Equal(t, 1, lb.Entries[0].Rank)
+	assert.Equal(t, "openai", lb.Entries[0].ProviderName)
+	assert.Equal(t, 2, lb.Entries[1].Rank)
+	assert.Equal(t, "claude", lb.Entries[1].ProviderName)
+}
+
+func TestBenchmarkSystem_GenerateLeaderboard_WithVerifierScores(t *testing.T) {
+	provider := &mockLLMProvider{name: "test", response: "B", tokens: 10}
+	vs := &mockVerifierServiceForBenchmark{
+		topProviders: []string{"claude"},
+		scores:       map[string]float64{"claude": 0.95},
+		healthy:      map[string]bool{"claude": true},
+	}
+	bs := NewBenchmarkSystem(nil, nil)
+	runner := NewStandardBenchmarkRunner(provider, nil)
+	bs.runner = runner
+	bs.verifierAdapter = NewVerifierAdapterForBenchmark(vs, nil)
+
+	now := time.Now()
+	runner.mu.Lock()
+	runner.runs["run-1"] = &BenchmarkRun{
+		ID:            "run-1",
+		BenchmarkType: BenchmarkTypeMMLU,
+		ProviderName:  "claude",
+		Status:        BenchmarkStatusCompleted,
+		Summary:       &BenchmarkSummary{TotalTasks: 5, PassRate: 0.8},
+		CreatedAt:     now,
+	}
+	runner.mu.Unlock()
+
+	lb, err := bs.GenerateLeaderboard(context.Background(), BenchmarkTypeMMLU)
+	require.NoError(t, err)
+	require.Len(t, lb.Entries, 1)
+	assert.Equal(t, 0.95, lb.Entries[0].VerifierScore)
+}
+
+func TestBenchmarkSystem_GenerateLeaderboard_SkipsNilSummary(t *testing.T) {
+	provider := &mockLLMProvider{name: "test", response: "B", tokens: 10}
+	bs := NewBenchmarkSystem(nil, nil)
+	runner := NewStandardBenchmarkRunner(provider, nil)
+	bs.runner = runner
+
+	runner.mu.Lock()
+	runner.runs["run-1"] = &BenchmarkRun{
+		ID:            "run-1",
+		BenchmarkType: BenchmarkTypeMMLU,
+		ProviderName:  "claude",
+		Status:        BenchmarkStatusCompleted,
+		Summary:       nil, // No summary
+		CreatedAt:     time.Now(),
+	}
+	runner.mu.Unlock()
+
+	lb, err := bs.GenerateLeaderboard(context.Background(), BenchmarkTypeMMLU)
+	require.NoError(t, err)
+	assert.Empty(t, lb.Entries)
+}
+
+func TestBenchmarkSystem_GenerateLeaderboard_BestRunPerProvider(t *testing.T) {
+	provider := &mockLLMProvider{name: "test", response: "B", tokens: 10}
+	bs := NewBenchmarkSystem(nil, nil)
+	runner := NewStandardBenchmarkRunner(provider, nil)
+	bs.runner = runner
+
+	now := time.Now()
+	runner.mu.Lock()
+	runner.runs["run-1"] = &BenchmarkRun{
+		ID:            "run-1",
+		BenchmarkType: BenchmarkTypeMMLU,
+		ProviderName:  "claude",
+		Status:        BenchmarkStatusCompleted,
+		Summary:       &BenchmarkSummary{PassRate: 0.7},
+		CreatedAt:     now,
+	}
+	runner.runs["run-2"] = &BenchmarkRun{
+		ID:            "run-2",
+		BenchmarkType: BenchmarkTypeMMLU,
+		ProviderName:  "claude",
+		Status:        BenchmarkStatusCompleted,
+		Summary:       &BenchmarkSummary{PassRate: 0.9},
+		CreatedAt:     now,
+	}
+	runner.mu.Unlock()
+
+	lb, err := bs.GenerateLeaderboard(context.Background(), BenchmarkTypeMMLU)
+	require.NoError(t, err)
+	require.Len(t, lb.Entries, 1) // Only one entry per provider
+	assert.Equal(t, 0.9, lb.Entries[0].PassRate) // Best run
+}
+
+// ---------------------------------------------------------------------------
+// Leaderboard / LeaderboardEntry structs
+// ---------------------------------------------------------------------------
+
+func TestLeaderboard_Fields(t *testing.T) {
+	now := time.Now()
+	lb := Leaderboard{
+		BenchmarkType: BenchmarkTypeMMLU,
+		Entries: []*LeaderboardEntry{
+			{Rank: 1, ProviderName: "claude", PassRate: 0.9},
+		},
+		GeneratedAt: now,
+	}
+	assert.Equal(t, BenchmarkTypeMMLU, lb.BenchmarkType)
+	assert.Len(t, lb.Entries, 1)
+	assert.Equal(t, now, lb.GeneratedAt)
+}
+
+func TestLeaderboardEntry_Fields(t *testing.T) {
+	now := time.Now()
+	entry := LeaderboardEntry{
+		Rank:           1,
+		ProviderName:   "claude",
+		ModelName:      "sonnet",
+		PassRate:       0.9,
+		AverageScore:   0.85,
+		AverageLatency: 100 * time.Millisecond,
+		TotalTasks:     50,
+		VerifierScore:  0.95,
+		RunID:          "run-1",
+		RunDate:        now,
+	}
+	assert.Equal(t, 1, entry.Rank)
+	assert.Equal(t, "claude", entry.ProviderName)
+	assert.Equal(t, 0.95, entry.VerifierScore)
+}
+
+// ---------------------------------------------------------------------------
+// BenchmarkSystemConfig struct
+// ---------------------------------------------------------------------------
+
+func TestBenchmarkSystemConfig_ZeroValue(t *testing.T) {
+	var cfg BenchmarkSystemConfig
+	assert.False(t, cfg.EnableDebateEvaluation)
+	assert.False(t, cfg.UseVerifierScores)
+	assert.False(t, cfg.AutoSelectProvider)
+	assert.Equal(t, 0, cfg.DefaultConcurrency)
+}
+
+// ---------------------------------------------------------------------------
+// DebateResultForBenchmark struct
+// ---------------------------------------------------------------------------
+
+func TestDebateResultForBenchmark_Fields(t *testing.T) {
+	dr := DebateResultForBenchmark{
+		ID:         "d-1",
+		Consensus:  "answer is B",
+		Confidence: 0.85,
+		Votes:      map[string]float64{"p1": 0.9, "p2": 0.8},
+	}
+	assert.Equal(t, "d-1", dr.ID)
+	assert.Equal(t, "answer is B", dr.Consensus)
+	assert.Equal(t, 0.85, dr.Confidence)
+	assert.Len(t, dr.Votes, 2)
+}
