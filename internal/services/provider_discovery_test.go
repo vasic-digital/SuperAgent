@@ -338,8 +338,8 @@ func TestProviderMappingsHasZAI(t *testing.T) {
 			foundVars[mapping.EnvVar] = true
 			assert.Equal(t, "zai", mapping.ProviderName,
 				"ZAI mapping should have provider name 'zai'")
-			assert.Contains(t, mapping.BaseURL, "bigmodel.cn",
-				"ZAI should use Zhipu BigModel API")
+			assert.Contains(t, mapping.BaseURL, "api.z.ai",
+				"ZAI should use ZAI API")
 			assert.Contains(t, mapping.DefaultModel, "glm",
 				"ZAI should default to GLM model")
 			assert.Equal(t, 3, mapping.Priority,
@@ -438,7 +438,7 @@ func TestProviderDiscoveryFindsZAIFromEnv(t *testing.T) {
 			foundZAI = true
 			assert.Equal(t, "zai", p.Name)
 			assert.Equal(t, "zai", p.Type)
-			assert.Contains(t, p.BaseURL, "bigmodel.cn")
+			assert.Contains(t, p.BaseURL, "api.z.ai")
 			break
 		}
 	}

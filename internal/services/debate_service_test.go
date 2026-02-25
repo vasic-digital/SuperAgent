@@ -509,8 +509,12 @@ func TestDebateService_ConductRealDebate_SingleRound(t *testing.T) {
 	assert.Len(t, result.Participants, 2)
 
 	// Verify providers were called
-	assert.Equal(t, 1, mockProvider1.getCallCount())
-	assert.Equal(t, 1, mockProvider2.getCallCount())
+	// One provider is called twice (intent classification + debate), the other once (debate only)
+	// The intent classifier picks the first available provider from ListProviders() (map order is random)
+	totalCalls := mockProvider1.getCallCount() + mockProvider2.getCallCount()
+	assert.Equal(t, 3, totalCalls, "Total calls should be 3 (1 intent + 2 debate)")
+	assert.GreaterOrEqual(t, mockProvider1.getCallCount(), 1, "Provider1 should be called at least once")
+	assert.GreaterOrEqual(t, mockProvider2.getCallCount(), 1, "Provider2 should be called at least once")
 
 	// Verify quality scores are calculated (not hardcoded)
 	assert.NotEqual(t, 0.85, result.QualityScore) // Should be calculated
@@ -561,7 +565,7 @@ func TestDebateService_ConductRealDebate_MultipleRounds(t *testing.T) {
 
 	// Should have 3 rounds
 	assert.Equal(t, 3, result.RoundsConducted)
-	assert.Equal(t, 3, callCount) // One call per round
+	assert.Equal(t, 4, callCount) // 1 for intent classification + 3 rounds
 
 	// All responses should be in AllResponses
 	assert.Len(t, result.AllResponses, 3)
@@ -1584,10 +1588,19 @@ func TestDebateService_ConductRealDebate_ConcurrentProviders(t *testing.T) {
 	// All 5 providers should have responded
 	assert.Len(t, result.AllResponses, 5)
 
-	// All providers should have been called once
-	for name, provider := range providers {
-		assert.Equal(t, 1, provider.getCallCount(), "Provider %s call count", name)
+	// One provider is called twice (intent classification + debate), others once (debate only)
+	// The intent classifier picks the first available provider from ListProviders() (map order is random)
+	providersWithTwoCalls := 0
+	totalCalls := 0
+	for _, provider := range providers {
+		calls := provider.getCallCount()
+		totalCalls += calls
+		if calls == 2 {
+			providersWithTwoCalls++
+		}
 	}
+	assert.Equal(t, 1, providersWithTwoCalls, "Exactly one provider should have 2 calls (intent + debate)")
+	assert.Equal(t, 6, totalCalls, "Total calls should be 6 (1 intent + 5 debate)")
 }
 
 // =============================================================================
@@ -1603,7 +1616,7 @@ func TestDebateService_AnalyzeWithCognee_NoCogneeService(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, analysis)
-	assert.Contains(t, err.Error(), "cognee service not configured")
+	assert.Contains(t, err.Error(), "no memory service configured")
 }
 
 func TestDebateService_GenerateCogneeInsights_NoCogneeService(t *testing.T) {
@@ -1626,7 +1639,7 @@ func TestDebateService_GenerateCogneeInsights_NoCogneeService(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, insights)
-	assert.Contains(t, err.Error(), "cognee service not configured")
+	assert.Contains(t, err.Error(), "no memory service configured")
 }
 
 // =============================================================================
@@ -1699,10 +1712,13 @@ func TestDebateService_FallbackChain_EmptyResponse(t *testing.T) {
 		assert.True(t, fallbackUsed.(bool), "Fallback should be marked as used")
 	}
 
-	// Primary should have been called once (empty response)
-	assert.Equal(t, 1, primaryProvider.getCallCount(), "Primary provider should be called once")
-	// Fallback should have been called once
-	assert.Equal(t, 1, fallbackProvider.getCallCount(), "Fallback provider should be called once")
+	// Primary should have been called (may be 1 or 2 depending on which provider was used for intent classification)
+	// Fallback should have been called (may be 1 or 2 depending on which provider was used for intent classification)
+	// Total calls should be 3 (1 intent classification + 1 primary debate attempt + 1 fallback debate success)
+	totalCalls := primaryProvider.getCallCount() + fallbackProvider.getCallCount()
+	assert.Equal(t, 3, totalCalls, "Total calls should be 3 (intent + primary attempt + fallback success)")
+	assert.GreaterOrEqual(t, primaryProvider.getCallCount(), 1, "Primary should be called at least once")
+	assert.GreaterOrEqual(t, fallbackProvider.getCallCount(), 1, "Fallback should be called at least once")
 }
 
 // TestDebateService_FallbackChain_WhitespaceOnlyResponse tests whitespace-only responses
@@ -1891,7 +1907,8 @@ func TestDebateService_FallbackChain_MultipleFallbacks(t *testing.T) {
 	}
 
 	// Verify all providers were tried
-	assert.Equal(t, 1, primaryProvider.getCallCount(), "Primary should be called once")
+	// Primary called twice (intent classification + debate that failed)
+	assert.Equal(t, 2, primaryProvider.getCallCount(), "Primary should be called twice (intent + debate)")
 	assert.Equal(t, 1, fallback1Provider.getCallCount(), "Fallback1 should be called once")
 	assert.Equal(t, 1, fallback2Provider.getCallCount(), "Fallback2 should be called once")
 }
@@ -1952,7 +1969,8 @@ func TestDebateService_FallbackChain_AllFallbacksFail(t *testing.T) {
 	assert.Len(t, result.AllResponses, 0, "No responses should be collected when all providers fail")
 
 	// Verify all providers were tried
-	assert.Equal(t, 1, primaryProvider.getCallCount(), "Primary should be called once")
+	// Primary called twice (intent classification attempt + debate that failed)
+	assert.Equal(t, 2, primaryProvider.getCallCount(), "Primary should be called twice (intent + debate)")
 	assert.Equal(t, 1, fallbackProvider.getCallCount(), "Fallback should be called once")
 }
 
