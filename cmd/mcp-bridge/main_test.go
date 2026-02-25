@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -55,9 +56,11 @@ func TestMain_VersionInfo(t *testing.T) {
 		t.Skip("skipping version test in short mode")
 	}
 
-	cmd := exec.Command("go", "run", ".", "--version")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "go", "run", ".", "--version")
 	cmd.Dir = filepath.Join("..", "..", "cmd", "mcp-bridge")
-	cmd.Timeout = 10 * time.Second
 
 	output, _ := cmd.CombinedOutput()
 	t.Logf("version output: %s", string(output))
