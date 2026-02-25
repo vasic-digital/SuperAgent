@@ -31,6 +31,7 @@ import (
 	"dev.helix.agent/internal/llm/providers/hyperbolic"
 	"dev.helix.agent/internal/llm/providers/kilo"
 	"dev.helix.agent/internal/llm/providers/kimi"
+	"dev.helix.agent/internal/llm/providers/kimicode"
 	"dev.helix.agent/internal/llm/providers/mistral"
 	"dev.helix.agent/internal/llm/providers/modal"
 	"dev.helix.agent/internal/llm/providers/nia"
@@ -1725,6 +1726,15 @@ func (r *ProviderRegistry) createProviderFromConfig(cfg ProviderConfig) (llm.LLM
 			return kimi.NewKimiProvider(cfg.APIKey, baseURL, model), nil
 		}
 		return nil, fmt.Errorf("Kimi provider not available: API key missing or disabled")
+
+	case "kimi-code", "kimicode":
+		if cfg.Enabled {
+			if kimicode.CanUseKimiCodeCLI() {
+				return kimicode.NewKimiCodeCLIProvider(kimicode.DefaultKimiCodeCLIConfig()), nil
+			}
+			return nil, fmt.Errorf("Kimi Code CLI provider not available: OAuth credentials not configured or CLI not authenticated")
+		}
+		return nil, fmt.Errorf("Kimi Code provider not available: disabled")
 
 	case "sambanova":
 		if cfg.Enabled && cfg.APIKey != "" {
