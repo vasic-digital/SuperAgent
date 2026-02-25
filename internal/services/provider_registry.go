@@ -20,6 +20,7 @@ import (
 	"dev.helix.agent/internal/llm/providers/cerebras"
 	"dev.helix.agent/internal/llm/providers/chutes"
 	"dev.helix.agent/internal/llm/providers/claude"
+	"dev.helix.agent/internal/llm/providers/codestral"
 	"dev.helix.agent/internal/llm/providers/cohere"
 	"dev.helix.agent/internal/llm/providers/deepseek"
 	"dev.helix.agent/internal/llm/providers/fireworks"
@@ -27,6 +28,7 @@ import (
 	"dev.helix.agent/internal/llm/providers/groq"
 	"dev.helix.agent/internal/llm/providers/huggingface"
 	"dev.helix.agent/internal/llm/providers/mistral"
+	"dev.helix.agent/internal/llm/providers/nvidia"
 	"dev.helix.agent/internal/llm/providers/ollama"
 	"dev.helix.agent/internal/llm/providers/openai"
 	"dev.helix.agent/internal/llm/providers/openrouter"
@@ -1607,6 +1609,18 @@ func (r *ProviderRegistry) createProviderFromConfig(cfg ProviderConfig) (llm.LLM
 		}
 		return nil, fmt.Errorf("Public AI provider not available: API key missing or disabled")
 
+	case "codestral":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return codestral.NewCodestralProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("Codestral provider not available: API key missing or disabled")
+
+	case "nvidia":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return nvidia.NewNvidiaProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("NVIDIA provider not available: API key missing or disabled")
+
 	case "ollama":
 		if cfg.Enabled && baseURL != "" {
 			return ollama.NewOllamaProvider(baseURL, model), nil
@@ -1686,7 +1700,7 @@ func (r *ProviderRegistry) createProviderFromConfig(cfg ProviderConfig) (llm.LLM
 		return nil, fmt.Errorf("Chutes provider not available: API key missing or disabled")
 
 	// Providers using OpenRouter-compatible API proxy (no native implementation)
-	case "hyperbolic", "sambanova", "siliconflow", "cloudflare", "nvidia",
+	case "hyperbolic", "sambanova", "siliconflow", "cloudflare",
 		"kimi", "novita", "upstage":
 		if cfg.Enabled && cfg.APIKey != "" {
 			if baseURL == "" {
