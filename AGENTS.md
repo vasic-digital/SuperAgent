@@ -65,13 +65,22 @@ GOMAXPROCS=2 go test -v -p 1 -run TestName ./path/to/package
 
 ### Test Infrastructure
 
+**IMPORTANT: Container infrastructure is handled AUTOMATICALLY by HelixAgent during boot.**
+
+The HelixAgent binary (`./bin/helixagent`) orchestrates ALL containers based on `Containers/.env`. There is NO need to manually start test infrastructure.
+
+If you need containers for tests:
+1. Run `./bin/helixagent` first - it will deploy containers to local or remote hosts
+2. Then run your tests against the running containers
+
+**Legacy commands (may not work without manual container setup):**
 ```bash
-make test-infra-start   # Start PostgreSQL, Redis, Mock LLM containers
+make test-infra-start   # Start PostgreSQL, Redis, Mock LLM containers (DEPRECATED)
 make test-infra-stop    # Stop test infrastructure
 make test-with-infra    # Run tests with Docker infrastructure
 ```
 
-**CRITICAL**: Start infrastructure before integration tests: `make test-infra-start`
+**Prefer:** Run `./bin/helixagent` and then execute tests against the running service.
 
 ## Code Style Guidelines
 
@@ -140,9 +149,40 @@ All tool parameters use **snake_case** (e.g., `file_path`, `old_string`). See `i
 - Run `make fmt vet lint` before committing
 
 ### Containerization
-- All services run in containers (Docker/Podman)
-- Rebuild containers after code changes: `make docker-build && make docker-run`
-- Container orchestration via `Containers/.env` file
+
+**CRITICAL: ALL container orchestration is handled AUTOMATICALLY by the HelixAgent binary during its boot process.**
+
+- **DO NOT** manually start, stop, or manage containers via `docker` or `podman` commands
+- **DO NOT** run `make test-infra-start` or similar manual container orchestration commands
+- **DO NOT** attempt to deploy containers to remote hosts manually via SSH
+
+**The ONLY correct workflow is:**
+1. Build the binary: `make build`
+2. Run the binary: `./bin/helixagent` (it handles ALL container orchestration automatically)
+3. The binary reads `Containers/.env` and orchestrates containers locally OR remotely based on configuration
+
+**Container Orchestration Flow (handled by HelixAgent):**
+1. HelixAgent boots and initializes Containers module adapter
+2. Adapter reads `Containers/.env` file (NOT project root `.env`)
+3. Based on `Containers/.env`:
+   - `CONTAINERS_REMOTE_ENABLED=true` → ALL containers to remote host(s) via `CONTAINERS_REMOTE_HOST_*` vars
+   - `CONTAINERS_REMOTE_ENABLED=false` → ALL containers locally
+4. Health checks performed against configured endpoints
+5. Required services failing health check cause boot failure in strict mode
+
+**Key Files:**
+- `Containers/.env` - Container orchestration configuration
+- `internal/services/boot_manager.go` - Boot orchestration logic
+- `tests/precondition/containers_boot_test.go` - Precondition tests for container state
+
+**If you need to run tests that require containers:**
+- Simply run `./bin/helixagent` first - it will start all required containers
+- Or run tests that use the HelixAgent binary's built-in container management
+
+**Rebuild containers only after code changes:**
+```bash
+make docker-build && make docker-run  # Only if you changed containerized code
+```
 
 ## Resource Limits (CRITICAL)
 
@@ -160,12 +200,14 @@ Host runs mission-critical processes; exceeding limits has caused system crashes
 | Task | Command |
 |------|---------|
 | Build | `make build` |
+| Run (starts containers automatically) | `./bin/helixagent` |
 | Format | `make fmt` |
 | Lint | `make lint` |
 | All tests | `make test` |
 | Single test | `go test -v -run TestName ./path/to/pkg` |
-| Start infra | `make test-infra-start` |
 | Pre-commit | `make fmt vet lint` |
+
+**NOTE:** Container orchestration is AUTOMATIC. Do NOT run manual container commands.
 
 ## Key Files
 

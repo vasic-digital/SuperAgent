@@ -472,6 +472,23 @@ Constitution with 26 rules (26 mandatory) across categories: Quality: 2, Safety:
 
 ### Containerization
 
+**⚠️ CRITICAL WARNING - READ THIS FIRST ⚠️**
+
+**ALL container orchestration is handled AUTOMATICALLY by the HelixAgent binary during boot. NEVER manipulate containers manually.**
+
+**FORBIDDEN ACTIONS:**
+- ❌ `docker start|stop|restart|rm` commands
+- ❌ `podman start|stop|restart|rm` commands  
+- ❌ `docker-compose up|down` commands
+- ❌ `podman-compose up|down` commands
+- ❌ `make test-infra-start` or similar Makefile targets
+- ❌ Manual SSH to remote hosts for container deployment
+
+**ONLY ACCEPTABLE WORKFLOW:**
+1. `make build` - Build the HelixAgent binary
+2. `./bin/helixagent` - Run it (ALL container orchestration happens automatically)
+3. The binary reads `Containers/.env` and orchestrates everything
+
 **Full Containerization** (Priority: 2)
 - All services MUST run in containers (Docker/Podman/K8s). Support local default execution AND remote configuration. Services must auto-boot before HelixAgent is ready.
 
