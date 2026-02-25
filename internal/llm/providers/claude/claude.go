@@ -24,7 +24,8 @@ const (
 	ClaudeOAuthModel = "claude-sonnet-4-20250514" // Default model for OAuth auth (Claude Code compatible)
 
 	// Claude 4.6 (Latest generation - February 2026)
-	ClaudeOpus46Model = "claude-opus-4-6"
+	ClaudeOpus46Model   = "claude-opus-4-6"
+	ClaudeSonnet46Model = "claude-sonnet-4-6"
 
 	// Alternative models
 	ClaudeOpusModel  = "claude-opus-4-20250514"
@@ -176,6 +177,7 @@ func NewClaudeProviderWithRetry(apiKey, baseURL, model string, retryConfig Retry
 		FallbackModels: []string{
 			// Claude 4.6 (Latest - February 2026)
 			"claude-opus-4-6",
+			"claude-sonnet-4-6",
 			// Claude 4.5 (November 2025)
 			"claude-opus-4-5-20251101",
 			"claude-sonnet-4-5-20250929",
@@ -243,6 +245,7 @@ func NewClaudeProviderWithOAuthAndRetry(baseURL, model string, retryConfig Retry
 		},
 		FallbackModels: []string{
 			"claude-opus-4-6",
+			"claude-sonnet-4-6",
 			"claude-opus-4-5-20251101",
 			"claude-sonnet-4-5-20250929",
 			"claude-haiku-4-5-20251001",
