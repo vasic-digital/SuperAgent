@@ -69,7 +69,7 @@ HelixAgent presents itself as a single unified model to your applications.
 
 ## Provider Support
 
-### 4. 10+ LLM Providers
+### 4. 22+ LLM Providers
 
 Integrated support for the most capable language models:
 
@@ -85,6 +85,33 @@ Integrated support for the most capable language models:
 | **Zen** | opencode models | Development focus |
 | **Cerebras** | cerebras-llama | Speed |
 | **Ollama** | local models | Privacy, offline |
+| **AWS Bedrock** | claude, llama, titan (NEW) | Enterprise, managed |
+| **GCP Vertex AI** | gemini, palm, llama (NEW) | Enterprise, managed |
+| **Azure OpenAI** | gpt-4, gpt-35-turbo (NEW) | Enterprise, managed |
+
+---
+
+### 5. Cloud Provider Integration (NEW)
+
+Enterprise cloud LLM integration with full API support:
+
+**AWS Bedrock:**
+- Native HTTP API integration
+- Support for Claude, Llama, Titan models
+- Region-aware endpoint configuration
+- IAM credential authentication
+
+**GCP Vertex AI:**
+- Predict API integration
+- Support for Gemini, PaLM, Llama models
+- OAuth2 access token authentication
+- Project and location configuration
+
+**Azure OpenAI:**
+- Chat Completions API integration
+- Support for GPT-4, GPT-3.5-turbo
+- API key authentication
+- Custom endpoint support
 
 ---
 
@@ -320,7 +347,16 @@ Comprehensive observability:
 
 ### 19. Security Scanning
 
-Built-in vulnerability detection:
+Built-in vulnerability detection with multiple scanners:
+
+**Integrated Scanners:**
+- **Gosec** - Go security checker
+- **Trivy** - Container and filesystem vulnerability scanner
+- **Snyk** - Dependency vulnerability scanner
+- **SonarQube** - Code quality and security analysis
+- **Semgrep** - Pattern-based static analysis (NEW)
+- **KICS** - Infrastructure-as-Code scanner (NEW)
+- **Grype** - Alternative vulnerability scanner (NEW)
 
 **Detection Types:**
 - SQL injection
@@ -328,11 +364,14 @@ Built-in vulnerability detection:
 - Command injection
 - Hardcoded credentials
 - Sensitive data exposure
+- Container vulnerabilities
+- IaC misconfigurations
 
 **Coverage:**
 - OWASP Top 10
 - CWE database
 - Custom patterns
+- CVE databases
 
 ---
 
@@ -640,7 +679,7 @@ Standardized benchmarking against industry suites (`digital.vasic.benchmark`):
 | Category | Feature Count | Status |
 |----------|--------------|--------|
 | Core AI | 3 | Production |
-| Provider Support | 2 | Production |
+| Provider Support | 3 | Production |
 | API Compatibility | 3 | Production |
 | Protocol Support | 3 | Production |
 | Memory & Context | 3 | Production |
@@ -652,7 +691,17 @@ Standardized benchmarking against industry suites (`digital.vasic.benchmark`):
 | RAG | 1 | Production |
 | Deployment | 2 | Production |
 | AI/ML Advanced | 5 | Production |
-| **Total** | **37+** | |
+| **Total** | **40+** | |
+
+---
+
+## New in Version 1.2.0
+
+- **Cloud Provider Integration** - AWS Bedrock, GCP Vertex AI, Azure OpenAI
+- **Enhanced Security Scanning** - Semgrep, KICS, Grype integration
+- **Extended Metrics** - MCP, Embedding, VectorDB, Memory, Streaming metrics
+- **Optimized Boot Sequence** - Parallel health checks and service discovery
+- **Installation Documentation** - Comprehensive Docker, Podman, Kubernetes guides
 
 ---
 
@@ -666,4 +715,4 @@ Standardized benchmarking against industry suites (`digital.vasic.benchmark`):
 ---
 
 **Last Updated**: February 2026
-**Version**: 1.0.0
+**Version**: 1.2.0
