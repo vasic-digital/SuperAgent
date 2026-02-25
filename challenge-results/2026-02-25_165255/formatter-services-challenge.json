@@ -1,0 +1,22 @@
+{
+  "challenge_id": "formatter-services-challenge",
+  "challenge_name": "Formatter Services Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.702288321+03:00",
+  "end_time": "2026-02-25T16:52:55.702483891+03:00",
+  "duration": 195569,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/challenge.log",
+    "output_log": "challenge-results/logs/output.log",
+    "api_requests": "",
+    "api_responses": ""
+  },
+  "error": "execution error: context canceled"
+}

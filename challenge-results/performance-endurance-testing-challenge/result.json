@@ -1,0 +1,22 @@
+{
+  "challenge_id": "performance-endurance-testing-challenge",
+  "challenge_name": "Performance Endurance Testing Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.719700842+03:00",
+  "end_time": "2026-02-25T16:52:55.719751354+03:00",
+  "duration": 50508,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/performance-endurance-testing-challenge/challenge.log",
+    "output_log": "challenge-results/logs/performance-endurance-testing-challenge/output.log",
+    "api_requests": "challenge-results/logs/performance-endurance-testing-challenge/api_requests.log",
+    "api_responses": "challenge-results/logs/performance-endurance-testing-challenge/api_responses.log"
+  },
+  "error": "execution error: context canceled"
+}

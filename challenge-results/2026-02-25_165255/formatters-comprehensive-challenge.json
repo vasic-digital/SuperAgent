@@ -1,0 +1,22 @@
+{
+  "challenge_id": "formatters-comprehensive-challenge",
+  "challenge_name": "Formatters Comprehensive Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.702485656+03:00",
+  "end_time": "2026-02-25T16:52:55.70271496+03:00",
+  "duration": 229305,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/challenge.log",
+    "output_log": "challenge-results/logs/output.log",
+    "api_requests": "",
+    "api_responses": ""
+  },
+  "error": "execution error: context canceled"
+}

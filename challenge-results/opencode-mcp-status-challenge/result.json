@@ -1,0 +1,22 @@
+{
+  "challenge_id": "opencode-mcp-status-challenge",
+  "challenge_name": "Opencode Mcp Status Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.717598781+03:00",
+  "end_time": "2026-02-25T16:52:55.717637655+03:00",
+  "duration": 38875,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/opencode-mcp-status-challenge/challenge.log",
+    "output_log": "challenge-results/logs/opencode-mcp-status-challenge/output.log",
+    "api_requests": "challenge-results/logs/opencode-mcp-status-challenge/api_requests.log",
+    "api_responses": "challenge-results/logs/opencode-mcp-status-challenge/api_responses.log"
+  },
+  "error": "execution error: context canceled"
+}

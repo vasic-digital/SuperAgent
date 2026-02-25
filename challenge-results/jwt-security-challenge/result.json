@@ -1,0 +1,22 @@
+{
+  "challenge_id": "jwt-security-challenge",
+  "challenge_name": "Jwt Security Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.705019294+03:00",
+  "end_time": "2026-02-25T16:52:55.70507211+03:00",
+  "duration": 52819,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/jwt-security-challenge/challenge.log",
+    "output_log": "challenge-results/logs/jwt-security-challenge/output.log",
+    "api_requests": "challenge-results/logs/jwt-security-challenge/api_requests.log",
+    "api_responses": "challenge-results/logs/jwt-security-challenge/api_responses.log"
+  },
+  "error": "execution error: context canceled"
+}

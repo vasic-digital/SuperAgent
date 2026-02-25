@@ -1,0 +1,19 @@
+{
+  "timestamp": "2026-02-25T17:12:44+03:00",
+  "total": 1,
+  "passed": 1,
+  "failed": 0,
+  "skipped": 0,
+  "timed_out": 0,
+  "stuck": 0,
+  "errors": 0,
+  "duration": "23.286718494s",
+  "results": [
+    {
+      "id": "cache-invalidation-challenge",
+      "name": "Cache Invalidation Challenge",
+      "status": "passed",
+      "duration": "23.286718494s"
+    }
+  ]
+}

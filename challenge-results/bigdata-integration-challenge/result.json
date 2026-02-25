@@ -1,0 +1,22 @@
+{
+  "challenge_id": "bigdata-integration-challenge",
+  "challenge_name": "Bigdata Integration Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.664333989+03:00",
+  "end_time": "2026-02-25T16:52:55.66438467+03:00",
+  "duration": 50672,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/bigdata-integration-challenge/challenge.log",
+    "output_log": "challenge-results/logs/bigdata-integration-challenge/output.log",
+    "api_requests": "challenge-results/logs/bigdata-integration-challenge/api_requests.log",
+    "api_responses": "challenge-results/logs/bigdata-integration-challenge/api_responses.log"
+  },
+  "error": "execution error: context canceled"
+}

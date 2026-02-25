@@ -1,0 +1,22 @@
+{
+  "challenge_id": "oauth-free-models-challenge",
+  "challenge_name": "Oauth Free Models Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.716711768+03:00",
+  "end_time": "2026-02-25T16:52:55.716749117+03:00",
+  "duration": 37347,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/oauth-free-models-challenge/challenge.log",
+    "output_log": "challenge-results/logs/oauth-free-models-challenge/output.log",
+    "api_requests": "challenge-results/logs/oauth-free-models-challenge/api_requests.log",
+    "api_responses": "challenge-results/logs/oauth-free-models-challenge/api_responses.log"
+  },
+  "error": "execution error: context canceled"
+}

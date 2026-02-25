@@ -1,0 +1,22 @@
+{
+  "challenge_id": "security-csrf-protection-challenge",
+  "challenge_name": "Security Csrf Protection Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.739904888+03:00",
+  "end_time": "2026-02-25T16:52:55.740068295+03:00",
+  "duration": 163404,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/challenge.log",
+    "output_log": "challenge-results/logs/output.log",
+    "api_requests": "",
+    "api_responses": ""
+  },
+  "error": "execution error: context canceled"
+}

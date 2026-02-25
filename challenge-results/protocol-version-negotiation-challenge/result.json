@@ -1,0 +1,22 @@
+{
+  "challenge_id": "protocol-version-negotiation-challenge",
+  "challenge_name": "Protocol Version Negotiation Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.728004804+03:00",
+  "end_time": "2026-02-25T16:52:55.728055991+03:00",
+  "duration": 51186,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/protocol-version-negotiation-challenge/challenge.log",
+    "output_log": "challenge-results/logs/protocol-version-negotiation-challenge/output.log",
+    "api_requests": "challenge-results/logs/protocol-version-negotiation-challenge/api_requests.log",
+    "api_responses": "challenge-results/logs/protocol-version-negotiation-challenge/api_responses.log"
+  },
+  "error": "execution error: context canceled"
+}

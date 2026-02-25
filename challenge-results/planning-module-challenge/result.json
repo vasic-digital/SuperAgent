@@ -1,0 +1,22 @@
+{
+  "challenge_id": "planning-module-challenge",
+  "challenge_name": "Planning Module Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.722008169+03:00",
+  "end_time": "2026-02-25T16:52:55.722078951+03:00",
+  "duration": 70783,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/planning-module-challenge/challenge.log",
+    "output_log": "challenge-results/logs/planning-module-challenge/output.log",
+    "api_requests": "challenge-results/logs/planning-module-challenge/api_requests.log",
+    "api_responses": "challenge-results/logs/planning-module-challenge/api_responses.log"
+  },
+  "error": "execution error: context canceled"
+}

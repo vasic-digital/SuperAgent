@@ -1,0 +1,22 @@
+{
+  "challenge_id": "background-stuck-detection-challenge",
+  "challenge_name": "Background Stuck Detection Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.663011293+03:00",
+  "end_time": "2026-02-25T16:52:55.663105528+03:00",
+  "duration": 94232,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/background-stuck-detection-challenge/challenge.log",
+    "output_log": "challenge-results/logs/background-stuck-detection-challenge/output.log",
+    "api_requests": "challenge-results/logs/background-stuck-detection-challenge/api_requests.log",
+    "api_responses": "challenge-results/logs/background-stuck-detection-challenge/api_responses.log"
+  },
+  "error": "execution error: context canceled"
+}

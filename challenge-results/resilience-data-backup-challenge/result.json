@@ -1,0 +1,22 @@
+{
+  "challenge_id": "resilience-data-backup-challenge",
+  "challenge_name": "Resilience Data Backup Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.73626791+03:00",
+  "end_time": "2026-02-25T16:52:55.73634696+03:00",
+  "duration": 79050,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/resilience-data-backup-challenge/challenge.log",
+    "output_log": "challenge-results/logs/resilience-data-backup-challenge/output.log",
+    "api_requests": "challenge-results/logs/resilience-data-backup-challenge/api_requests.log",
+    "api_responses": "challenge-results/logs/resilience-data-backup-challenge/api_responses.log"
+  },
+  "error": "execution error: context canceled"
+}

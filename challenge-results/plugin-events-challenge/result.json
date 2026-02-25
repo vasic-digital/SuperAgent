@@ -1,0 +1,22 @@
+{
+  "challenge_id": "plugin-events-challenge",
+  "challenge_name": "Plugin Events Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.722211459+03:00",
+  "end_time": "2026-02-25T16:52:55.722271893+03:00",
+  "duration": 60421,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/plugin-events-challenge/challenge.log",
+    "output_log": "challenge-results/logs/plugin-events-challenge/output.log",
+    "api_requests": "challenge-results/logs/plugin-events-challenge/api_requests.log",
+    "api_responses": "challenge-results/logs/plugin-events-challenge/api_responses.log"
+  },
+  "error": "execution error: context canceled"
+}

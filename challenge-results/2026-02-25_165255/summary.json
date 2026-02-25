@@ -1,0 +1,2767 @@
+{
+  "timestamp": "2026-02-25T16:52:55+03:00",
+  "total": 395,
+  "passed": 11,
+  "failed": 2,
+  "skipped": 0,
+  "timed_out": 0,
+  "stuck": 1,
+  "errors": 381,
+  "duration": "5m0.170231345s",
+  "results": [
+    {
+      "id": "advanced-ai-features-challenge",
+      "name": "Advanced Ai Features Challenge",
+      "status": "passed",
+      "duration": "1.398853038s"
+    },
+    {
+      "id": "advanced-provider-access-challenge",
+      "name": "Advanced Provider Access Challenge",
+      "status": "passed",
+      "duration": "12.198198323s"
+    },
+    {
+      "id": "agentic-challenge",
+      "name": "Agentic Challenge",
+      "status": "passed",
+      "duration": "4.066330205s"
+    },
+    {
+      "id": "agentic-module-challenge",
+      "name": "Agentic Module Challenge",
+      "status": "passed",
+      "duration": "4.241586586s"
+    },
+    {
+      "id": "ai-debate-team-challenge",
+      "name": "Ai Debate Team Challenge",
+      "status": "passed",
+      "duration": "3.983962048s"
+    },
+    {
+      "id": "all-agents-e2e-challenge",
+      "name": "All Agents E2e Challenge",
+      "status": "passed",
+      "duration": "10.014825342s"
+    },
+    {
+      "id": "all-cli-agents-challenge",
+      "name": "All Cli Agents Challenge",
+      "status": "passed",
+      "duration": "1.779248939s"
+    },
+    {
+      "id": "all-providers-simultaneous-challenge",
+      "name": "All Providers Simultaneous Challenge",
+      "status": "failed",
+      "duration": "39.977593169s",
+      "error": "script exited with code 1"
+    },
+    {
+      "id": "all-tools-validation-challenge",
+      "name": "All Tools Validation Challenge",
+      "status": "passed",
+      "duration": "45.667324206s"
+    },
+    {
+      "id": "background-cli-rendering-challenge",
+      "name": "Background Cli Rendering Challenge",
+      "status": "passed",
+      "duration": "90.862523ms"
+    },
+    {
+      "id": "background-endless-process-challenge",
+      "name": "Background Endless Process Challenge",
+      "status": "passed",
+      "duration": "31.978345008s"
+    },
+    {
+      "id": "background-full-integration-challenge",
+      "name": "Background Full Integration Challenge",
+      "status": "stuck",
+      "duration": "1m2.002168776s",
+      "error": "challenge stuck: no progress reported within 1m0s"
+    },
+    {
+      "id": "background-notifications-challenge",
+      "name": "Background Notifications Challenge",
+      "status": "passed",
+      "duration": "42.623037489s"
+    },
+    {
+      "id": "background-resource-monitor-challenge",
+      "name": "Background Resource Monitor Challenge",
+      "status": "failed",
+      "duration": "40.062853911s",
+      "error": "script exited with code -1"
+    },
+    {
+      "id": "background-stuck-detection-challenge",
+      "name": "Background Stuck Detection Challenge",
+      "status": "error",
+      "duration": "267.334µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "background-task-queue-challenge",
+      "name": "Background Task Queue Challenge",
+      "status": "error",
+      "duration": "195.49µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "background-worker-pool-challenge",
+      "name": "Background Worker Pool Challenge",
+      "status": "error",
+      "duration": "230.937µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "benchmark-challenge",
+      "name": "Benchmark Challenge",
+      "status": "error",
+      "duration": "216.587µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "benchmark-module-challenge",
+      "name": "Benchmark Module Challenge",
+      "status": "error",
+      "duration": "226.995µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "bigdata-comprehensive-challenge",
+      "name": "Bigdata Comprehensive Challenge",
+      "status": "error",
+      "duration": "203.8µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "bigdata-integration-challenge",
+      "name": "Bigdata Integration Challenge",
+      "status": "error",
+      "duration": "189.304µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "bigdata-pipeline-challenge",
+      "name": "Bigdata Pipeline Challenge",
+      "status": "error",
+      "duration": "183.959µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "cache-invalidation-challenge",
+      "name": "Cache Invalidation Challenge",
+      "status": "error",
+      "duration": "308.154µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "canned-response-fallback-challenge",
+      "name": "Canned Response Fallback Challenge",
+      "status": "error",
+      "duration": "199.548µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "capability-detection-challenge",
+      "name": "Capability Detection Challenge",
+      "status": "error",
+      "duration": "216.952µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "cerebras-provider-challenge",
+      "name": "Cerebras Provider Challenge",
+      "status": "error",
+      "duration": "211.385µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "challenge-module-integration-challenge",
+      "name": "Challenge Module Integration Challenge",
+      "status": "error",
+      "duration": "195.809µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "chat-concurrent-requests-challenge",
+      "name": "Chat Concurrent Requests Challenge",
+      "status": "error",
+      "duration": "224.683µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "chat-conversation-branching-challenge",
+      "name": "Chat Conversation Branching Challenge",
+      "status": "error",
+      "duration": "200.151µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "chat-error-handling-challenge",
+      "name": "Chat Error Handling Challenge",
+      "status": "error",
+      "duration": "222.388µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "chat-max-tokens-challenge",
+      "name": "Chat Max Tokens Challenge",
+      "status": "error",
+      "duration": "213.035µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "chat-max-tokens-enforcement-challenge",
+      "name": "Chat Max Tokens Enforcement Challenge",
+      "status": "error",
+      "duration": "200.912µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "chat-model-selection-challenge",
+      "name": "Chat Model Selection Challenge",
+      "status": "error",
+      "duration": "220.15µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "chat-rate-limiting-challenge",
+      "name": "Chat Rate Limiting Challenge",
+      "status": "error",
+      "duration": "205.021µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "chat-response-caching-challenge",
+      "name": "Chat Response Caching Challenge",
+      "status": "error",
+      "duration": "192.129µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "chat-special-characters-challenge",
+      "name": "Chat Special Characters Challenge",
+      "status": "error",
+      "duration": "208.405µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "chat-system-message-challenge",
+      "name": "Chat System Message Challenge",
+      "status": "error",
+      "duration": "196.211µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "chat-temperature-control-challenge",
+      "name": "Chat Temperature Control Challenge",
+      "status": "error",
+      "duration": "179.793µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "chat-temperature-variation-challenge",
+      "name": "Chat Temperature Variation Challenge",
+      "status": "error",
+      "duration": "208.231µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "chat-tool-calling-challenge",
+      "name": "Chat Tool Calling Challenge",
+      "status": "error",
+      "duration": "193.68µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "chat-tool-function-calling-challenge",
+      "name": "Chat Tool Function Calling Challenge",
+      "status": "error",
+      "duration": "256.07µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "chat-with-context-window-challenge",
+      "name": "Chat With Context Window Challenge",
+      "status": "error",
+      "duration": "194.447µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "circuit-breaker-challenge",
+      "name": "Circuit Breaker Challenge",
+      "status": "error",
+      "duration": "225.418µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "circuit-breaker-metrics-challenge",
+      "name": "Circuit Breaker Metrics Challenge",
+      "status": "error",
+      "duration": "218.363µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "claude-auth-challenge",
+      "name": "Claude Auth Challenge",
+      "status": "error",
+      "duration": "240.65µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "cli-agent-config-challenge",
+      "name": "Cli Agent Config Challenge",
+      "status": "error",
+      "duration": "249.933µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "cli-agent-integration-challenge",
+      "name": "Cli Agent Integration Challenge",
+      "status": "error",
+      "duration": "216.694µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "cli-agent-mcp-challenge",
+      "name": "Cli Agent Mcp Challenge",
+      "status": "error",
+      "duration": "196.385µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "cli-agent-plugin-e2e-challenge",
+      "name": "Cli Agent Plugin E2e Challenge",
+      "status": "error",
+      "duration": "229.919µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "cli-agents-challenge",
+      "name": "Cli Agents Challenge",
+      "status": "error",
+      "duration": "204.275µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "cli-agents-formatters-challenge",
+      "name": "Cli Agents Formatters Challenge",
+      "status": "error",
+      "duration": "192.125µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "cli-proxy-challenge",
+      "name": "Cli Proxy Challenge",
+      "status": "error",
+      "duration": "333.388µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "cli-schema-validation-challenge",
+      "name": "Cli Schema Validation Challenge",
+      "status": "error",
+      "duration": "249.958µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "cli-text-editor-challenge",
+      "name": "Cli Text Editor Challenge",
+      "status": "error",
+      "duration": "502.524µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "cognee-full-integration-challenge",
+      "name": "Cognee Full Integration Challenge",
+      "status": "error",
+      "duration": "205.644µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "cognee-integration-challenge",
+      "name": "Cognee Integration Challenge",
+      "status": "error",
+      "duration": "3.614445ms",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "cognee-search-integration-test",
+      "name": "Cognee Search Integration Test",
+      "status": "error",
+      "duration": "359.133µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "cognee-verification-challenge",
+      "name": "Cognee Verification Challenge",
+      "status": "error",
+      "duration": "245.376µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "comprehensive-e2e-challenge",
+      "name": "Comprehensive E2e Challenge",
+      "status": "error",
+      "duration": "848.099µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "comprehensive-infrastructure-challenge",
+      "name": "Comprehensive Infrastructure Challenge",
+      "status": "error",
+      "duration": "257.171µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "comprehensive-monitoring-challenge",
+      "name": "Comprehensive Monitoring Challenge",
+      "status": "error",
+      "duration": "247.648µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "concurrent-load-stress-challenge",
+      "name": "Concurrent Load Stress Challenge",
+      "status": "error",
+      "duration": "216.891µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "configs-use-challenge",
+      "name": "Configs Use Challenge",
+      "status": "error",
+      "duration": "561.681µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "constitution-management-challenge",
+      "name": "Constitution Management Challenge",
+      "status": "error",
+      "duration": "891.059µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "constitution-watcher-challenge",
+      "name": "Constitution Watcher Challenge",
+      "status": "error",
+      "duration": "561.5µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "container-centralization-challenge",
+      "name": "Container Centralization Challenge",
+      "status": "error",
+      "duration": "1.932654ms",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "container-placement-challenge",
+      "name": "Container Placement Challenge",
+      "status": "error",
+      "duration": "246.991µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "container-remote-distribution-challenge",
+      "name": "Container Remote Distribution Challenge",
+      "status": "error",
+      "duration": "236.481µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "content-generation-challenge",
+      "name": "Content Generation Challenge",
+      "status": "error",
+      "duration": "225.989µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "conversation-errors-fix-challenge",
+      "name": "Conversation Errors Fix Challenge",
+      "status": "error",
+      "duration": "211.2µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "csrf-protection-challenge",
+      "name": "Csrf Protection Challenge",
+      "status": "error",
+      "duration": "235.201µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "ctop-challenge",
+      "name": "Ctop Challenge",
+      "status": "error",
+      "duration": "412.849µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "curl-api-challenge",
+      "name": "Curl Api Challenge",
+      "status": "error",
+      "duration": "232.302µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "database-connection-pool-challenge",
+      "name": "Database Connection Pool Challenge",
+      "status": "error",
+      "duration": "202.168µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "database-schema-validation-challenge",
+      "name": "Database Schema Validation Challenge",
+      "status": "error",
+      "duration": "199.411µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-adversarial-dynamics-challenge",
+      "name": "Debate Adversarial Dynamics Challenge",
+      "status": "error",
+      "duration": "200.654µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-approval-gate-challenge",
+      "name": "Debate Approval Gate Challenge",
+      "status": "error",
+      "duration": "210.335µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-benchmark-integration-challenge",
+      "name": "Debate Benchmark Integration Challenge",
+      "status": "error",
+      "duration": "231.753µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-comm-logging-challenge",
+      "name": "Debate Comm Logging Challenge",
+      "status": "error",
+      "duration": "205.237µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-condorcet-voting-challenge",
+      "name": "Debate Condorcet Voting Challenge",
+      "status": "error",
+      "duration": "204.136µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-confidence-scoring-challenge",
+      "name": "Debate Confidence Scoring Challenge",
+      "status": "error",
+      "duration": "215.739µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-consensus-building-challenge",
+      "name": "Debate Consensus Building Challenge",
+      "status": "error",
+      "duration": "198.256µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-critique-validation-challenge",
+      "name": "Debate Critique Validation Challenge",
+      "status": "error",
+      "duration": "195.128µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-deadlock-detection-challenge",
+      "name": "Debate Deadlock Detection Challenge",
+      "status": "error",
+      "duration": "205.432µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-dehallucination-challenge",
+      "name": "Debate Dehallucination Challenge",
+      "status": "error",
+      "duration": "180.147µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-error-recovery-challenge",
+      "name": "Debate Error Recovery Challenge",
+      "status": "error",
+      "duration": "198.994µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-fallback-legacy-challenge",
+      "name": "Debate Fallback Legacy Challenge",
+      "status": "error",
+      "duration": "217.809µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-git-integration-challenge",
+      "name": "Debate Git Integration Challenge",
+      "status": "error",
+      "duration": "186.766µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-integration-comprehensive-challenge",
+      "name": "Debate Integration Comprehensive Challenge",
+      "status": "error",
+      "duration": "217.139µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-integration-language-detection-challenge",
+      "name": "Debate Integration Language Detection Challenge",
+      "status": "error",
+      "duration": "200.798µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-integration-metadata-challenge",
+      "name": "Debate Integration Metadata Challenge",
+      "status": "error",
+      "duration": "196.764µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-integration-roles-challenge",
+      "name": "Debate Integration Roles Challenge",
+      "status": "error",
+      "duration": "193.535µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-integration-test-driven-challenge",
+      "name": "Debate Integration Test Driven Challenge",
+      "status": "error",
+      "duration": "189.581µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-integration-tools-challenge",
+      "name": "Debate Integration Tools Challenge",
+      "status": "error",
+      "duration": "181.812µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-integration-validation-challenge",
+      "name": "Debate Integration Validation Challenge",
+      "status": "error",
+      "duration": "183.609µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-model-diversity-challenge",
+      "name": "Debate Model Diversity Challenge",
+      "status": "error",
+      "duration": "205.347µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-multi-round-challenge",
+      "name": "Debate Multi Round Challenge",
+      "status": "error",
+      "duration": "211.964µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-performance-optimization-challenge",
+      "name": "Debate Performance Optimization Challenge",
+      "status": "error",
+      "duration": "235.703µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-persistence-challenge",
+      "name": "Debate Persistence Challenge",
+      "status": "error",
+      "duration": "202.503µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-position-assignment-challenge",
+      "name": "Debate Position Assignment Challenge",
+      "status": "error",
+      "duration": "218.171µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-provenance-audit-challenge",
+      "name": "Debate Provenance Audit Challenge",
+      "status": "error",
+      "duration": "198.732µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-quality-metrics-challenge",
+      "name": "Debate Quality Metrics Challenge",
+      "status": "error",
+      "duration": "203.318µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-reflexion-challenge",
+      "name": "Debate Reflexion Challenge",
+      "status": "error",
+      "duration": "191.414µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-response-aggregation-challenge",
+      "name": "Debate Response Aggregation Challenge",
+      "status": "error",
+      "duration": "240.181µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-round-orchestration-challenge",
+      "name": "Debate Round Orchestration Challenge",
+      "status": "error",
+      "duration": "297.35µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-self-evolvement-challenge",
+      "name": "Debate Self Evolvement Challenge",
+      "status": "error",
+      "duration": "201.191µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-synthesis-generation-challenge",
+      "name": "Debate Synthesis Generation Challenge",
+      "status": "error",
+      "duration": "195.302µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-team-dynamic-selection-challenge",
+      "name": "Debate Team Dynamic Selection Challenge",
+      "status": "error",
+      "duration": "181.601µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-team-formation-challenge",
+      "name": "Debate Team Formation Challenge",
+      "status": "error",
+      "duration": "204.989µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-team-models-challenge",
+      "name": "Debate Team Models Challenge",
+      "status": "error",
+      "duration": "295.763µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-testing-integration-challenge",
+      "name": "Debate Testing Integration Challenge",
+      "status": "error",
+      "duration": "203.697µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-tool-triggering-challenge",
+      "name": "Debate Tool Triggering Challenge",
+      "status": "error",
+      "duration": "187.31µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-tree-topology-challenge",
+      "name": "Debate Tree Topology Challenge",
+      "status": "error",
+      "duration": "195.62µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "debate-voting-mechanism-challenge",
+      "name": "Debate Voting Mechanism Challenge",
+      "status": "error",
+      "duration": "217.126µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "dialogue-rendering-challenge",
+      "name": "Dialogue Rendering Challenge",
+      "status": "error",
+      "duration": "210.506µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "documentation-phase6-challenge",
+      "name": "Documentation Phase6 Challenge",
+      "status": "error",
+      "duration": "203.309µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "e2e-workflow-challenge",
+      "name": "E2e Workflow Challenge",
+      "status": "error",
+      "duration": "213.839µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "enhanced-intent-mechanism-challenge",
+      "name": "Enhanced Intent Mechanism Challenge",
+      "status": "error",
+      "duration": "193.646µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "error-authentication-errors-challenge",
+      "name": "Error Authentication Errors Challenge",
+      "status": "error",
+      "duration": "199.345µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "error-cache-failures-challenge",
+      "name": "Error Cache Failures Challenge",
+      "status": "error",
+      "duration": "228.593µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "error-circuit-breaker-challenge",
+      "name": "Error Circuit Breaker Challenge",
+      "status": "error",
+      "duration": "181.103µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "error-classification-challenge",
+      "name": "Error Classification Challenge",
+      "status": "error",
+      "duration": "1.021203ms",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "error-concurrent-errors-challenge",
+      "name": "Error Concurrent Errors Challenge",
+      "status": "error",
+      "duration": "323.67µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "error-connection-failures-challenge",
+      "name": "Error Connection Failures Challenge",
+      "status": "error",
+      "duration": "205.678µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "error-database-errors-challenge",
+      "name": "Error Database Errors Challenge",
+      "status": "error",
+      "duration": "521.397µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "error-fallback-chains-challenge",
+      "name": "Error Fallback Chains Challenge",
+      "status": "error",
+      "duration": "216.322µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "error-graceful-degradation-challenge",
+      "name": "Error Graceful Degradation Challenge",
+      "status": "error",
+      "duration": "408.328µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "error-logging-challenge",
+      "name": "Error Logging Challenge",
+      "status": "error",
+      "duration": "209.37µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "error-malformed-requests-challenge",
+      "name": "Error Malformed Requests Challenge",
+      "status": "error",
+      "duration": "1.203067ms",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "error-network-errors-challenge",
+      "name": "Error Network Errors Challenge",
+      "status": "error",
+      "duration": "273.116µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "error-provider-failures-challenge",
+      "name": "Error Provider Failures Challenge",
+      "status": "error",
+      "duration": "471.566µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "error-rate-limit-errors-challenge",
+      "name": "Error Rate Limit Errors Challenge",
+      "status": "error",
+      "duration": "327.166µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "error-recovery-strategies-challenge",
+      "name": "Error Recovery Strategies Challenge",
+      "status": "error",
+      "duration": "211.19µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "error-resource-exhaustion-challenge",
+      "name": "Error Resource Exhaustion Challenge",
+      "status": "error",
+      "duration": "198.495µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "error-retry-mechanisms-challenge",
+      "name": "Error Retry Mechanisms Challenge",
+      "status": "error",
+      "duration": "214.177µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "error-timeout-handling-challenge",
+      "name": "Error Timeout Handling Challenge",
+      "status": "error",
+      "duration": "221.703µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "error-user-feedback-challenge",
+      "name": "Error User Feedback Challenge",
+      "status": "error",
+      "duration": "223.558µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "error-validation-errors-challenge",
+      "name": "Error Validation Errors Challenge",
+      "status": "error",
+      "duration": "196.636µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "event-driven-challenge",
+      "name": "Event Driven Challenge",
+      "status": "error",
+      "duration": "209.944µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "external-mcp-servers-challenge",
+      "name": "External Mcp Servers Challenge",
+      "status": "error",
+      "duration": "241.601µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "fallback-error-reporting-challenge",
+      "name": "Fallback Error Reporting Challenge",
+      "status": "error",
+      "duration": "202.933µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "fallback-mechanism-challenge",
+      "name": "Fallback Mechanism Challenge",
+      "status": "error",
+      "duration": "201.165µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "fallback-visualization-challenge",
+      "name": "Fallback Visualization Challenge",
+      "status": "error",
+      "duration": "216.148µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "feature-flags-challenge",
+      "name": "Feature Flags Challenge",
+      "status": "error",
+      "duration": "195.297µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "final-validation-phase8-challenge",
+      "name": "Final Validation Phase8 Challenge",
+      "status": "error",
+      "duration": "213.418µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "flink-integration-challenge",
+      "name": "Flink Integration Challenge",
+      "status": "error",
+      "duration": "206.718µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "followup-response-challenge",
+      "name": "Followup Response Challenge",
+      "status": "error",
+      "duration": "227.87µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "formatter-services-challenge",
+      "name": "Formatter Services Challenge",
+      "status": "error",
+      "duration": "195.569µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "formatters-comprehensive-challenge",
+      "name": "Formatters Comprehensive Challenge",
+      "status": "error",
+      "duration": "229.305µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "free-provider-fallback-challenge",
+      "name": "Free Provider Fallback Challenge",
+      "status": "error",
+      "duration": "224.347µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "full-system-boot-challenge",
+      "name": "Full System Boot Challenge",
+      "status": "error",
+      "duration": "207.629µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "generic-challenge",
+      "name": "Generic Challenge",
+      "status": "error",
+      "duration": "192.227µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "graphql-integration-challenge",
+      "name": "Graphql Integration Challenge",
+      "status": "error",
+      "duration": "173.113µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "grpc-service-challenge",
+      "name": "Grpc Service Challenge",
+      "status": "error",
+      "duration": "212.56µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "health-endpoints-comprehensive-challenge",
+      "name": "Health Endpoints Comprehensive Challenge",
+      "status": "error",
+      "duration": "211.266µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "helixagent-plugins-challenge",
+      "name": "Helixagent Plugins Challenge",
+      "status": "error",
+      "duration": "348.908µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "helixmemory-challenge",
+      "name": "Helixmemory Challenge",
+      "status": "error",
+      "duration": "169.449µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "helixspecifier-challenge",
+      "name": "Helixspecifier Challenge",
+      "status": "error",
+      "duration": "181.704µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "integration-challenge",
+      "name": "Integration Challenge",
+      "status": "error",
+      "duration": "157.769µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "integration-providers-challenge",
+      "name": "Integration Providers Challenge",
+      "status": "error",
+      "duration": "161.104µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "jwt-security-challenge",
+      "name": "Jwt Security Challenge",
+      "status": "error",
+      "duration": "160.522µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "lazy-init-challenge",
+      "name": "Lazy Init Challenge",
+      "status": "error",
+      "duration": "158.713µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "lazy-loading-challenge",
+      "name": "Lazy Loading Challenge",
+      "status": "error",
+      "duration": "263.476µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "llm-scoring-challenge",
+      "name": "Llm Scoring Challenge",
+      "status": "error",
+      "duration": "191.194µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "llm-tool-generation-challenge",
+      "name": "Llm Tool Generation Challenge",
+      "status": "error",
+      "duration": "120.668µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "llmops-challenge",
+      "name": "Llmops Challenge",
+      "status": "error",
+      "duration": "147.352µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "llmops-module-challenge",
+      "name": "Llmops Module Challenge",
+      "status": "error",
+      "duration": "181.754µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "llms-reevaluation-challenge",
+      "name": "Llms Reevaluation Challenge",
+      "status": "error",
+      "duration": "193.001µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "llmsverifier-cliagents-challenge",
+      "name": "Llmsverifier Cliagents Challenge",
+      "status": "error",
+      "duration": "210.76µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "main-challenge",
+      "name": "Main Challenge",
+      "status": "error",
+      "duration": "211.68µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "mcp-all-servers-challenge",
+      "name": "Mcp All Servers Challenge",
+      "status": "error",
+      "duration": "465.675µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "mcp-comprehensive-challenge",
+      "name": "Mcp Comprehensive Challenge",
+      "status": "error",
+      "duration": "193.728µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "mcp-connectivity-challenge",
+      "name": "Mcp Connectivity Challenge",
+      "status": "error",
+      "duration": "211.561µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "mcp-containerized-challenge",
+      "name": "Mcp Containerized Challenge",
+      "status": "error",
+      "duration": "196.534µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "mcp-full-system-challenge",
+      "name": "Mcp Full System Challenge",
+      "status": "error",
+      "duration": "197.034µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "mcp-server-integration-challenge",
+      "name": "Mcp Server Integration Challenge",
+      "status": "error",
+      "duration": "270.171µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "mcp-servers-challenge",
+      "name": "Mcp Servers Challenge",
+      "status": "error",
+      "duration": "212.891µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "mcp-servers-usage-challenge",
+      "name": "Mcp Servers Usage Challenge",
+      "status": "error",
+      "duration": "205.275µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "mcp-sse-connectivity-challenge",
+      "name": "Mcp Sse Connectivity Challenge",
+      "status": "error",
+      "duration": "216.812µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "mcp-submodules-challenge",
+      "name": "Mcp Submodules Challenge",
+      "status": "error",
+      "duration": "223.828µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "mcp-validation-challenge",
+      "name": "Mcp Validation Challenge",
+      "status": "error",
+      "duration": "133.647µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "mcps-challenge",
+      "name": "Mcps Challenge",
+      "status": "error",
+      "duration": "166.715µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "mem0-migration-challenge",
+      "name": "Mem0 Migration Challenge",
+      "status": "error",
+      "duration": "138.048µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "memory-cache-integration-challenge",
+      "name": "Memory Cache Integration Challenge",
+      "status": "error",
+      "duration": "123.719µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "memory-chunking-strategies-challenge",
+      "name": "Memory Chunking Strategies Challenge",
+      "status": "error",
+      "duration": "144.808µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "memory-consolidation-challenge",
+      "name": "Memory Consolidation Challenge",
+      "status": "error",
+      "duration": "167.974µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "memory-context-management-challenge",
+      "name": "Memory Context Management Challenge",
+      "status": "error",
+      "duration": "326.977µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "memory-embedding-generation-challenge",
+      "name": "Memory Embedding Generation Challenge",
+      "status": "error",
+      "duration": "215.88µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "memory-entity-extraction-challenge",
+      "name": "Memory Entity Extraction Challenge",
+      "status": "error",
+      "duration": "230.255µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "memory-graph-navigation-challenge",
+      "name": "Memory Graph Navigation Challenge",
+      "status": "error",
+      "duration": "208.958µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "memory-hybrid-search-challenge",
+      "name": "Memory Hybrid Search Challenge",
+      "status": "error",
+      "duration": "201.862µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "memory-race-challenge",
+      "name": "Memory Race Challenge",
+      "status": "error",
+      "duration": "206.123µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "memory-rag-pipeline-challenge",
+      "name": "Memory Rag Pipeline Challenge",
+      "status": "error",
+      "duration": "210.154µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "memory-reranking-challenge",
+      "name": "Memory Reranking Challenge",
+      "status": "error",
+      "duration": "206.228µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "memory-retrieval-challenge",
+      "name": "Memory Retrieval Challenge",
+      "status": "error",
+      "duration": "207.964µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "memory-safety-phase4-challenge",
+      "name": "Memory Safety Phase4 Challenge",
+      "status": "error",
+      "duration": "201.807µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "memory-scoping-challenge",
+      "name": "Memory Scoping Challenge",
+      "status": "error",
+      "duration": "202.825µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "memory-semantic-search-challenge",
+      "name": "Memory Semantic Search Challenge",
+      "status": "error",
+      "duration": "231.449µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "memory-storage-challenge",
+      "name": "Memory Storage Challenge",
+      "status": "error",
+      "duration": "196.728µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "memory-system-challenge",
+      "name": "Memory System Challenge",
+      "status": "error",
+      "duration": "199.871µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "memory-vector-similarity-challenge",
+      "name": "Memory Vector Similarity Challenge",
+      "status": "error",
+      "duration": "201.067µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "messaging-hybrid-challenge",
+      "name": "Messaging Hybrid Challenge",
+      "status": "error",
+      "duration": "225.935µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "messaging-integration-challenge",
+      "name": "Messaging Integration Challenge",
+      "status": "error",
+      "duration": "226.695µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "messaging-kafka-challenge",
+      "name": "Messaging Kafka Challenge",
+      "status": "error",
+      "duration": "218.801µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "messaging-migration-challenge",
+      "name": "Messaging Migration Challenge",
+      "status": "error",
+      "duration": "222.193µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "messaging-rabbitmq-challenge",
+      "name": "Messaging Rabbitmq Challenge",
+      "status": "error",
+      "duration": "241.886µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "minio-storage-challenge",
+      "name": "Minio Storage Challenge",
+      "status": "error",
+      "duration": "238.915µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "mistral-provider-challenge",
+      "name": "Mistral Provider Challenge",
+      "status": "error",
+      "duration": "220.501µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "monitoring-system-challenge",
+      "name": "Monitoring System Challenge",
+      "status": "error",
+      "duration": "219.881µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "multipass-validation-challenge",
+      "name": "Multipass Validation Challenge",
+      "status": "error",
+      "duration": "390.444µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "new-providers-validation-challenge",
+      "name": "New Providers Validation Challenge",
+      "status": "error",
+      "duration": "292.545µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "oauth-cli-fallback-challenge",
+      "name": "Oauth Cli Fallback Challenge",
+      "status": "error",
+      "duration": "262.426µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "oauth-credentials-challenge",
+      "name": "Oauth Credentials Challenge",
+      "status": "error",
+      "duration": "450.617µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "oauth-free-models-challenge",
+      "name": "Oauth Free Models Challenge",
+      "status": "error",
+      "duration": "177.043µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "oauth-provider-verification-challenge",
+      "name": "Oauth Provider Verification Challenge",
+      "status": "error",
+      "duration": "160.111µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "opencode-challenge",
+      "name": "Opencode Challenge",
+      "status": "error",
+      "duration": "132.845µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "opencode-cognee-e2e-challenge",
+      "name": "Opencode Cognee E2e Challenge",
+      "status": "error",
+      "duration": "155.915µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "opencode-conversation-challenge",
+      "name": "Opencode Conversation Challenge",
+      "status": "error",
+      "duration": "123.998µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "opencode-init-challenge",
+      "name": "Opencode Init Challenge",
+      "status": "error",
+      "duration": "149.311µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "opencode-mcp-status-challenge",
+      "name": "Opencode Mcp Status Challenge",
+      "status": "error",
+      "duration": "151.101µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "opentelemetry-tracing-challenge",
+      "name": "Opentelemetry Tracing Challenge",
+      "status": "error",
+      "duration": "175.683µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "output-formatting-challenge",
+      "name": "Output Formatting Challenge",
+      "status": "error",
+      "duration": "162.181µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "parallel-execution-challenge",
+      "name": "Parallel Execution Challenge",
+      "status": "error",
+      "duration": "135.673µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "performance-baseline-challenge",
+      "name": "Performance Baseline Challenge",
+      "status": "error",
+      "duration": "136.392µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "performance-batch-processing-challenge",
+      "name": "Performance Batch Processing Challenge",
+      "status": "error",
+      "duration": "175.062µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "performance-caching-effectiveness-challenge",
+      "name": "Performance Caching Effectiveness Challenge",
+      "status": "error",
+      "duration": "169.644µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "performance-circuit-breaker-impact-challenge",
+      "name": "Performance Circuit Breaker Impact Challenge",
+      "status": "error",
+      "duration": "165.858µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "performance-concurrent-load-challenge",
+      "name": "Performance Concurrent Load Challenge",
+      "status": "error",
+      "duration": "156.384µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "performance-connection-pooling-challenge",
+      "name": "Performance Connection Pooling Challenge",
+      "status": "error",
+      "duration": "167.102µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "performance-cpu-utilization-challenge",
+      "name": "Performance Cpu Utilization Challenge",
+      "status": "error",
+      "duration": "155.296µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "performance-database-queries-challenge",
+      "name": "Performance Database Queries Challenge",
+      "status": "error",
+      "duration": "166.971µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "performance-debate-optimization-challenge",
+      "name": "Performance Debate Optimization Challenge",
+      "status": "error",
+      "duration": "162.138µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "performance-endurance-testing-challenge",
+      "name": "Performance Endurance Testing Challenge",
+      "status": "error",
+      "duration": "168.313µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "performance-fallback-overhead-challenge",
+      "name": "Performance Fallback Overhead Challenge",
+      "status": "error",
+      "duration": "155.818µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "performance-latency-measurement-challenge",
+      "name": "Performance Latency Measurement Challenge",
+      "status": "error",
+      "duration": "175.56µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "performance-memory-usage-challenge",
+      "name": "Performance Memory Usage Challenge",
+      "status": "error",
+      "duration": "178.524µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "performance-monitoring-overhead-challenge",
+      "name": "Performance Monitoring Overhead Challenge",
+      "status": "error",
+      "duration": "185.721µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "performance-phase5-challenge",
+      "name": "Performance Phase5 Challenge",
+      "status": "error",
+      "duration": "163.789µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "performance-provider-selection-speed-challenge",
+      "name": "Performance Provider Selection Speed Challenge",
+      "status": "error",
+      "duration": "161.522µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "performance-rate-limiting-impact-challenge",
+      "name": "Performance Rate Limiting Impact Challenge",
+      "status": "error",
+      "duration": "156.815µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "performance-response-times-challenge",
+      "name": "Performance Response Times Challenge",
+      "status": "error",
+      "duration": "140.9µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "performance-scaling-behavior-challenge",
+      "name": "Performance Scaling Behavior Challenge",
+      "status": "error",
+      "duration": "159.102µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "performance-streaming-efficiency-challenge",
+      "name": "Performance Streaming Efficiency Challenge",
+      "status": "error",
+      "duration": "162.751µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "performance-stress-testing-challenge",
+      "name": "Performance Stress Testing Challenge",
+      "status": "error",
+      "duration": "155.639µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "performance-throughput-testing-challenge",
+      "name": "Performance Throughput Testing Challenge",
+      "status": "error",
+      "duration": "151.574µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "planning-challenge",
+      "name": "Planning Challenge",
+      "status": "error",
+      "duration": "171.59µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "planning-module-challenge",
+      "name": "Planning Module Challenge",
+      "status": "error",
+      "duration": "196.551µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "plugin-events-challenge",
+      "name": "Plugin Events Challenge",
+      "status": "error",
+      "duration": "186.955µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "plugin-integration-challenge",
+      "name": "Plugin Integration Challenge",
+      "status": "error",
+      "duration": "419.569µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "plugin-transport-challenge",
+      "name": "Plugin Transport Challenge",
+      "status": "error",
+      "duration": "199.677µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "plugin-ui-challenge",
+      "name": "Plugin Ui Challenge",
+      "status": "error",
+      "duration": "178.855µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "prometheus-metrics-challenge",
+      "name": "Prometheus Metrics Challenge",
+      "status": "error",
+      "duration": "190.644µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "protocol-acp-integration-challenge",
+      "name": "Protocol Acp Integration Challenge",
+      "status": "error",
+      "duration": "181.485µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "protocol-anthropic-format-challenge",
+      "name": "Protocol Anthropic Format Challenge",
+      "status": "error",
+      "duration": "178.538µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "protocol-authentication-challenge",
+      "name": "Protocol Authentication Challenge",
+      "status": "error",
+      "duration": "203.918µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "protocol-backward-compatibility-challenge",
+      "name": "Protocol Backward Compatibility Challenge",
+      "status": "error",
+      "duration": "254.696µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "protocol-challenge",
+      "name": "Protocol Challenge",
+      "status": "error",
+      "duration": "213.934µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "protocol-cognee-integration-challenge",
+      "name": "Protocol Cognee Integration Challenge",
+      "status": "error",
+      "duration": "134.873µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "protocol-comprehensive-challenge",
+      "name": "Protocol Comprehensive Challenge",
+      "status": "error",
+      "duration": "140.129µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "protocol-custom-protocols-challenge",
+      "name": "Protocol Custom Protocols Challenge",
+      "status": "error",
+      "duration": "131.803µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "protocol-embeddings-api-challenge",
+      "name": "Protocol Embeddings Api Challenge",
+      "status": "error",
+      "duration": "177.866µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "protocol-error-formats-challenge",
+      "name": "Protocol Error Formats Challenge",
+      "status": "error",
+      "duration": "176.078µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "protocol-forward-compatibility-challenge",
+      "name": "Protocol Forward Compatibility Challenge",
+      "status": "error",
+      "duration": "167.111µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "protocol-graphql-challenge",
+      "name": "Protocol Graphql Challenge",
+      "status": "error",
+      "duration": "123.451µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "protocol-grpc-challenge",
+      "name": "Protocol Grpc Challenge",
+      "status": "error",
+      "duration": "129.235µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "protocol-integrations-challenge",
+      "name": "Protocol Integrations Challenge",
+      "status": "error",
+      "duration": "192.148µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "protocol-json-rpc-challenge",
+      "name": "Protocol Json Rpc Challenge",
+      "status": "error",
+      "duration": "208.908µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "protocol-lsp-integration-challenge",
+      "name": "Protocol Lsp Integration Challenge",
+      "status": "error",
+      "duration": "194.149µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "protocol-mcp-integration-challenge",
+      "name": "Protocol Mcp Integration Challenge",
+      "status": "error",
+      "duration": "193.902µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "protocol-mcps-challenge",
+      "name": "Protocol Mcps Challenge",
+      "status": "error",
+      "duration": "193.953µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "protocol-missions-challenge",
+      "name": "Protocol Missions Challenge",
+      "status": "error",
+      "duration": "207.711µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "protocol-openai-compatibility-challenge",
+      "name": "Protocol Openai Compatibility Challenge",
+      "status": "error",
+      "duration": "888.828µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "protocol-rest-api-challenge",
+      "name": "Protocol Rest Api Challenge",
+      "status": "error",
+      "duration": "147.56µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "protocol-streaming-sse-challenge",
+      "name": "Protocol Streaming Sse Challenge",
+      "status": "error",
+      "duration": "140.989µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "protocol-version-negotiation-challenge",
+      "name": "Protocol Version Negotiation Challenge",
+      "status": "error",
+      "duration": "171.783µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "protocol-vision-api-challenge",
+      "name": "Protocol Vision Api Challenge",
+      "status": "error",
+      "duration": "218.491µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "protocol-websocket-challenge",
+      "name": "Protocol Websocket Challenge",
+      "status": "error",
+      "duration": "208.591µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "provider-api-compatibility-challenge",
+      "name": "Provider Api Compatibility Challenge",
+      "status": "error",
+      "duration": "238.165µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "provider-auth-challenge",
+      "name": "Provider Auth Challenge",
+      "status": "error",
+      "duration": "154.678µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "provider-authentication-challenge",
+      "name": "Provider Authentication Challenge",
+      "status": "error",
+      "duration": "141.523µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "provider-capability-detection-challenge",
+      "name": "Provider Capability Detection Challenge",
+      "status": "error",
+      "duration": "146.839µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "provider-comprehensive-challenge",
+      "name": "Provider Comprehensive Challenge",
+      "status": "error",
+      "duration": "162.368µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "provider-cost-optimization-challenge",
+      "name": "Provider Cost Optimization Challenge",
+      "status": "error",
+      "duration": "179.415µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "provider-discovery-challenge",
+      "name": "Provider Discovery Challenge",
+      "status": "error",
+      "duration": "187.329µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "provider-error-handling-challenge",
+      "name": "Provider Error Handling Challenge",
+      "status": "error",
+      "duration": "195.327µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "provider-failover-challenge",
+      "name": "Provider Failover Challenge",
+      "status": "error",
+      "duration": "180.298µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "provider-health-checks-challenge",
+      "name": "Provider Health Checks Challenge",
+      "status": "error",
+      "duration": "163.676µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "provider-load-balancing-challenge",
+      "name": "Provider Load Balancing Challenge",
+      "status": "error",
+      "duration": "196.674µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "provider-model-listing-challenge",
+      "name": "Provider Model Listing Challenge",
+      "status": "error",
+      "duration": "209.142µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "provider-performance-monitoring-challenge",
+      "name": "Provider Performance Monitoring Challenge",
+      "status": "error",
+      "duration": "181.573µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "provider-rate-limit-handling-challenge",
+      "name": "Provider Rate Limit Handling Challenge",
+      "status": "error",
+      "duration": "165.355µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "provider-reliability-challenge",
+      "name": "Provider Reliability Challenge",
+      "status": "error",
+      "duration": "151.439µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "provider-retry-logic-challenge",
+      "name": "Provider Retry Logic Challenge",
+      "status": "error",
+      "duration": "151.35µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "provider-scoring-challenge",
+      "name": "Provider Scoring Challenge",
+      "status": "error",
+      "duration": "138.426µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "provider-selection-strategy-challenge",
+      "name": "Provider Selection Strategy Challenge",
+      "status": "error",
+      "duration": "219.598µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "provider-timeout-management-challenge",
+      "name": "Provider Timeout Management Challenge",
+      "status": "error",
+      "duration": "176.761µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "provider-url-consistency-challenge",
+      "name": "Provider Url Consistency Challenge",
+      "status": "error",
+      "duration": "136.54µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "provider-verification-challenge",
+      "name": "Provider Verification Challenge",
+      "status": "error",
+      "duration": "153.947µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "qdrant-vector-challenge",
+      "name": "Qdrant Vector Challenge",
+      "status": "error",
+      "duration": "129.659µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "qwen-oauth-refresh-challenge",
+      "name": "Qwen Oauth Refresh Challenge",
+      "status": "error",
+      "duration": "158.906µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "rag-comprehensive-challenge",
+      "name": "Rag Comprehensive Challenge",
+      "status": "error",
+      "duration": "167.88µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "rag-integration-challenge",
+      "name": "Rag Integration Challenge",
+      "status": "error",
+      "duration": "161.378µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "rags-challenge",
+      "name": "Rags Challenge",
+      "status": "error",
+      "duration": "174.425µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "rate-limit-stress-challenge",
+      "name": "Rate Limit Stress Challenge",
+      "status": "error",
+      "duration": "230.833µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "redis-cache-validation-challenge",
+      "name": "Redis Cache Validation Challenge",
+      "status": "error",
+      "duration": "174.483µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "release-build-challenge",
+      "name": "Release Build Challenge",
+      "status": "error",
+      "duration": "168.252µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "reliable-fallback-challenge",
+      "name": "Reliable Fallback Challenge",
+      "status": "error",
+      "duration": "147.648µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "remote-deployment-challenge",
+      "name": "Remote Deployment Challenge",
+      "status": "error",
+      "duration": "429.679µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "remote-services-challenge",
+      "name": "Remote Services Challenge",
+      "status": "error",
+      "duration": "241.871µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "resilience-auto-scaling-challenge",
+      "name": "Resilience Auto Scaling Challenge",
+      "status": "error",
+      "duration": "256.176µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "resilience-backpressure-challenge",
+      "name": "Resilience Backpressure Challenge",
+      "status": "error",
+      "duration": "241.445µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "resilience-bulkhead-isolation-challenge",
+      "name": "Resilience Bulkhead Isolation Challenge",
+      "status": "error",
+      "duration": "314.227µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "resilience-cascading-failures-challenge",
+      "name": "Resilience Cascading Failures Challenge",
+      "status": "error",
+      "duration": "280.388µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "resilience-challenge",
+      "name": "Resilience Challenge",
+      "status": "error",
+      "duration": "223.425µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "resilience-chaos-engineering-challenge",
+      "name": "Resilience Chaos Engineering Challenge",
+      "status": "error",
+      "duration": "210.266µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "resilience-circuit-breaker-challenge",
+      "name": "Resilience Circuit Breaker Challenge",
+      "status": "error",
+      "duration": "235.152µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "resilience-data-backup-challenge",
+      "name": "Resilience Data Backup Challenge",
+      "status": "error",
+      "duration": "205.104µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "resilience-dependency-failures-challenge",
+      "name": "Resilience Dependency Failures Challenge",
+      "status": "error",
+      "duration": "200.683µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "resilience-disaster-recovery-challenge",
+      "name": "Resilience Disaster Recovery Challenge",
+      "status": "error",
+      "duration": "301.454µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "resilience-failover-challenge",
+      "name": "Resilience Failover Challenge",
+      "status": "error",
+      "duration": "168.604µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "resilience-graceful-shutdown-challenge",
+      "name": "Resilience Graceful Shutdown Challenge",
+      "status": "error",
+      "duration": "152.859µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "resilience-health-monitoring-challenge",
+      "name": "Resilience Health Monitoring Challenge",
+      "status": "error",
+      "duration": "160.681µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "resilience-network-partitions-challenge",
+      "name": "Resilience Network Partitions Challenge",
+      "status": "error",
+      "duration": "128.948µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "resilience-partial-failures-challenge",
+      "name": "Resilience Partial Failures Challenge",
+      "status": "error",
+      "duration": "178.692µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "resilience-resource-limits-challenge",
+      "name": "Resilience Resource Limits Challenge",
+      "status": "error",
+      "duration": "179.263µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "resilience-retry-logic-challenge",
+      "name": "Resilience Retry Logic Challenge",
+      "status": "error",
+      "duration": "167.109µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "resilience-self-healing-challenge",
+      "name": "Resilience Self Healing Challenge",
+      "status": "error",
+      "duration": "214.665µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "resilience-service-degradation-challenge",
+      "name": "Resilience Service Degradation Challenge",
+      "status": "error",
+      "duration": "159.051µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "resilience-timeout-handling-challenge",
+      "name": "Resilience Timeout Handling Challenge",
+      "status": "error",
+      "duration": "201.673µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "resilience-zero-downtime-challenge",
+      "name": "Resilience Zero Downtime Challenge",
+      "status": "error",
+      "duration": "184.383µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "sanity-check-challenge",
+      "name": "Sanity Check Challenge",
+      "status": "error",
+      "duration": "141.018µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "security-api-key-validation-challenge",
+      "name": "Security Api Key Validation Challenge",
+      "status": "error",
+      "duration": "199.101µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "security-audit-logging-challenge",
+      "name": "Security Audit Logging Challenge",
+      "status": "error",
+      "duration": "121.359µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "security-authentication-challenge",
+      "name": "Security Authentication Challenge",
+      "status": "error",
+      "duration": "127.912µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "security-authorization-challenge",
+      "name": "Security Authorization Challenge",
+      "status": "error",
+      "duration": "121.809µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "security-compliance-challenge",
+      "name": "Security Compliance Challenge",
+      "status": "error",
+      "duration": "181.343µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "security-cors-policies-challenge",
+      "name": "Security Cors Policies Challenge",
+      "status": "error",
+      "duration": "165.615µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "security-csrf-protection-challenge",
+      "name": "Security Csrf Protection Challenge",
+      "status": "error",
+      "duration": "163.404µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "security-data-encryption-challenge",
+      "name": "Security Data Encryption Challenge",
+      "status": "error",
+      "duration": "193.112µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "security-ddos-protection-challenge",
+      "name": "Security Ddos Protection Challenge",
+      "status": "error",
+      "duration": "152.477µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "security-input-validation-challenge",
+      "name": "Security Input Validation Challenge",
+      "status": "error",
+      "duration": "170.973µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "security-jwt-tokens-challenge",
+      "name": "Security Jwt Tokens Challenge",
+      "status": "error",
+      "duration": "139.574µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "security-oauth-flows-challenge",
+      "name": "Security Oauth Flows Challenge",
+      "status": "error",
+      "duration": "168.081µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "security-output-sanitization-challenge",
+      "name": "Security Output Sanitization Challenge",
+      "status": "error",
+      "duration": "108.714µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "security-penetration-testing-challenge",
+      "name": "Security Penetration Testing Challenge",
+      "status": "error",
+      "duration": "101.24µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "security-rate-limiting-challenge",
+      "name": "Security Rate Limiting Challenge",
+      "status": "error",
+      "duration": "135.38µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "security-scanning-challenge",
+      "name": "Security Scanning Challenge",
+      "status": "error",
+      "duration": "118.722µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "security-scanning-phase3-challenge",
+      "name": "Security Scanning Phase3 Challenge",
+      "status": "error",
+      "duration": "192.664µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "security-secret-management-challenge",
+      "name": "Security Secret Management Challenge",
+      "status": "error",
+      "duration": "156.358µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "security-secure-headers-challenge",
+      "name": "Security Secure Headers Challenge",
+      "status": "error",
+      "duration": "171.577µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "security-sql-injection-challenge",
+      "name": "Security Sql Injection Challenge",
+      "status": "error",
+      "duration": "149.719µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "security-vulnerability-scanning-challenge",
+      "name": "Security Vulnerability Scanning Challenge",
+      "status": "error",
+      "duration": "119.427µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "security-xss-prevention-challenge",
+      "name": "Security Xss Prevention Challenge",
+      "status": "error",
+      "duration": "155.53µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "selfimprove-challenge",
+      "name": "Selfimprove Challenge",
+      "status": "error",
+      "duration": "147.187µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "selfimprove-module-challenge",
+      "name": "Selfimprove Module Challenge",
+      "status": "error",
+      "duration": "123.563µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "semantic-intent-challenge",
+      "name": "Semantic Intent Challenge",
+      "status": "error",
+      "duration": "125.494µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "service-health-fixes-challenge",
+      "name": "Service Health Fixes Challenge",
+      "status": "error",
+      "duration": "121.463µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "simple-chat-multi-turn-challenge",
+      "name": "Simple Chat Multi Turn Challenge",
+      "status": "error",
+      "duration": "129.538µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "simple-chat-single-turn-challenge",
+      "name": "Simple Chat Single Turn Challenge",
+      "status": "error",
+      "duration": "171.596µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "single-provider-challenge",
+      "name": "Single Provider Challenge",
+      "status": "error",
+      "duration": "137.698µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "skills-challenge",
+      "name": "Skills Challenge",
+      "status": "error",
+      "duration": "117.103µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "skills-comprehensive-challenge",
+      "name": "Skills Comprehensive Challenge",
+      "status": "error",
+      "duration": "125.021µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "skills-system-challenge",
+      "name": "Skills System Challenge",
+      "status": "error",
+      "duration": "164.144µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "speckit-auto-activation-challenge",
+      "name": "Speckit Auto Activation Challenge",
+      "status": "error",
+      "duration": "145.374µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "speckit-comprehensive-validation-challenge",
+      "name": "Speckit Comprehensive Validation Challenge",
+      "status": "error",
+      "duration": "148.506µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "sql-injection-challenge",
+      "name": "Sql Injection Challenge",
+      "status": "error",
+      "duration": "145.814µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "sql-schema-challenge",
+      "name": "Sql Schema Challenge",
+      "status": "error",
+      "duration": "123.872µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "startup-scoring-challenge",
+      "name": "Startup Scoring Challenge",
+      "status": "error",
+      "duration": "140.434µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "startup-verifier-debate-team-challenge",
+      "name": "Startup Verifier Debate Team Challenge",
+      "status": "error",
+      "duration": "124.011µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "streaming-chat-basic-challenge",
+      "name": "Streaming Chat Basic Challenge",
+      "status": "error",
+      "duration": "152.068µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "streaming-chat-cancellation-challenge",
+      "name": "Streaming Chat Cancellation Challenge",
+      "status": "error",
+      "duration": "156.367µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "streaming-types-challenge",
+      "name": "Streaming Types Challenge",
+      "status": "error",
+      "duration": "132.594µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "stress-resilience-challenge",
+      "name": "Stress Resilience Challenge",
+      "status": "error",
+      "duration": "126.118µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "stress-responsiveness-challenge",
+      "name": "Stress Responsiveness Challenge",
+      "status": "error",
+      "duration": "143.538µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "subscription-detection-challenge",
+      "name": "Subscription Detection Challenge",
+      "status": "error",
+      "duration": "112.864µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "sustained-stress-challenge",
+      "name": "Sustained Stress Challenge",
+      "status": "error",
+      "duration": "136.57µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "system-compliance-challenge",
+      "name": "System Compliance Challenge",
+      "status": "error",
+      "duration": "144.048µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "test-coverage-phase2-challenge",
+      "name": "Test Coverage Phase2 Challenge",
+      "status": "error",
+      "duration": "167.44µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "test-driven-debate-challenge",
+      "name": "Test Driven Debate Challenge",
+      "status": "error",
+      "duration": "174.741µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "tool-call-argument-validation-challenge",
+      "name": "Tool Call Argument Validation Challenge",
+      "status": "error",
+      "duration": "172.246µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "tool-call-validation-challenge",
+      "name": "Tool Call Validation Challenge",
+      "status": "error",
+      "duration": "265.541µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "tool-execution-challenge",
+      "name": "Tool Execution Challenge",
+      "status": "error",
+      "duration": "183.994µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "tool-handlers-comprehensive-challenge",
+      "name": "Tool Handlers Comprehensive Challenge",
+      "status": "error",
+      "duration": "154.804µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "toon-protocol-challenge",
+      "name": "Toon Protocol Challenge",
+      "status": "error",
+      "duration": "173.865µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "unified-service-boot-challenge",
+      "name": "Unified Service Boot Challenge",
+      "status": "error",
+      "duration": "165.939µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "unified-verification-challenge",
+      "name": "Unified Verification Challenge",
+      "status": "error",
+      "duration": "147.613µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "validation-pipeline-challenge",
+      "name": "Validation Pipeline Challenge",
+      "status": "error",
+      "duration": "276.661µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "verification-failure-reasons-challenge",
+      "name": "Verification Failure Reasons Challenge",
+      "status": "error",
+      "duration": "126.852µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "verified-provider-instance-challenge",
+      "name": "Verified Provider Instance Challenge",
+      "status": "error",
+      "duration": "135.984µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "websearch-challenge",
+      "name": "Websearch Challenge",
+      "status": "error",
+      "duration": "150.802µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "website-phase7-challenge",
+      "name": "Website Phase7 Challenge",
+      "status": "error",
+      "duration": "135.23µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "xss-prevention-challenge",
+      "name": "Xss Prevention Challenge",
+      "status": "error",
+      "duration": "128.367µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "zai-provider-challenge",
+      "name": "Zai Provider Challenge",
+      "status": "error",
+      "duration": "139.887µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "zen-cli-facade-challenge",
+      "name": "Zen Cli Facade Challenge",
+      "status": "error",
+      "duration": "152.712µs",
+      "error": "execution error: context canceled"
+    },
+    {
+      "id": "zen-provider-challenge",
+      "name": "Zen Provider Challenge",
+      "status": "error",
+      "duration": "151.073µs",
+      "error": "execution error: context canceled"
+    }
+  ]
+}

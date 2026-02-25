@@ -1,0 +1,22 @@
+{
+  "challenge_id": "debate-git-integration-challenge",
+  "challenge_name": "Debate Git Integration Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.686756899+03:00",
+  "end_time": "2026-02-25T16:52:55.686809787+03:00",
+  "duration": 52888,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/debate-git-integration-challenge/challenge.log",
+    "output_log": "challenge-results/logs/debate-git-integration-challenge/output.log",
+    "api_requests": "challenge-results/logs/debate-git-integration-challenge/api_requests.log",
+    "api_responses": "challenge-results/logs/debate-git-integration-challenge/api_responses.log"
+  },
+  "error": "execution error: context canceled"
+}

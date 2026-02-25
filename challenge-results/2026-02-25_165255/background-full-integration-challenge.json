@@ -1,0 +1,18 @@
+{
+  "challenge_id": "background-full-integration-challenge",
+  "challenge_name": "Background Full Integration Challenge",
+  "status": "stuck",
+  "start_time": "2026-02-25T16:50:30.974843554+03:00",
+  "end_time": "2026-02-25T16:51:32.977012323+03:00",
+  "duration": 62002168776,
+  "assertions": null,
+  "metrics": {},
+  "outputs": {},
+  "logs": {
+    "challenge_log": "challenge-results/logs/challenge.log",
+    "output_log": "challenge-results/logs/output.log",
+    "api_requests": "",
+    "api_responses": ""
+  },
+  "error": "challenge stuck: no progress reported within 1m0s"
+}

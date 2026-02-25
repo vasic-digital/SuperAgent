@@ -1,0 +1,22 @@
+{
+  "challenge_id": "helixmemory-challenge",
+  "challenge_name": "Helixmemory Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.704350351+03:00",
+  "end_time": "2026-02-25T16:52:55.704401417+03:00",
+  "duration": 51068,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/helixmemory-challenge/challenge.log",
+    "output_log": "challenge-results/logs/helixmemory-challenge/output.log",
+    "api_requests": "challenge-results/logs/helixmemory-challenge/api_requests.log",
+    "api_responses": "challenge-results/logs/helixmemory-challenge/api_responses.log"
+  },
+  "error": "execution error: context canceled"
+}

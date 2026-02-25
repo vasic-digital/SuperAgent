@@ -1,0 +1,22 @@
+{
+  "challenge_id": "helixagent-plugins-challenge",
+  "challenge_name": "Helixagent Plugins Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.704137504+03:00",
+  "end_time": "2026-02-25T16:52:55.704195707+03:00",
+  "duration": 58203,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/helixagent-plugins-challenge/challenge.log",
+    "output_log": "challenge-results/logs/helixagent-plugins-challenge/output.log",
+    "api_requests": "challenge-results/logs/helixagent-plugins-challenge/api_requests.log",
+    "api_responses": "challenge-results/logs/helixagent-plugins-challenge/api_responses.log"
+  },
+  "error": "execution error: context canceled"
+}

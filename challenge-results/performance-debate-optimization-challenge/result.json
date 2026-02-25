@@ -1,0 +1,22 @@
+{
+  "challenge_id": "performance-debate-optimization-challenge",
+  "challenge_name": "Performance Debate Optimization Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.719533563+03:00",
+  "end_time": "2026-02-25T16:52:55.719576327+03:00",
+  "duration": 42764,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/performance-debate-optimization-challenge/challenge.log",
+    "output_log": "challenge-results/logs/performance-debate-optimization-challenge/output.log",
+    "api_requests": "challenge-results/logs/performance-debate-optimization-challenge/api_requests.log",
+    "api_responses": "challenge-results/logs/performance-debate-optimization-challenge/api_responses.log"
+  },
+  "error": "execution error: context canceled"
+}

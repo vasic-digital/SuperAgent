@@ -1,0 +1,22 @@
+{
+  "challenge_id": "selfimprove-module-challenge",
+  "challenge_name": "Selfimprove Module Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.742510062+03:00",
+  "end_time": "2026-02-25T16:52:55.742545519+03:00",
+  "duration": 35457,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/selfimprove-module-challenge/challenge.log",
+    "output_log": "challenge-results/logs/selfimprove-module-challenge/output.log",
+    "api_requests": "challenge-results/logs/selfimprove-module-challenge/api_requests.log",
+    "api_responses": "challenge-results/logs/selfimprove-module-challenge/api_responses.log"
+  },
+  "error": "execution error: context canceled"
+}

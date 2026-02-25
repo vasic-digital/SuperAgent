@@ -1,0 +1,22 @@
+{
+  "challenge_id": "subscription-detection-challenge",
+  "challenge_name": "Subscription Detection Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.745286234+03:00",
+  "end_time": "2026-02-25T16:52:55.745316801+03:00",
+  "duration": 30568,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/subscription-detection-challenge/challenge.log",
+    "output_log": "challenge-results/logs/subscription-detection-challenge/output.log",
+    "api_requests": "challenge-results/logs/subscription-detection-challenge/api_requests.log",
+    "api_responses": "challenge-results/logs/subscription-detection-challenge/api_responses.log"
+  },
+  "error": "execution error: context canceled"
+}

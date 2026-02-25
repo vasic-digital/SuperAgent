@@ -1,0 +1,22 @@
+{
+  "challenge_id": "chat-concurrent-requests-challenge",
+  "challenge_name": "Chat Concurrent Requests Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.665861601+03:00",
+  "end_time": "2026-02-25T16:52:55.665932469+03:00",
+  "duration": 70867,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/chat-concurrent-requests-challenge/challenge.log",
+    "output_log": "challenge-results/logs/chat-concurrent-requests-challenge/output.log",
+    "api_requests": "challenge-results/logs/chat-concurrent-requests-challenge/api_requests.log",
+    "api_responses": "challenge-results/logs/chat-concurrent-requests-challenge/api_responses.log"
+  },
+  "error": "execution error: context canceled"
+}

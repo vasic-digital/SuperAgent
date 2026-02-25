@@ -1,0 +1,22 @@
+{
+  "challenge_id": "performance-caching-effectiveness-challenge",
+  "challenge_name": "Performance Caching Effectiveness Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.718537553+03:00",
+  "end_time": "2026-02-25T16:52:55.718585687+03:00",
+  "duration": 48133,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/performance-caching-effectiveness-challenge/challenge.log",
+    "output_log": "challenge-results/logs/performance-caching-effectiveness-challenge/output.log",
+    "api_requests": "challenge-results/logs/performance-caching-effectiveness-challenge/api_requests.log",
+    "api_responses": "challenge-results/logs/performance-caching-effectiveness-challenge/api_responses.log"
+  },
+  "error": "execution error: context canceled"
+}

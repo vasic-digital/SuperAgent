@@ -1,0 +1,22 @@
+{
+  "challenge_id": "websearch-challenge",
+  "challenge_name": "Websearch Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.74785251+03:00",
+  "end_time": "2026-02-25T16:52:55.747899421+03:00",
+  "duration": 46911,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/websearch-challenge/challenge.log",
+    "output_log": "challenge-results/logs/websearch-challenge/output.log",
+    "api_requests": "challenge-results/logs/websearch-challenge/api_requests.log",
+    "api_responses": "challenge-results/logs/websearch-challenge/api_responses.log"
+  },
+  "error": "execution error: context canceled"
+}

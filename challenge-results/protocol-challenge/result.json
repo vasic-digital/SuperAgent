@@ -1,0 +1,22 @@
+{
+  "challenge_id": "protocol-challenge",
+  "challenge_name": "Protocol Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.724256209+03:00",
+  "end_time": "2026-02-25T16:52:55.724303893+03:00",
+  "duration": 47681,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/protocol-challenge/challenge.log",
+    "output_log": "challenge-results/logs/protocol-challenge/output.log",
+    "api_requests": "challenge-results/logs/protocol-challenge/api_requests.log",
+    "api_responses": "challenge-results/logs/protocol-challenge/api_responses.log"
+  },
+  "error": "execution error: context canceled"
+}

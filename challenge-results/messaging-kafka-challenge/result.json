@@ -1,0 +1,22 @@
+{
+  "challenge_id": "messaging-kafka-challenge",
+  "challenge_name": "Messaging Kafka Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.713927496+03:00",
+  "end_time": "2026-02-25T16:52:55.7139992+03:00",
+  "duration": 71700,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/messaging-kafka-challenge/challenge.log",
+    "output_log": "challenge-results/logs/messaging-kafka-challenge/output.log",
+    "api_requests": "challenge-results/logs/messaging-kafka-challenge/api_requests.log",
+    "api_responses": "challenge-results/logs/messaging-kafka-challenge/api_responses.log"
+  },
+  "error": "execution error: context canceled"
+}

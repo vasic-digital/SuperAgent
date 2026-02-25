@@ -1,0 +1,22 @@
+{
+  "challenge_id": "debate-round-orchestration-challenge",
+  "challenge_name": "Debate Round Orchestration Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.690336047+03:00",
+  "end_time": "2026-02-25T16:52:55.690404811+03:00",
+  "duration": 68762,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/debate-round-orchestration-challenge/challenge.log",
+    "output_log": "challenge-results/logs/debate-round-orchestration-challenge/output.log",
+    "api_requests": "challenge-results/logs/debate-round-orchestration-challenge/api_requests.log",
+    "api_responses": "challenge-results/logs/debate-round-orchestration-challenge/api_responses.log"
+  },
+  "error": "execution error: context canceled"
+}

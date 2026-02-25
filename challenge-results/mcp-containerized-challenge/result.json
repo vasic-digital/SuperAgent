@@ -1,0 +1,22 @@
+{
+  "challenge_id": "mcp-containerized-challenge",
+  "challenge_name": "Mcp Containerized Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.707775037+03:00",
+  "end_time": "2026-02-25T16:52:55.707830352+03:00",
+  "duration": 55313,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/mcp-containerized-challenge/challenge.log",
+    "output_log": "challenge-results/logs/mcp-containerized-challenge/output.log",
+    "api_requests": "challenge-results/logs/mcp-containerized-challenge/api_requests.log",
+    "api_responses": "challenge-results/logs/mcp-containerized-challenge/api_responses.log"
+  },
+  "error": "execution error: context canceled"
+}

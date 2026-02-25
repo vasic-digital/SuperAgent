@@ -1,0 +1,22 @@
+{
+  "challenge_id": "memory-race-challenge",
+  "challenge_name": "Memory Race Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.711389362+03:00",
+  "end_time": "2026-02-25T16:52:55.711445927+03:00",
+  "duration": 56565,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/memory-race-challenge/challenge.log",
+    "output_log": "challenge-results/logs/memory-race-challenge/output.log",
+    "api_requests": "challenge-results/logs/memory-race-challenge/api_requests.log",
+    "api_responses": "challenge-results/logs/memory-race-challenge/api_responses.log"
+  },
+  "error": "execution error: context canceled"
+}

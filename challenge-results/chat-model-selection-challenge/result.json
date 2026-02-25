@@ -1,0 +1,22 @@
+{
+  "challenge_id": "chat-model-selection-challenge",
+  "challenge_name": "Chat Model Selection Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.666916869+03:00",
+  "end_time": "2026-02-25T16:52:55.666977753+03:00",
+  "duration": 60883,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/chat-model-selection-challenge/challenge.log",
+    "output_log": "challenge-results/logs/chat-model-selection-challenge/output.log",
+    "api_requests": "challenge-results/logs/chat-model-selection-challenge/api_requests.log",
+    "api_responses": "challenge-results/logs/chat-model-selection-challenge/api_responses.log"
+  },
+  "error": "execution error: context canceled"
+}

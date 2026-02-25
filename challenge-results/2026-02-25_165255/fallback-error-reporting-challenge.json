@@ -1,0 +1,22 @@
+{
+  "challenge_id": "fallback-error-reporting-challenge",
+  "challenge_name": "Fallback Error Reporting Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.700812069+03:00",
+  "end_time": "2026-02-25T16:52:55.701015001+03:00",
+  "duration": 202933,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/challenge.log",
+    "output_log": "challenge-results/logs/output.log",
+    "api_requests": "",
+    "api_responses": ""
+  },
+  "error": "execution error: context canceled"
+}

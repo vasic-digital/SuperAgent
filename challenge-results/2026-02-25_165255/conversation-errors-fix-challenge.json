@@ -1,0 +1,22 @@
+{
+  "challenge_id": "conversation-errors-fix-challenge",
+  "challenge_name": "Conversation Errors Fix Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.682716222+03:00",
+  "end_time": "2026-02-25T16:52:55.682927419+03:00",
+  "duration": 211200,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/challenge.log",
+    "output_log": "challenge-results/logs/output.log",
+    "api_requests": "",
+    "api_responses": ""
+  },
+  "error": "execution error: context canceled"
+}

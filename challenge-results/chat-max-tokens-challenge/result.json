@@ -1,0 +1,22 @@
+{
+  "challenge_id": "chat-max-tokens-challenge",
+  "challenge_name": "Chat Max Tokens Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.666505487+03:00",
+  "end_time": "2026-02-25T16:52:55.666571684+03:00",
+  "duration": 66123,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/chat-max-tokens-challenge/challenge.log",
+    "output_log": "challenge-results/logs/chat-max-tokens-challenge/output.log",
+    "api_requests": "challenge-results/logs/chat-max-tokens-challenge/api_requests.log",
+    "api_responses": "challenge-results/logs/chat-max-tokens-challenge/api_responses.log"
+  },
+  "error": "execution error: context canceled"
+}

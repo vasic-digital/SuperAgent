@@ -1,0 +1,22 @@
+{
+  "challenge_id": "database-connection-pool-challenge",
+  "challenge_name": "Database Connection Pool Challenge",
+  "status": "error",
+  "start_time": "2026-02-25T16:52:55.683874357+03:00",
+  "end_time": "2026-02-25T16:52:55.683929993+03:00",
+  "duration": 55633,
+  "assertions": null,
+  "metrics": null,
+  "outputs": {
+    "exit_code": "0",
+    "stderr": "",
+    "stdout": ""
+  },
+  "logs": {
+    "challenge_log": "challenge-results/logs/database-connection-pool-challenge/challenge.log",
+    "output_log": "challenge-results/logs/database-connection-pool-challenge/output.log",
+    "api_requests": "challenge-results/logs/database-connection-pool-challenge/api_requests.log",
+    "api_responses": "challenge-results/logs/database-connection-pool-challenge/api_responses.log"
+  },
+  "error": "execution error: context canceled"
+}
