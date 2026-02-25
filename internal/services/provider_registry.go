@@ -31,6 +31,7 @@ import (
 	"dev.helix.agent/internal/llm/providers/openai"
 	"dev.helix.agent/internal/llm/providers/openrouter"
 	"dev.helix.agent/internal/llm/providers/perplexity"
+	"dev.helix.agent/internal/llm/providers/publicai"
 	"dev.helix.agent/internal/llm/providers/qwen"
 	"dev.helix.agent/internal/llm/providers/replicate"
 	"dev.helix.agent/internal/llm/providers/together"
@@ -1599,6 +1600,12 @@ func (r *ProviderRegistry) createProviderFromConfig(cfg ProviderConfig) (llm.LLM
 			return cerebras.NewCerebrasProvider(cfg.APIKey, baseURL, model), nil
 		}
 		return nil, fmt.Errorf("Cerebras provider not available: API key missing or disabled")
+
+	case "publicai":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return publicai.NewPublicAIProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("Public AI provider not available: API key missing or disabled")
 
 	case "ollama":
 		if cfg.Enabled && baseURL != "" {
