@@ -1,4 +1,4 @@
-Add into the execution of all existing test the followin entry point test which will be executed
+Add into the execution of all existing test the following entry point test which will be executed
 first before any other test! If this test fails we will not continue further with execution of any
 next test (or Challenge). It is mandatory (blocker) pre-condition for execution of all types of the
 tests we have and execution of the Challenges! First step of the test is to verify existence of .env
