@@ -1,4 +1,4 @@
-.PHONY: all build build-legacy-memory test run fmt lint security-scan security-scan-all security-scan-snyk security-scan-sonarqube security-scan-trivy security-scan-gosec security-scan-go security-scan-stop docker-build docker-run docker-stop docker-clean docker-logs docker-test docker-dev docker-prod coverage docker-clean-all install-deps help docs check-deps test-all test-all-docker container-detect container-build container-start container-stop container-logs container-status container-test podman-build podman-run podman-stop podman-logs podman-clean podman-full test-no-skip test-all-must-pass test-performance test-performance-bench test-challenges test-coverage-100
+.PHONY: all build build-legacy-memory test run fmt lint security-scan security-scan-all security-scan-snyk security-scan-sonarqube security-scan-trivy security-scan-gosec security-scan-go security-scan-stop security-scan-semgrep security-scan-kics security-scan-grype security-scan-container security-scan-iac security-report docker-build docker-run docker-stop docker-clean docker-logs docker-test docker-dev docker-prod coverage docker-clean-all install-deps help docs check-deps test-all test-all-docker container-detect container-build container-start container-stop container-logs container-status container-test podman-build podman-run podman-stop podman-logs podman-clean podman-full test-no-skip test-all-must-pass test-performance test-performance-bench test-challenges test-coverage-100
 
 # =============================================================================
 # MAIN TARGETS
@@ -674,6 +674,82 @@ security-scan-go:
 security-scan-stop:
 	@echo "🔒 Stopping security scanning services..."
 	@./scripts/security-scan.sh stop
+
+security-scan-semgrep:
+	@echo "🔒 Running Semgrep pattern-based security scanner..."
+	@mkdir -p reports/security
+	@if command -v docker >/dev/null 2>&1; then \
+		docker run --rm -v "$(PWD):/app:ro" -v "$(PWD)/reports/security:/reports" returntocorp/semgrep:latest \
+			--config auto --json --output /reports/semgrep-report.json --metrics off /app; \
+	elif command -v podman >/dev/null 2>&1; then \
+		podman run --rm -v "$(PWD):/app:ro" -v "$(PWD)/reports/security:/reports" returntocorp/semgrep:latest \
+			--config auto --json --output /reports/semgrep-report.json --metrics off /app; \
+	else \
+		echo "⚠️  Docker/Podman not found. Install Docker or Podman to use Semgrep."; \
+	fi
+
+security-scan-kics:
+	@echo "🔒 Running KICS Infrastructure-as-Code scanner..."
+	@mkdir -p reports/security
+	@if command -v docker >/dev/null 2>&1; then \
+		docker run --rm -v "$(PWD):/app:ro" -v "$(PWD)/reports/security:/reports" checkmarx/kics:latest \
+			scan -p /app -o /reports --report-formats json --ignore-on-exit all --silent; \
+	elif command -v podman >/dev/null 2>&1; then \
+		podman run --rm -v "$(PWD):/app:ro" -v "$(PWD)/reports/security:/reports" checkmarx/kics:latest \
+			scan -p /app -o /reports --report-formats json --ignore-on-exit all --silent; \
+	else \
+		echo "⚠️  Docker/Podman not found. Install Docker or Podman to use KICS."; \
+	fi
+
+security-scan-grype:
+	@echo "🔒 Running Grype vulnerability scanner..."
+	@mkdir -p reports/security
+	@if command -v docker >/dev/null 2>&1; then \
+		docker run --rm -v "$(PWD):/app:ro" -v "$(PWD)/reports/security:/reports" anchore/grype:latest \
+			dir:/app -o json --file /reports/grype-report.json; \
+	elif command -v podman >/dev/null 2>&1; then \
+		podman run --rm -v "$(PWD):/app:ro" -v "$(PWD)/reports/security:/reports" anchore/grype:latest \
+			dir:/app -o json --file /reports/grype-report.json; \
+	else \
+		echo "⚠️  Docker/Podman not found. Install Docker or Podman to use Grype."; \
+	fi
+
+security-scan-container:
+	@echo "🔒 Scanning container images with Trivy..."
+	@if command -v trivy >/dev/null 2>&1; then \
+		trivy image --severity HIGH,CRITICAL helixagent:latest; \
+	else \
+		echo "⚠️  Trivy not found. Install Trivy to scan container images."; \
+	fi
+
+security-scan-iac:
+	@echo "🔒 Scanning Infrastructure-as-Code files..."
+	@$(MAKE) security-scan-kics
+
+security-report:
+	@echo "📊 Generating consolidated security report..."
+	@mkdir -p reports/security
+	@echo "# Security Scan Report - $$(date +%Y-%m-%d)" > reports/security/consolidated-report.md
+	@echo "" >> reports/security/consolidated-report.md
+	@echo "## Scan Summary" >> reports/security/consolidated-report.md
+	@echo "" >> reports/security/consolidated-report.md
+	@if [ -f reports/security/gosec-report.json ]; then \
+		echo "- Gosec: $$(cat reports/security/gosec-report.json | jq '.Stats.found | length // 0' 2>/dev/null || echo 'N/A') issues"; \
+	fi
+	@if [ -f reports/security/trivy-report.json ]; then \
+		echo "- Trivy: $$(cat reports/security/trivy-report.json | jq '.Results | length // 0' 2>/dev/null || echo 'N/A') findings"; \
+	fi
+	@if [ -f reports/security/semgrep-report.json ]; then \
+		echo "- Semgrep: $$(cat reports/security/semgrep-report.json | jq '.results | length // 0' 2>/dev/null || echo 'N/A') findings"; \
+	fi
+	@echo "" >> reports/security/consolidated-report.md
+	@echo "## Full Reports" >> reports/security/consolidated-report.md
+	@echo "- Gosec: reports/security/gosec-report.json" >> reports/security/consolidated-report.md
+	@echo "- Trivy: reports/security/trivy-report.json" >> reports/security/consolidated-report.md
+	@echo "- Semgrep: reports/security/semgrep-report.json" >> reports/security/consolidated-report.md
+	@echo "- KICS: reports/security/results.json" >> reports/security/consolidated-report.md
+	@echo "- Grype: reports/security/grype-report.json" >> reports/security/consolidated-report.md
+	@echo "✅ Report generated: reports/security/consolidated-report.md"
 
 sbom:
 	@echo "📋 Generating SBOM (Software Bill of Materials)..."

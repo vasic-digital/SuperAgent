@@ -447,6 +447,221 @@ func (bm *BootManager) HealthCheckAll() map[string]error {
 	return results
 }
 
+// HealthCheckAllParallel checks all enabled services concurrently with bounded parallelism.
+// This is significantly faster than sequential health checks for services running on different hosts.
+func (bm *BootManager) HealthCheckAllParallel(ctx context.Context) map[string]*HealthCheckResult {
+	endpoints := bm.Config.AllEndpoints()
+	enabledEndpoints := make(map[string]config.ServiceEndpoint)
+	for name, ep := range endpoints {
+		if ep.Enabled {
+			enabledEndpoints[name] = ep
+		}
+	}
+	return bm.HealthChecker.CheckAllNonBlocking(ctx, enabledEndpoints)
+}
+
+// BootAllOptimized starts all services and performs parallel health checks for improved performance.
+// This is an optimized version of BootAll that uses concurrent health checking.
+func (bm *BootManager) BootAllOptimized() error {
+	ctx := context.Background()
+	bm.Logger.Info("╔══════════════════════════════════════════════════════════════════╗")
+	bm.Logger.Info("║         OPTIMIZED SERVICE BOOT MANAGER (PARALLEL)               ║")
+	bm.Logger.Info("╚══════════════════════════════════════════════════════════════════╝")
+
+	endpoints := bm.Config.AllEndpoints()
+
+	// Phase 1: Parallel service discovery
+	bm.Logger.Info("Starting parallel service discovery...")
+	bm.discoverServicesParallel(ctx, endpoints)
+
+	// Phase 2: Group and start local services (same as BootAll)
+	composeGroups := make(map[string][]string)
+	remoteGroups := make(map[string][]string)
+	for name, ep := range endpoints {
+		if !ep.Enabled {
+			bm.setResultIfAbsent(name, &BootResult{Name: name, Status: "skipped"})
+			continue
+		}
+		if ep.Remote || ep.Discovered {
+			if ep.Discovered {
+				bm.setResultIfAbsent(name, &BootResult{Name: name, Status: "discovered"})
+			} else {
+				bm.setResultIfAbsent(name, &BootResult{Name: name, Status: "remote"})
+			}
+			if ep.Remote && ep.ComposeFile != "" && ep.ServiceName != "" && bm.getContainerAdapter() != nil {
+				key := ep.ComposeFile
+				if ep.Profile != "" {
+					key = ep.ComposeFile + "|" + ep.Profile
+				}
+				remoteGroups[key] = append(remoteGroups[key], ep.ServiceName)
+			}
+			continue
+		}
+		if ep.ComposeFile != "" && ep.ServiceName != "" {
+			key := ep.ComposeFile
+			if ep.Profile != "" {
+				key = ep.ComposeFile + "|" + ep.Profile
+			}
+			composeGroups[key] = append(composeGroups[key], ep.ServiceName)
+		}
+	}
+
+	// Deploy remote services
+	adapter := bm.getContainerAdapter()
+	if adapter != nil && adapter.RemoteEnabled() && len(remoteGroups) > 0 {
+		bm.Logger.Info("Deploying remote services...")
+		for key, services := range remoteGroups {
+			parts := strings.SplitN(key, "|", 2)
+			composeFile := parts[0]
+			profile := ""
+			if len(parts) > 1 {
+				profile = parts[1]
+			}
+			start := time.Now()
+			err := adapter.RemoteComposeUp(ctx, composeFile, profile)
+			duration := time.Since(start)
+			if err != nil {
+				bm.Logger.WithError(err).Error("Failed to deploy remote services")
+				for _, svc := range services {
+					bm.setResult(svc, &BootResult{Name: svc, Status: "failed", Duration: duration, Error: err})
+				}
+			} else {
+				for _, svc := range services {
+					bm.setResult(svc, &BootResult{Name: svc, Status: "started", Duration: duration})
+				}
+			}
+		}
+	}
+
+	// Start local services
+	for key, services := range composeGroups {
+		parts := strings.SplitN(key, "|", 2)
+		composeFile := parts[0]
+		profile := ""
+		if len(parts) > 1 {
+			profile = parts[1]
+		}
+		start := time.Now()
+		err := bm.startComposeServices(composeFile, profile, services)
+		duration := time.Since(start)
+		if err != nil {
+			for _, svc := range services {
+				bm.setResult(svc, &BootResult{Name: svc, Status: "failed", Duration: duration, Error: err})
+			}
+		} else {
+			for _, svc := range services {
+				bm.setResult(svc, &BootResult{Name: svc, Status: "started", Duration: duration})
+			}
+		}
+	}
+
+	// Phase 3: Parallel health checks
+	bm.Logger.Info("Running parallel health checks...")
+	healthResults := bm.HealthCheckAllParallel(ctx)
+
+	var requiredFailures []string
+	for name, result := range healthResults {
+		ep := endpoints[name]
+		if result.Error != nil {
+			if ep.Required {
+				requiredFailures = append(requiredFailures, fmt.Sprintf("%s: %v", name, result.Error))
+				bm.Logger.WithFields(logrus.Fields{
+					"service":  name,
+					"duration": result.Duration,
+					"error":    result.Error,
+				}).Error("REQUIRED service health check FAILED")
+			} else {
+				bm.Logger.WithFields(logrus.Fields{
+					"service":  name,
+					"duration": result.Duration,
+					"error":    result.Error,
+				}).Warn("Optional service health check failed")
+			}
+			bm.resultsMu.Lock()
+			if r, ok := bm.Results[name]; ok {
+				r.Error = result.Error
+				if r.Status != "remote" {
+					r.Status = "failed"
+				}
+			}
+			bm.resultsMu.Unlock()
+		} else {
+			bm.Logger.WithFields(logrus.Fields{
+				"service":  name,
+				"duration": result.Duration,
+			}).Info("Service health check passed")
+			bm.resultsMu.Lock()
+			if r, ok := bm.Results[name]; ok {
+				r.Duration = result.Duration
+				if r.Status == "" {
+					r.Status = "already_running"
+				}
+			}
+			bm.resultsMu.Unlock()
+		}
+	}
+
+	// Log summary
+	bm.logSummary()
+
+	if len(requiredFailures) > 0 {
+		errMsg := fmt.Sprintf("BOOT BLOCKED: %d required service(s) failed health check:\n", len(requiredFailures))
+		for i, f := range requiredFailures {
+			errMsg += fmt.Sprintf("  %d. %s\n", i+1, f)
+		}
+		return fmt.Errorf("%s", errMsg)
+	}
+
+	return nil
+}
+
+// discoverServicesParallel performs service discovery in parallel with bounded concurrency.
+func (bm *BootManager) discoverServicesParallel(ctx context.Context, endpoints map[string]config.ServiceEndpoint) {
+	const maxConcurrent = 5
+	sem := make(chan struct{}, maxConcurrent)
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
+	for name, ep := range endpoints {
+		if !ep.Enabled || ep.Remote || !ep.DiscoveryEnabled {
+			continue
+		}
+
+		wg.Add(1)
+		go func(name string, ep config.ServiceEndpoint) {
+			defer wg.Done()
+
+			select {
+			case sem <- struct{}{}:
+				defer func() { <-sem }()
+			case <-ctx.Done():
+				return
+			}
+
+			bm.Logger.WithField("service", name).Debug("Attempting service discovery")
+			discovered, err := bm.Discoverer.Discover(ctx, &ep)
+			if err != nil {
+				bm.Logger.WithFields(logrus.Fields{
+					"service": name,
+					"error":   err,
+				}).Warn("Service discovery failed")
+				return
+			}
+
+			if discovered {
+				mu.Lock()
+				ep.Discovered = true
+				endpoints[name] = ep
+				mu.Unlock()
+				bm.setResult(name, &BootResult{Name: name, Status: "discovered"})
+				bm.Logger.WithField("service", name).Info("Service discovered in network")
+			}
+		}(name, ep)
+	}
+
+	wg.Wait()
+}
+
 // ShutdownAll stops all local services that were started by this boot manager.
 func (bm *BootManager) ShutdownAll() error {
 	bm.Logger.Info("Shutting down all managed services...")

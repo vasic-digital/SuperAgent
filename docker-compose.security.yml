@@ -122,6 +122,48 @@ services:
     profiles:
       - scan
 
+  # Semgrep - Fast, pattern-based static analysis
+  semgrep-scanner:
+    image: returntocorp/semgrep:latest
+    container_name: helixagent-semgrep-scanner
+    working_dir: /app
+    volumes:
+      - .:/app:ro
+      - ./reports/security:/reports
+    networks:
+      - security-network
+    command: ["--config", "auto", "--json", "--output", "/reports/semgrep-report.json", "--metrics", "off", "/app"]
+    profiles:
+      - scan
+
+  # KICS - Infrastructure as Code Scanner
+  kics-scanner:
+    image: checkmarx/kics:latest
+    container_name: helixagent-kics-scanner
+    working_dir: /app
+    volumes:
+      - .:/app:ro
+      - ./reports/security:/reports
+    networks:
+      - security-network
+    command: ["scan", "-p", "/app", "-o", "/reports", "--report-formats", "json", "--ignore-on-exit", "all", "--silent"]
+    profiles:
+      - scan
+
+  # Grype - Vulnerability Scanner (alternative to Trivy)
+  grype-scanner:
+    image: anchore/grype:latest
+    container_name: helixagent-grype-scanner
+    working_dir: /app
+    volumes:
+      - .:/app:ro
+      - ./reports/security:/reports
+    networks:
+      - security-network
+    command: ["dir:/app", "-o", "json", "--file", "/reports/grype-report.json"]
+    profiles:
+      - scan
+
 volumes:
   sonarqube_data:
     driver: local

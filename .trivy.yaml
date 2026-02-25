@@ -1,0 +1,22 @@
+severity: HIGH,CRITICAL
+ignore-unfixed: true
+skip-dirs:
+  - vendor
+  - node_modules
+  - .git
+  - cli_agents
+  - MCP/submodules
+  - LLMsVerifier/llm-verifier/vendor
+skip-files:
+  - "*.test"
+  - "*_test.go"
+
+vulnerability:
+  type: os,library
+  ignore-unfixed: true
+
+secret:
+  config: .secrets.baseline
+
+misconfiguration:
+  include-non-failures: true

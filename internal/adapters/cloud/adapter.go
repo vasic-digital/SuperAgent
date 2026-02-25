@@ -130,12 +130,16 @@ func (a *AWSBedrockIntegration) ListModels(ctx context.Context) ([]map[string]in
 	return []map[string]interface{}{}, nil
 }
 
-// InvokeModel invokes a model.
+// InvokeModel invokes a model using AWS Bedrock runtime API.
 func (a *AWSBedrockIntegration) InvokeModel(ctx context.Context, modelName, prompt string, config map[string]interface{}) (string, error) {
 	if a.config.AccessKeyID == "" || a.config.SecretAccessKey == "" {
 		return "", fmt.Errorf("AWS credentials not configured")
 	}
-	return "", fmt.Errorf("model invocation not implemented in adapter")
+	if DefaultAWSBedrockInvoker == nil {
+		return "", fmt.Errorf("AWS Bedrock client not initialized")
+	}
+	invoker := DefaultAWSBedrockInvoker(a.config, a.logger)
+	return invoker(ctx, modelName, prompt, config)
 }
 
 // HealthCheck checks the health of AWS Bedrock.
@@ -195,12 +199,19 @@ func (g *GCPVertexAIIntegration) ListModels(ctx context.Context) ([]map[string]i
 	return []map[string]interface{}{}, nil
 }
 
-// InvokeModel invokes a model.
+// InvokeModel invokes a model using GCP Vertex AI API.
 func (g *GCPVertexAIIntegration) InvokeModel(ctx context.Context, modelName, prompt string, config map[string]interface{}) (string, error) {
 	if g.config.ProjectID == "" {
 		return "", fmt.Errorf("GCP project ID not configured")
 	}
-	return "", fmt.Errorf("model invocation not implemented in adapter")
+	if g.config.AccessToken == "" {
+		return "", fmt.Errorf("GCP access token not configured")
+	}
+	if DefaultGCPVertexAIInvoker == nil {
+		return "", fmt.Errorf("GCP Vertex AI client not initialized")
+	}
+	invoker := DefaultGCPVertexAIInvoker(g.config, g.logger)
+	return invoker(ctx, modelName, prompt, config)
 }
 
 // HealthCheck checks the health of GCP Vertex AI.
@@ -261,12 +272,19 @@ func (a *AzureOpenAIIntegration) ListModels(ctx context.Context) ([]map[string]i
 	return []map[string]interface{}{}, nil
 }
 
-// InvokeModel invokes a model.
+// InvokeModel invokes a model using Azure OpenAI API.
 func (a *AzureOpenAIIntegration) InvokeModel(ctx context.Context, modelName, prompt string, config map[string]interface{}) (string, error) {
 	if a.config.Endpoint == "" {
 		return "", fmt.Errorf("Azure endpoint not configured")
 	}
-	return "", fmt.Errorf("model invocation not implemented in adapter")
+	if a.config.APIKey == "" {
+		return "", fmt.Errorf("Azure API key not configured")
+	}
+	if DefaultAzureOpenAIInvoker == nil {
+		return "", fmt.Errorf("Azure OpenAI client not initialized")
+	}
+	invoker := DefaultAzureOpenAIInvoker(a.config, a.logger)
+	return invoker(ctx, modelName, prompt, config)
 }
 
 // HealthCheck checks the health of Azure OpenAI.

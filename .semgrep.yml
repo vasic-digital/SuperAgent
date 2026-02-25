@@ -1,0 +1,81 @@
+rules:
+  - id: go.lang.security.audit.dangerous-exec-cmd.dangerous-exec-cmd
+    message: Detected dangerous command execution
+    severity: WARNING
+    languages: [go]
+    pattern-either:
+      - pattern: exec.Command($CMD, ...)
+      - pattern: exec.CommandContext($CTX, $CMD, ...)
+
+  - id: go.lang.security.audit.net.use-tls.use-tls
+    message: Use TLS for network connections
+    severity: WARNING
+    languages: [go]
+    pattern: http.ListenAndServe(...)
+
+  - id: go.lang.security.audit.crypto.use-sha256.use-sha256
+    message: Avoid weak cryptographic hash functions
+    severity: WARNING
+    languages: [go]
+    pattern-either:
+      - pattern: md5.New()
+      - pattern: sha1.New()
+
+  - id: go.lang.security.audit.sqli.format-string-taint.format-string-taint
+    message: Potential SQL injection via string formatting
+    severity: ERROR
+    languages: [go]
+    pattern: fmt.Sprintf("... %s ...", $VAR)
+
+  - id: go.lang.security.audit.fileio.file-permissions.file-permissions
+    message: File created with overly permissive permissions
+    severity: WARNING
+    languages: [go]
+    pattern: os.WriteFile(..., 0666)
+
+  - id: go.lang.security.audit.fileio.use-os-temp-dir.use-os-temp-dir
+    message: Use os.TempDir() for temporary files
+    severity: INFO
+    languages: [go]
+    pattern: os.Open("/tmp/...")
+
+  - id: go.hardcoded-credentials.hardcoded-credentials
+    message: Potential hardcoded credential
+    severity: ERROR
+    languages: [go]
+    pattern-either:
+      - pattern: $VAR = "...password..."
+      - pattern: $VAR = "...secret..."
+      - pattern: $VAR = "...api_key..."
+      - pattern: $VAR = "...apikey..."
+      - pattern: $VAR = "...token..."
+
+  - id: go.logger-credentials.logger-credentials
+    message: Potential credentials in log message
+    severity: WARNING
+    languages: [go]
+    pattern-either:
+      - pattern: logrus.WithField("password", ...)
+      - pattern: logrus.WithField("secret", ...)
+      - pattern: logrus.WithField("token", ...)
+      - pattern: logrus.WithField("api_key", ...)
+
+  - id: go.unsafe.unsafe-pointer.unsafe-pointer
+    message: Avoid unsafe.Pointer operations
+    severity: WARNING
+    languages: [go]
+    pattern: unsafe.Pointer(...)
+
+  - id: go.goroutine-leak.goroutine-leak
+    message: Potential goroutine leak - missing done channel check
+    severity: WARNING
+    languages: [go]
+    pattern: |
+      go func() {
+        for {
+          select {
+          case <-$CH:
+            ...
+          }
+        }
+      }()

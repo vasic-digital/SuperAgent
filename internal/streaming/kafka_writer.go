@@ -4,6 +4,7 @@ package streaming
 import (
 	"context"
 	"encoding/json"
+	"math/rand/v2"
 	"sync"
 	"time"
 
@@ -326,8 +327,7 @@ func randomStreamString(n int) string {
 	const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
 	b := make([]byte, n)
 	for i := range b {
-		b[i] = letters[time.Now().UnixNano()%int64(len(letters))]
-		time.Sleep(time.Nanosecond)
+		b[i] = letters[rand.IntN(len(letters))]
 	}
 	return string(b)
 }
