@@ -5,8 +5,10 @@ language-settings:
   go:
     countDeps: true
 
-# Ignore rules for known false positives or accepted risks
-ignore: {}
+ignore:
+  SNYK-GOLANG-GITHUBCOMGOLOGLOG-7261795:
+    - "* > github.com/go-logr/logr":
+        reason: "Logr is used transitively and doesn't affect security"
+        expires: "2026-06-01T00:00:00Z"
 
-# Patch rules
 patch: {}
