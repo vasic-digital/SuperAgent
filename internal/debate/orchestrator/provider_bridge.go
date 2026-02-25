@@ -133,7 +133,9 @@ func (f *OrchestratorFactory) CreateOrchestratorWithDefaults() *Orchestrator {
 	return f.CreateOrchestrator(DefaultOrchestratorConfig())
 }
 
-// registerVerifiedProviders registers all verified providers from the registry.
+// registerVerifiedProviders registers all available providers from the registry.
+// Providers are registered even if not yet verified, but unhealthy ones are skipped.
+// This ensures the debate system has agents available immediately on startup.
 func (f *OrchestratorFactory) registerVerifiedProviders(orch *Orchestrator) {
 	if f.providerRegistry == nil {
 		return
@@ -147,13 +149,13 @@ func (f *OrchestratorFactory) registerVerifiedProviders(orch *Orchestrator) {
 			continue
 		}
 
-		// Skip unhealthy providers
+		// Check health status - only skip if explicitly unhealthy (not just unverified)
 		health := f.providerRegistry.GetProviderHealth(name)
-		if health != nil && !health.Verified {
-			continue
+		if health != nil && health.Status == services.ProviderStatusUnhealthy {
+			continue // Skip explicitly unhealthy providers
 		}
 
-		// Get score from health verification
+		// Get score from health verification, or use default/config weight
 		score := 5.0 // Default minimum score
 		if health != nil && health.Score > 0 {
 			score = health.Score

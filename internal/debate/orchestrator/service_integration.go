@@ -45,12 +45,13 @@ type ServiceIntegrationConfig struct {
 }
 
 // DefaultServiceIntegrationConfig returns default integration config.
+// Per docs/requests/debate requirements: 5 positions × 3 LLMs = 15 agents
 func DefaultServiceIntegrationConfig() ServiceIntegrationConfig {
 	return ServiceIntegrationConfig{
-		EnableNewFramework:       true,
-		FallbackToLegacy:         true,
+		EnableNewFramework:       true,  // NEW FRAMEWORK IS DEFAULT
+		FallbackToLegacy:         false, // Don't fallback - use new system
 		EnableLearning:           true,
-		MinAgentsForNewFramework: 3,
+		MinAgentsForNewFramework: 3, // Minimum to start (ideally 15 for full 5×3)
 		LogDebateDetails:         true,
 	}
 }

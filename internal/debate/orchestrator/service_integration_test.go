@@ -20,7 +20,7 @@ func TestDefaultServiceIntegrationConfig(t *testing.T) {
 	config := DefaultServiceIntegrationConfig()
 
 	assert.True(t, config.EnableNewFramework)
-	assert.True(t, config.FallbackToLegacy)
+	assert.False(t, config.FallbackToLegacy) // Changed: new framework is mandatory, no fallback
 	assert.True(t, config.EnableLearning)
 	assert.Equal(t, 3, config.MinAgentsForNewFramework)
 	assert.True(t, config.LogDebateDetails)

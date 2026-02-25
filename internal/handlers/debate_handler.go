@@ -85,13 +85,13 @@ type CreateDebateRequest struct {
 	EnableCognee              bool                       `json:"enable_cognee,omitempty"`
 	EnableMultiPassValidation bool                       `json:"enable_multi_pass_validation,omitempty"`
 	ValidationConfig          *ValidationConfigRequest   `json:"validation_config,omitempty"`
-	TopologyType              string                     `json:"topology_type,omitempty"`              // graph_mesh, star, chain, tree
-	CoordinationProtocol      string                     `json:"coordination_protocol,omitempty"`      // cpde, dpde, adaptive
+	TopologyType              string                     `json:"topology_type,omitempty"`         // graph_mesh, star, chain, tree
+	CoordinationProtocol      string                     `json:"coordination_protocol,omitempty"` // cpde, dpde, adaptive
 	EnableAdversarial         bool                       `json:"enable_adversarial,omitempty"`
 	EnableDehallucination     bool                       `json:"enable_dehallucination,omitempty"`
 	EnableSelfEvolvement      bool                       `json:"enable_self_evolvement,omitempty"`
 	EnableApprovalGates       bool                       `json:"enable_approval_gates,omitempty"`
-	VotingMethod              string                     `json:"voting_method,omitempty"`              // weighted, majority, borda, condorcet, plurality, unanimous
+	VotingMethod              string                     `json:"voting_method,omitempty"` // weighted, majority, borda, condorcet, plurality, unanimous
 	MaxReflexionAttempts      int                        `json:"max_reflexion_attempts,omitempty"`
 	Metadata                  map[string]any             `json:"metadata,omitempty"`
 }
@@ -287,43 +287,28 @@ func (h *DebateHandler) runDebate(debateID string, config *services.DebateConfig
 	var multiPassResult *services.MultiPassResult
 	var err error
 
-	// Try to use the new debate framework if available and appropriate
-	useNewFramework := h.orchestratorIntegration != nil && h.orchestratorIntegration.ShouldUseNewFramework(config)
+	// Use the new debate framework (mandatory - per documentation requirements)
+	// The new orchestrator framework implements the full AI debate spec:
+	// - 5 positions × 3 LLMs = 15 agents
+	// - 8-phase protocol: Dehallucination → SelfEvolvement → Proposal → Critique → Review → Optimization → Adversarial → Convergence
+	// - Lesson banking and cross-debate learning
+	// - Weighted voting with confidence scoring
+	if h.orchestratorIntegration == nil {
+		h.logger.WithField("debate_id", debateID).Error("Orchestrator integration not initialized - this is a configuration error")
+		err = &debateError{message: "orchestrator integration not initialized"}
+	} else {
+		// Log agent pool status for debugging
+		agentCount := h.orchestratorIntegration.GetOrchestrator().GetAgentPool().Size()
+		h.logger.WithFields(logrus.Fields{
+			"debate_id":   debateID,
+			"agent_count": agentCount,
+			"framework":   "new_orchestrator",
+		}).Info("Running debate with new orchestrator framework (mandatory)")
 
-	if useNewFramework {
-		h.logger.WithField("debate_id", debateID).Info("Running debate with new orchestrator framework")
 		result, err = h.orchestratorIntegration.ConductDebate(context.Background(), config)
 		if err != nil {
-			// Fall back to legacy if configured
-			h.logger.WithError(err).WithField("debate_id", debateID).Warn("New framework failed, falling back to legacy")
-			err = nil // Reset error for fallback
-			useNewFramework = false
-		}
-	}
-
-	if !useNewFramework {
-		if validationConfig != nil && h.debateService != nil {
-			// Use multi-pass validation
-			h.logger.WithField("debate_id", debateID).Info("Running debate with multi-pass validation")
-			multiPassResult, err = h.debateService.ConductDebateWithMultiPassValidation(
-				context.Background(),
-				config,
-				validationConfig,
-			)
-			if multiPassResult != nil && len(multiPassResult.Phases) > 0 {
-				// Update current phase as we progress
-				h.mu.Lock()
-				if state, exists := h.activeDebates[debateID]; exists {
-					state.CurrentPhase = string(multiPassResult.Phases[len(multiPassResult.Phases)-1].Phase)
-				}
-				h.mu.Unlock()
-			}
-		} else if h.advancedDebate != nil {
-			result, err = h.advancedDebate.ConductAdvancedDebate(context.Background(), config)
-		} else if h.debateService != nil {
-			result, err = h.debateService.ConductDebate(context.Background(), config)
-		} else {
-			err = &debateError{message: "no debate service configured"}
+			h.logger.WithError(err).WithField("debate_id", debateID).Error("New framework debate failed")
+			// Don't fall back to legacy - fail explicitly to force proper configuration
 		}
 	}
 
@@ -699,10 +684,10 @@ func (h *DebateHandler) GetDebateGates(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"debate_id":      debateID,
-		"status":         state.Status,
-		"current_phase":  state.CurrentPhase,
-		"gates_enabled":  state.Config != nil,
+		"debate_id":        debateID,
+		"status":           state.Status,
+		"current_phase":    state.CurrentPhase,
+		"gates_enabled":    state.Config != nil,
 		"pending_approval": state.Status == "pending_approval" || state.Status == "paused",
 	})
 }

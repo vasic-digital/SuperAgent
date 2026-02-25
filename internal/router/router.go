@@ -777,10 +777,20 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 		rc.debateService = debateService
 		debateHandler := handlers.NewDebateHandler(debateService, nil, logger)
 
-		// Wire up the new debate orchestrator framework (optional, feature-flagged)
+		// Wire up the NEW debate orchestrator framework (MANDATORY - per docs/requests/debate)
+		// This implements: 5 positions × 3 LLMs = 15 agents
+		// 8-phase protocol: Dehallucination → SelfEvolvement → Proposal → Critique → Review → Optimization → Adversarial → Convergence
 		orchestratorIntegration := orchestrator.CreateIntegration(providerRegistry, logger)
 		debateHandler.SetOrchestratorIntegration(orchestratorIntegration)
-		logger.Info("New debate orchestrator framework enabled")
+
+		// Log agent pool status for verification
+		agentCount := orchestratorIntegration.GetOrchestrator().GetAgentPool().Size()
+		logger.WithFields(logrus.Fields{
+			"framework":     "new_orchestrator",
+			"agent_count":   agentCount,
+			"min_required":  3,
+			"target_agents": 15, // 5 positions × 3 LLMs
+		}).Info("NEW DEBATE ORCHESTRATOR FRAMEWORK ENABLED (per docs/requests/debate requirements)")
 
 		// Initialize Constitution Watcher (auto-update Constitution on project changes)
 		projectRoot := os.Getenv("PROJECT_ROOT")
@@ -805,6 +815,21 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 		// Add debate team configuration endpoint
 		protected.GET("/debates/team", func(c *gin.Context) {
 			c.JSON(http.StatusOK, debateTeamConfig.GetTeamSummary())
+		})
+
+		// Add NEW orchestrator framework status endpoint
+		protected.GET("/debates/orchestrator/status", func(c *gin.Context) {
+			stats, err := orchestratorIntegration.GetStatistics(c.Request.Context())
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"framework":                "new_debate_orchestrator",
+				"documentation_compliance": "docs/requests/debate requirements",
+				"target_agents":            15, // 5 positions × 3 LLMs
+				"statistics":               stats,
+			})
 		})
 
 		// Initialize monitoring services
