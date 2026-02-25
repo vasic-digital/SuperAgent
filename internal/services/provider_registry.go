@@ -20,6 +20,7 @@ import (
 	"dev.helix.agent/internal/llm/providers/cerebras"
 	"dev.helix.agent/internal/llm/providers/chutes"
 	"dev.helix.agent/internal/llm/providers/claude"
+	"dev.helix.agent/internal/llm/providers/cloudflare"
 	"dev.helix.agent/internal/llm/providers/codestral"
 	"dev.helix.agent/internal/llm/providers/cohere"
 	"dev.helix.agent/internal/llm/providers/deepseek"
@@ -27,7 +28,14 @@ import (
 	"dev.helix.agent/internal/llm/providers/gemini"
 	"dev.helix.agent/internal/llm/providers/groq"
 	"dev.helix.agent/internal/llm/providers/huggingface"
+	"dev.helix.agent/internal/llm/providers/hyperbolic"
+	"dev.helix.agent/internal/llm/providers/kilo"
+	"dev.helix.agent/internal/llm/providers/kimi"
 	"dev.helix.agent/internal/llm/providers/mistral"
+	"dev.helix.agent/internal/llm/providers/modal"
+	"dev.helix.agent/internal/llm/providers/nia"
+	"dev.helix.agent/internal/llm/providers/nlpcloud"
+	"dev.helix.agent/internal/llm/providers/novita"
 	"dev.helix.agent/internal/llm/providers/nvidia"
 	"dev.helix.agent/internal/llm/providers/ollama"
 	"dev.helix.agent/internal/llm/providers/openai"
@@ -36,10 +44,16 @@ import (
 	"dev.helix.agent/internal/llm/providers/publicai"
 	"dev.helix.agent/internal/llm/providers/qwen"
 	"dev.helix.agent/internal/llm/providers/replicate"
+	"dev.helix.agent/internal/llm/providers/sambanova"
+	"dev.helix.agent/internal/llm/providers/sarvam"
+	"dev.helix.agent/internal/llm/providers/siliconflow"
 	"dev.helix.agent/internal/llm/providers/together"
+	"dev.helix.agent/internal/llm/providers/upstage"
+	"dev.helix.agent/internal/llm/providers/vulavula"
 	"dev.helix.agent/internal/llm/providers/xai"
 	"dev.helix.agent/internal/llm/providers/zai"
 	"dev.helix.agent/internal/llm/providers/zen"
+	"dev.helix.agent/internal/llm/providers/zhipu"
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/verifier"
 	"github.com/sirupsen/logrus"
@@ -1699,16 +1713,91 @@ func (r *ProviderRegistry) createProviderFromConfig(cfg ProviderConfig) (llm.LLM
 		}
 		return nil, fmt.Errorf("Chutes provider not available: API key missing or disabled")
 
-	// Providers using OpenRouter-compatible API proxy (no native implementation)
-	case "hyperbolic", "sambanova", "siliconflow", "cloudflare",
-		"kimi", "novita", "upstage":
+	case "cloudflare":
 		if cfg.Enabled && cfg.APIKey != "" {
-			if baseURL == "" {
-				baseURL = "https://openrouter.ai/api/v1/chat/completions"
-			}
-			return openrouter.NewSimpleOpenRouterProviderWithBaseURL(cfg.APIKey, baseURL), nil
+			accountID := os.Getenv("CLOUDFLARE_ACCOUNT_ID")
+			return cloudflare.NewCloudflareProvider(cfg.APIKey, accountID, baseURL, model), nil
 		}
-		return nil, fmt.Errorf("%s provider not available: API key missing or disabled", cfg.Type)
+		return nil, fmt.Errorf("Cloudflare provider not available: API key missing or disabled")
+
+	case "kimi":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return kimi.NewKimiProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("Kimi provider not available: API key missing or disabled")
+
+	case "sambanova":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return sambanova.NewSambaNovaProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("SambaNova provider not available: API key missing or disabled")
+
+	case "upstage":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return upstage.NewUpstageProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("Upstage provider not available: API key missing or disabled")
+
+	case "sarvam":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return sarvam.NewSarvamProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("Sarvam provider not available: API key missing or disabled")
+
+	case "zhipu":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return zhipu.NewZhipuProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("Zhipu provider not available: API key missing or disabled")
+
+	case "kilo":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return kilo.NewKiloProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("Kilo provider not available: API key missing or disabled")
+
+	case "modal":
+		if cfg.Enabled && cfg.APIKey != "" {
+			apiKeyID := os.Getenv("MODAL_API_KEY_ID")
+			return modal.NewModalProvider(cfg.APIKey, apiKeyID, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("Modal provider not available: API key missing or disabled")
+
+	case "nia":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return nia.NewNiaProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("Nia provider not available: API key missing or disabled")
+
+	case "nlpcloud":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return nlpcloud.NewNLPCloudProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("NLPCloud provider not available: API key missing or disabled")
+
+	case "vulavula":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return vulavula.NewVulavulaProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("Vulavula provider not available: API key missing or disabled")
+
+	case "siliconflow":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return siliconflow.NewSiliconFlowProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("SiliconFlow provider not available: API key missing or disabled")
+
+	case "hyperbolic":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return hyperbolic.NewHyperbolicProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("Hyperbolic provider not available: API key missing or disabled")
+
+	case "novita":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return novita.NewNovitaProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("Novita provider not available: API key missing or disabled")
 
 	default:
 		return nil, fmt.Errorf("unsupported provider type: %s", cfg.Type)
