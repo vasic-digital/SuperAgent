@@ -352,3 +352,6 @@
 [submodule "HelixSpecifier"]
 	path = HelixSpecifier
 	url = git@github.com:HelixDevelopment/HelixSpecifier.git
+[submodule "BuildCheck"]
+	path = BuildCheck
+	url = git@github.com:milos85vasic/BuildCheck.git
