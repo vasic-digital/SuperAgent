@@ -1,21 +1,22 @@
-version: "2"
-
 linters:
   disable-all: true
   enable:
     - errcheck
     - govet
-  disable:
-    - ineffassign
-    - staticcheck
-    - unused
 
 linters-settings:
   errcheck:
     check-type-assertions: true
     check-blank: true
-  govet:
-    check-shadowing: false
+
+run:
+  go: '1.24'
+  timeout: 5m
+  modules-download-mode: mod
+  skip-dirs:
+    - cli_agents
+    - MCP
+    - MCP-Servers
 
 issues:
   exclude-rules:
@@ -50,15 +51,6 @@ issues:
         - unused
         - gosimple
         - typecheck
-
-run:
-  go: '1.24'
-  timeout: 5m
-  modules-download-mode: mod
-  skip-dirs:
-    - cli_agents
-    - MCP
-    - MCP-Servers
 
 severity:
   default: warning
