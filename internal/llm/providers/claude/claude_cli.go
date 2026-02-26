@@ -76,8 +76,8 @@ type ClaudeCLIConfig struct {
 // Model is initially empty - will be discovered dynamically
 func DefaultClaudeCLIConfig() ClaudeCLIConfig {
 	return ClaudeCLIConfig{
-		Model:           "", // Will be discovered dynamically
-		Timeout:         120 * time.Second,
+		Model:           "",                // Will be discovered dynamically
+		Timeout:         180 * time.Second, // Increased for Claude 4.6
 		MaxOutputTokens: 4096,
 	}
 }
@@ -85,7 +85,7 @@ func DefaultClaudeCLIConfig() ClaudeCLIConfig {
 // NewClaudeCLIProvider creates a new Claude Code CLI provider
 func NewClaudeCLIProvider(config ClaudeCLIConfig) *ClaudeCLIProvider {
 	if config.Timeout == 0 {
-		config.Timeout = 120 * time.Second
+		config.Timeout = 180 * time.Second // Increased for Claude 4.6
 	}
 	if config.MaxOutputTokens == 0 {
 		config.MaxOutputTokens = 4096
@@ -777,13 +777,32 @@ func (p *ClaudeCLIProvider) IsModelAvailable(model string) bool {
 	return false
 }
 
-// GetBestAvailableModel returns the best available model (prefers opus > sonnet > haiku)
+// GetBestAvailableModel returns the best available model (prefers opus > sonnet > haiku, newer versions over older)
 func (p *ClaudeCLIProvider) GetBestAvailableModel() string {
 	models := p.GetAvailableModels()
 
-	// Priority order: opus > sonnet > haiku
-	priorities := []string{"opus", "sonnet", "haiku"}
+	// Priority order with version preference: 4.6 > 4.5 > 4.x
+	// Format: model-version (e.g., "claude-sonnet-4-6", "claude-opus-4-5-20251101")
+	modelPriority := []string{
+		"claude-opus-4-6",
+		"claude-sonnet-4-6",
+		"claude-opus-4-5",
+		"claude-sonnet-4-5",
+		"claude-haiku-4-5",
+		"claude-opus-4",
+		"claude-sonnet-4",
+	}
 
+	for _, preferred := range modelPriority {
+		for _, model := range models {
+			if strings.Contains(model, preferred) {
+				return model
+			}
+		}
+	}
+
+	// Fallback: check for opus > sonnet > haiku in any model
+	priorities := []string{"opus", "sonnet", "haiku"}
 	for _, priority := range priorities {
 		for _, model := range models {
 			if strings.Contains(model, priority) {
@@ -792,11 +811,11 @@ func (p *ClaudeCLIProvider) GetBestAvailableModel() string {
 		}
 	}
 
-	// Return first available model or default
+	// Return first available model or default to Sonnet 4.6
 	if len(models) > 0 {
 		return models[0]
 	}
-	return "claude-sonnet-4-5-20250929"
+	return "claude-sonnet-4-6" // Default to latest Sonnet
 }
 
 // GetKnownModels returns the list of known Claude models (static fallback)

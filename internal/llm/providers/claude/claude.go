@@ -20,8 +20,8 @@ import (
 
 const (
 	ClaudeAPIURL     = "https://api.anthropic.com/v1/messages"
-	ClaudeModel      = "claude-sonnet-4-20250514" // Current default model for API key auth
-	ClaudeOAuthModel = "claude-sonnet-4-20250514" // Default model for OAuth auth (Claude Code compatible)
+	ClaudeModel      = "claude-sonnet-4-6" // Current default model for API key auth (latest)
+	ClaudeOAuthModel = "claude-sonnet-4-6" // Default model for OAuth auth (Claude Code compatible, latest)
 
 	// Claude 4.6 (Latest generation - February 2026)
 	ClaudeOpus46Model   = "claude-opus-4-6"

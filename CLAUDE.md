@@ -247,6 +247,7 @@ Each module is an independent Go module with its own go.mod, tests, CLAUDE.md, A
 - **Debate Benchmark Bridge**: SWE-bench/HumanEval/MMLU evaluation with static code analysis for 5 metrics
 - **Debate CI/CD Hooks**: Configurable validation pipelines per phase (tests, linting, static analysis, security scan)
 - **Debate Git Worktree Tool**: Isolated session version control with snapshot commits and diff generation
+- **Debate Performance Optimizer**: Parallel LLM execution with semaphore limiting, response caching with TTL, smart fallback chain traversal, early termination on consensus detection, and comprehensive stats tracking. Key file: `internal/services/debate_performance_optimizer.go`
 - **SpecKit Auto-Activation**: 7-phase development flow (Constitution → Specify → Clarify → Plan → Tasks → Analyze → Implement) triggered automatically for large changes/refactoring based on work granularity detection (5 levels: single action, small creation, big creation, whole functionality, refactoring). Phase caching for resumption. Key files: `internal/services/speckit_orchestrator.go`, `enhanced_intent_classifier.go`, `debate_service_speckit_e2e_test.go`
 - **Constitution Management**: Auto-update Constitution on project changes (new modules, documentation changes, structure changes). Background watcher monitors filesystem. Key files: `internal/services/constitution_watcher.go`, `constitution_manager.go`, `documentation_sync.go`
 - **Circuit Breaker**: Fault tolerance for provider failures
@@ -363,6 +364,7 @@ Registry: `internal/agents/registry.go`. Generate configs: `./bin/helixagent --g
 ./challenges/scripts/debate_provenance_audit_challenge.sh       # 12 tests
 ./challenges/scripts/debate_deadlock_detection_challenge.sh     # 8 tests
 ./challenges/scripts/debate_git_integration_challenge.sh        # 11 tests
+./challenges/scripts/debate_performance_optimizer_challenge.sh   # 36 tests
 ./challenges/scripts/helixmemory_challenge.sh                   # 80+ tests
 ./challenges/scripts/helixspecifier_challenge.sh                # 138 tests
 ```

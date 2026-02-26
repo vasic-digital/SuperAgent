@@ -64,16 +64,19 @@ type DebateService struct {
 	constitutionWatcher      *ConstitutionWatcher      // Constitution auto-update background service
 
 	// Debate Spec Full Compliance — new components
-	reflexionMemory     *reflexion.EpisodicMemoryBuffer // Reflexion episodic memory buffer
-	reflexionGenerator  *reflexion.ReflectionGenerator  // Reflexion verbal reflection generator
-	reflexionLoop       *reflexion.ReflexionLoop        // Reflexion retry-and-learn loop
-	accumulatedWisdom   *reflexion.AccumulatedWisdom    // Cross-session learning
-	approvalGate        *gates.ApprovalGate             // Configurable approval gates
-	provenanceTracker   *audit.ProvenanceTracker        // Audit trail for reproducibility
-	benchmarkBridge     *evaluation.BenchmarkBridge     // Benchmark evaluation bridge
-	sessionRepo         *database.DebateSessionRepository  // DB: debate sessions
-	turnRepo            *database.DebateTurnRepository     // DB: debate turns
-	codeVersionRepo     *database.CodeVersionRepository    // DB: code versions
+	reflexionMemory    *reflexion.EpisodicMemoryBuffer   // Reflexion episodic memory buffer
+	reflexionGenerator *reflexion.ReflectionGenerator    // Reflexion verbal reflection generator
+	reflexionLoop      *reflexion.ReflexionLoop          // Reflexion retry-and-learn loop
+	accumulatedWisdom  *reflexion.AccumulatedWisdom      // Cross-session learning
+	approvalGate       *gates.ApprovalGate               // Configurable approval gates
+	provenanceTracker  *audit.ProvenanceTracker          // Audit trail for reproducibility
+	benchmarkBridge    *evaluation.BenchmarkBridge       // Benchmark evaluation bridge
+	sessionRepo        *database.DebateSessionRepository // DB: debate sessions
+	turnRepo           *database.DebateTurnRepository    // DB: debate turns
+	codeVersionRepo    *database.CodeVersionRepository   // DB: code versions
+
+	// Performance Optimizer
+	performanceOptimizer *DebatePerformanceOptimizer
 }
 
 // DebateLogRepository interface for logging debate activities
@@ -232,7 +235,13 @@ func NewDebateServiceWithDeps(
 		}
 	}
 
-	logger.Info("[Debate Service] Initialized with integrated features: Test-Driven, 4-Pass Validation, Tool Integration, Enhanced Intent, HelixSpecifier, SpecKit, Reflexion, Adversarial, Approval Gates, Provenance")
+	performanceOptimizer := NewDebatePerformanceOptimizer(
+		DefaultDebateOptimizationConfig(),
+		providerRegistry,
+		logger,
+	)
+
+	logger.Info("[Debate Service] Initialized with integrated features: Test-Driven, 4-Pass Validation, Tool Integration, Enhanced Intent, HelixSpecifier, SpecKit, Reflexion, Adversarial, Approval Gates, Provenance, Performance Optimizer")
 
 	return &DebateService{
 		logger:           logger,
@@ -265,6 +274,9 @@ func NewDebateServiceWithDeps(
 		approvalGate:       approvalGateInst,
 		provenanceTracker:  provenanceTrackerInst,
 		benchmarkBridge:    benchmarkBridgeInst,
+
+		// Performance Optimizer
+		performanceOptimizer: performanceOptimizer,
 	}
 }
 
@@ -306,6 +318,26 @@ func (ds *DebateService) GetSpecifierBackendName() string {
 // IsHelixSpecifierActive returns true if HelixSpecifier is the active spec engine.
 func (ds *DebateService) IsHelixSpecifierActive() bool {
 	return specifieradapter.IsHelixSpecifierEnabled() && ds.specifierAdapter != nil
+}
+
+func (ds *DebateService) GetPerformanceOptimizerStats() *OptimizationStats {
+	if ds.performanceOptimizer != nil {
+		return ds.performanceOptimizer.GetStats()
+	}
+	return nil
+}
+
+func (ds *DebateService) ClearPerformanceOptimizerCache() {
+	if ds.performanceOptimizer != nil {
+		ds.performanceOptimizer.ClearCache()
+	}
+}
+
+func (ds *DebateService) CheckEarlyTermination(responses map[DebateTeamPosition]string) bool {
+	if ds.performanceOptimizer != nil {
+		return ds.performanceOptimizer.ShouldTerminateEarly(responses)
+	}
+	return false
 }
 
 // SetLogRepository sets the log repository for persistent logging
@@ -3816,15 +3848,15 @@ func (ds *DebateService) conductHelixSpecifierDebate(
 		Success:      flowResult.Success,
 		Metadata: map[string]interface{}{
 			"helixspecifier_flow": true,
-			"effort_level":       string(flowResult.EffortLevel),
-			"ceremony_level":     string(flowResult.CeremonyLevel),
-			"granularity":        intentResult.Granularity,
-			"action_type":        intentResult.ActionType,
-			"requires_speckit":   intentResult.RequiresSpecKit,
-			"speckit_reason":     intentResult.SpecKitReason,
-			"phases_completed":   len(flowResult.PhaseResults),
-			"engine_name":        ds.specifierAdapter.Name(),
-			"engine_version":     ds.specifierAdapter.Version(),
+			"effort_level":        string(flowResult.EffortLevel),
+			"ceremony_level":      string(flowResult.CeremonyLevel),
+			"granularity":         intentResult.Granularity,
+			"action_type":         intentResult.ActionType,
+			"requires_speckit":    intentResult.RequiresSpecKit,
+			"speckit_reason":      intentResult.SpecKitReason,
+			"phases_completed":    len(flowResult.PhaseResults),
+			"engine_name":         ds.specifierAdapter.Name(),
+			"engine_version":      ds.specifierAdapter.Version(),
 		},
 	}
 

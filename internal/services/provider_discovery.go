@@ -115,11 +115,11 @@ type ProviderMapping struct {
 // Updated 2026-01-28: Comprehensive mapping with all alternative key names for maximum compatibility
 var providerMappings = []ProviderMapping{
 	// Tier 1: Premium providers (direct API access)
-	// Claude/Anthropic - Multiple key name variations
-	{EnvVar: "ANTHROPIC_API_KEY", ProviderType: "claude", ProviderName: "claude", BaseURL: "https://api.anthropic.com/v1/messages", DefaultModel: "claude-sonnet-4-5-20250929", Priority: 1},
-	{EnvVar: "CLAUDE_API_KEY", ProviderType: "claude", ProviderName: "claude", BaseURL: "https://api.anthropic.com/v1/messages", DefaultModel: "claude-sonnet-4-5-20250929", Priority: 1},
-	{EnvVar: "ApiKey_Claude", ProviderType: "claude", ProviderName: "claude", BaseURL: "https://api.anthropic.com/v1/messages", DefaultModel: "claude-sonnet-4-5-20250929", Priority: 1},
-	{EnvVar: "ApiKey_Anthropic", ProviderType: "claude", ProviderName: "claude", BaseURL: "https://api.anthropic.com/v1/messages", DefaultModel: "claude-sonnet-4-5-20250929", Priority: 1},
+	// Claude/Anthropic - Multiple key name variations (updated to Claude 4.6)
+	{EnvVar: "ANTHROPIC_API_KEY", ProviderType: "claude", ProviderName: "claude", BaseURL: "https://api.anthropic.com/v1/messages", DefaultModel: "claude-sonnet-4-6", Priority: 1},
+	{EnvVar: "CLAUDE_API_KEY", ProviderType: "claude", ProviderName: "claude", BaseURL: "https://api.anthropic.com/v1/messages", DefaultModel: "claude-sonnet-4-6", Priority: 1},
+	{EnvVar: "ApiKey_Claude", ProviderType: "claude", ProviderName: "claude", BaseURL: "https://api.anthropic.com/v1/messages", DefaultModel: "claude-sonnet-4-6", Priority: 1},
+	{EnvVar: "ApiKey_Anthropic", ProviderType: "claude", ProviderName: "claude", BaseURL: "https://api.anthropic.com/v1/messages", DefaultModel: "claude-sonnet-4-6", Priority: 1},
 
 	// OpenAI - Multiple key name variations
 	{EnvVar: "OPENAI_API_KEY", ProviderType: "openai", ProviderName: "openai", BaseURL: "https://api.openai.com/v1", DefaultModel: "gpt-4o", Priority: 1},

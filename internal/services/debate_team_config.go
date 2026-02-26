@@ -52,10 +52,11 @@ const (
 )
 
 // ClaudeModels defines the available Claude models (OAuth2 provider)
-// Updated 2026-02-12 with Claude 4.6 Opus
+// Updated 2026-02-26 with Claude 4.6 Sonnet
 var ClaudeModels = struct {
 	// Claude 4.6 (Latest generation - February 2026)
-	Opus46 string // claude-opus-4-6 - Most capable, latest
+	Opus46   string // claude-opus-4-6 - Most capable, latest
+	Sonnet46 string // claude-sonnet-4-6 - Latest balanced model
 
 	// Claude 4.5 (November 2025)
 	Opus45   string // claude-opus-4-5-20251101 - Previous flagship
@@ -76,7 +77,8 @@ var ClaudeModels = struct {
 	Haiku3  string // claude-3-haiku-20240307
 }{
 	// Claude 4.6 (Latest - Primary model for AI Debate Team)
-	Opus46: "claude-opus-4-6",
+	Opus46:   "claude-opus-4-6",
+	Sonnet46: "claude-sonnet-4-6",
 
 	// Claude 4.5
 	Opus45:   "claude-opus-4-5-20251101",
@@ -514,7 +516,8 @@ func (dtc *DebateTeamConfig) collectClaudeModels() {
 		Score float64
 	}{
 		// Claude 4.6 (Latest - highest score)
-		{ClaudeModels.Opus46, 9.9}, // Most capable Claude model (February 2026)
+		{ClaudeModels.Opus46, 9.95},   // Most capable Claude model (February 2026)
+		{ClaudeModels.Sonnet46, 9.85}, // Latest balanced model (February 2026)
 
 		// Claude 4.5 (Primary)
 		{ClaudeModels.Opus45, 9.7},   // Previous flagship
@@ -1383,7 +1386,8 @@ func (dtc *DebateTeamConfig) GetTeamSummary() map[string]interface{} {
 		"sorting_method":      "score_only", // NO OAuth priority - pure score-based sorting
 		"claude_models": map[string]string{
 			// Claude 4.6 (Latest)
-			"opus_46": ClaudeModels.Opus46,
+			"opus_46":   ClaudeModels.Opus46,
+			"sonnet_46": ClaudeModels.Sonnet46,
 			// Claude 4.5
 			"opus_45":   ClaudeModels.Opus45,
 			"sonnet_45": ClaudeModels.Sonnet45,
