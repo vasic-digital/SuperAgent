@@ -2133,9 +2133,6 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 		logger.Infof("IMPORTANT: Set LOCAL_ENDPOINT=%s before running opencode", baseURL)
 	} else {
 		fmt.Println(string(jsonData))
-		fmt.Fprintln(os.Stderr, "")
-		fmt.Fprintln(os.Stderr, "IMPORTANT: Save as opencode.json (WITHOUT leading dot) in ~/.config/opencode/")
-		fmt.Fprintf(os.Stderr, "IMPORTANT: Set LOCAL_ENDPOINT=%s before running opencode\n", baseURL)
 	}
 
 	return nil
@@ -2205,10 +2202,7 @@ func buildLocalDockerMCPServers(baseURL string) map[string]OpenCodeMCPServerDefN
 		helixHome = homeDir + "/.helixagent"
 	}
 
-	// WARNING: TCP URLs are NOT supported by OpenCode!
-	// OpenCode only supports http://, https://, and stdio commands
-	// This function is deprecated for OpenCode config generation
-	fmt.Fprintln(os.Stderr, "WARNING: TCP-based MCP servers are NOT supported by OpenCode. Use default npx-based MCPs instead.")
+	logrus.Warn("TCP-based MCP servers are NOT supported by OpenCode. Use default npx-based MCPs instead.")
 
 	return map[string]OpenCodeMCPServerDefNew{
 		// HelixAgent local plugin and remote endpoints
