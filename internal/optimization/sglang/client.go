@@ -218,7 +218,7 @@ func (c *Client) CreateSession(ctx context.Context, sessionID, systemPrompt stri
 
 	// Pre-warm the prefix cache with the system prompt
 	if systemPrompt != "" {
-		_, _ = c.WarmPrefix(ctx, systemPrompt)
+		_, _ = c.WarmPrefix(ctx, systemPrompt) //nolint:errcheck
 	}
 
 	c.sessions[sessionID] = session

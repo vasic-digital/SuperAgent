@@ -175,7 +175,7 @@ func (p *Provider) CompleteStream(ctx context.Context, req *models.LLMRequest) (
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
+		respBody, _ := io.ReadAll(resp.Body) //nolint:errcheck
 		_ = resp.Body.Close()
 		return nil, fmt.Errorf("%s: stream API error: %d - %s", p.name, resp.StatusCode, string(respBody))
 	}

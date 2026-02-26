@@ -503,7 +503,7 @@ func (r *BackgroundTaskRepository) MoveToDeadLetter(ctx context.Context, taskID,
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	defer func() { _ = tx.Rollback(ctx) }() //nolint:errcheck
 
 	// Get the task data
 	task, err := r.GetByID(ctx, taskID)

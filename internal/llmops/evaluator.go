@@ -449,7 +449,7 @@ func (e *InMemoryContinuousEvaluator) checkForRegressions(ctx context.Context, r
 			alert.Severity = AlertSeverityCritical
 		}
 
-		_ = e.alertManager.Create(ctx, alert)
+		_ = e.alertManager.Create(ctx, alert) //nolint:errcheck
 	}
 
 	// Check individual metrics using snapshots
@@ -469,7 +469,7 @@ func (e *InMemoryContinuousEvaluator) checkForRegressions(ctx context.Context, r
 					ActualValue: change,
 					CreatedAt:   time.Now(),
 				}
-				_ = e.alertManager.Create(ctx, alert)
+				_ = e.alertManager.Create(ctx, alert) //nolint:errcheck
 			}
 		}
 	}

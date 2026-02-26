@@ -253,7 +253,7 @@ func (p *StandardGuardrailPipeline) logTriggered(ctx context.Context, g Guardrai
 		if result.Action == GuardrailActionBlock {
 			event.Risk = SeverityHigh
 		}
-		_ = auditLogger.Log(ctx, event)
+		_ = auditLogger.Log(ctx, event) //nolint:errcheck
 	}
 }
 

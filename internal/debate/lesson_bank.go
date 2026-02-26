@@ -925,7 +925,7 @@ func (lb *LessonBank) enforceMaxLessons(ctx context.Context) error {
 		lb.removeFromTagIndex(candidates[i])
 
 		if lb.storage != nil {
-			_ = lb.storage.Delete(ctx, candidates[i].ID)
+			_ = lb.storage.Delete(ctx, candidates[i].ID) //nolint:errcheck
 		}
 	}
 

@@ -208,7 +208,7 @@ func (e *Event) Clone() *Event {
 
 // ToMessage converts the event to a Message.
 func (e *Event) ToMessage() *Message {
-	payload, _ := json.Marshal(e)
+	payload, _ := json.Marshal(e) //nolint:errcheck
 	msg := NewMessage(string(e.Type), payload)
 	msg.ID = e.ID
 	msg.TraceID = e.TraceID

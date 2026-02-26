@@ -231,7 +231,7 @@ func (d *DependencyResolver) checkVersionCompatibility(version, constraint strin
 		pattern := strings.NewReplacer(".x", ".*", ".*", "\\..*", "*", ".*").Replace(constraint)
 		pattern = "^" + regexp.QuoteMeta(pattern) + "$"
 		pattern = strings.ReplaceAll(pattern, "\\*\\.\\*", ".*")
-		matched, _ := regexp.MatchString(pattern, version)
+		matched, _ := regexp.MatchString(pattern, version) //nolint:errcheck
 		return matched
 	} else {
 		// Exact version match

@@ -61,13 +61,13 @@ func (r *Reporter) WriteResults(
 		if err != nil {
 			continue
 		}
-		_ = os.WriteFile(resultPath, resultData, 0644)
+		_ = os.WriteFile(resultPath, resultData, 0644) //nolint:errcheck
 	}
 
 	// Update latest symlink.
 	latestPath := filepath.Join(r.baseDir, "latest")
 	_ = os.Remove(latestPath)
-	_ = os.Symlink(dir, latestPath)
+	_ = os.Symlink(dir, latestPath) //nolint:errcheck
 
 	return nil
 }

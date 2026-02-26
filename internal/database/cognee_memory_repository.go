@@ -84,7 +84,7 @@ func (r *CogneeMemoryRepository) GetByID(ctx context.Context, id string) (*Cogne
 	}
 
 	if len(graphNodesJSON) > 0 {
-		_ = json.Unmarshal(graphNodesJSON, &memory.GraphNodes)
+		_ = json.Unmarshal(graphNodesJSON, &memory.GraphNodes) //nolint:errcheck
 	}
 
 	return memory, nil
@@ -119,7 +119,7 @@ func (r *CogneeMemoryRepository) GetBySessionID(ctx context.Context, sessionID s
 		}
 
 		if len(graphNodesJSON) > 0 {
-			_ = json.Unmarshal(graphNodesJSON, &memory.GraphNodes)
+			_ = json.Unmarshal(graphNodesJSON, &memory.GraphNodes) //nolint:errcheck
 		}
 
 		memories = append(memories, memory)
@@ -164,7 +164,7 @@ func (r *CogneeMemoryRepository) GetByDatasetName(ctx context.Context, datasetNa
 		}
 
 		if len(graphNodesJSON) > 0 {
-			_ = json.Unmarshal(graphNodesJSON, &memory.GraphNodes)
+			_ = json.Unmarshal(graphNodesJSON, &memory.GraphNodes) //nolint:errcheck
 		}
 
 		memories = append(memories, memory)
@@ -203,7 +203,7 @@ func (r *CogneeMemoryRepository) SearchByKey(ctx context.Context, searchKey stri
 		}
 
 		if len(graphNodesJSON) > 0 {
-			_ = json.Unmarshal(graphNodesJSON, &memory.GraphNodes)
+			_ = json.Unmarshal(graphNodesJSON, &memory.GraphNodes) //nolint:errcheck
 		}
 
 		memories = append(memories, memory)
@@ -242,7 +242,7 @@ func (r *CogneeMemoryRepository) SearchByContent(ctx context.Context, searchTerm
 		}
 
 		if len(graphNodesJSON) > 0 {
-			_ = json.Unmarshal(graphNodesJSON, &memory.GraphNodes)
+			_ = json.Unmarshal(graphNodesJSON, &memory.GraphNodes) //nolint:errcheck
 		}
 
 		memories = append(memories, memory)
@@ -373,7 +373,7 @@ func (r *CogneeMemoryRepository) GetByVectorID(ctx context.Context, vectorID str
 	}
 
 	if len(graphNodesJSON) > 0 {
-		_ = json.Unmarshal(graphNodesJSON, &memory.GraphNodes)
+		_ = json.Unmarshal(graphNodesJSON, &memory.GraphNodes) //nolint:errcheck
 	}
 
 	return memory, nil

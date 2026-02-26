@@ -342,7 +342,7 @@ func (p *QwenCLIProvider) CompleteStream(ctx context.Context, req *models.LLMReq
 		}
 
 		// Wait for command to finish
-		_ = cmd.Wait()
+		_ = cmd.Wait() //nolint:errcheck
 
 		// Send final response
 		responseChan <- &models.LLMResponse{
@@ -477,7 +477,7 @@ func CanUseQwenOAuth() bool {
 	}
 
 	// Check for credential file
-	homeDir, _ := os.UserHomeDir()
+	homeDir, _ := os.UserHomeDir() //nolint:errcheck
 	credPath := homeDir + "/.qwen/oauth_creds.json"
 	if _, err := os.Stat(credPath); os.IsNotExist(err) {
 		return false

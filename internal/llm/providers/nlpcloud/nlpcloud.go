@@ -207,7 +207,7 @@ func (p *NLPCloudProvider) CompleteStream(ctx context.Context, req *models.LLMRe
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body) //nolint:errcheck
 		_ = resp.Body.Close()
 		return nil, fmt.Errorf("NLPCloud API error: HTTP %d - %s", resp.StatusCode, string(body))
 	}
@@ -452,7 +452,7 @@ func (p *NLPCloudProvider) HealthCheck() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", NLPCloudModelsURL, nil)
+	req, _ := http.NewRequestWithContext(ctx, "GET", NLPCloudModelsURL, nil) //nolint:errcheck
 	req.Header.Set("Authorization", "Token "+p.apiKey)
 
 	resp, err := p.httpClient.Do(req)

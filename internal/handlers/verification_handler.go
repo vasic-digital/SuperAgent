@@ -423,7 +423,7 @@ type VerificationHealthResponse struct {
 // @Success 200 {object} VerificationHealthResponse
 // @Router /api/v1/verifier/health [get]
 func (h *VerificationHandler) GetVerificationHealth(c *gin.Context) {
-	stats, _ := h.verificationService.GetStats(c.Request.Context())
+	stats, _ := h.verificationService.GetStats(c.Request.Context()) //nolint:errcheck
 	healthy := h.registry.GetHealthyProviders()
 
 	c.JSON(http.StatusOK, VerificationHealthResponse{

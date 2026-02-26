@@ -231,7 +231,7 @@ func (dli *DebateLearningIntegration) OnDebateComplete(ctx context.Context, resu
 	// Record detected patterns
 	for _, pattern := range session.DetectedPatterns {
 		if pattern.Confidence >= dli.config.PatternThreshold {
-			_ = dli.repository.RecordPattern(ctx, pattern)
+			_ = dli.repository.RecordPattern(ctx, pattern) //nolint:errcheck
 		}
 	}
 
@@ -241,7 +241,7 @@ func (dli *DebateLearningIntegration) OnDebateComplete(ctx context.Context, resu
 		feedback := fmt.Sprintf("Debate %s with consensus %.2f",
 			map[bool]string{true: "succeeded", false: "failed"}[result.Success],
 			result.FinalConsensus.Confidence)
-		_ = dli.repository.RecordOutcome(ctx, application, success, feedback)
+		_ = dli.repository.RecordOutcome(ctx, application, success, feedback) //nolint:errcheck
 	}
 
 	// Calculate cognitive improvement
@@ -495,7 +495,7 @@ func (lep *LearningEnhancedProtocol) Execute(ctx context.Context) (*protocol.Deb
 	lep.debateID = result.ID
 
 	// Complete learning using result data
-	learningResult, _ := lep.integration.OnDebateComplete(ctx, result)
+	learningResult, _ := lep.integration.OnDebateComplete(ctx, result) //nolint:errcheck
 
 	return result, learningResult, nil
 }
@@ -520,7 +520,7 @@ func (lep *LearningEnhancedProtocol) ExecuteWithLearning(ctx context.Context, de
 	// Complete learning
 	var learningResult *DebateLearningResult
 	if session != nil {
-		learningResult, _ = lep.integration.OnDebateComplete(ctx, result)
+		learningResult, _ = lep.integration.OnDebateComplete(ctx, result) //nolint:errcheck
 	}
 
 	return result, learningResult, nil

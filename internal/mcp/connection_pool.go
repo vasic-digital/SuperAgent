@@ -525,7 +525,7 @@ func (p *MCPConnectionPool) CloseConnection(name string) error {
 	}
 
 	if conn.Process != nil && conn.Process.Process != nil {
-		_ = conn.Process.Process.Kill()
+		_ = conn.Process.Process.Kill() //nolint:errcheck
 		conn.Process = nil
 	}
 
@@ -553,7 +553,7 @@ func (p *MCPConnectionPool) Close() error {
 			_ = conn.Transport.Close()
 		}
 		if conn.Process != nil && conn.Process.Process != nil {
-			_ = conn.Process.Process.Kill()
+			_ = conn.Process.Process.Kill() //nolint:errcheck
 		}
 		conn.Status = StatusConnectionClosed
 		conn.mu.Unlock()

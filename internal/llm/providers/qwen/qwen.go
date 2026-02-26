@@ -845,8 +845,8 @@ func (q *QwenProvider) makeStreamingRequest(ctx context.Context, req *QwenReques
 
 		// Check for non-OK status codes (non-retryable errors)
 		if resp.StatusCode != http.StatusOK {
-			body, _ := io.ReadAll(resp.Body)
-			_ = resp.Body.Close()
+			body, _ := io.ReadAll(resp.Body) //nolint:errcheck
+			_ = resp.Body.Close()            //nolint:errcheck
 			var qwenErr QwenError
 			if err := json.Unmarshal(body, &qwenErr); err == nil && qwenErr.Error.Message != "" {
 				return nil, fmt.Errorf("Qwen API error: %s (%s)", qwenErr.Error.Message, qwenErr.Error.Type)

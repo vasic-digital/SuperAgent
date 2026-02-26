@@ -486,7 +486,7 @@ func (d *WebhookDispatcher) LoadWebhooksFromTask(task *models.BackgroundTask) {
 			Enabled:   true,
 			CreatedAt: time.Now(),
 		}
-		_ = d.RegisterWebhook(webhook)
+		_ = d.RegisterWebhook(webhook) //nolint:errcheck
 	}
 }
 

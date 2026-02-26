@@ -229,8 +229,8 @@ func (m *MockMCPServer) setupDefaultHandlers() {
 		// Handle known tools
 		switch params.Name {
 		case "echo":
-			msg, _ := params.Arguments["message"].(string)
-			result, _ := json.Marshal(map[string]interface{}{
+			msg, _ := params.Arguments["message"].(string) //nolint:errcheck
+			result, _ := json.Marshal(map[string]interface{}{ //nolint:errcheck
 				"content": []map[string]interface{}{
 					{
 						"type": "text",
@@ -244,7 +244,7 @@ func (m *MockMCPServer) setupDefaultHandlers() {
 				Result:  result,
 			}, nil
 		case "ping":
-			result, _ := json.Marshal(map[string]interface{}{
+			result, _ := json.Marshal(map[string]interface{}{ //nolint:errcheck
 				"content": []map[string]interface{}{
 					{
 						"type": "text",
@@ -271,7 +271,7 @@ func (m *MockMCPServer) setupDefaultHandlers() {
 
 	// Ping handler
 	m.Handlers["ping"] = func(req *MockMCPRequest) (*MCPResponse, error) {
-		result, _ := json.Marshal("pong")
+		result, _ := json.Marshal("pong") //nolint:errcheck
 		return &MCPResponse{
 			JSONRPC: "2.0",
 			ID:      req.ID,
@@ -321,7 +321,7 @@ func (m *MockMCPServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp) //nolint:errcheck
 		return
 	}
 
@@ -362,7 +362,7 @@ func (m *MockMCPServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp) //nolint:errcheck
 }
 
 // URL returns the server URL
@@ -452,7 +452,7 @@ func NewMockHTTPServer() *MockHTTPServer {
 			resp.StatusCode = http.StatusOK
 		}
 		w.WriteHeader(resp.StatusCode)
-		_, _ = w.Write([]byte(resp.Body))
+		_, _ = w.Write([]byte(resp.Body)) //nolint:errcheck
 	}))
 
 	return mock
@@ -556,11 +556,11 @@ func (f *TestFixtures) SampleJSONRPCRequest(method string, id interface{}, param
 	}
 
 	if params != nil {
-		paramsBytes, _ := json.Marshal(params)
+		paramsBytes, _ := json.Marshal(params) //nolint:errcheck
 		req["params"] = json.RawMessage(paramsBytes)
 	}
 
-	data, _ := json.Marshal(req)
+	data, _ := json.Marshal(req) //nolint:errcheck
 	return string(data)
 }
 
@@ -609,8 +609,8 @@ func AssertJSONEqual(t *testing.T, expected, actual string) {
 		t.Fatalf("Failed to parse actual JSON: %v", err)
 	}
 
-	expectedBytes, _ := json.Marshal(expectedObj)
-	actualBytes, _ := json.Marshal(actualObj)
+	expectedBytes, _ := json.Marshal(expectedObj) //nolint:errcheck
+	actualBytes, _ := json.Marshal(actualObj) //nolint:errcheck
 
 	if string(expectedBytes) != string(actualBytes) {
 		t.Errorf("JSON not equal:\nExpected: %s\nActual: %s", expected, actual)
@@ -633,8 +633,8 @@ func AssertJSONContains(t *testing.T, jsonStr string, expected map[string]interf
 			continue
 		}
 
-		expectedBytes, _ := json.Marshal(expectedValue)
-		actualBytes, _ := json.Marshal(actualValue)
+		expectedBytes, _ := json.Marshal(expectedValue) //nolint:errcheck
+		actualBytes, _ := json.Marshal(actualValue) //nolint:errcheck
 
 		if string(expectedBytes) != string(actualBytes) {
 			t.Errorf("Key %q: expected %v, got %v", key, expectedValue, actualValue)
@@ -794,7 +794,7 @@ func CaptureStdout(t *testing.T, f func()) string {
 	outCh := make(chan string)
 	go func() {
 		var buf bytes.Buffer
-		_, _ = io.Copy(&buf, r)
+		_, _ = io.Copy(&buf, r) //nolint:errcheck
 		outCh <- buf.String()
 	}()
 
@@ -821,7 +821,7 @@ func CaptureStderr(t *testing.T, f func()) string {
 	outCh := make(chan string)
 	go func() {
 		var buf bytes.Buffer
-		_, _ = io.Copy(&buf, r)
+		_, _ = io.Copy(&buf, r) //nolint:errcheck
 		outCh <- buf.String()
 	}()
 

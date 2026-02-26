@@ -317,7 +317,7 @@ func (r *VectorDocumentRepository) BulkCreate(ctx context.Context, docs []*Vecto
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	defer func() { _ = tx.Rollback(ctx) }() //nolint:errcheck
 
 	query := `
 		INSERT INTO vector_documents (id, title, content, metadata, embedding_id, embedding_provider, created_at, updated_at)

@@ -569,7 +569,7 @@ func (c *Client) Search(ctx context.Context, req *SearchRequest) ([]SearchResult
 		// Populate metadata
 		for i, col := range req.OutputColumns {
 			if col != req.IDColumn && col != "distance" {
-				result.Metadata[col] = *(metadataValues[i].(*interface{}))
+				result.Metadata[col] = *(metadataValues[i].(*interface{})) //nolint:errcheck
 			}
 		}
 

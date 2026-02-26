@@ -32,7 +32,7 @@ type MemoryAdapterConfig struct {
 
 // DefaultMemoryAdapterConfig returns default configuration
 func DefaultMemoryAdapterConfig() MemoryAdapterConfig {
-	homeDir, _ := os.UserHomeDir()
+	homeDir, _ := os.UserHomeDir() //nolint:errcheck
 	return MemoryAdapterConfig{
 		StoragePath:       filepath.Join(homeDir, ".helix", "memory"),
 		MaxEntities:       10000,

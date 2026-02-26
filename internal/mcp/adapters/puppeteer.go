@@ -402,7 +402,7 @@ func (a *PuppeteerAdapter) navigate(ctx context.Context, args map[string]interfa
 		return &ToolResult{IsError: true, Content: []ContentBlock{{Type: "text", Text: err.Error()}}}, nil
 	}
 
-	title, _ := a.browser.GetTitle(ctx)
+	title, _ := a.browser.GetTitle(ctx) //nolint:errcheck
 	return &ToolResult{
 		Content: []ContentBlock{{Type: "text", Text: fmt.Sprintf("Navigated to %s\nPage title: %s", url, title)}},
 	}, nil

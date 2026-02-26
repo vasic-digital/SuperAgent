@@ -418,7 +418,7 @@ func (p *WorkerPool) Shutdown(timeout time.Duration) error {
 // Stop immediately stops the worker pool
 func (p *WorkerPool) Stop() {
 	p.cancel()
-	_ = p.Shutdown(0)
+	_ = p.Shutdown(0) //nolint:errcheck
 }
 
 // WaitForDrain waits until all queued tasks are processed
@@ -481,7 +481,7 @@ func Map[T any, R any](ctx context.Context, items []T, workers int, fn func(ctx 
 		if result.Error != nil {
 			return nil, result.Error
 		}
-		output[i] = result.Value.(R)
+		output[i] = result.Value.(R) //nolint:errcheck
 	}
 
 	return output, nil

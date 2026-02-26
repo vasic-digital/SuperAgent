@@ -508,7 +508,7 @@ func (p *GeminiProvider) convertResponse(req *models.LLMRequest, geminiResp *Gem
 					args, _ := part.FunctionCall["args"].(map[string]interface{})
 
 					// Convert args to JSON string
-					argsJSON, _ := json.Marshal(args)
+					argsJSON, _ := json.Marshal(args) //nolint:errcheck
 
 					toolCalls = append(toolCalls, models.ToolCall{
 						ID:   fmt.Sprintf("call_%d", i),

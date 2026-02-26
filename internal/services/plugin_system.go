@@ -691,7 +691,7 @@ func (hc *HealthChecker) checkHTTPHealth(info *InstanceInfo) (bool, error) {
 	defer func() { _ = resp.Body.Close() }()
 
 	// Read and discard body to ensure connection can be reused
-	_, _ = io.Copy(io.Discard, resp.Body)
+	_, _ = io.Copy(io.Discard, resp.Body) //nolint:errcheck
 
 	// Consider 2xx status codes as healthy
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {

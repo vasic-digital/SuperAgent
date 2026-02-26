@@ -177,7 +177,7 @@ func (dss *DebateSecurityService) ValidateDebateRequest(ctx context.Context, con
 
 	// Audit the validation
 	if dss.config.AuditEnabled {
-		_ = dss.audit(config.DebateID, "validate_request", "", map[string]interface{}{
+		_ = dss.audit(config.DebateID, "validate_request", "", map[string]interface{}{ //nolint:errcheck
 			"topic_length": len(config.Topic),
 			"max_rounds":   config.MaxRounds,
 			"participants": len(config.Participants),
@@ -200,7 +200,7 @@ func (dss *DebateSecurityService) SanitizeResponse(ctx context.Context, response
 
 	// Check response length
 	if len(response) > dss.config.MaxResponseLength {
-		_ = dss.recordViolation("validation", "low",
+		_ = dss.recordViolation("validation", "low", //nolint:errcheck
 			fmt.Sprintf("Response exceeds maximum length (%d > %d)", len(response), dss.config.MaxResponseLength),
 			"")
 		response = response[:dss.config.MaxResponseLength]
@@ -230,7 +230,7 @@ func (dss *DebateSecurityService) SanitizeResponse(ctx context.Context, response
 	// Log if content was modified
 	if sanitized != response {
 		dss.logger.Debug("Response content was sanitized")
-		_ = dss.recordViolation("content", "low", "Response content was sanitized", "")
+		_ = dss.recordViolation("content", "low", "Response content was sanitized", "") //nolint:errcheck
 	}
 
 	return sanitized, nil

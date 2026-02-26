@@ -499,7 +499,7 @@ func (s *CogneeService) authenticate(ctx context.Context) error {
 func (s *CogneeService) register(ctx context.Context, email, password string) error {
 	url := fmt.Sprintf("%s/api/v1/auth/register", s.baseURL)
 
-	reqBody, _ := json.Marshal(map[string]string{
+	reqBody, _ := json.Marshal(map[string]string{ //nolint:errcheck
 		"email":    email,
 		"password": password,
 	})

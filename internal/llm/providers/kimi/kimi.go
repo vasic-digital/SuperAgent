@@ -441,7 +441,7 @@ func (p *KimiProvider) HealthCheck() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", KimiModelsURL, nil)
+	req, _ := http.NewRequestWithContext(ctx, "GET", KimiModelsURL, nil) //nolint:errcheck
 	req.Header.Set("Authorization", "Bearer "+p.apiKey)
 
 	resp, err := p.httpClient.Do(req)

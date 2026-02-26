@@ -207,8 +207,8 @@ func (p *ZenHTTPProvider) StopServer() {
 	defer p.serverMu.Unlock()
 
 	if p.serverCmd != nil && p.serverCmd.Process != nil {
-		_ = p.serverCmd.Process.Kill()
-		_ = p.serverCmd.Wait()
+		_ = p.serverCmd.Process.Kill() //nolint:errcheck
+		_ = p.serverCmd.Wait()         //nolint:errcheck
 	}
 	p.serverStarted = false
 }

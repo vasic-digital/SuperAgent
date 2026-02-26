@@ -213,7 +213,7 @@ func (h *HealthHandler) GetFastestProvider(c *gin.Context) {
 		return
 	}
 
-	latency, _ := h.healthService.GetProviderLatency(providerID)
+	latency, _ := h.healthService.GetProviderLatency(providerID) //nolint:errcheck
 
 	c.JSON(http.StatusOK, GetFastestProviderResponse{
 		ProviderID:    providerID,

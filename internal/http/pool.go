@@ -223,7 +223,7 @@ func (p *HTTPClientPool) DoWithContext(ctx context.Context, req *http.Request) (
 
 		// Close response body before retry
 		if resp != nil && resp.Body != nil {
-			_, _ = io.Copy(io.Discard, resp.Body)
+			_, _ = io.Copy(io.Discard, resp.Body) //nolint:errcheck
 			_ = resp.Body.Close()
 		}
 

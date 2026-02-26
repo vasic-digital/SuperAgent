@@ -185,7 +185,7 @@ func getGoroutineID() int {
 	var buf [64]byte
 	n := runtime.Stack(buf[:], false)
 	id := 0
-	fmt.Sscanf(string(buf[:n]), "goroutine %d ", &id)
+	fmt.Sscanf(string(buf[:n]), "goroutine %d ", &id) //nolint:errcheck
 	return id
 }
 

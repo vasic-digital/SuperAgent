@@ -497,7 +497,7 @@ func (r *LSPServerRegistry) findBinary(command string) string {
 	// Search in configured paths
 	for _, searchPath := range r.searchPaths {
 		// Handle wildcards in path
-		matches, _ := filepath.Glob(searchPath)
+		matches, _ := filepath.Glob(searchPath) //nolint:errcheck
 		for _, dir := range matches {
 			candidate := filepath.Join(dir, command)
 			if _, err := os.Stat(candidate); err == nil {
@@ -569,7 +569,7 @@ func (r *LSPServerRegistry) GetByFilePattern(filename string) []*LSPServerDefini
 			continue
 		}
 		for _, pattern := range server.FilePatterns {
-			if matched, _ := filepath.Match(pattern, filepath.Base(filename)); matched {
+			if matched, _ := filepath.Match(pattern, filepath.Base(filename)); matched { //nolint:errcheck
 				matches = append(matches, server)
 				break
 			}

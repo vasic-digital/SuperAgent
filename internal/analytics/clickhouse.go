@@ -161,7 +161,7 @@ func (cha *ClickHouseAnalytics) StoreDebateMetricsBatch(ctx context.Context, met
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer func() { _ = tx.Rollback() }() //nolint:errcheck
 
 	stmt, err := tx.PrepareContext(ctx, `
 		INSERT INTO debate_metrics (

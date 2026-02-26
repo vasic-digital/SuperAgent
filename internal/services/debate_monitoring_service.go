@@ -436,7 +436,7 @@ func (dms *DebateMonitoringService) GetStats() map[string]interface{} {
 
 	for _, session := range dms.sessions {
 		if session.Active {
-			stats["active_sessions"] = stats["active_sessions"].(int) + 1
+			stats["active_sessions"] = stats["active_sessions"].(int) + 1 //nolint:errcheck
 		}
 		for _, alert := range session.Alerts {
 			stats["total_alerts"] = stats["total_alerts"].(int) + 1

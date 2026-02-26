@@ -140,7 +140,7 @@ func (a *ChromaAdapter) CreateCollection(ctx context.Context, name string, metad
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyBytes, _ := io.ReadAll(resp.Body) //nolint:errcheck
 		return nil, fmt.Errorf("failed to create collection: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
 
@@ -223,7 +223,7 @@ func (a *ChromaAdapter) AddDocuments(ctx context.Context, collectionName string,
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyBytes, _ := io.ReadAll(resp.Body) //nolint:errcheck
 		return fmt.Errorf("failed to add documents: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
 

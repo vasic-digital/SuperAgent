@@ -67,7 +67,7 @@ var (
 	}
 	gzipWriterPool = sync.Pool{
 		New: func() interface{} {
-			w, _ := gzip.NewWriterLevel(nil, gzip.DefaultCompression)
+			w, _ := gzip.NewWriterLevel(nil, gzip.DefaultCompression) //nolint:errcheck
 			return w
 		},
 	}

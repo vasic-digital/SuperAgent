@@ -256,7 +256,7 @@ func (r *InMemoryPromptRegistry) Render(ctx context.Context, name, version strin
 
 		// Validate value
 		if v.Validation != "" {
-			if matched, _ := regexp.MatchString(v.Validation, fmt.Sprintf("%v", value)); !matched {
+			if matched, _ := regexp.MatchString(v.Validation, fmt.Sprintf("%v", value)); !matched { //nolint:errcheck
 				return "", fmt.Errorf("variable %s failed validation", v.Name)
 			}
 		}

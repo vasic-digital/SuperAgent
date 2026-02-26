@@ -419,7 +419,7 @@ func (a *AWSS3Adapter) getObjectMetadata(ctx context.Context, args map[string]in
 		return &ToolResult{IsError: true, Content: []ContentBlock{{Type: "text", Text: err.Error()}}}, nil
 	}
 
-	data, _ := json.MarshalIndent(metadata, "", "  ")
+	data, _ := json.MarshalIndent(metadata, "", "  ") //nolint:errcheck
 	return &ToolResult{
 		Content: []ContentBlock{{Type: "text", Text: string(data)}},
 	}, nil

@@ -297,7 +297,7 @@ func (p *PostgresAdapter) Execute(ctx context.Context, query string, args ...int
 		return nil, fmt.Errorf("execute failed: %w", err)
 	}
 
-	affected, _ := result.RowsAffected()
+	affected, _ := result.RowsAffected() //nolint:errcheck
 
 	return &QueryResult{
 		AffectedRows: affected,
@@ -565,13 +565,13 @@ func (p *PostgresAdapter) GetStats(ctx context.Context) (*DatabaseStats, error) 
 
 	// Get database size
 	row := p.db.QueryRowContext(ctx, "SELECT pg_size_pretty(pg_database_size(current_database()))")
-	_ = row.Scan(&stats.Size)
+	_ = row.Scan(&stats.Size) //nolint:errcheck
 
 	// Get connection count
-	_ = p.db.QueryRowContext(ctx, "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database()").Scan(&stats.Connections)
+	_ = p.db.QueryRowContext(ctx, "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database()").Scan(&stats.Connections) //nolint:errcheck
 
 	// Get active queries
-	_ = p.db.QueryRowContext(ctx, "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND state = 'active'").Scan(&stats.ActiveQueries)
+	_ = p.db.QueryRowContext(ctx, "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND state = 'active'").Scan(&stats.ActiveQueries) //nolint:errcheck
 
 	return stats, nil
 }

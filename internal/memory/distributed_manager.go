@@ -409,7 +409,7 @@ func (dmm *DistributedMemoryManager) GetSyncStatus(ctx context.Context) map[stri
 	// Get event log stats (if available)
 	eventCount := 0
 	if dmm.eventLog != nil {
-		events, _ := dmm.eventLog.GetEventsSince(time.Now().Add(-24 * time.Hour))
+		events, _ := dmm.eventLog.GetEventsSince(time.Now().Add(-24 * time.Hour)) //nolint:errcheck
 		eventCount = len(events)
 	}
 

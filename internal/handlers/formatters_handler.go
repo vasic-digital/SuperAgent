@@ -429,7 +429,7 @@ func (h *FormattersHandler) DetectFormatter(c *gin.Context) {
 	detected := make([]DetectedFormatterResponse, 0, len(formatters))
 
 	for i, formatter := range formatters {
-		metadata, _ := h.registry.GetMetadata(formatter.Name())
+		metadata, _ := h.registry.GetMetadata(formatter.Name()) //nolint:errcheck
 
 		reason := "default formatter"
 		if i == 0 {

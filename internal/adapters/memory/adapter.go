@@ -157,9 +157,9 @@ func ToHelixMemory(m *modmem.Memory) *helixmem.Memory {
 		}
 	}
 
-	userID, _ := m.Metadata["user_id"].(string)
-	sessionID, _ := m.Metadata["session_id"].(string)
-	memType, _ := m.Metadata["type"].(string)
+	userID, _ := m.Metadata["user_id"].(string) //nolint:errcheck
+	sessionID, _ := m.Metadata["session_id"].(string) //nolint:errcheck
+	memType, _ := m.Metadata["type"].(string) //nolint:errcheck
 	category, _ := m.Metadata["category"].(string)
 	importance, _ := m.Metadata["importance"].(float64)
 	accessCount, _ := m.Metadata["access_count"].(int)

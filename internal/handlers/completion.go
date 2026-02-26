@@ -242,7 +242,7 @@ StreamLoop:
 	}
 
 	// Always send final event to properly close the stream
-	_, _ = c.Writer.Write([]byte("data: [DONE]\n\n"))
+	_, _ = c.Writer.Write([]byte("data: [DONE]\n\n")) //nolint:errcheck
 	flusher.Flush()
 }
 
@@ -394,7 +394,7 @@ StreamLoop:
 	}
 
 	// Always send final event to properly close the stream
-	_, _ = c.Writer.Write([]byte("data: [DONE]\n\n"))
+	_, _ = c.Writer.Write([]byte("data: [DONE]\n\n")) //nolint:errcheck
 	flusher.Flush()
 }
 

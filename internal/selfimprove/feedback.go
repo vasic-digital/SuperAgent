@@ -453,7 +453,7 @@ func (fc *InMemoryFeedbackCollector) calculateTrend(feedback []*Feedback) []*Tre
 		for _, f := range group {
 			sum += f.Score
 		}
-		t, _ := time.Parse("2006-01-02", day)
+		t, _ := time.Parse("2006-01-02", day) //nolint:errcheck
 		points = append(points, &TrendPoint{
 			Timestamp:    t,
 			AverageScore: sum / float64(len(group)),

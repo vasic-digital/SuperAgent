@@ -456,8 +456,8 @@ func (p *SimpleOpenRouterProvider) CompleteStream(ctx context.Context, req *mode
 
 	// Check for HTTP errors before starting stream
 	if resp.StatusCode >= 400 {
-		body, _ := io.ReadAll(resp.Body)
-		_ = resp.Body.Close()
+		body, _ := io.ReadAll(resp.Body) //nolint:errcheck
+		_ = resp.Body.Close()            //nolint:errcheck
 		close(ch)
 		return nil, fmt.Errorf("OpenRouter API error: HTTP %d - %s", resp.StatusCode, string(body))
 	}

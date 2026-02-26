@@ -415,7 +415,7 @@ func (o *Orchestrator) ConductDebate(ctx context.Context, request *DebateRequest
 	patternsDetected := 0
 
 	if enableLearning && learningSession != nil {
-		learningResult, _ = o.learningIntegration.OnDebateComplete(ctx, result)
+		learningResult, _ = o.learningIntegration.OnDebateComplete(ctx, result) //nolint:errcheck
 		if learningResult != nil {
 			lessonsLearned = learningResult.ExtractedLessons
 			patternsDetected = learningResult.DetectedPatterns
@@ -423,7 +423,7 @@ func (o *Orchestrator) ConductDebate(ctx context.Context, request *DebateRequest
 
 		// Cross-debate learning
 		if o.config.EnableCrossDebateLearning && learningResult != nil && learningResult.Lessons != nil {
-			_, _ = o.crossDebateLearner.LearnFromDebate(ctx, result, learningResult.Lessons)
+			_, _ = o.crossDebateLearner.LearnFromDebate(ctx, result, learningResult.Lessons) //nolint:errcheck
 		}
 	}
 

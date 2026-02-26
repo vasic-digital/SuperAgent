@@ -153,7 +153,7 @@ func (b *Bridge) Start(ctx context.Context) error {
 
 	// Kill the MCP process
 	if b.cmd.Process != nil {
-		_ = b.cmd.Process.Kill()
+		_ = b.cmd.Process.Kill() //nolint:errcheck
 	}
 
 	return nil
@@ -206,7 +206,7 @@ func (b *Bridge) handleHealth(w http.ResponseWriter, r *http.Request) {
 	// Check if MCP process is still running
 	if b.cmd == nil || b.cmd.Process == nil {
 		w.WriteHeader(http.StatusServiceUnavailable)
-		_ = json.NewEncoder(w).Encode(map[string]string{
+		_ = json.NewEncoder(w).Encode(map[string]string{ //nolint:errcheck
 			"status": "unhealthy",
 			"error":  "MCP process not running",
 		})
@@ -218,7 +218,7 @@ func (b *Bridge) handleHealth(w http.ResponseWriter, r *http.Request) {
 	// The process check is best-effort
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{ //nolint:errcheck
 		"status":    "healthy",
 		"timestamp": time.Now().UTC().Format(time.RFC3339),
 		"pid":       b.cmd.Process.Pid,
@@ -308,7 +308,7 @@ func (b *Bridge) handleMessage(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
-	_ = json.NewEncoder(w).Encode(map[string]string{
+	_ = json.NewEncoder(w).Encode(map[string]string{ //nolint:errcheck
 		"status": "accepted",
 	})
 }
@@ -316,7 +316,7 @@ func (b *Bridge) handleMessage(w http.ResponseWriter, r *http.Request) {
 // handleRoot handles the root endpoint with API info
 func (b *Bridge) handleRoot(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{ //nolint:errcheck
 		"name":        "MCP SSE Bridge",
 		"version":     "1.0.0",
 		"description": "HTTP/SSE bridge for MCP (Model Context Protocol) servers",

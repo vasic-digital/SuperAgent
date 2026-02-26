@@ -191,7 +191,7 @@ func (p *CloudflareProvider) CompleteStream(ctx context.Context, req *models.LLM
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body) //nolint:errcheck
 		_ = resp.Body.Close()
 		return nil, fmt.Errorf("Cloudflare API error: HTTP %d - %s", resp.StatusCode, string(body))
 	}
@@ -447,7 +447,7 @@ func (p *CloudflareProvider) HealthCheck() error {
 	defer cancel()
 
 	modelsURL := fmt.Sprintf(CloudflareModelsURL, p.accountID)
-	req, _ := http.NewRequestWithContext(ctx, "GET", modelsURL, nil)
+	req, _ := http.NewRequestWithContext(ctx, "GET", modelsURL, nil) //nolint:errcheck
 	req.Header.Set("Authorization", "Bearer "+p.apiKey)
 
 	resp, err := p.httpClient.Do(req)

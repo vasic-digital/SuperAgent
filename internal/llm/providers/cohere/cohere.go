@@ -516,7 +516,7 @@ func (p *Provider) convertResponse(req *models.LLMRequest, resp *Response, start
 		for i, tc := range resp.Message.ToolCalls {
 			args := ""
 			if tc.Parameters != nil {
-				argsBytes, _ := json.Marshal(tc.Parameters)
+				argsBytes, _ := json.Marshal(tc.Parameters) //nolint:errcheck
 				args = string(argsBytes)
 			} else if tc.Function.Arguments != "" {
 				args = tc.Function.Arguments

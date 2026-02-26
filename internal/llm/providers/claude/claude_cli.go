@@ -450,7 +450,7 @@ func (p *ClaudeCLIProvider) CompleteStream(ctx context.Context, req *models.LLMR
 		}
 
 		// Wait for command to finish
-		_ = cmd.Wait()
+		_ = cmd.Wait() //nolint:errcheck
 
 		// Send final response
 		responseChan <- &models.LLMResponse{
@@ -631,7 +631,7 @@ func CanUseClaudeOAuth() bool {
 	}
 
 	// Check for credential file
-	homeDir, _ := os.UserHomeDir()
+	homeDir, _ := os.UserHomeDir() //nolint:errcheck
 	credPath := homeDir + "/.claude/.credentials.json"
 	if _, err := os.Stat(credPath); os.IsNotExist(err) {
 		return false

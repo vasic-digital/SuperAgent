@@ -135,9 +135,9 @@ func (h *ReadFileHandler) GenerateDefaultArgs(context string) map[string]interfa
 }
 
 func (h *ReadFileHandler) Execute(ctx context.Context, args map[string]interface{}) (ToolResult, error) {
-	filePath, _ := args["file_path"].(string)
-	offset, _ := args["offset"].(float64)
-	limit, _ := args["limit"].(float64)
+	filePath, _ := args["file_path"].(string) //nolint:errcheck
+	offset, _ := args["offset"].(float64)     //nolint:errcheck
+	limit, _ := args["limit"].(float64)       //nolint:errcheck
 
 	if filePath == "" {
 		return ToolResult{
@@ -843,7 +843,7 @@ func (h *FileInfoHandler) Execute(ctx context.Context, args map[string]interface
 		// Get line count
 		// #nosec G204 - filePath is validated by tool schema, binary is hardcoded
 		wcCmd := exec.CommandContext(ctx, "wc", "-l", filePath)
-		wcOutput, _ := wcCmd.CombinedOutput()
+		wcOutput, _ := wcCmd.CombinedOutput() //nolint:errcheck
 		result.WriteString("\n=== Line Count ===\n")
 		result.Write(wcOutput)
 	}
@@ -852,7 +852,7 @@ func (h *FileInfoHandler) Execute(ctx context.Context, args map[string]interface
 		// Get git log for file
 		// #nosec G204 - filePath is validated by tool schema, binary is hardcoded
 		gitCmd := exec.CommandContext(ctx, "git", "log", "--oneline", "-5", "--", filePath)
-		gitOutput, _ := gitCmd.CombinedOutput()
+		gitOutput, _ := gitCmd.CombinedOutput() //nolint:errcheck
 		result.WriteString("\n=== Git History (last 5 commits) ===\n")
 		result.Write(gitOutput)
 	}
@@ -931,7 +931,7 @@ func (h *SymbolsHandler) Execute(ctx context.Context, args map[string]interface{
 
 	// #nosec G204 - file path validated, grep command with safe arguments
 	cmd := exec.CommandContext(ctx, "grep", cmdArgs...)
-	output, _ := cmd.CombinedOutput()
+	output, _ := cmd.CombinedOutput() //nolint:errcheck
 
 	return ToolResult{
 		Success: true,
@@ -1009,7 +1009,7 @@ func (h *ReferencesHandler) Execute(ctx context.Context, args map[string]interfa
 	// Use grep to find references
 	// #nosec G204 - symbol and searchPath are validated, binary is hardcoded
 	cmd := exec.CommandContext(ctx, "grep", "-rn", "--include=*.go", symbol, searchPath)
-	output, _ := cmd.CombinedOutput()
+	output, _ := cmd.CombinedOutput() //nolint:errcheck
 
 	return ToolResult{
 		Success: true,
@@ -1078,7 +1078,7 @@ func (h *DefinitionHandler) Execute(ctx context.Context, args map[string]interfa
 	pattern := fmt.Sprintf("^func %s|^func \\([^)]+\\) %s|^type %s ", symbol, symbol, symbol)
 	// #nosec G204 - symbol is validated (alphanumeric/underscore), binary is hardcoded
 	cmd := exec.CommandContext(ctx, "grep", "-rn", "-E", "--include=*.go", pattern, ".")
-	output, _ := cmd.CombinedOutput()
+	output, _ := cmd.CombinedOutput() //nolint:errcheck
 
 	return ToolResult{
 		Success: true,

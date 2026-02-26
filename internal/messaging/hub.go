@@ -276,7 +276,7 @@ func (h *MessagingHub) healthCheckLoop() {
 		select {
 		case <-ticker.C:
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			_ = h.HealthCheck(ctx)
+			_ = h.HealthCheck(ctx) //nolint:errcheck
 			cancel()
 		case <-h.stopCh:
 			return

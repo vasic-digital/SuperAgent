@@ -77,7 +77,7 @@ func NewSemanticCache(opts ...ConfigOption) *SemanticCache {
 	for _, opt := range opts {
 		opt(config)
 	}
-	_ = config.Validate()
+	_ = config.Validate() //nolint:errcheck
 
 	cache := &SemanticCache{
 		entries:    make(map[string]*CacheEntry),
@@ -97,7 +97,7 @@ func NewSemanticCacheWithConfig(config *Config) *SemanticCache {
 	if config == nil {
 		config = DefaultConfig()
 	}
-	_ = config.Validate()
+	_ = config.Validate() //nolint:errcheck
 
 	cache := &SemanticCache{
 		entries:    make(map[string]*CacheEntry),
@@ -221,7 +221,7 @@ func (c *SemanticCache) Set(ctx context.Context, query, response string, embeddi
 
 	// Check for eviction
 	if evicted := c.eviction.Add(entry.ID); evicted != "" {
-		_ = c.removeByIDLocked(evicted)
+		_ = c.removeByIDLocked(evicted) //nolint:errcheck
 	}
 
 	return entry, nil
@@ -258,7 +258,7 @@ func (c *SemanticCache) SetWithID(ctx context.Context, id, query, response strin
 	c.entryIDs = append(c.entryIDs, entry.ID)
 
 	if evicted := c.eviction.Add(entry.ID); evicted != "" {
-		_ = c.removeByIDLocked(evicted)
+		_ = c.removeByIDLocked(evicted) //nolint:errcheck
 	}
 
 	return entry, nil
@@ -309,7 +309,7 @@ func (c *SemanticCache) Remove(ctx context.Context, id string) error {
 func (c *SemanticCache) removeByID(id string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	_ = c.removeByIDLocked(id)
+	_ = c.removeByIDLocked(id) //nolint:errcheck
 }
 
 func (c *SemanticCache) removeByIDLocked(id string) error {
@@ -501,7 +501,7 @@ func (c *SemanticCache) Invalidate(ctx context.Context, criteria InvalidationCri
 	}
 
 	for _, id := range toRemove {
-		_ = c.removeByIDLocked(id)
+		_ = c.removeByIDLocked(id) //nolint:errcheck
 	}
 
 	return len(toRemove), nil

@@ -428,7 +428,7 @@ func (v *SchemaValidator) validateValue(value interface{}, schema *Schema, path 
 			})
 		}
 		if schema.Pattern != "" {
-			matched, _ := regexp.MatchString(schema.Pattern, str)
+			matched, _ := regexp.MatchString(schema.Pattern, str) //nolint:errcheck
 			if !matched {
 				errors = append(errors, ValidationError{
 					Path:    path,

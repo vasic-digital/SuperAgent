@@ -271,8 +271,8 @@ func (p *PublicAIProvider) CompleteStream(ctx context.Context, req *models.LLMRe
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
-		_ = resp.Body.Close()
+		body, _ := io.ReadAll(resp.Body) //nolint:errcheck
+		_ = resp.Body.Close()            //nolint:errcheck
 		return nil, fmt.Errorf("PublicAI API error: HTTP %d - %s", resp.StatusCode, string(body))
 	}
 

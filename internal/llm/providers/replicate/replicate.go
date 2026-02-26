@@ -399,7 +399,7 @@ func (p *Provider) extractOutput(output any) string {
 		return result.String()
 	default:
 		if output != nil {
-			data, _ := json.Marshal(output)
+			data, _ := json.Marshal(output) //nolint:errcheck
 			return string(data)
 		}
 		return ""

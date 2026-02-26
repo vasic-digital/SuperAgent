@@ -198,7 +198,7 @@ func (p *NvidiaProvider) CompleteStream(ctx context.Context, req *models.LLMRequ
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body) //nolint:errcheck
 		_ = resp.Body.Close()
 		return nil, fmt.Errorf("NVIDIA API error: HTTP %d - %s", resp.StatusCode, string(body))
 	}
@@ -442,7 +442,7 @@ func (p *NvidiaProvider) HealthCheck() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", NvidiaModelsURL, nil)
+	req, _ := http.NewRequestWithContext(ctx, "GET", NvidiaModelsURL, nil) //nolint:errcheck
 	req.Header.Set("Authorization", "Bearer "+p.apiKey)
 
 	resp, err := p.httpClient.Do(req)

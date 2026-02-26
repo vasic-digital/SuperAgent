@@ -93,7 +93,7 @@ func (t *Transport) Do(ctx context.Context, req *Request) (*Response, error) {
 	if req.Body != nil {
 		var err error
 		// Get original size for metrics
-		jsonBody, _ := json.Marshal(req.Body)
+		jsonBody, _ := json.Marshal(req.Body) //nolint:errcheck
 		originalSize = len(jsonBody)
 
 		body, err = t.encoder.Encode(req.Body)
@@ -297,7 +297,7 @@ func (m *Middleware) Handler(next http.Handler) http.Handler {
 			}
 
 			w.Header().Set("Content-Type", "application/toon+json")
-			_, _ = w.Write(encoded)
+			_, _ = w.Write(encoded) //nolint:errcheck
 		} else {
 			next.ServeHTTP(w, r)
 		}

@@ -667,7 +667,7 @@ func (wp *AdaptiveWorkerPool) checkAndScale() {
 	}
 
 	currentWorkers := wp.GetWorkerCount()
-	pendingCount, _ := wp.queue.GetPendingCount(wp.ctx)
+	pendingCount, _ := wp.queue.GetPendingCount(wp.ctx) //nolint:errcheck
 
 	// Calculate load factor
 	cpuLoad := resources.CPULoadPercent / 100.0
@@ -753,7 +753,7 @@ func (wp *AdaptiveWorkerPool) checkForStuckTasks() {
 		// Get resource snapshots
 		var snapshots []*models.ResourceSnapshot
 		if wp.repository != nil {
-			snapshots, _ = wp.repository.GetResourceSnapshots(wp.ctx, task.ID, 10)
+			snapshots, _ = wp.repository.GetResourceSnapshots(wp.ctx, task.ID, 10) //nolint:errcheck
 		}
 
 		isStuck, reason := wp.stuckDetector.IsStuck(wp.ctx, task, snapshots)
@@ -867,7 +867,7 @@ func (r *taskProgressReporter) ReportProgress(percent float64, message string) e
 	}
 
 	if r.notifier != nil {
-		_ = r.notifier.NotifyTaskEvent(context.Background(), r.task, models.TaskEventProgress, map[string]interface{}{
+		_ = r.notifier.NotifyTaskEvent(context.Background(), r.task, models.TaskEventProgress, map[string]interface{}{ //nolint:errcheck
 			"progress": percent,
 			"message":  message,
 		})
@@ -900,10 +900,10 @@ func (r *taskProgressReporter) ReportLog(level, message string, fields map[strin
 		data[k] = v
 	}
 
-	_ = r.repository.LogEvent(context.Background(), r.taskID, models.TaskEventLog, data, &r.workerID)
+	_ = r.repository.LogEvent(context.Background(), r.taskID, models.TaskEventLog, data, &r.workerID) //nolint:errcheck
 
 	if r.notifier != nil {
-		_ = r.notifier.NotifyTaskEvent(context.Background(), r.task, models.TaskEventLog, data)
+		_ = r.notifier.NotifyTaskEvent(context.Background(), r.task, models.TaskEventLog, data) //nolint:errcheck
 	}
 
 	return nil

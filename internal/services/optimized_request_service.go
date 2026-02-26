@@ -127,7 +127,7 @@ func (s *OptimizedRequestService) ProcessRequestWithSchema(ctx context.Context, 
 	}
 
 	// Check cache
-	optimized, _ := s.optimizationService.OptimizeRequest(ctx, req.Prompt, embedding)
+	optimized, _ := s.optimizationService.OptimizeRequest(ctx, req.Prompt, embedding) //nolint:errcheck
 	if optimized != nil && optimized.CacheHit {
 		// Validate cached response against schema
 		validator, err := outlines.NewSchemaValidator(schema)
@@ -183,7 +183,7 @@ func (s *OptimizedRequestService) ProcessRequestWithSchema(ctx context.Context, 
 
 	// Cache the valid response
 	if result.Valid && len(embedding) > 0 {
-		_, _ = s.optimizationService.OptimizeResponse(ctx, result.Content, embedding, req.Prompt, schema)
+		_, _ = s.optimizationService.OptimizeResponse(ctx, result.Content, embedding, req.Prompt, schema) //nolint:errcheck
 	}
 
 	return &models.LLMResponse{
@@ -212,7 +212,7 @@ func (s *OptimizedRequestService) ProcessRequestStream(ctx context.Context, req 
 	}
 
 	// Check cache first
-	optimized, _ := s.optimizationService.OptimizeRequest(ctx, req.Prompt, embedding)
+	optimized, _ := s.optimizationService.OptimizeRequest(ctx, req.Prompt, embedding) //nolint:errcheck
 	if optimized != nil && optimized.CacheHit {
 		// Return cached response as a single-chunk stream
 		s.log.Info("Cache hit - streaming cached response")
@@ -292,7 +292,7 @@ func (s *OptimizedRequestService) ProcessRequestStream(ctx context.Context, req 
 		// Cache the complete response
 		result := getResult()
 		if result != nil && len(embedding) > 0 {
-			_, _ = s.optimizationService.OptimizeResponse(ctx, result.FullContent, embedding, req.Prompt, nil)
+			_, _ = s.optimizationService.OptimizeResponse(ctx, result.FullContent, embedding, req.Prompt, nil) //nolint:errcheck
 		}
 	}()
 

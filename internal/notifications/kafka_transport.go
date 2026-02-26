@@ -134,11 +134,11 @@ func (t *KafkaTransport) asyncPublishLoop() {
 			if !ok {
 				return
 			}
-			_ = t.doPublish(context.Background(), event)
+			_ = t.doPublish(context.Background(), event) //nolint:errcheck
 		case <-t.stopCh:
 			// Drain remaining events
 			for event := range t.eventCh {
-				_ = t.doPublish(context.Background(), event)
+				_ = t.doPublish(context.Background(), event) //nolint:errcheck
 			}
 			return
 		}

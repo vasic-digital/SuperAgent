@@ -138,7 +138,7 @@ func (cr *CLIRefresher) findQwenCLI() (string, error) {
 	}
 
 	// Check common installation locations
-	homeDir, _ := os.UserHomeDir()
+	homeDir, _ := os.UserHomeDir() //nolint:errcheck
 	commonPaths := []string{
 		filepath.Join(homeDir, ".local", "bin", "qwen"),
 		filepath.Join(homeDir, "Applications", "node-v24.12.0-linux-x64", "bin", "qwen"),

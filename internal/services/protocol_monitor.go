@@ -566,10 +566,10 @@ func collectCPUPercent() float64 {
 				return 0.0
 			}
 
-			user, _ := strconv.ParseUint(fields[1], 10, 64)
-			nice, _ := strconv.ParseUint(fields[2], 10, 64)
-			system, _ := strconv.ParseUint(fields[3], 10, 64)
-			idle, _ := strconv.ParseUint(fields[4], 10, 64)
+			user, _ := strconv.ParseUint(fields[1], 10, 64) //nolint:errcheck
+			nice, _ := strconv.ParseUint(fields[2], 10, 64) //nolint:errcheck
+			system, _ := strconv.ParseUint(fields[3], 10, 64) //nolint:errcheck
+			idle, _ := strconv.ParseUint(fields[4], 10, 64) //nolint:errcheck
 			total := user + nice + system + idle
 
 			currentStats := cpuStats{
@@ -644,8 +644,8 @@ func collectNetworkBytes() int64 {
 			continue
 		}
 
-		rxBytes, _ := strconv.ParseInt(fields[0], 10, 64)
-		txBytes, _ := strconv.ParseInt(fields[8], 10, 64)
+		rxBytes, _ := strconv.ParseInt(fields[0], 10, 64) //nolint:errcheck
+		txBytes, _ := strconv.ParseInt(fields[8], 10, 64) //nolint:errcheck
 		totalBytes += rxBytes + txBytes
 	}
 

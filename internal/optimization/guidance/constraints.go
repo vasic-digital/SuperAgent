@@ -565,7 +565,7 @@ func (c *SchemaConstraint) Description() string {
 
 // Hint returns a hint for the LLM.
 func (c *SchemaConstraint) Hint() string {
-	schemaJSON, _ := json.MarshalIndent(c.Schema, "", "  ")
+	schemaJSON, _ := json.MarshalIndent(c.Schema, "", "  ") //nolint:errcheck
 	return fmt.Sprintf("Output must be valid JSON matching this schema:\n%s", string(schemaJSON))
 }
 

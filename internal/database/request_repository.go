@@ -92,10 +92,10 @@ func (r *RequestRepository) GetByID(ctx context.Context, id string) (*LLMRequest
 		return nil, fmt.Errorf("failed to get request: %w", err)
 	}
 
-	_ = json.Unmarshal(messagesJSON, &req.Messages)
-	_ = json.Unmarshal(modelParamsJSON, &req.ModelParams)
-	_ = json.Unmarshal(ensembleConfigJSON, &req.EnsembleConfig)
-	_ = json.Unmarshal(memoryJSON, &req.Memory)
+	_ = json.Unmarshal(messagesJSON, &req.Messages)             //nolint:errcheck
+	_ = json.Unmarshal(modelParamsJSON, &req.ModelParams)       //nolint:errcheck
+	_ = json.Unmarshal(ensembleConfigJSON, &req.EnsembleConfig) //nolint:errcheck
+	_ = json.Unmarshal(memoryJSON, &req.Memory)                 //nolint:errcheck
 
 	return req, nil
 }

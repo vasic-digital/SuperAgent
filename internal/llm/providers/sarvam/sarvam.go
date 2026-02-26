@@ -441,7 +441,7 @@ func (p *SarvamProvider) HealthCheck() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", SarvamModelsURL, nil)
+	req, _ := http.NewRequestWithContext(ctx, "GET", SarvamModelsURL, nil) //nolint:errcheck
 	req.Header.Set("Authorization", "Bearer "+p.apiKey)
 
 	resp, err := p.httpClient.Do(req)

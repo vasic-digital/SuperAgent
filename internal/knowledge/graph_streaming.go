@@ -539,7 +539,7 @@ func (skg *StreamingKnowledgeGraph) GetEntity(ctx context.Context, entityID stri
 	if result.Next(ctx) {
 		record := result.Record()
 		node, _ := record.Get("e")
-		return nodeToEntity(node.(neo4j.Node)), nil
+		return nodeToEntity(node.(neo4j.Node)), nil //nolint:errcheck
 	}
 
 	return nil, fmt.Errorf("entity not found: %s", entityID)

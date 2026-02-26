@@ -817,7 +817,7 @@ func (cm *ContextManager) hasConflictingMetadata(entries []*ContextEntry) bool {
 }
 
 func (cm *ContextManager) metadataEqual(a, b map[string]interface{}) bool {
-	aBytes, _ := json.Marshal(a)
+	aBytes, _ := json.Marshal(a) //nolint:errcheck
 	bBytes, _ := json.Marshal(b)
 	return string(aBytes) == string(bBytes)
 }

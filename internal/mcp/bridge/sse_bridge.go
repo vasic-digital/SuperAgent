@@ -473,12 +473,12 @@ func (b *SSEBridge) stopProcess() {
 
 	if b.cmd != nil && b.cmd.Process != nil {
 		// Try graceful termination first
-		_ = b.cmd.Process.Signal(os.Interrupt)
+		_ = b.cmd.Process.Signal(os.Interrupt) //nolint:errcheck
 
 		// Wait briefly, then force kill
 		done := make(chan struct{})
 		go func() {
-			_ = b.cmd.Wait()
+			_ = b.cmd.Wait() //nolint:errcheck
 			close(done)
 		}()
 
@@ -487,7 +487,7 @@ func (b *SSEBridge) stopProcess() {
 			// Process exited gracefully
 		case <-time.After(5 * time.Second):
 			// Force kill
-			_ = b.cmd.Process.Kill()
+			_ = b.cmd.Process.Kill() //nolint:errcheck
 			<-done
 		}
 
@@ -1039,7 +1039,7 @@ func (b *SSEBridge) handleHealth(w http.ResponseWriter, r *http.Request) {
 	if state != StateRunning || !processReady {
 		w.WriteHeader(http.StatusServiceUnavailable)
 	}
-	_ = json.NewEncoder(w).Encode(health)
+	_ = json.NewEncoder(w).Encode(health) //nolint:errcheck
 }
 
 // writeJSONRPCResponse writes a JSON-RPC response.
@@ -1051,7 +1051,7 @@ func (b *SSEBridge) writeJSONRPCResponse(w http.ResponseWriter, resp *JSONRPCRes
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	_, _ = w.Write(data)
+	_, _ = w.Write(data) //nolint:errcheck
 	atomic.AddInt64(&b.metrics.BytesSent, int64(len(data)))
 }
 

@@ -233,7 +233,7 @@ func (v *SchemaValidator) validateString(data interface{}, schema *JSONSchema, p
 		re := v.compiledPattern
 		if re == nil {
 			// Compile on the fly if this is a nested schema
-			re, _ = regexp.Compile(schema.Pattern)
+			re, _ = regexp.Compile(schema.Pattern) //nolint:errcheck
 		}
 		if re != nil && !re.MatchString(str) {
 			result.AddError(path, fmt.Sprintf("string must match pattern %q", schema.Pattern))

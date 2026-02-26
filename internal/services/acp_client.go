@@ -330,7 +330,7 @@ func (c *LSPClient) DisconnectServer(serverID string) error {
 		Params:  nil,
 	}
 
-	_ = connection.Transport.Send(context.Background(), exitNotification)
+	_ = connection.Transport.Send(context.Background(), exitNotification) //nolint:errcheck
 
 	if err := connection.Transport.Close(); err != nil {
 		c.logger.WithError(err).Warn("Error closing LSP transport")
@@ -990,7 +990,7 @@ func (t *StdioLSPTransport) Receive(ctx context.Context) (interface{}, error) {
 	// Parse content length (simplified - should handle parsing better)
 	contentLengthStr := strings.TrimPrefix(headerLine, "Content-Length: ")
 	contentLength := 0
-	_, _ = fmt.Sscanf(contentLengthStr, "%d", &contentLength)
+	_, _ = fmt.Sscanf(contentLengthStr, "%d", &contentLength) //nolint:errcheck
 
 	// Skip empty line
 	if !t.scanner.Scan() {

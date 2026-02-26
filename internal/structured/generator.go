@@ -128,7 +128,7 @@ func (g *ConstrainedGenerator) Generate(ctx context.Context, req *GenerationRequ
 				result.RepairAttempts = attempts
 
 				// Re-validate repaired output
-				validation, _ = g.validator.Validate(repaired, req.Schema)
+				validation, _ = g.validator.Validate(repaired, req.Schema) //nolint:errcheck
 				result.Validation = validation
 				result.Data = validation.Data
 			}
@@ -168,7 +168,7 @@ func (g *ConstrainedGenerator) CreatePromptWithSchema(basePrompt string, schema 
 	sb.WriteString("Please respond with a JSON object that follows this schema:\n\n")
 	sb.WriteString("```json\n")
 
-	schemaJSON, _ := json.MarshalIndent(schema, "", "  ")
+	schemaJSON, _ := json.MarshalIndent(schema, "", "  ") //nolint:errcheck
 	sb.WriteString(string(schemaJSON))
 
 	sb.WriteString("\n```\n\n")
@@ -189,7 +189,7 @@ func (g *ConstrainedGenerator) CreateFunctionCallingPrompt(basePrompt string, fu
 		sb.WriteString(fmt.Sprintf("### %s\n", fn.Name))
 		sb.WriteString(fmt.Sprintf("%s\n\n", fn.Description))
 		sb.WriteString("Parameters:\n")
-		paramJSON, _ := json.MarshalIndent(fn.Parameters, "", "  ")
+		paramJSON, _ := json.MarshalIndent(fn.Parameters, "", "  ") //nolint:errcheck
 		sb.WriteString(string(paramJSON))
 		sb.WriteString("\n\n")
 	}

@@ -291,8 +291,8 @@ func (s *SQLiteAdapter) Execute(ctx context.Context, query string, args ...inter
 		return nil, fmt.Errorf("execute failed: %w", err)
 	}
 
-	affected, _ := result.RowsAffected()
-	lastID, _ := result.LastInsertId()
+	affected, _ := result.RowsAffected() //nolint:errcheck
+	lastID, _ := result.LastInsertId() //nolint:errcheck
 
 	return &SQLiteQueryResult{
 		AffectedRows: affected,
@@ -503,7 +503,7 @@ func (s *SQLiteAdapter) GetStats(ctx context.Context) (*SQLiteDatabaseStats, err
 
 	for pragma, dest := range pragmas {
 		row := s.db.QueryRowContext(ctx, fmt.Sprintf("PRAGMA %s", pragma))
-		_ = row.Scan(dest)
+		_ = row.Scan(dest) //nolint:errcheck
 	}
 
 	stats.DatabaseSize = stats.PageSize * stats.PageCount

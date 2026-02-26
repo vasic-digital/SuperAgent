@@ -167,7 +167,7 @@ func (bc *BootChecker) checkHelixAgentHealth(ctx context.Context) {
 			if resp.StatusCode == http.StatusOK {
 				var healthResp map[string]interface{}
 				if json.NewDecoder(resp.Body).Decode(&healthResp) == nil {
-					status, _ := healthResp["status"].(string)
+					status, _ := healthResp["status"].(string) //nolint:errcheck
 					result.Status = StatusPassed
 					result.Message = fmt.Sprintf("HelixAgent is %s", status)
 				} else {

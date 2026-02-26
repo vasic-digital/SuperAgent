@@ -167,7 +167,7 @@ func NewMigrationManager(cfg *MigrationConfig, logger *zap.Logger) *MigrationMan
 		cfg = DefaultMigrationConfig()
 	}
 	if logger == nil {
-		logger, _ = zap.NewProduction()
+		logger, _ = zap.NewProduction() //nolint:errcheck
 	}
 	m := &MigrationManager{
 		config:      cfg,
@@ -482,7 +482,7 @@ func (m *MigrationManager) recordError() {
 			zap.Int("threshold", m.config.ErrorThreshold))
 		// Don't call Rollback() directly to avoid deadlock, schedule it
 		go func() {
-			_ = m.Rollback()
+			_ = m.Rollback() //nolint:errcheck
 		}()
 	}
 }

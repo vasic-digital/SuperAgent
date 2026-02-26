@@ -164,7 +164,7 @@ func (c *ProviderCache) InvalidateProvider(ctx context.Context, provider string)
 	keys := c.tagInv.InvalidateByTag("provider:" + provider)
 
 	for _, key := range keys {
-		_ = c.cache.Delete(ctx, key)
+		_ = c.cache.Delete(ctx, key) //nolint:errcheck
 		c.tagInv.RemoveKey(key)
 	}
 
@@ -183,7 +183,7 @@ func (c *ProviderCache) InvalidateModel(ctx context.Context, model string) (int,
 	keys := c.tagInv.InvalidateByTag("model:" + model)
 
 	for _, key := range keys {
-		_ = c.cache.Delete(ctx, key)
+		_ = c.cache.Delete(ctx, key) //nolint:errcheck
 		c.tagInv.RemoveKey(key)
 	}
 
@@ -196,7 +196,7 @@ func (c *ProviderCache) InvalidateAll(ctx context.Context) (int, error) {
 	keys := c.tagInv.InvalidateByTag("llm-response")
 
 	for _, key := range keys {
-		_ = c.cache.Delete(ctx, key)
+		_ = c.cache.Delete(ctx, key) //nolint:errcheck
 		c.tagInv.RemoveKey(key)
 	}
 

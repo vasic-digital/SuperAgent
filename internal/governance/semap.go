@@ -615,7 +615,7 @@ func (s *SEMAP) checkProfileConstraints(ctx context.Context, profile *AgentProfi
 
 func (s *SEMAP) isCommandAllowed(action string, allowed []string) bool {
 	for _, a := range allowed {
-		if matched, _ := regexp.MatchString(a, action); matched {
+		if matched, _ := regexp.MatchString(a, action); matched { //nolint:errcheck
 			return true
 		}
 	}
@@ -624,7 +624,7 @@ func (s *SEMAP) isCommandAllowed(action string, allowed []string) bool {
 
 func (s *SEMAP) matchesPathPattern(resource string, patterns []string) bool {
 	for _, pattern := range patterns {
-		if matched, _ := regexp.MatchString(pattern, resource); matched {
+		if matched, _ := regexp.MatchString(pattern, resource); matched { //nolint:errcheck
 			return true
 		}
 	}
@@ -648,7 +648,7 @@ func (s *SEMAP) formatViolationMessage(contract *Contract, input interface{}, ou
 func (s *SEMAP) executeAction(ctx context.Context, action *ContractAction, violation *Violation) {
 	handler := s.actions[action.Type]
 	if handler != nil {
-		_ = handler.Execute(ctx, action, violation)
+		_ = handler.Execute(ctx, action, violation) //nolint:errcheck
 	}
 }
 

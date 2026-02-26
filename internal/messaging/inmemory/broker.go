@@ -299,7 +299,7 @@ func (b *Broker) consumeLoop(ctx context.Context, topic string, entry subscriber
 				if entry.opts.RetryOnError && msg.CanRetry() {
 					msg.IncrementRetry()
 					b.mu.Lock()
-					_ = queue.Enqueue(msg)
+					_ = queue.Enqueue(msg) //nolint:errcheck
 					b.mu.Unlock()
 					b.metrics.RecordRetry()
 				}
@@ -316,7 +316,7 @@ func (b *Broker) notifySubscribers(ctx context.Context, topic string, msg *messa
 	for _, sub := range subscribers {
 		if sub.active {
 			go func(s subscriberEntry) {
-				_ = s.handler(ctx, msg)
+				_ = s.handler(ctx, msg) //nolint:errcheck
 			}(sub)
 		}
 	}

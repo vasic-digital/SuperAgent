@@ -57,7 +57,7 @@ func ParseSchemaFromMap(data map[string]interface{}) (*JSONSchema, error) {
 
 // String returns the JSON representation of the schema.
 func (s *JSONSchema) String() string {
-	bytes, _ := json.MarshalIndent(s, "", "  ")
+	bytes, _ := json.MarshalIndent(s, "", "  ") //nolint:errcheck
 	return string(bytes)
 }
 

@@ -447,9 +447,9 @@ func (f *FetchAdapter) ExecuteTool(ctx context.Context, toolName string, params 
 
 	switch toolName {
 	case "fetch_url":
-		targetURL, _ := params["url"].(string)
-		method, _ := params["method"].(string)
-		body, _ := params["body"].(string)
+		targetURL, _ := params["url"].(string) //nolint:errcheck
+		method, _ := params["method"].(string) //nolint:errcheck
+		body, _ := params["body"].(string)     //nolint:errcheck
 		var headers map[string]string
 		if h, ok := params["headers"].(map[string]interface{}); ok {
 			headers = make(map[string]string)

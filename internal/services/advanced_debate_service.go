@@ -57,7 +57,7 @@ func (ads *AdvancedDebateService) ConductAdvancedDebate(
 	if err != nil {
 		return nil, fmt.Errorf("failed to start monitoring: %w", err)
 	}
-	defer func() { _ = ads.monitoringService.StopMonitoring(ctx, monitoringID) }()
+	defer func() { _ = ads.monitoringService.StopMonitoring(ctx, monitoringID) }() //nolint:errcheck
 
 	// Conduct debate
 	result, err := ads.debateService.ConductDebate(ctx, config)

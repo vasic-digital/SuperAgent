@@ -334,7 +334,7 @@ func (g *PIIGuardrail) Check(ctx context.Context, content string, metadata map[s
 
 	// If action is modify, mask the content
 	if g.action == GuardrailActionModify {
-		masked, _, _ := g.detector.Mask(ctx, content)
+		masked, _, _ := g.detector.Mask(ctx, content) //nolint:errcheck
 		result.ModifiedContent = masked
 	}
 

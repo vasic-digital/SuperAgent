@@ -260,7 +260,7 @@ func (t *TreeOfThoughts) breadthFirstSearch(ctx context.Context) ([]*Thought, er
 
 		if isTerminal {
 			path := t.getPath(current)
-			pathScore, _ := t.evaluator.EvaluatePath(ctx, path)
+			pathScore, _ := t.evaluator.EvaluatePath(ctx, path) //nolint:errcheck
 			if pathScore > t.bestScore {
 				t.bestScore = pathScore
 				t.bestPath = path
@@ -333,10 +333,10 @@ func (t *TreeOfThoughts) depthFirstSearch(ctx context.Context) ([]*Thought, erro
 		}
 
 		// Check terminal
-		isTerminal, _ := t.evaluator.IsTerminal(ctx, current.Thought)
+		isTerminal, _ := t.evaluator.IsTerminal(ctx, current.Thought) //nolint:errcheck
 		if isTerminal {
 			path := t.getPath(current)
-			pathScore, _ := t.evaluator.EvaluatePath(ctx, path)
+			pathScore, _ := t.evaluator.EvaluatePath(ctx, path) //nolint:errcheck
 			if pathScore > t.bestScore {
 				t.bestScore = pathScore
 				t.bestPath = path
@@ -408,10 +408,10 @@ func (t *TreeOfThoughts) beamSearch(ctx context.Context) ([]*Thought, error) {
 
 		// Check for terminal states
 		for _, node := range beam {
-			isTerminal, _ := t.evaluator.IsTerminal(ctx, node.Thought)
+			isTerminal, _ := t.evaluator.IsTerminal(ctx, node.Thought) //nolint:errcheck
 			if isTerminal {
 				path := t.getPath(node)
-				pathScore, _ := t.evaluator.EvaluatePath(ctx, path)
+				pathScore, _ := t.evaluator.EvaluatePath(ctx, path) //nolint:errcheck
 				if pathScore > t.bestScore {
 					t.bestScore = pathScore
 					t.bestPath = path

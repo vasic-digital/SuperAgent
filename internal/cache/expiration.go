@@ -228,7 +228,7 @@ func matchPattern(pattern, s string) bool {
 	regexPattern := "^" + regexp.QuoteMeta(pattern) + "$"
 	regexPattern = regexp.MustCompile(`\\\*`).ReplaceAllString(regexPattern, ".*")
 
-	matched, _ := regexp.MatchString(regexPattern, s)
+	matched, _ := regexp.MatchString(regexPattern, s) //nolint:errcheck
 	return matched
 }
 

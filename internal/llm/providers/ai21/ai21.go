@@ -232,14 +232,14 @@ func (p *Provider) CompleteStream(ctx context.Context, req *models.LLMRequest) (
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body) //nolint:errcheck
 		_ = resp.Body.Close()
 		return nil, fmt.Errorf("AI21 API error: %d - %s", resp.StatusCode, string(body))
 	}
 
 	ch := make(chan *models.LLMResponse)
 	go func() {
-		defer func() { _ = resp.Body.Close() }()
+		defer func() { _ = resp.Body.Close() }() //nolint:errcheck
 		defer close(ch)
 
 		reader := bufio.NewReader(resp.Body)

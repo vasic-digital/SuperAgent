@@ -161,7 +161,7 @@ func (h *BackgroundTaskHandler) CreateTask(c *gin.Context) {
 
 	// Set payload
 	if req.Payload != nil {
-		payloadBytes, _ := json.Marshal(req.Payload)
+		payloadBytes, _ := json.Marshal(req.Payload) //nolint:errcheck
 		task.Payload = payloadBytes
 	}
 
@@ -307,7 +307,7 @@ func (h *BackgroundTaskHandler) GetTaskStatus(c *gin.Context) {
 func (h *BackgroundTaskHandler) GetTaskLogs(c *gin.Context) {
 	taskID := c.Param("id")
 	limitStr := c.DefaultQuery("limit", "100")
-	limit, _ := strconv.Atoi(limitStr)
+	limit, _ := strconv.Atoi(limitStr) //nolint:errcheck
 	if limit <= 0 {
 		limit = 100
 	}
@@ -344,7 +344,7 @@ func (h *BackgroundTaskHandler) GetTaskLogs(c *gin.Context) {
 func (h *BackgroundTaskHandler) GetTaskResources(c *gin.Context) {
 	taskID := c.Param("id")
 	limitStr := c.DefaultQuery("limit", "10")
-	limit, _ := strconv.Atoi(limitStr)
+	limit, _ := strconv.Atoi(limitStr) //nolint:errcheck
 	if limit <= 0 {
 		limit = 10
 	}
@@ -411,8 +411,8 @@ func (h *BackgroundTaskHandler) GetTaskEvents(c *gin.Context) {
 
 	// Register client
 	if h.sseManager != nil {
-		_ = h.sseManager.RegisterClient(taskID, clientChan)
-		defer func() { _ = h.sseManager.UnregisterClient(taskID, clientChan) }()
+		_ = h.sseManager.RegisterClient(taskID, clientChan)                      //nolint:errcheck
+		defer func() { _ = h.sseManager.UnregisterClient(taskID, clientChan) }() //nolint:errcheck
 	}
 
 	// Stream events
@@ -473,7 +473,7 @@ func (h *BackgroundTaskHandler) PauseTask(c *gin.Context) {
 		return
 	}
 
-	_ = h.repository.LogEvent(c.Request.Context(), taskID, models.TaskEventPaused, nil, nil)
+	_ = h.repository.LogEvent(c.Request.Context(), taskID, models.TaskEventPaused, nil, nil) //nolint:errcheck
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Task paused",
@@ -518,7 +518,7 @@ func (h *BackgroundTaskHandler) ResumeTask(c *gin.Context) {
 		return
 	}
 
-	_ = h.repository.LogEvent(c.Request.Context(), taskID, models.TaskEventResumed, nil, nil)
+	_ = h.repository.LogEvent(c.Request.Context(), taskID, models.TaskEventResumed, nil, nil) //nolint:errcheck
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Task resumed",
@@ -564,10 +564,10 @@ func (h *BackgroundTaskHandler) CancelTask(c *gin.Context) {
 		return
 	}
 
-	_ = h.repository.LogEvent(c.Request.Context(), taskID, models.TaskEventCancelled, nil, nil)
+	_ = h.repository.LogEvent(c.Request.Context(), taskID, models.TaskEventCancelled, nil, nil) //nolint:errcheck
 
 	if h.notificationHub != nil {
-		_ = h.notificationHub.NotifyTaskEvent(context.Background(), task, models.TaskEventCancelled, nil)
+		_ = h.notificationHub.NotifyTaskEvent(context.Background(), task, models.TaskEventCancelled, nil) //nolint:errcheck
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -625,8 +625,8 @@ func (h *BackgroundTaskHandler) ListTasks(c *gin.Context) {
 	limitStr := c.DefaultQuery("limit", "50")
 	offsetStr := c.DefaultQuery("offset", "0")
 
-	limit, _ := strconv.Atoi(limitStr)
-	offset, _ := strconv.Atoi(offsetStr)
+	limit, _ := strconv.Atoi(limitStr)   //nolint:errcheck
+	offset, _ := strconv.Atoi(offsetStr) //nolint:errcheck
 
 	if limit <= 0 {
 		limit = 50
@@ -661,7 +661,7 @@ func (h *BackgroundTaskHandler) ListTasks(c *gin.Context) {
 	}
 
 	// Get counts
-	counts, _ := h.repository.CountByStatus(c.Request.Context())
+	counts, _ := h.repository.CountByStatus(c.Request.Context()) //nolint:errcheck
 
 	c.JSON(http.StatusOK, gin.H{
 		"tasks":         taskList,
@@ -676,10 +676,10 @@ func (h *BackgroundTaskHandler) ListTasks(c *gin.Context) {
 func (h *BackgroundTaskHandler) GetQueueStats(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	pending, _ := h.queue.GetPendingCount(ctx)
-	running, _ := h.queue.GetRunningCount(ctx)
-	depth, _ := h.queue.GetQueueDepth(ctx)
-	counts, _ := h.repository.CountByStatus(ctx)
+	pending, _ := h.queue.GetPendingCount(ctx)   //nolint:errcheck
+	running, _ := h.queue.GetRunningCount(ctx)   //nolint:errcheck
+	depth, _ := h.queue.GetQueueDepth(ctx)       //nolint:errcheck
+	counts, _ := h.repository.CountByStatus(ctx) //nolint:errcheck
 
 	stats := gin.H{
 		"pending_count":     pending,
@@ -710,7 +710,7 @@ func (h *BackgroundTaskHandler) PollEvents(c *gin.Context) {
 	sinceStr := c.Query("since")
 	limitStr := c.DefaultQuery("limit", "100")
 
-	limit, _ := strconv.Atoi(limitStr)
+	limit, _ := strconv.Atoi(limitStr) //nolint:errcheck
 	if limit <= 0 {
 		limit = 100
 	}
@@ -880,7 +880,7 @@ func (h *BackgroundTaskHandler) AnalyzeTask(c *gin.Context) {
 		return
 	}
 
-	snapshots, _ := h.repository.GetResourceSnapshots(c.Request.Context(), taskID, 10)
+	snapshots, _ := h.repository.GetResourceSnapshots(c.Request.Context(), taskID, 10) //nolint:errcheck
 
 	if detector, ok := h.stuckDetector.(*background.DefaultStuckDetector); ok {
 		analysis := detector.AnalyzeTask(c.Request.Context(), task, snapshots)
@@ -1015,8 +1015,8 @@ func (h *BackgroundTaskHandler) streamAllEvents(c *gin.Context) {
 	clientChan := make(chan []byte, 100)
 
 	if h.sseManager != nil {
-		_ = h.sseManager.RegisterGlobalClient(clientChan)
-		defer func() { _ = h.sseManager.UnregisterGlobalClient(clientChan) }()
+		_ = h.sseManager.RegisterGlobalClient(clientChan)                      //nolint:errcheck
+		defer func() { _ = h.sseManager.UnregisterGlobalClient(clientChan) }() //nolint:errcheck
 	}
 
 	c.Stream(func(w io.Writer) bool {

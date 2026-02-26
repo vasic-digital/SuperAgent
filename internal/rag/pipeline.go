@@ -176,7 +176,7 @@ func (p *Pipeline) ensureCollection(ctx context.Context) error {
 			}
 		}
 	case VectorDBQdrant:
-		exists, _ := p.qdrantAdapter.CollectionExists(ctx, p.config.CollectionName)
+		exists, _ := p.qdrantAdapter.CollectionExists(ctx, p.config.CollectionName) //nolint:errcheck
 		if !exists {
 			// Create collection
 			err = p.qdrantAdapter.CreateCollection(ctx, p.config.CollectionName, uint64(dim), "Cosine") // #nosec G115 - dimension fits in uint64

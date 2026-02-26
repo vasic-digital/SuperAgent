@@ -866,11 +866,11 @@ func parseValidationResponse(content string) (float64, float64, float64, []Valid
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if strings.HasPrefix(line, "FACTUAL_ACCURACY:") {
-			_, _ = fmt.Sscanf(strings.TrimPrefix(line, "FACTUAL_ACCURACY:"), "%f", &factual)
+			_, _ = fmt.Sscanf(strings.TrimPrefix(line, "FACTUAL_ACCURACY:"), "%f", &factual) //nolint:errcheck
 		} else if strings.HasPrefix(line, "COMPLETENESS:") {
-			_, _ = fmt.Sscanf(strings.TrimPrefix(line, "COMPLETENESS:"), "%f", &complete)
+			_, _ = fmt.Sscanf(strings.TrimPrefix(line, "COMPLETENESS:"), "%f", &complete) //nolint:errcheck
 		} else if strings.HasPrefix(line, "COHERENCE:") {
-			_, _ = fmt.Sscanf(strings.TrimPrefix(line, "COHERENCE:"), "%f", &coherent)
+			_, _ = fmt.Sscanf(strings.TrimPrefix(line, "COHERENCE:"), "%f", &coherent) //nolint:errcheck
 		}
 	}
 
@@ -908,7 +908,7 @@ func parseSynthesisResponse(content string) (string, float64) {
 		rest := content[idx+len("CONCLUSION:"):]
 		if confIdx := strings.Index(rest, "CONFIDENCE:"); confIdx >= 0 {
 			conclusion = strings.TrimSpace(rest[:confIdx])
-			_, _ = fmt.Sscanf(strings.TrimPrefix(rest[confIdx:], "CONFIDENCE:"), "%f", &confidence)
+			_, _ = fmt.Sscanf(strings.TrimPrefix(rest[confIdx:], "CONFIDENCE:"), "%f", &confidence) //nolint:errcheck
 		} else {
 			conclusion = strings.TrimSpace(rest)
 		}

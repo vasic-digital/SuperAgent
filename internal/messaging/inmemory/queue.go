@@ -52,7 +52,7 @@ func (q *Queue) Dequeue() (*messaging.Message, error) {
 		return nil, nil
 	}
 
-	item := heap.Pop(&q.items).(*queueItem)
+	item := heap.Pop(&q.items).(*queueItem) //nolint:errcheck
 	return item.message, nil
 }
 

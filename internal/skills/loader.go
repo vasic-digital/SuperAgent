@@ -64,7 +64,7 @@ func (l *SkillLoader) LoadFromDirectory(dir string) (int, error) {
 		}
 
 		// Extract category from path
-		relPath, _ := filepath.Rel(dir, path)
+		relPath, _ := filepath.Rel(dir, path) //nolint:errcheck
 		parts := strings.Split(relPath, string(filepath.Separator))
 		if len(parts) > 1 {
 			// Use parent directory as category if not set

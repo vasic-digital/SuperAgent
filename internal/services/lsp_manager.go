@@ -1479,7 +1479,7 @@ func (c *LSPConnection) Close() error {
 		}
 		content, _ := json.Marshal(shutdownReq)
 		header := fmt.Sprintf("Content-Length: %d\r\n\r\n", len(content))
-		_, _ = c.stdin.Write([]byte(header + string(content)))
+		_, _ = c.stdin.Write([]byte(header + string(content))) //nolint:errcheck
 
 		// Send exit notification
 		exitNotif := LSPJSONRPCNotification{
@@ -1488,7 +1488,7 @@ func (c *LSPConnection) Close() error {
 		}
 		content, _ = json.Marshal(exitNotif)
 		header = fmt.Sprintf("Content-Length: %d\r\n\r\n", len(content))
-		_, _ = c.stdin.Write([]byte(header + string(content)))
+		_, _ = c.stdin.Write([]byte(header + string(content))) //nolint:errcheck
 	}
 
 	if c.stdin != nil {

@@ -562,8 +562,8 @@ func (p *ZenProvider) CompleteStream(ctx context.Context, req *models.LLMRequest
 
 	// Check for HTTP errors before starting stream
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
-		_ = resp.Body.Close()
+		body, _ := io.ReadAll(resp.Body) //nolint:errcheck
+		_ = resp.Body.Close()            //nolint:errcheck
 		return nil, fmt.Errorf("Zen API error: HTTP %d - %s", resp.StatusCode, string(body))
 	}
 
@@ -571,7 +571,7 @@ func (p *ZenProvider) CompleteStream(ctx context.Context, req *models.LLMRequest
 	ch := make(chan *models.LLMResponse)
 
 	go func() {
-		defer func() { _ = resp.Body.Close() }()
+		defer func() { _ = resp.Body.Close() }() //nolint:errcheck
 		defer close(ch)
 
 		reader := bufio.NewReader(resp.Body)
@@ -1079,10 +1079,10 @@ func (p *ZenProvider) GetAvailableModels(ctx context.Context) ([]ZenModelInfo, e
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() { _ = resp.Body.Close() }() //nolint:errcheck
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body) //nolint:errcheck
 		return nil, fmt.Errorf("API error: %d - %s", resp.StatusCode, string(body))
 	}
 

@@ -646,7 +646,7 @@ func (h *DebateHandler) RejectDebate(c *gin.Context) {
 	var req struct {
 		Reason string `json:"reason"`
 	}
-	_ = c.ShouldBindJSON(&req)
+	_ = c.ShouldBindJSON(&req) //nolint:errcheck
 
 	h.mu.Lock()
 	state.Status = "rejected"

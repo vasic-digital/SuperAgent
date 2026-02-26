@@ -67,21 +67,21 @@ func NewTemplateRegistry() *TemplateRegistry {
 
 // registerBuiltInTemplates registers all built-in agent templates.
 func (tr *TemplateRegistry) registerBuiltInTemplates() {
-	_ = tr.Register(NewCodeSpecialistTemplate())
-	_ = tr.Register(NewSecuritySpecialistTemplate())
-	_ = tr.Register(NewArchitectureSpecialistTemplate())
-	_ = tr.Register(NewDebugSpecialistTemplate())
-	_ = tr.Register(NewOptimizationSpecialistTemplate())
-	_ = tr.Register(NewReasoningSpecialistTemplate())
-	_ = tr.Register(NewProposerTemplate())
-	_ = tr.Register(NewCriticTemplate())
-	_ = tr.Register(NewReviewerTemplate())
-	_ = tr.Register(NewModeratorTemplate())
-	_ = tr.Register(NewValidatorTemplate())
-	_ = tr.Register(NewRedTeamTemplate())
-	_ = tr.Register(NewBlueTeamTemplate())
-	_ = tr.Register(NewGeneratorRoleTemplate())
-	_ = tr.Register(NewRefactorerRoleTemplate())
+	_ = tr.Register(NewCodeSpecialistTemplate())         //nolint:errcheck
+	_ = tr.Register(NewSecuritySpecialistTemplate())     //nolint:errcheck
+	_ = tr.Register(NewArchitectureSpecialistTemplate()) //nolint:errcheck
+	_ = tr.Register(NewDebugSpecialistTemplate())        //nolint:errcheck
+	_ = tr.Register(NewOptimizationSpecialistTemplate()) //nolint:errcheck
+	_ = tr.Register(NewReasoningSpecialistTemplate())    //nolint:errcheck
+	_ = tr.Register(NewProposerTemplate())               //nolint:errcheck
+	_ = tr.Register(NewCriticTemplate())                 //nolint:errcheck
+	_ = tr.Register(NewReviewerTemplate())               //nolint:errcheck
+	_ = tr.Register(NewModeratorTemplate())              //nolint:errcheck
+	_ = tr.Register(NewValidatorTemplate())              //nolint:errcheck
+	_ = tr.Register(NewRedTeamTemplate())                //nolint:errcheck
+	_ = tr.Register(NewBlueTeamTemplate())               //nolint:errcheck
+	_ = tr.Register(NewGeneratorRoleTemplate())          //nolint:errcheck
+	_ = tr.Register(NewRefactorerRoleTemplate())         //nolint:errcheck
 	_ = tr.Register(NewPerformanceAnalyzerRoleTemplate())
 	_ = tr.Register(NewSecurityRoleTemplate())
 	_ = tr.Register(NewTeacherRoleTemplate())

@@ -175,7 +175,7 @@ func (f *OrchestratorFactory) registerVerifiedProviders(orch *Orchestrator) {
 			}
 
 			if modelName != "" {
-				_ = orch.RegisterProvider(name, modelName, score)
+				_ = orch.RegisterProvider(name, modelName, score) //nolint:errcheck
 			}
 		}
 	}

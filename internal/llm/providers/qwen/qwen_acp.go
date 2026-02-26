@@ -442,8 +442,8 @@ func (p *QwenACPProvider) Stop() {
 
 	if p.cmd != nil && p.cmd.Process != nil {
 		_ = p.stdin.Close()
-		_ = p.cmd.Process.Kill()
-		_ = p.cmd.Wait()
+		_ = p.cmd.Process.Kill() //nolint:errcheck
+		_ = p.cmd.Wait() //nolint:errcheck
 	}
 	p.isRunning = false
 	p.initialized = false
@@ -691,9 +691,9 @@ func testQwenACPAvailability() bool {
 	defer func() {
 		_ = stdin.Close()
 		if cmd.Process != nil {
-			_ = cmd.Process.Kill()
+			_ = cmd.Process.Kill() //nolint:errcheck
 		}
-		_ = cmd.Wait()
+		_ = cmd.Wait() //nolint:errcheck
 	}()
 
 	// Try to send a simple request and see if we get a response

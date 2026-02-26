@@ -411,7 +411,7 @@ func (p *KimiCodeCLIProvider) CompleteStream(ctx context.Context, req *models.LL
 			}
 		}
 
-		_ = cmd.Wait()
+		_ = cmd.Wait() //nolint:errcheck
 
 		responseChan <- &models.LLMResponse{
 			Content:      fullContent.String(),
@@ -591,7 +591,7 @@ func CanUseKimiCodeCLI() bool {
 		return false
 	}
 
-	homeDir, _ := os.UserHomeDir()
+	homeDir, _ := os.UserHomeDir() //nolint:errcheck
 	credPath := filepath.Join(homeDir, KimiCodeCredentialPath)
 	if _, err := os.Stat(credPath); os.IsNotExist(err) {
 		return false

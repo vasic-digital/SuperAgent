@@ -431,7 +431,7 @@ func (a *MongoDBAdapter) find(ctx context.Context, args map[string]interface{}) 
 		return &ToolResult{IsError: true, Content: []ContentBlock{{Type: "text", Text: err.Error()}}}, nil
 	}
 
-	data, _ := json.MarshalIndent(docs, "", "  ")
+	data, _ := json.MarshalIndent(docs, "", "  ") //nolint:errcheck
 	return &ToolResult{
 		Content: []ContentBlock{{Type: "text", Text: fmt.Sprintf("Found %d documents:\n\n%s", len(docs), string(data))}},
 	}, nil
@@ -447,7 +447,7 @@ func (a *MongoDBAdapter) findOne(ctx context.Context, args map[string]interface{
 		return &ToolResult{IsError: true, Content: []ContentBlock{{Type: "text", Text: err.Error()}}}, nil
 	}
 
-	data, _ := json.MarshalIndent(doc, "", "  ")
+	data, _ := json.MarshalIndent(doc, "", "  ") //nolint:errcheck
 	return &ToolResult{
 		Content: []ContentBlock{{Type: "text", Text: string(data)}},
 	}, nil
@@ -538,7 +538,7 @@ func (a *MongoDBAdapter) aggregate(ctx context.Context, args map[string]interfac
 		return &ToolResult{IsError: true, Content: []ContentBlock{{Type: "text", Text: err.Error()}}}, nil
 	}
 
-	data, _ := json.MarshalIndent(results, "", "  ")
+	data, _ := json.MarshalIndent(results, "", "  ") //nolint:errcheck
 	return &ToolResult{
 		Content: []ContentBlock{{Type: "text", Text: fmt.Sprintf("Aggregation results (%d):\n\n%s", len(results), string(data))}},
 	}, nil

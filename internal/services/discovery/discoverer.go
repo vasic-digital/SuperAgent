@@ -384,7 +384,7 @@ func (d *mdnsDiscoverer) performMDNSQuery(ctx context.Context, queryName string)
 			if deadlineConn, ok := conn.(interface {
 				SetReadDeadline(t time.Time) error
 			}); ok {
-				_ = deadlineConn.SetReadDeadline(time.Now().Add(500 * time.Millisecond))
+				_ = deadlineConn.SetReadDeadline(time.Now().Add(500 * time.Millisecond)) //nolint:errcheck
 			}
 
 			n, _, readErr := conn.ReadFrom(buf)

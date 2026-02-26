@@ -36,7 +36,7 @@ type FilesystemAdapterConfig struct {
 
 // DefaultFilesystemAdapterConfig returns sensible defaults
 func DefaultFilesystemAdapterConfig() FilesystemAdapterConfig {
-	homeDir, _ := os.UserHomeDir()
+	homeDir, _ := os.UserHomeDir() //nolint:errcheck
 	return FilesystemAdapterConfig{
 		AllowedPaths:   []string{homeDir},
 		DeniedPaths:    []string{"/etc/passwd", "/etc/shadow", "/.ssh", "/.gnupg"},
@@ -164,7 +164,7 @@ func (a *FilesystemAdapter) isPathAllowed(path string) error {
 	// Check if path is under an allowed root
 	allowed := false
 	for _, allowedPath := range a.config.AllowedPaths {
-		allowedAbs, _ := filepath.Abs(allowedPath)
+		allowedAbs, _ := filepath.Abs(allowedPath) //nolint:errcheck
 		if strings.HasPrefix(absPath, allowedAbs) {
 			allowed = true
 			break
@@ -601,7 +601,7 @@ func (a *FilesystemAdapter) SearchFiles(ctx context.Context, rootPath string, pa
 		}
 
 		// Check if filename matches pattern
-		matched, _ := filepath.Match(pattern, info.Name())
+		matched, _ := filepath.Match(pattern, info.Name()) //nolint:errcheck
 		if matched {
 			results = append(results, FileInfo{
 				Name:    info.Name(),

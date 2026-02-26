@@ -512,7 +512,7 @@ func (m *MCPSecurityManager) logAuditEvent(ctx context.Context, request *ToolCal
 		}
 	}
 
-	_ = m.auditLogger.Log(ctx, event)
+	_ = m.auditLogger.Log(ctx, event) //nolint:errcheck
 }
 
 // SandboxedToolExecutor wraps tool execution with sandboxing

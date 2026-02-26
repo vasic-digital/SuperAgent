@@ -184,7 +184,7 @@ func (r *ResponseRepository) SetSelected(ctx context.Context, id string, selecti
 	if err != nil {
 		return fmt.Errorf("failed to start transaction: %w", err)
 	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	defer func() { _ = tx.Rollback(ctx) }() //nolint:errcheck
 
 	// Unselect all responses for this request
 	_, err = tx.Exec(ctx, `UPDATE llm_responses SET selected = false WHERE request_id = $1`, requestID)

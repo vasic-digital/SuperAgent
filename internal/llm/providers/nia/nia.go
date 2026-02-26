@@ -196,7 +196,7 @@ func (p *NiaProvider) CompleteStream(ctx context.Context, req *models.LLMRequest
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body) //nolint:errcheck
 		_ = resp.Body.Close()
 		return nil, fmt.Errorf("Nia API error: HTTP %d - %s", resp.StatusCode, string(body))
 	}
@@ -440,7 +440,7 @@ func (p *NiaProvider) HealthCheck() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", NiaModelsURL, nil)
+	req, _ := http.NewRequestWithContext(ctx, "GET", NiaModelsURL, nil) //nolint:errcheck
 	req.Header.Set("Authorization", "Bearer "+p.apiKey)
 
 	resp, err := p.httpClient.Do(req)

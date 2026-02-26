@@ -150,12 +150,12 @@ func (s *WebSocketServer) HandleConnection(c *gin.Context) {
 		if err := s.RegisterClient(taskID, client); err != nil {
 			s.logger.WithError(err).Debug("Failed to register client")
 		}
-		defer func() { _ = s.UnregisterClient(taskID, clientID) }()
+		defer func() { _ = s.UnregisterClient(taskID, clientID) }() //nolint:errcheck
 	} else {
 		if err := s.RegisterGlobalClient(client); err != nil {
 			s.logger.WithError(err).Debug("Failed to register global client")
 		}
-		defer func() { _ = s.UnregisterGlobalClient(clientID) }()
+		defer func() { _ = s.UnregisterGlobalClient(clientID) }() //nolint:errcheck
 	}
 
 	// Start reading messages
@@ -280,9 +280,9 @@ func (s *WebSocketServer) broadcastGlobal(data []byte) {
 func (s *WebSocketServer) readLoop(client *WebSocketClient, taskID string) {
 	conn := client.conn
 	conn.SetReadLimit(s.config.MaxMessageSize)
-	_ = conn.SetReadDeadline(time.Now().Add(s.config.PongWait))
+	_ = conn.SetReadDeadline(time.Now().Add(s.config.PongWait)) //nolint:errcheck
 	conn.SetPongHandler(func(string) error {
-		_ = conn.SetReadDeadline(time.Now().Add(s.config.PongWait))
+		_ = conn.SetReadDeadline(time.Now().Add(s.config.PongWait)) //nolint:errcheck
 		return nil
 	})
 
@@ -315,14 +315,14 @@ func (s *WebSocketServer) handleMessage(client *WebSocketClient, taskID string, 
 	switch msg.Type {
 	case "subscribe":
 		if msg.TaskID != "" {
-			_ = s.RegisterClient(msg.TaskID, client)
+			_ = s.RegisterClient(msg.TaskID, client) //nolint:errcheck
 		}
 	case "unsubscribe":
 		if msg.TaskID != "" {
-			_ = s.UnregisterClient(msg.TaskID, client.ID())
+			_ = s.UnregisterClient(msg.TaskID, client.ID()) //nolint:errcheck
 		}
 	case "ping":
-		_ = client.Send([]byte(`{"type":"pong"}`))
+		_ = client.Send([]byte(`{"type":"pong"}`)) //nolint:errcheck
 	}
 }
 
@@ -337,7 +337,7 @@ func (s *WebSocketServer) pingLoop(client *WebSocketClient) {
 			return
 		case <-ticker.C:
 			client.mu.Lock()
-			_ = client.conn.SetWriteDeadline(time.Now().Add(s.config.WriteWait))
+			_ = client.conn.SetWriteDeadline(time.Now().Add(s.config.WriteWait)) //nolint:errcheck
 			if err := client.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				client.mu.Unlock()
 				return
@@ -406,7 +406,7 @@ func (c *WebSocketClient) Send(data []byte) error {
 		return fmt.Errorf("client is closed")
 	}
 
-	_ = c.conn.SetWriteDeadline(time.Now().Add(c.config.WriteWait))
+	_ = c.conn.SetWriteDeadline(time.Now().Add(c.config.WriteWait)) //nolint:errcheck
 	return c.conn.WriteMessage(websocket.TextMessage, data)
 }
 

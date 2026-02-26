@@ -369,8 +369,8 @@ func (d *ProtocolDiscovery) periodicDiscovery() {
 			return
 		case <-ticker.C:
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			_ = d.DiscoverServers(ctx)
-			_ = d.HealthCheck(ctx)
+			_ = d.DiscoverServers(ctx) //nolint:errcheck
+			_ = d.HealthCheck(ctx) //nolint:errcheck
 			cancel()
 		}
 	}
@@ -396,12 +396,12 @@ func (n *NetworkDiscovery) Discover(ctx context.Context) ([]*DiscoveredServer, e
 	defer func() { _ = conn.Close() }()
 
 	// Send discovery broadcast
-	broadcastAddr, _ := net.ResolveUDPAddr("udp", fmt.Sprintf("255.255.255.255:%d", n.port))
+	broadcastAddr, _ := net.ResolveUDPAddr("udp", fmt.Sprintf("255.255.255.255:%d", n.port)) //nolint:errcheck
 	message := []byte("DISCOVER_PROTOCOL_SERVERS")
-	_, _ = conn.WriteToUDP(message, broadcastAddr)
+	_, _ = conn.WriteToUDP(message, broadcastAddr) //nolint:errcheck
 
 	// Listen for responses with timeout
-	_ = conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+	_ = conn.SetReadDeadline(time.Now().Add(2 * time.Second)) //nolint:errcheck
 
 	var servers []*DiscoveredServer
 	buffer := make([]byte, 1024)
@@ -419,7 +419,7 @@ func (n *NetworkDiscovery) Discover(ctx context.Context) ([]*DiscoveredServer, e
 		if strings.HasPrefix(response, "PROTOCOL_SERVER:") {
 			parts := strings.Split(response, ":")
 			if len(parts) >= 4 {
-				port, _ := strconv.Atoi(parts[3])
+				port, _ := strconv.Atoi(parts[3]) //nolint:errcheck
 				server := &DiscoveredServer{
 					ID:       fmt.Sprintf("net-%s-%s", remoteAddr.IP.String(), parts[1]),
 					Protocol: parts[1],

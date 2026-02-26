@@ -358,7 +358,7 @@ func (ds *DocumentationSync) GenerateConstitutionReport(projectRoot string, cons
 	for _, file := range files {
 		filePath := filepath.Join(projectRoot, file)
 		if _, err := os.Stat(filePath); err == nil {
-			info, _ := os.Stat(filePath)
+			info, _ := os.Stat(filePath) //nolint:errcheck
 			report.WriteString(fmt.Sprintf("- ✅ **%s** (Size: %d bytes, Modified: %s)\n",
 				file,
 				info.Size(),

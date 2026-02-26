@@ -39,7 +39,7 @@ type GitAdapterConfig struct {
 
 // DefaultGitAdapterConfig returns default configuration
 func DefaultGitAdapterConfig() GitAdapterConfig {
-	homeDir, _ := os.UserHomeDir()
+	homeDir, _ := os.UserHomeDir() //nolint:errcheck
 	return GitAdapterConfig{
 		DefaultRepoPath:       "",
 		AllowedPaths:          []string{homeDir},
@@ -244,8 +244,8 @@ func (g *GitAdapter) Status(ctx context.Context, repoPath string) (*GitStatus, e
 		if err == nil {
 			parts := strings.Fields(revList)
 			if len(parts) == 2 {
-				_, _ = fmt.Sscanf(parts[0], "%d", &status.Ahead)
-				_, _ = fmt.Sscanf(parts[1], "%d", &status.Behind)
+				_, _ = fmt.Sscanf(parts[0], "%d", &status.Ahead) //nolint:errcheck
+				_, _ = fmt.Sscanf(parts[1], "%d", &status.Behind) //nolint:errcheck
 			}
 		}
 	}
@@ -364,7 +364,7 @@ func (g *GitAdapter) Log(ctx context.Context, repoPath string, limit int, since 
 			continue
 		}
 
-		date, _ := time.Parse(time.RFC3339, parts[4])
+		date, _ := time.Parse(time.RFC3339, parts[4]) //nolint:errcheck
 		log := GitLog{
 			Hash:        parts[0],
 			ShortHash:   parts[1],
@@ -449,10 +449,10 @@ func (g *GitAdapter) Diff(ctx context.Context, repoPath string, ref1, ref2 strin
 
 		var additions, deletions int
 		if parts[0] != "-" {
-			_, _ = fmt.Sscanf(parts[0], "%d", &additions)
+			_, _ = fmt.Sscanf(parts[0], "%d", &additions) //nolint:errcheck
 		}
 		if parts[1] != "-" {
-			_, _ = fmt.Sscanf(parts[1], "%d", &deletions)
+			_, _ = fmt.Sscanf(parts[1], "%d", &deletions) //nolint:errcheck
 		}
 
 		file := GitDiffFile{
@@ -565,8 +565,8 @@ func (g *GitAdapter) Commit(ctx context.Context, repoPath, message string, amend
 		return nil, fmt.Errorf("failed to get commit hash: %w", err)
 	}
 
-	shortHash, _ := g.runGitCommand(ctx, repoPath, "rev-parse", "--short", "HEAD")
-	branch, _ := g.runGitCommand(ctx, repoPath, "rev-parse", "--abbrev-ref", "HEAD")
+	shortHash, _ := g.runGitCommand(ctx, repoPath, "rev-parse", "--short", "HEAD") //nolint:errcheck
+	branch, _ := g.runGitCommand(ctx, repoPath, "rev-parse", "--abbrev-ref", "HEAD") //nolint:errcheck
 
 	return &GitCommitResult{
 		Hash:      strings.TrimSpace(hash),

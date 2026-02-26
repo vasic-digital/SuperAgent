@@ -2003,7 +2003,7 @@ func (ds *DebateService) analyzeWithHelixMemory(ctx context.Context, content str
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}
-		_ = ds.memoryAdapter.Add(storeCtx, debateMemory)
+		_ = ds.memoryAdapter.Add(storeCtx, debateMemory) //nolint:errcheck
 	}()
 
 	return &CogneeAnalysis{

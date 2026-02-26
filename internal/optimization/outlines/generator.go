@@ -150,7 +150,7 @@ func (g *StructuredGenerator) buildPrompt(userPrompt string, errors []string) st
 	parts = append(parts, userPrompt)
 
 	if g.config.IncludeSchemaInPrompt {
-		schemaJSON, _ := json.MarshalIndent(g.schema, "", "  ")
+		schemaJSON, _ := json.MarshalIndent(g.schema, "", "  ") //nolint:errcheck
 		parts = append(parts, fmt.Sprintf("\nRespond with valid JSON matching this schema:\n```json\n%s\n```", string(schemaJSON)))
 	}
 

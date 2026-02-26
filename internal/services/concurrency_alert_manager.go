@@ -822,9 +822,9 @@ func (am *ConcurrencyAlertManager) GetAlertStats() map[string]interface{} {
 			if len(parts) >= 3 {
 				provider := parts[2]
 				if provider != "" && provider != "summary" {
-					stats["providers"].(map[string]int)[provider]++
+					stats["providers"].(map[string]int)[provider]++ //nolint:errcheck
 				}
-				stats["types"].(map[string]int)[parts[1]]++
+				stats["types"].(map[string]int)[parts[1]]++ //nolint:errcheck
 			}
 		}
 	}

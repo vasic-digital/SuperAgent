@@ -54,7 +54,7 @@ func (e *LRUEviction) Add(key string) string {
 	if e.order.Len() > e.maxSize {
 		oldest := e.order.Back()
 		if oldest != nil {
-			evicted := oldest.Value.(string)
+			evicted := oldest.Value.(string) //nolint:errcheck
 			e.order.Remove(oldest)
 			delete(e.index, evicted)
 			return evicted

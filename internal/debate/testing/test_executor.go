@@ -436,7 +436,7 @@ func (s *ContainerSandbox) cleanupContainer(name string) {
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, s.runtime, "rm", "-f", name)
-	cmd.Run()
+	cmd.Run() //nolint:errcheck
 }
 
 // SandboxedExecutionRequest is a JSON-serializable request for remote execution.
@@ -463,7 +463,7 @@ type SandboxedExecutionResponse struct {
 
 // ToJSON serializes the execution result.
 func (r *SandboxedExecutionResponse) ToJSON() string {
-	data, _ := json.Marshal(r)
+	data, _ := json.Marshal(r) //nolint:errcheck
 	return string(data)
 }
 

@@ -363,7 +363,7 @@ func (a *GoogleDriveAdapter) getFile(ctx context.Context, args map[string]interf
 		return &ToolResult{IsError: true, Content: []ContentBlock{{Type: "text", Text: err.Error()}}}, nil
 	}
 
-	data, _ := json.MarshalIndent(file, "", "  ")
+	data, _ := json.MarshalIndent(file, "", "  ") //nolint:errcheck
 	return &ToolResult{
 		Content: []ContentBlock{{Type: "text", Text: string(data)}},
 	}, nil

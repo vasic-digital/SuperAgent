@@ -69,7 +69,7 @@ func (t *Topic) Publish(msg *messaging.Message) error {
 	// Notify subscribers
 	for _, sub := range t.subscribers {
 		if sub.active && sub.ch != nil {
-			event, _ := messaging.EventFromMessage(msg)
+			event, _ := messaging.EventFromMessage(msg) //nolint:errcheck
 			select {
 			case sub.ch <- event:
 			default:

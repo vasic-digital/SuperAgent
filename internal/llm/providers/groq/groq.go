@@ -274,7 +274,7 @@ func (p *Provider) CompleteStream(ctx context.Context, req *models.LLMRequest) (
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body) //nolint:errcheck
 		_ = resp.Body.Close()
 		return nil, fmt.Errorf("Groq API error: %d - %s", resp.StatusCode, string(body))
 	}

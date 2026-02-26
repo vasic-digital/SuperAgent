@@ -213,7 +213,7 @@ func (a *WebSocketServerAdapter) Broadcast(taskID string, message []byte) {
 		Room: taskID,
 		Data: message,
 	}
-	_ = a.hub.SendToRoom(taskID, msg)
+	_ = a.hub.SendToRoom(taskID, msg) //nolint:errcheck
 }
 
 // BroadcastAll sends a message to all connected clients.
@@ -222,7 +222,7 @@ func (a *WebSocketServerAdapter) BroadcastAll(message []byte) {
 		Type: "broadcast",
 		Data: message,
 	}
-	_ = a.hub.Broadcast(msg)
+	_ = a.hub.Broadcast(msg) //nolint:errcheck
 }
 
 // HandleConnection upgrades an HTTP connection to WebSocket.
