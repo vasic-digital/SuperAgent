@@ -18,6 +18,7 @@ import (
 type CompletionHandler struct {
 	requestService    *services.RequestService
 	skillsIntegration *skills.Integration
+	intentRouter      *services.IntentBasedRouter
 }
 
 // CompletionRequest represents the API request for completion
@@ -103,6 +104,10 @@ func NewCompletionHandlerWithSkills(requestService *services.RequestService, ski
 // SetSkillsIntegration sets the Skills integration for the handler
 func (h *CompletionHandler) SetSkillsIntegration(integration *skills.Integration) {
 	h.skillsIntegration = integration
+}
+
+func (h *CompletionHandler) SetIntentBasedRouter(router *services.IntentBasedRouter) {
+	h.intentRouter = router
 }
 
 // Complete handles non-streaming completion requests
@@ -491,13 +496,23 @@ func (h *CompletionHandler) convertToInternalRequest(req *CompletionRequest, c *
 	// Create ensemble config if not provided
 	ensembleConfig := req.EnsembleConfig
 	if ensembleConfig == nil {
-		ensembleConfig = &models.EnsembleConfig{
-			Strategy:            "confidence_weighted",
-			MinProviders:        2,
-			ConfidenceThreshold: 0.8,
-			FallbackToBest:      true,
-			Timeout:             30,
-			PreferredProviders:  []string{},
+		shouldUseEnsemble := true
+
+		if h.intentRouter != nil && req.Prompt != "" {
+			shouldUseEnsemble = h.intentRouter.ShouldUseEnsemble(req.Prompt, nil)
+		}
+
+		if shouldUseEnsemble {
+			ensembleConfig = &models.EnsembleConfig{
+				Strategy:            "confidence_weighted",
+				MinProviders:        2,
+				ConfidenceThreshold: 0.8,
+				FallbackToBest:      true,
+				Timeout:             30,
+				PreferredProviders:  []string{},
+			}
+		} else {
+			ensembleConfig = nil
 		}
 	}
 

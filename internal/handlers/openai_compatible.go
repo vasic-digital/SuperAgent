@@ -30,6 +30,7 @@ type UnifiedHandler struct {
 	dialogueFormatter  *services.DialogueFormatter
 	debateTeamConfig   *services.DebateTeamConfig
 	skillsIntegration  *skills.Integration
+	intentRouter       *services.IntentBasedRouter
 	showDebateDialogue bool
 }
 
@@ -82,6 +83,11 @@ func (h *UnifiedHandler) SetDebateTeamConfig(teamConfig *services.DebateTeamConf
 func (h *UnifiedHandler) SetSkillsIntegration(integration *skills.Integration) {
 	h.skillsIntegration = integration
 	logrus.WithField("integration_set", integration != nil).Info("Skills integration set")
+}
+
+func (h *UnifiedHandler) SetIntentBasedRouter(router *services.IntentBasedRouter) {
+	h.intentRouter = router
+	logrus.WithField("router_set", router != nil).Info("IntentBasedRouter set")
 }
 
 // isToolResultProcessingTurn determines if the current request is specifically for processing
@@ -1649,13 +1655,38 @@ func (h *UnifiedHandler) convertOpenAIChatRequest(req *OpenAIChatRequest, c *gin
 	// Set default ensemble config if not provided
 	ensembleConfig := req.EnsembleConfig
 	if ensembleConfig == nil {
-		ensembleConfig = &models.EnsembleConfig{
-			Strategy:            "confidence_weighted",
-			MinProviders:        2,
-			ConfidenceThreshold: 0.8,
-			FallbackToBest:      true,
-			Timeout:             30,
-			PreferredProviders:  []string{},
+		shouldUseEnsemble := true
+
+		if h.intentRouter != nil {
+			var lastUserMessage string
+			for i := len(req.Messages) - 1; i >= 0; i-- {
+				if req.Messages[i].Role == "user" {
+					lastUserMessage = req.Messages[i].Content
+					break
+				}
+			}
+
+			if lastUserMessage != "" {
+				shouldUseEnsemble = h.intentRouter.ShouldUseEnsemble(lastUserMessage, nil)
+				logrus.WithFields(logrus.Fields{
+					"message_preview":     truncateString(lastUserMessage, 50),
+					"should_use_ensemble": shouldUseEnsemble,
+				}).Debug("IntentBasedRouter decision")
+			}
+		}
+
+		if shouldUseEnsemble {
+			ensembleConfig = &models.EnsembleConfig{
+				Strategy:            "confidence_weighted",
+				MinProviders:        2,
+				ConfidenceThreshold: 0.8,
+				FallbackToBest:      true,
+				Timeout:             30,
+				PreferredProviders:  []string{},
+			}
+		} else {
+			ensembleConfig = nil
+			logrus.Debug("Using single provider (simple request detected)")
 		}
 	}
 
@@ -5635,4 +5666,14 @@ func (h *UnifiedHandler) generateFallbackToolResultsResponse(req *OpenAIChatRequ
 	}
 
 	return response.String()
+}
+
+func truncateString(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	if maxLen <= 3 {
+		return s[:maxLen]
+	}
+	return s[:maxLen-3] + "..."
 }
