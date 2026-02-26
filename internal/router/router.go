@@ -765,8 +765,21 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 			logger.WithError(err).Warn("Failed to initialize debate team, some positions may be unfilled")
 		}
 
-		// Set the debate team config on the unified handler for dialogue display
+		// 		// Set the debate team config on the unified handler for dialogue display
 		unifiedHandler.SetDebateTeamConfig(debateTeamConfig)
+
+		// Initialize IntentBasedRouter for intelligent ensemble routing
+		// Simple messages (greetings, confirmations) → single provider
+		// Complex requests (debug, refactor, implement) → full ensemble
+		var intentRouter *services.IntentBasedRouter
+		if sv := providerRegistry.GetStartupVerifier(); sv != nil {
+			intentRouter = services.NewIntentBasedRouter(sv, logger)
+			unifiedHandler.SetIntentBasedRouter(intentRouter)
+			logger.Info("IntentBasedRouter configured - simple requests will use single provider, complex requests will use ensemble")
+		} else {
+			logger.Warn("StartupVerifier not available - IntentBasedRouter not initialized, all requests will use ensemble")
+		}
+		_ = intentRouter // Avoid unused variable warning
 
 		// Store references for later re-initialization with StartupVerifier
 		rc.DebateTeamConfig = debateTeamConfig
