@@ -40,6 +40,8 @@ type RouterContext struct {
 	unifiedHandler          *handlers.UnifiedHandler      // For updating debate team display
 	debateService           *services.DebateService       // For updating team config
 	CogneeService           *services.CogneeService       // Exposed for container adapter injection
+	logger                  *logrus.Logger                // For IntentBasedRouter creation
+	intentBasedRouter       *services.IntentBasedRouter   // For re-initialization with StartupVerifier
 }
 
 // Shutdown stops all background services started by the router
@@ -88,6 +90,13 @@ func (rc *RouterContext) ReinitializeDebateTeam(ctx context.Context) error {
 	// Update handlers with new team config
 	if rc.unifiedHandler != nil {
 		rc.unifiedHandler.SetDebateTeamConfig(rc.DebateTeamConfig)
+
+		// Also initialize IntentBasedRouter with StartupVerifier
+		if rc.intentBasedRouter == nil && rc.logger != nil {
+			rc.intentBasedRouter = services.NewIntentBasedRouter(sv, rc.logger)
+			rc.unifiedHandler.SetIntentBasedRouter(rc.intentBasedRouter)
+			rc.logger.Info("IntentBasedRouter configured with StartupVerifier - simple requests will use single provider, complex requests will use ensemble")
+		}
 	}
 	if rc.debateService != nil {
 		rc.debateService.SetTeamConfig(rc.DebateTeamConfig)
@@ -177,6 +186,7 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 
 	// Initialize shared logger
 	logger := logrus.New()
+	rc.logger = logger // Store for IntentBasedRouter creation
 
 	// AUTOMATIC STARTUP SCORING: Score all 30+ providers and 900+ LLMs at startup
 	// This ensures we always have up-to-date provider scores for optimal routing
