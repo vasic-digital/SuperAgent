@@ -772,8 +772,11 @@ func runStartupVerification(logger *logrus.Logger) (*verifier.StartupResult, *ve
 	// Create startup config with defaults
 	cfg := verifier.DefaultStartupConfig()
 	cfg.ParallelVerification = true
-	cfg.EnableFreeProviders = true
+	cfg.EnableFreeProviders = false
 	cfg.TrustOAuthOnFailure = true
+	cfg.VerificationTimeout = 30 * time.Second
+	cfg.MaxConcurrency = 10
+	cfg.CacheVerificationResults = true
 
 	// Create startup verifier
 	sv := verifier.NewStartupVerifier(cfg, logger)
@@ -816,7 +819,7 @@ func runStartupVerification(logger *logrus.Logger) (*verifier.StartupResult, *ve
 	})
 
 	// Create context with timeout for verification
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
 
 	// Run full verification pipeline

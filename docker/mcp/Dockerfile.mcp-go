@@ -1,7 +1,7 @@
 # Dockerfile for Go MCP servers from git submodules
 # Builds and runs Go-based MCP servers with TCP wrapper
 
-FROM golang:1.22-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 ARG SOURCE_DIR
 
@@ -12,6 +12,9 @@ WORKDIR /app
 
 # Copy the submodule source from the specified directory
 COPY ${SOURCE_DIR} .
+
+# Ensure /app/bin exists before building
+RUN mkdir -p /app/bin
 
 # Build the Go binary
 RUN if [ -f "Makefile" ]; then make build 2>/dev/null || true; fi && \
