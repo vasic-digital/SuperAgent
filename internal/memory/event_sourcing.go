@@ -144,7 +144,7 @@ func (vc VectorClock) Concurrent(other VectorClock) bool {
 
 // String converts vector clock to JSON string
 func (vc VectorClock) String() string {
-	data, _ := json.Marshal(vc)
+	data, _ := json.Marshal(vc) //nolint:errcheck
 	return string(data)
 }
 

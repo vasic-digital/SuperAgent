@@ -200,7 +200,7 @@ func (p *ZhipuProvider) CompleteStream(ctx context.Context, req *models.LLMReque
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body) //nolint:errcheck
 		_ = resp.Body.Close()
 		return nil, fmt.Errorf("Zhipu API error: HTTP %d - %s", resp.StatusCode, string(body))
 	}

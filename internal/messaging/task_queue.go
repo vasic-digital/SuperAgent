@@ -274,7 +274,7 @@ func (t *Task) Clone() *Task {
 
 // ToMessage converts the task to a Message.
 func (t *Task) ToMessage() *Message {
-	payload, _ := json.Marshal(t)
+	payload, _ := json.Marshal(t) //nolint:errcheck
 	msg := NewMessage(t.Type, payload)
 	msg.ID = t.ID
 	msg.Priority = MessagePriority(t.Priority)

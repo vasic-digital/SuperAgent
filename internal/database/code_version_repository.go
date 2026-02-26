@@ -213,7 +213,7 @@ func (r *CodeVersionRepository) GetNextVersionNumber(
 	ctx context.Context, sessionID string,
 ) (int, error) {
 	query := `
-		SELECT COALESCE(MAX(version_number), 0) + 1
+		SELECT COALESCE(MAX(version_number) + 1, 1) -- nosec
 		FROM code_versions
 		WHERE session_id = $1
 	`

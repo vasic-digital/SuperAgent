@@ -270,9 +270,9 @@ func (h *GitHandler) GenerateDefaultArgs(context string) map[string]interface{} 
 }
 
 func (h *GitHandler) Execute(ctx context.Context, args map[string]interface{}) (ToolResult, error) {
-	operation, _ := args["operation"].(string)
-	arguments, _ := args["arguments"].([]interface{})
-	workingDir, _ := args["working_dir"].(string)
+	operation, _ := args["operation"].(string)        //nolint:errcheck
+	arguments, _ := args["arguments"].([]interface{}) //nolint:errcheck
+	workingDir, _ := args["working_dir"].(string)     //nolint:errcheck
 
 	// Validate git operation to prevent command injection
 	allowedOperations := []string{

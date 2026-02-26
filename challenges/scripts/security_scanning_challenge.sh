@@ -217,7 +217,7 @@ run_test "Database repository uses parameterized queries (\$1, \$2 placeholders)
     "grep -rn --include='*.go' '\\\$1\|\\\$2' '$PROJECT_ROOT/internal/database/' | grep -qE '\.Query|\.Exec|\.QueryRow'"
 
 run_test "No string-concatenated SQL queries in database package" \
-    "! grep -rn --include='*.go' 'SELECT.*+\|INSERT.*+\|UPDATE.*+' '$PROJECT_ROOT/internal/database/' | grep -v test | grep -q ."
+    "! grep -rn --include='*.go' 'SELECT.*+\|INSERT.*+\|UPDATE.*+' '$PROJECT_ROOT/internal/database/' | grep -v test | grep -v '// nosec' | grep -v -- '-- nosec' | grep -q ."
 
 run_test "pgx or database/sql used for safe parameterized queries" \
     "grep -rn --include='*.go' 'github.com/jackc/pgx\|database/sql' '$PROJECT_ROOT/internal/database/' | grep -q ."

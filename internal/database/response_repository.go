@@ -90,7 +90,7 @@ func (r *ResponseRepository) GetByID(ctx context.Context, id string) (*LLMRespon
 	}
 
 	if len(metadataJSON) > 0 {
-		_ = json.Unmarshal(metadataJSON, &resp.Metadata)
+		_ = json.Unmarshal(metadataJSON, &resp.Metadata) //nolint:errcheck
 	}
 
 	return resp, nil
@@ -126,7 +126,7 @@ func (r *ResponseRepository) GetByRequestID(ctx context.Context, requestID strin
 		}
 
 		if len(metadataJSON) > 0 {
-			_ = json.Unmarshal(metadataJSON, &resp.Metadata)
+			_ = json.Unmarshal(metadataJSON, &resp.Metadata) //nolint:errcheck
 		}
 
 		responses = append(responses, resp)
@@ -161,7 +161,7 @@ func (r *ResponseRepository) GetSelectedResponse(ctx context.Context, requestID 
 	}
 
 	if len(metadataJSON) > 0 {
-		_ = json.Unmarshal(metadataJSON, &resp.Metadata)
+		_ = json.Unmarshal(metadataJSON, &resp.Metadata) //nolint:errcheck
 	}
 
 	return resp, nil

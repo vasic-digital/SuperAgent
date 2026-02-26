@@ -67,29 +67,29 @@ func NewTemplateRegistry() *TemplateRegistry {
 
 // registerBuiltInTemplates registers all built-in agent templates.
 func (tr *TemplateRegistry) registerBuiltInTemplates() {
-	_ = tr.Register(NewCodeSpecialistTemplate())         //nolint:errcheck
-	_ = tr.Register(NewSecuritySpecialistTemplate())     //nolint:errcheck
-	_ = tr.Register(NewArchitectureSpecialistTemplate()) //nolint:errcheck
-	_ = tr.Register(NewDebugSpecialistTemplate())        //nolint:errcheck
-	_ = tr.Register(NewOptimizationSpecialistTemplate()) //nolint:errcheck
-	_ = tr.Register(NewReasoningSpecialistTemplate())    //nolint:errcheck
-	_ = tr.Register(NewProposerTemplate())               //nolint:errcheck
-	_ = tr.Register(NewCriticTemplate())                 //nolint:errcheck
-	_ = tr.Register(NewReviewerTemplate())               //nolint:errcheck
-	_ = tr.Register(NewModeratorTemplate())              //nolint:errcheck
-	_ = tr.Register(NewValidatorTemplate())              //nolint:errcheck
-	_ = tr.Register(NewRedTeamTemplate())                //nolint:errcheck
-	_ = tr.Register(NewBlueTeamTemplate())               //nolint:errcheck
-	_ = tr.Register(NewGeneratorRoleTemplate())          //nolint:errcheck
-	_ = tr.Register(NewRefactorerRoleTemplate())         //nolint:errcheck
-	_ = tr.Register(NewPerformanceAnalyzerRoleTemplate())
-	_ = tr.Register(NewSecurityRoleTemplate())
-	_ = tr.Register(NewTeacherRoleTemplate())
-	_ = tr.Register(NewCompilerRoleTemplate())
-	_ = tr.Register(NewExecutorRoleTemplate())
-	_ = tr.Register(NewJudgeRoleTemplate())
-	_ = tr.Register(NewImplementerRoleTemplate())
-	_ = tr.Register(NewDesignerRoleTemplate())
+	_ = tr.Register(NewCodeSpecialistTemplate())          //nolint:errcheck
+	_ = tr.Register(NewSecuritySpecialistTemplate())      //nolint:errcheck
+	_ = tr.Register(NewArchitectureSpecialistTemplate())  //nolint:errcheck
+	_ = tr.Register(NewDebugSpecialistTemplate())         //nolint:errcheck
+	_ = tr.Register(NewOptimizationSpecialistTemplate())  //nolint:errcheck
+	_ = tr.Register(NewReasoningSpecialistTemplate())     //nolint:errcheck
+	_ = tr.Register(NewProposerTemplate())                //nolint:errcheck
+	_ = tr.Register(NewCriticTemplate())                  //nolint:errcheck
+	_ = tr.Register(NewReviewerTemplate())                //nolint:errcheck
+	_ = tr.Register(NewModeratorTemplate())               //nolint:errcheck
+	_ = tr.Register(NewValidatorTemplate())               //nolint:errcheck
+	_ = tr.Register(NewRedTeamTemplate())                 //nolint:errcheck
+	_ = tr.Register(NewBlueTeamTemplate())                //nolint:errcheck
+	_ = tr.Register(NewGeneratorRoleTemplate())           //nolint:errcheck
+	_ = tr.Register(NewRefactorerRoleTemplate())          //nolint:errcheck
+	_ = tr.Register(NewPerformanceAnalyzerRoleTemplate()) //nolint:errcheck
+	_ = tr.Register(NewSecurityRoleTemplate())            //nolint:errcheck
+	_ = tr.Register(NewTeacherRoleTemplate())             //nolint:errcheck
+	_ = tr.Register(NewCompilerRoleTemplate())            //nolint:errcheck
+	_ = tr.Register(NewExecutorRoleTemplate())            //nolint:errcheck
+	_ = tr.Register(NewJudgeRoleTemplate())               //nolint:errcheck
+	_ = tr.Register(NewImplementerRoleTemplate())         //nolint:errcheck
+	_ = tr.Register(NewDesignerRoleTemplate())            //nolint:errcheck
 }
 
 // Register adds a template to the registry.

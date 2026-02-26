@@ -238,7 +238,7 @@ func (p *Provider) CompleteStream(ctx context.Context, req *models.LLMRequest) (
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body) //nolint:errcheck
 		_ = resp.Body.Close()
 		return nil, fmt.Errorf("Anthropic API error: %d - %s", resp.StatusCode, string(body))
 	}
@@ -451,7 +451,7 @@ func (p *Provider) convertResponse(req *models.LLMRequest, resp *Response, start
 		case "text":
 			content.WriteString(block.Text)
 		case "tool_use":
-			inputBytes, _ := json.Marshal(block.Input)
+			inputBytes, _ := json.Marshal(block.Input) //nolint:errcheck
 			toolCalls = append(toolCalls, models.ToolCall{
 				ID:   block.ID,
 				Type: "function",

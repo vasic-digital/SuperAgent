@@ -136,10 +136,10 @@ func (r *RequestRepository) GetBySessionID(ctx context.Context, sessionID string
 			return nil, 0, fmt.Errorf("failed to scan request row: %w", err)
 		}
 
-		_ = json.Unmarshal(messagesJSON, &req.Messages)
-		_ = json.Unmarshal(modelParamsJSON, &req.ModelParams)
-		_ = json.Unmarshal(ensembleConfigJSON, &req.EnsembleConfig)
-		_ = json.Unmarshal(memoryJSON, &req.Memory)
+		_ = json.Unmarshal(messagesJSON, &req.Messages)             //nolint:errcheck
+		_ = json.Unmarshal(modelParamsJSON, &req.ModelParams)       //nolint:errcheck
+		_ = json.Unmarshal(ensembleConfigJSON, &req.EnsembleConfig) //nolint:errcheck
+		_ = json.Unmarshal(memoryJSON, &req.Memory)                 //nolint:errcheck
 
 		requests = append(requests, req)
 	}
@@ -183,10 +183,10 @@ func (r *RequestRepository) GetByUserID(ctx context.Context, userID string, limi
 			return nil, 0, fmt.Errorf("failed to scan request row: %w", err)
 		}
 
-		_ = json.Unmarshal(messagesJSON, &req.Messages)
-		_ = json.Unmarshal(modelParamsJSON, &req.ModelParams)
-		_ = json.Unmarshal(ensembleConfigJSON, &req.EnsembleConfig)
-		_ = json.Unmarshal(memoryJSON, &req.Memory)
+		_ = json.Unmarshal(messagesJSON, &req.Messages)             //nolint:errcheck
+		_ = json.Unmarshal(modelParamsJSON, &req.ModelParams)       //nolint:errcheck
+		_ = json.Unmarshal(ensembleConfigJSON, &req.EnsembleConfig) //nolint:errcheck
+		_ = json.Unmarshal(memoryJSON, &req.Memory)                 //nolint:errcheck
 
 		requests = append(requests, req)
 	}
@@ -264,10 +264,10 @@ func (r *RequestRepository) GetPendingRequests(ctx context.Context, limit int) (
 			return nil, fmt.Errorf("failed to scan request row: %w", err)
 		}
 
-		_ = json.Unmarshal(messagesJSON, &req.Messages)
-		_ = json.Unmarshal(modelParamsJSON, &req.ModelParams)
-		_ = json.Unmarshal(ensembleConfigJSON, &req.EnsembleConfig)
-		_ = json.Unmarshal(memoryJSON, &req.Memory)
+		_ = json.Unmarshal(messagesJSON, &req.Messages)             //nolint:errcheck
+		_ = json.Unmarshal(modelParamsJSON, &req.ModelParams)       //nolint:errcheck
+		_ = json.Unmarshal(ensembleConfigJSON, &req.EnsembleConfig) //nolint:errcheck
+		_ = json.Unmarshal(memoryJSON, &req.Memory)                 //nolint:errcheck
 
 		requests = append(requests, req)
 	}
@@ -301,4 +301,10 @@ func (r *RequestRepository) GetRequestStats(ctx context.Context, userID string, 
 	}
 
 	return stats, nil
+}
+
+// FindByUserID retrieves all requests for a user (implements LLMRequestRepository interface)
+func (r *RequestRepository) FindByUserID(ctx context.Context, userID string, limit, offset int) ([]*LLMRequest, error) {
+	requests, _, err := r.GetByUserID(ctx, userID, limit, offset)
+	return requests, err
 }

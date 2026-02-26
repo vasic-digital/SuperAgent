@@ -197,7 +197,7 @@ func (p *HyperbolicProvider) CompleteStream(ctx context.Context, req *models.LLM
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body) //nolint:errcheck
 		_ = resp.Body.Close()
 		return nil, fmt.Errorf("Hyperbolic API error: HTTP %d - %s", resp.StatusCode, string(body))
 	}

@@ -46,9 +46,12 @@ func (r *CogneeMemoryRepository) Create(ctx context.Context, memory *CogneeMemor
 		RETURNING id, created_at
 	`
 
-	graphNodesJSON, _ := json.Marshal(memory.GraphNodes)
+	graphNodesJSON, err := json.Marshal(memory.GraphNodes)
+	if err != nil {
+		return fmt.Errorf("failed to marshal graph nodes: %w", err)
+	}
 
-	err := r.pool.QueryRow(ctx, query,
+	err = r.pool.QueryRow(ctx, query,
 		memory.SessionID, memory.DatasetName, memory.ContentType, memory.Content,
 		memory.VectorID, graphNodesJSON, memory.SearchKey,
 	).Scan(&memory.ID, &memory.CreatedAt)
@@ -259,7 +262,10 @@ func (r *CogneeMemoryRepository) Update(ctx context.Context, memory *CogneeMemor
 		WHERE id = $1
 	`
 
-	graphNodesJSON, _ := json.Marshal(memory.GraphNodes)
+	graphNodesJSON, err := json.Marshal(memory.GraphNodes)
+	if err != nil {
+		return fmt.Errorf("failed to marshal graph nodes: %w", err)
+	}
 
 	result, err := r.pool.Exec(ctx, query,
 		memory.ID, memory.ContentType, memory.Content, memory.VectorID, graphNodesJSON, memory.SearchKey,
@@ -295,7 +301,10 @@ func (r *CogneeMemoryRepository) UpdateVectorID(ctx context.Context, id, vectorI
 func (r *CogneeMemoryRepository) UpdateGraphNodes(ctx context.Context, id string, graphNodes map[string]interface{}) error {
 	query := `UPDATE cognee_memories SET graph_nodes = $2 WHERE id = $1`
 
-	graphNodesJSON, _ := json.Marshal(graphNodes)
+	graphNodesJSON, err := json.Marshal(graphNodes)
+	if err != nil {
+		return fmt.Errorf("failed to marshal graph nodes: %w", err)
+	}
 
 	result, err := r.pool.Exec(ctx, query, id, graphNodesJSON)
 	if err != nil {

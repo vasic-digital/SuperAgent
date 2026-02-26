@@ -688,7 +688,7 @@ func (m *LSPManager) initializeConnection(ctx context.Context, conn *LSPConnecti
 	// Parse capabilities
 	if response.Result != nil {
 		var initResult LSPInitializeResult
-		resultBytes, _ := json.Marshal(response.Result)
+		resultBytes, _ := json.Marshal(response.Result) //nolint:errcheck
 		if err := json.Unmarshal(resultBytes, &initResult); err == nil {
 			conn.capabilities = &LSPServerCapabilities{
 				CompletionProvider:         initResult.Capabilities.CompletionProvider != nil,

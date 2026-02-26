@@ -112,7 +112,12 @@ func (c *QueryCache) Set(key string, value interface{}) {
 
 	// Update existing entry
 	if elem, exists := c.cache[key]; exists {
-		entry := elem.Value.(*cacheEntry)
+		entry, ok := elem.Value.(*cacheEntry)
+		if !ok {
+			// Corrupted entry, remove it
+			c.removeLocked(elem)
+			return
+		}
 		entry.result = value
 		entry.expiresAt = time.Now().Add(c.ttl)
 		c.lruList.MoveToFront(elem)
@@ -163,7 +168,10 @@ func (c *QueryCache) Clear() {
 
 // removeLocked removes a cache entry. Caller must hold c.mu.
 func (c *QueryCache) removeLocked(elem *list.Element) {
-	entry := elem.Value.(*cacheEntry)
+	entry, ok := elem.Value.(*cacheEntry)
+	if !ok {
+		panic("query cache: invalid cache entry type")
+	}
 	delete(c.cache, entry.key)
 	c.lruList.Remove(elem)
 }
@@ -177,7 +185,10 @@ func (c *QueryCache) cleanupLoop() {
 		now := time.Now()
 		// Walk from back (LRU) and remove expired entries
 		for elem := c.lruList.Back(); elem != nil; {
-			entry := elem.Value.(*cacheEntry)
+			entry, ok := elem.Value.(*cacheEntry)
+			if !ok {
+				panic("query cache: invalid cache entry type during cleanup")
+			}
 			prev := elem.Prev()
 			if now.After(entry.expiresAt) {
 				c.removeLocked(elem)
@@ -216,7 +227,7 @@ func (o *QueryOptimizer) GetActiveProviders(ctx context.Context) ([]ActiveProvid
 	if o.queryCache != nil {
 		if cached, ok := o.queryCache.Get(cacheKey); ok {
 			atomic.AddInt64(&o.metrics.CacheHits, 1)
-			return cached.([]ActiveProvider), nil
+			return cached.([]ActiveProvider), nil //nolint:errcheck
 		}
 		atomic.AddInt64(&o.metrics.CacheMisses, 1)
 	}
@@ -284,7 +295,7 @@ func (o *QueryOptimizer) GetProviderPerformance(ctx context.Context) ([]Provider
 	if o.queryCache != nil {
 		if cached, ok := o.queryCache.Get(cacheKey); ok {
 			atomic.AddInt64(&o.metrics.CacheHits, 1)
-			return cached.([]ProviderPerformance), nil
+			return cached.([]ProviderPerformance), nil //nolint:errcheck
 		}
 		atomic.AddInt64(&o.metrics.CacheMisses, 1)
 	}

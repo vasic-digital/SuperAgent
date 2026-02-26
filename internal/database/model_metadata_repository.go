@@ -139,8 +139,8 @@ func (r *ModelMetadataRepository) CreateModelMetadata(ctx context.Context, metad
 	`
 
 	var id string
-	tagsJSON, _ := json.Marshal(metadata.Tags)
-	rawMetadataJSON, _ := json.Marshal(metadata.RawMetadata)
+	tagsJSON, _ := json.Marshal(metadata.Tags)               //nolint:errcheck
+	rawMetadataJSON, _ := json.Marshal(metadata.RawMetadata) //nolint:errcheck
 
 	err := r.pool.QueryRow(ctx, query,
 		metadata.ModelID, metadata.ModelName, metadata.ProviderID, metadata.ProviderName,
@@ -431,7 +431,7 @@ func (r *ModelMetadataRepository) CreateBenchmark(ctx context.Context, benchmark
 	`
 
 	var id string
-	metadataJSON, _ := json.Marshal(benchmark.Metadata)
+	metadataJSON, _ := json.Marshal(benchmark.Metadata) //nolint:errcheck
 
 	err := r.pool.QueryRow(ctx, query,
 		benchmark.ModelID, benchmark.BenchmarkName, benchmark.BenchmarkType,

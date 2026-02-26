@@ -789,8 +789,8 @@ func (f *CSVFormatter) FormatFallbackIndicator(role services.DebateRole, fromPro
 	w := csv.NewWriter(&sb)
 	w.Comma = f.Delimiter
 
-	_ = w.Write([]string{"Role", "From_Provider", "From_Model", "To_Provider", "To_Model", "Reason", "Duration"}) //nolint:errcheck
-	_ = w.Write([]string{string(role), fromProvider, fromModel, toProvider, toModel, reason, formatDuration(duration)})
+	_ = w.Write([]string{"Role", "From_Provider", "From_Model", "To_Provider", "To_Model", "Reason", "Duration"})       //nolint:errcheck
+	_ = w.Write([]string{string(role), fromProvider, fromModel, toProvider, toModel, reason, formatDuration(duration)}) //nolint:errcheck
 
 	w.Flush()
 	return sb.String()

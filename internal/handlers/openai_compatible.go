@@ -543,9 +543,9 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 	firstChunkResp := &models.LLMResponse{ID: streamID, CreatedAt: time.Now()}
 	firstChunk := h.convertToOpenAIChatStreamResponse(firstChunkResp, req, true, streamID)
 	if firstData, err := json.Marshal(firstChunk); err == nil {
-		_, _ = c.Writer.Write([]byte("data: "))
-		_, _ = c.Writer.Write(firstData)
-		_, _ = c.Writer.Write([]byte("\n\n"))
+		_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+		_, _ = c.Writer.Write(firstData)        //nolint:errcheck
+		_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck
 		flusher.Flush()
 	}
 	isFirstChunk = false
@@ -583,9 +583,9 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 					},
 				}
 				if errData, err := json.Marshal(errChunk); err == nil {
-					_, _ = c.Writer.Write([]byte("data: "))
-					_, _ = c.Writer.Write(errData)
-					_, _ = c.Writer.Write([]byte("\n\n"))
+					_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+					_, _ = c.Writer.Write(errData)          //nolint:errcheck
+					_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck
 					flusher.Flush()
 				}
 			}
@@ -607,9 +607,9 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 				},
 			}
 			if respData, err := json.Marshal(responseChunk); err == nil {
-				_, _ = c.Writer.Write([]byte("data: "))
-				_, _ = c.Writer.Write(respData)
-				_, _ = c.Writer.Write([]byte("\n\n"))
+				_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+				_, _ = c.Writer.Write(respData)         //nolint:errcheck
+				_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck
 				flusher.Flush()
 			}
 		}
@@ -1085,7 +1085,7 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 						},
 					}
 					if toolCallData, err := json.Marshal(toolCallChunk); err == nil {
-						_, _ = c.Writer.Write([]byte("data: "))
+						_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
 						_, _ = c.Writer.Write(toolCallData)
 						_, _ = c.Writer.Write([]byte("\n\n"))
 						flusher.Flush()
@@ -5399,7 +5399,10 @@ func (h *UnifiedHandler) executeEditFunction(ctx context.Context, call EmbeddedF
 
 	// Resolve path
 	if !filepath.IsAbs(filePath) {
-		cwd, _ := os.Getwd()
+		cwd, err := os.Getwd()
+		if err != nil {
+			cwd = "."
+		}
 		filePath = filepath.Join(cwd, filePath)
 	}
 
@@ -5441,7 +5444,10 @@ func (h *UnifiedHandler) executeReadFunction(ctx context.Context, call EmbeddedF
 	}
 
 	if !filepath.IsAbs(filePath) {
-		cwd, _ := os.Getwd()
+		cwd, err := os.Getwd()
+		if err != nil {
+			cwd = "."
+		}
 		filePath = filepath.Join(cwd, filePath)
 	}
 
