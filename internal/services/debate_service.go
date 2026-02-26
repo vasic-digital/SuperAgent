@@ -29,9 +29,8 @@ import (
 	"dev.helix.agent/internal/debate/testing"
 	"dev.helix.agent/internal/debate/tools"
 	"dev.helix.agent/internal/debate/validation"
-	// Note: orchestrator integration removed to avoid import cycle
-	// Will be integrated separately in Phase 6
-	// "dev.helix.agent/internal/debate/orchestrator"
+	// Note: orchestrator is integrated at the router/handler level (internal/router/router.go)
+	// to avoid import cycle. The orchestrator.ServiceIntegration bridges to this service.
 )
 
 // DebateService provides core debate functionality with real LLM provider calls
@@ -54,7 +53,7 @@ type DebateService struct {
 	validationPipeline  *validation.ValidationPipeline           // 4-Pass Validation: Progressive quality gates
 	toolIntegration     *tools.ToolIntegration                   // Tool Integration: MCP/LSP/RAG/Embeddings access
 	serviceBridge       *tools.ServiceBridge                     // Tool Integration: Service adapter
-	// debateOrchestrator *orchestrator.DebateOrchestrator      // Enhanced Orchestration: 5×3=15 enforcement (Phase 6)
+	// Note: 8-phase orchestrator is integrated at router/handler level via orchestrator.ServiceIntegration
 
 	// Enhanced Intent Mechanism with SpecKit Integration
 	enhancedIntentClassifier *EnhancedIntentClassifier // Enhanced intent classification with granularity detection

@@ -364,6 +364,7 @@ Registry: `internal/agents/registry.go`. Generate configs: `./bin/helixagent --g
 ./challenges/scripts/debate_provenance_audit_challenge.sh       # 12 tests
 ./challenges/scripts/debate_deadlock_detection_challenge.sh     # 8 tests
 ./challenges/scripts/debate_git_integration_challenge.sh        # 11 tests
+./challenges/scripts/debate_orchestrator_challenge.sh           # 61 tests
 ./challenges/scripts/debate_performance_optimizer_challenge.sh   # 36 tests
 ./challenges/scripts/helixmemory_challenge.sh                   # 80+ tests
 ./challenges/scripts/helixspecifier_challenge.sh                # 138 tests
