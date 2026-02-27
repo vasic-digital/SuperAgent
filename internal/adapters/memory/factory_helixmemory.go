@@ -65,14 +65,3 @@ func MemoryBackendName() string {
 // direct access to HelixMemory features (temporal queries, core memory,
 // consolidation, power features). Use this when you need more than
 // the basic MemoryStore interface.
-func NewHelixMemoryProvider() *helixprovider.UnifiedMemoryProvider {
-	cfg := helixcfg.FromEnv()
-	unified := helixprovider.New(cfg)
-
-	unified.RegisterProvider(mem0client.NewClient(cfg))
-	unified.RegisterProvider(cogneeclient.NewClient(cfg))
-	unified.RegisterProvider(lettaclient.NewClient(cfg))
-	unified.RegisterProvider(graphiticlient.NewClient(cfg))
-
-	return unified
-}

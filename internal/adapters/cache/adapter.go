@@ -25,32 +25,8 @@ type RedisClientAdapter struct {
 }
 
 // NewRedisClientAdapter creates a new Redis client adapter from HelixAgent config
-func NewRedisClientAdapter(cfg *config.Config) *RedisClientAdapter {
-	if cfg == nil {
-		// Return adapter with nil client that will fail on operations
-		return &RedisClientAdapter{client: nil}
-	}
-
-	redisCfg := &cacheRedis.Config{
-		Addr:         cfg.Redis.Host + ":" + cfg.Redis.Port,
-		Password:     cfg.Redis.Password,
-		DB:           cfg.Redis.DB,
-		PoolSize:     10,
-		MinIdleConns: 2,
-		DialTimeout:  5 * time.Second,
-		ReadTimeout:  3 * time.Second,
-		WriteTimeout: 3 * time.Second,
-	}
-
-	return &RedisClientAdapter{
-		client: cacheRedis.New(redisCfg),
-	}
-}
 
 // NewRedisClientAdapterFromClient creates an adapter from an existing cache.Cache
-func NewRedisClientAdapterFromClient(client *cacheRedis.Client) *RedisClientAdapter {
-	return &RedisClientAdapter{client: client}
-}
 
 // Set stores a value with JSON serialization
 func (r *RedisClientAdapter) Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error {

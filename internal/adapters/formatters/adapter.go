@@ -292,29 +292,6 @@ type ServiceFormatterConfig struct {
 }
 
 // CreateServiceFormatter creates a service-based formatter using the generic module.
-func (f *NativeFormatterFactory) CreateServiceFormatter(
-	metadata *formatters.FormatterMetadata,
-	cfg *ServiceFormatterConfig,
-) formatters.Formatter {
-	svcCfg := service.Config{
-		Endpoint:   cfg.Endpoint,
-		Timeout:    cfg.Timeout,
-		HealthPath: cfg.HealthPath,
-		FormatPath: cfg.FormatPath,
-	}
-	if svcCfg.Timeout == 0 {
-		svcCfg.Timeout = 30 * time.Second
-	}
-	if svcCfg.HealthPath == "" {
-		svcCfg.HealthPath = "/health"
-	}
-	if svcCfg.FormatPath == "" {
-		svcCfg.FormatPath = "/format"
-	}
-
-	genericMeta := ToGenericMetadata(metadata)
-	return NewFormatterAdapter(service.NewServiceFormatter(genericMeta, svcCfg))
-}
 
 // DetectLanguageFromPath detects language from file extension using the generic module.
 func DetectLanguageFromPath(filePath string) string {
@@ -322,11 +299,5 @@ func DetectLanguageFromPath(filePath string) string {
 }
 
 // NewGenericRegistry creates a new generic registry from the extracted module.
-func NewGenericRegistry() *genericreg.Registry {
-	return genericreg.New()
-}
 
 // GetDefaultGenericRegistry returns the default registry singleton from the extracted module.
-func GetDefaultGenericRegistry() *genericreg.Registry {
-	return genericreg.Default()
-}
