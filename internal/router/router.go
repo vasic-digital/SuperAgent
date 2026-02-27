@@ -7,6 +7,8 @@ import (
 	"time"
 
 	authadapter "dev.helix.agent/internal/adapters/auth"
+	containeradapter "dev.helix.agent/internal/adapters/containers"
+	messagingadapter "dev.helix.agent/internal/adapters/messaging"
 	"dev.helix.agent/internal/cache"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/database"
@@ -33,6 +35,8 @@ type RouterContext struct {
 	protocolManager         *services.UnifiedProtocolManager
 	oauthMonitor            *services.OAuthTokenMonitor
 	oauthCredentialManager  *authadapter.OAuthCredentialManager // OAuth credential manager from auth adapter
+	containerAdapter        *containeradapter.Adapter           // Container adapter for orchestration
+	messagingAdapter        *messagingadapter.BrokerAdapter     // Messaging adapter for Kafka/RabbitMQ
 	healthMonitor           *services.ProviderHealthMonitor
 	concurrencyMonitor      *services.ConcurrencyMonitor
 	concurrencyAlertManager *services.ConcurrencyAlertManager
@@ -364,6 +368,28 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 				logger.WithField("providers", len(oauthPaths)).Info("OAuth credential manager initialized")
 			}
 		}
+	}
+
+	// Initialize container adapter for container orchestration
+	var containerAdapt *containeradapter.Adapter
+	if !standaloneMode {
+		containerAdapt, err = containeradapter.NewAdapterFromConfig(cfg)
+		if err != nil {
+			logger.WithError(err).Warn("Failed to initialize container adapter, continuing without container orchestration")
+		} else {
+			logger.Info("Container adapter initialized for container orchestration")
+			rc.containerAdapter = containerAdapt
+		}
+	}
+
+	// Initialize messaging adapter for Kafka/RabbitMQ
+	var messagingAdapt *messagingadapter.BrokerAdapter
+	if !standaloneMode && (cfg.Services.Kafka.Enabled || cfg.Services.RabbitMQ.Enabled) {
+		// Note: This is a placeholder - actual broker initialization would require
+		// a real broker instance from the messaging module
+		logger.Info("Messaging adapter initialization placeholder - configure messaging for full integration")
+		// messagingAdapt = messagingadapter.NewBrokerAdapter(broker)
+		rc.messagingAdapter = messagingAdapt
 	}
 
 	// Health endpoints

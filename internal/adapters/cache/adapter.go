@@ -14,8 +14,6 @@ import (
 	"digital.vasic.cache/pkg/cache"
 	cacheMemory "digital.vasic.cache/pkg/memory"
 	cacheRedis "digital.vasic.cache/pkg/redis"
-
-	"dev.helix.agent/internal/config"
 )
 
 // RedisClientAdapter wraps the extracted cache module's Redis client

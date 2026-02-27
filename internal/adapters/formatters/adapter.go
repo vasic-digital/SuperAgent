@@ -14,7 +14,6 @@ import (
 	genericfmt "digital.vasic.formatters/pkg/formatter"
 	"digital.vasic.formatters/pkg/native"
 	genericreg "digital.vasic.formatters/pkg/registry"
-	"digital.vasic.formatters/pkg/service"
 
 	"dev.helix.agent/internal/formatters"
 )

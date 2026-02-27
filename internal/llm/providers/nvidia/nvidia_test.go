@@ -17,8 +17,8 @@ func TestNewProvider(t *testing.T) {
 	provider := NewNvidiaProvider("test-api-key", "", "")
 	assert.NotNil(t, provider)
 	assert.Equal(t, "test-api-key", provider.apiKey)
-	assert.Equal(t, "https://integrate.api.nvidia.com", provider.baseURL)
-	assert.Equal(t, "meta/llama-3.1-8b-instruct", provider.model)
+	assert.Equal(t, NvidiaAPIURL, provider.baseURL)
+	assert.Equal(t, NvidiaModel, provider.model)
 }
 
 func TestNewProviderWithCustomURL(t *testing.T) {
