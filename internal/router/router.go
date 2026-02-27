@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	authadapter "dev.helix.agent/internal/adapters/auth"
 	"dev.helix.agent/internal/cache"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/database"
@@ -31,6 +32,7 @@ type RouterContext struct {
 	Engine                  *gin.Engine
 	protocolManager         *services.UnifiedProtocolManager
 	oauthMonitor            *services.OAuthTokenMonitor
+	oauthCredentialManager  *authadapter.OAuthCredentialManager // OAuth credential manager from auth adapter
 	healthMonitor           *services.ProviderHealthMonitor
 	concurrencyMonitor      *services.ConcurrencyMonitor
 	concurrencyAlertManager *services.ConcurrencyAlertManager
@@ -346,6 +348,21 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 		auth, err = middleware.NewAuthMiddleware(authConfig, userService)
 		if err != nil {
 			log.Fatalf("Failed to initialize auth middleware: %v", err)
+		}
+	}
+
+	// Initialize OAuth credential manager for providers using OAuth (Claude, Qwen)
+	var oauthManager *authadapter.OAuthCredentialManager
+	if !standaloneMode {
+		oauthPaths := authadapter.GetOAuthCredentialPaths()
+		if len(oauthPaths) > 0 {
+			oauthManager, err = authadapter.NewOAuthCredentialManager(oauthPaths, "helixagent", logger)
+			if err != nil {
+				logger.WithError(err).Warn("Failed to initialize OAuth credential manager")
+			} else {
+				oauthManager.Start(context.Background())
+				logger.WithField("providers", len(oauthPaths)).Info("OAuth credential manager initialized")
+			}
 		}
 	}
 
@@ -863,6 +880,7 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 
 		// Store monitors in RouterContext for cleanup
 		rc.oauthMonitor = oauthTokenMonitor
+		rc.oauthCredentialManager = oauthManager
 		rc.healthMonitor = providerHealthMonitor
 		rc.concurrencyMonitor = concurrencyMonitor
 
