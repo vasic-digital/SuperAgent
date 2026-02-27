@@ -210,12 +210,17 @@ func TestProviderMappingDeepSeekModel(t *testing.T) {
 // TestProviderMappingClaudeModels verifies Claude uses valid models
 func TestProviderMappingClaudeModels(t *testing.T) {
 	validClaudeModels := []string{
-		"claude-3-5-sonnet-20241022",
-		"claude-3-opus-20240229",
-		"claude-3-sonnet-20240229",
-		"claude-3-haiku-20240307",
-		"claude-sonnet-4-20250514",
-		"claude-sonnet-4-5-20250929", // Claude 4.5 Sonnet (balanced)
+		"claude-opus-4-6",            // Claude 4.6 Opus (latest)
+		"claude-sonnet-4-6",          // Claude 4.6 Sonnet (latest)
+		"claude-sonnet-4-5-20250929", // Claude 4.5 Sonnet
+		"claude-opus-4-5-20251101",   // Claude 4.5 Opus
+		"claude-haiku-4-5-20251001",  // Claude 4.5 Haiku
+		"claude-sonnet-4-20250514",   // Claude 4 Sonnet
+		"claude-opus-4-20250514",     // Claude 4 Opus
+		"claude-3-5-sonnet-20241022", // Claude 3.5 Sonnet
+		"claude-3-opus-20240229",     // Claude 3 Opus
+		"claude-3-sonnet-20240229",   // Claude 3 Sonnet
+		"claude-3-haiku-20240307",    // Claude 3 Haiku
 	}
 
 	for _, mapping := range providerMappings {

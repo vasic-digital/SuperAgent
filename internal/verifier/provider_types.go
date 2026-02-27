@@ -356,7 +356,7 @@ var SupportedProviders = map[string]*ProviderTypeInfo{
 		Priority:    1,
 		EnvVars:     []string{"ANTHROPIC_API_KEY", "CLAUDE_API_KEY"},
 		BaseURL:     "https://api.anthropic.com/v1/messages",
-		Models:      []string{"claude-opus-4-6", "claude-opus-4-5-20251101", "claude-sonnet-4-5-20250929", "claude-haiku-4-5-20251001"},
+		Models:      []string{"claude-opus-4-6", "claude-sonnet-4-6", "claude-opus-4-5-20251101", "claude-sonnet-4-5-20250929", "claude-haiku-4-5-20251001"},
 		Free:        false,
 	},
 	"qwen": {

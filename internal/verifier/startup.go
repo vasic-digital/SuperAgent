@@ -397,7 +397,7 @@ func (sv *StartupVerifier) discoverOAuthProviders(ctx context.Context) []*Provid
 				Source:      "oauth",
 				Credentials: "OAuth (Claude Code)",
 				BaseURL:     "https://api.anthropic.com/v1/messages",
-				Models:      []string{"claude-opus-4-5-20251101", "claude-sonnet-4-5-20250929", "claude-haiku-4-5-20251001"},
+				Models:      []string{"claude-opus-4-6", "claude-sonnet-4-6", "claude-opus-4-5-20251101", "claude-sonnet-4-5-20250929", "claude-haiku-4-5-20251001"},
 			})
 		}
 	}

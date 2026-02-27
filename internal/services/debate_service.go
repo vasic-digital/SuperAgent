@@ -2433,14 +2433,16 @@ func (ds *DebateService) IsSingleProviderMode(config *DebateConfig) (bool, *Sing
 // GetAvailableModelsForProvider returns available models for a provider
 func (ds *DebateService) GetAvailableModelsForProvider(providerName string) []string {
 	// Default model lists for known providers
-	// Updated 2025-01-13: Use Claude 4.5 (latest) and expanded Qwen models
+	// Updated 2026-02-27: Prioritize Claude 4.6 (latest), then 4.5, then fallbacks
 	knownModels := map[string][]string{
 		"deepseek": {"deepseek-chat", "deepseek-coder", "deepseek-reasoner"},
-		// Claude 4.5 (Primary) + Claude 4.x + Legacy fallbacks
+		// Claude 4.6 (Latest - February 2026) + 4.5 + 4.x + Legacy fallbacks
 		"claude": {
-			"claude-opus-4-5-20251101",   // Claude 4.5 Opus (most capable)
-			"claude-sonnet-4-5-20250929", // Claude 4.5 Sonnet (balanced)
-			"claude-haiku-4-5-20251001",  // Claude 4.5 Haiku (fast)
+			"claude-opus-4-6",            // Claude 4.6 Opus (LATEST - February 2026)
+			"claude-sonnet-4-6",          // Claude 4.6 Sonnet (LATEST - February 2026)
+			"claude-opus-4-5-20251101",   // Claude 4.5 Opus
+			"claude-sonnet-4-5-20250929", // Claude 4.5 Sonnet
+			"claude-haiku-4-5-20251001",  // Claude 4.5 Haiku
 			"claude-opus-4-20250514",     // Claude 4 Opus
 			"claude-sonnet-4-20250514",   // Claude 4 Sonnet
 			"claude-3-5-sonnet-20241022", // Legacy fallback
