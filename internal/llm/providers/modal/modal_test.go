@@ -14,7 +14,7 @@ import (
 )
 
 func TestNewProvider(t *testing.T) {
-	provider := NewModalProvider("test-api-key", "", "")
+	provider := NewModalProvider("test-api-key", "test-key-id", "", "")
 	assert.NotNil(t, provider)
 	assert.Equal(t, "test-api-key", provider.apiKey)
 	assert.Equal(t, "https://api.modal.com", provider.baseURL)
@@ -23,7 +23,7 @@ func TestNewProvider(t *testing.T) {
 
 func TestNewProviderWithCustomURL(t *testing.T) {
 	customURL := "https://custom.api.com/v1/chat/completions"
-	provider := NewModalProvider("test-key", customURL, "custom-model")
+	provider := NewModalProvider("test-key", "test-key-id", customURL, "custom-model")
 	assert.Equal(t, customURL, provider.baseURL)
 	assert.Equal(t, "custom-model", provider.model)
 }
@@ -35,7 +35,7 @@ func TestNewProviderWithRetry(t *testing.T) {
 		MaxDelay:     60 * time.Second,
 		Multiplier:   3.0,
 	}
-	provider := NewModalProviderWithRetry("test-key", "", "", retryConfig)
+	provider := NewModalProviderWithRetry("test-key", "test-key-id", "", "", retryConfig)
 	assert.Equal(t, 5, provider.retryConfig.MaxRetries)
 	assert.Equal(t, 2*time.Second, provider.retryConfig.InitialDelay)
 }
@@ -61,8 +61,8 @@ func TestComplete(t *testing.T) {
 			"model":   "test-model",
 			"choices": []map[string]interface{}{
 				{
-					"index":   0,
-					"message": map[string]string{"role": "assistant", "content": "Hello!"},
+					"index":         0,
+					"message":       map[string]string{"role": "assistant", "content": "Hello!"},
 					"finish_reason": "stop",
 				},
 			},
@@ -76,7 +76,7 @@ func TestComplete(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewModalProvider("test-api-key", server.URL, "")
+	provider := NewModalProvider("test-api-key", "test-key-id", server.URL, "")
 	req := &models.LLMRequest{
 		ID:       "req-1",
 		Messages: []models.Message{{Role: "user", Content: "Hello"}},
@@ -103,9 +103,9 @@ func TestCompleteWithError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewModalProvider("invalid-key", server.URL, "")
+	provider := NewModalProvider("invalid-key", "test-key-id", server.URL, "")
 	req := &models.LLMRequest{ID: "req-1", Messages: []models.Message{{Role: "user", Content: "Hi"}}}
-	
+
 	_, err := provider.Complete(context.Background(), req)
 	assert.Error(t, err)
 }
@@ -127,7 +127,7 @@ func TestCompleteStream(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewModalProvider("test-key", server.URL, "")
+	provider := NewModalProvider("test-key", "test-key-id", server.URL, "")
 	req := &models.LLMRequest{ID: "stream-req", Messages: []models.Message{{Role: "user", Content: "Hi"}}}
 
 	ch, err := provider.CompleteStream(context.Background(), req)
@@ -141,7 +141,7 @@ func TestCompleteStream(t *testing.T) {
 }
 
 func TestGetCapabilities(t *testing.T) {
-	provider := NewModalProvider("test-key", "", "")
+	provider := NewModalProvider("test-key", "test-key-id", "", "")
 	caps := provider.GetCapabilities()
 
 	assert.NotNil(t, caps)
@@ -154,8 +154,8 @@ func TestGetCapabilities(t *testing.T) {
 
 func TestValidateConfig(t *testing.T) {
 	tests := []struct {
-		name     string
-		apiKey   string
+		name      string
+		apiKey    string
 		wantValid bool
 	}{
 		{name: "valid config", apiKey: "test-key", wantValid: true},
@@ -164,7 +164,7 @@ func TestValidateConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			provider := NewModalProvider(tt.apiKey, "", "")
+			provider := NewModalProvider(tt.apiKey, "test-key-id", "", "")
 			valid, errs := provider.ValidateConfig(nil)
 			assert.Equal(t, tt.wantValid, valid)
 			if !tt.wantValid {
@@ -187,7 +187,7 @@ func TestHealthCheck(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewModalProvider("test-key", server.URL, "")
+	provider := NewModalProvider("test-key", "test-key-id", server.URL, "")
 	err := provider.HealthCheck()
 	assert.NoError(t, err)
 }
@@ -201,7 +201,7 @@ func TestHealthCheckWithError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewModalProvider("test-key", server.URL, "")
+	provider := NewModalProvider("test-key", "test-key-id", server.URL, "")
 	err := provider.HealthCheck()
 	assert.Error(t, err)
 }
