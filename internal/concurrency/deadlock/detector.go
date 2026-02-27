@@ -1,0 +1,431 @@
+// Package deadlock provides deadlock detection and prevention mechanisms
+// for the HelixAgent concurrent systems
+package deadlock
+
+import (
+	"fmt"
+	"runtime"
+	"sort"
+	"strings"
+	"sync"
+	"time"
+)
+
+// Detector monitors lock acquisitions to detect potential deadlocks
+type Detector struct {
+	mu           sync.RWMutex
+	lockGraph    map[string][]string // Lock dependency graph
+	lockHolders  map[string]string   // Which goroutine holds which lock
+	waitForGraph map[string][]string // Goroutines waiting for locks
+	enabled      bool
+	maxWaitTime  time.Duration
+	logger       Logger
+}
+
+// Logger interface for deadlock detection logging
+type Logger interface {
+	Warn(msg string, keysAndValues ...interface{})
+	Error(msg string, keysAndValues ...interface{})
+}
+
+// NewDetector creates a new deadlock detector
+func NewDetector(maxWaitTime time.Duration, logger Logger) *Detector {
+	if maxWaitTime == 0 {
+		maxWaitTime = 5 * time.Second
+	}
+
+	return &Detector{
+		lockGraph:    make(map[string][]string),
+		lockHolders:  make(map[string]string),
+		waitForGraph: make(map[string][]string),
+		enabled:      true,
+		maxWaitTime:  maxWaitTime,
+		logger:       logger,
+	}
+}
+
+// LockWrapper wraps a mutex with deadlock detection
+type LockWrapper struct {
+	mu       sync.Locker
+	name     string
+	detector *Detector
+}
+
+// NewLockWrapper creates a new lock wrapper with deadlock detection
+func (d *Detector) NewLockWrapper(mu sync.Locker, name string) *LockWrapper {
+	return &LockWrapper{
+		mu:       mu,
+		name:     name,
+		detector: d,
+	}
+}
+
+// Lock acquires the lock with deadlock detection
+func (lw *LockWrapper) Lock() {
+	if lw.detector == nil || !lw.detector.enabled {
+		lw.mu.Lock()
+		return
+	}
+
+	goroutineID := getGoroutineID()
+
+	// Check if we would create a deadlock
+	if lw.detector.wouldDeadlock(goroutineID, lw.name) {
+		lw.detector.logger.Error("Potential deadlock detected",
+			"goroutine", goroutineID,
+			"lock", lw.name,
+		)
+		panic(fmt.Sprintf("deadlock detected: goroutine %s waiting for %s", goroutineID, lw.name))
+	}
+
+	// Record that this goroutine is waiting for this lock
+	lw.detector.recordWait(goroutineID, lw.name)
+
+	// Try to acquire with timeout
+	done := make(chan struct{})
+	go func() {
+		lw.mu.Lock()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		// Successfully acquired
+		lw.detector.recordAcquire(goroutineID, lw.name)
+	case <-time.After(lw.detector.maxWaitTime):
+		// Timeout - potential deadlock
+		lw.detector.logger.Warn("Lock acquisition timeout - potential deadlock",
+			"goroutine", goroutineID,
+			"lock", lw.name,
+			"timeout", lw.detector.maxWaitTime,
+		)
+		// Still wait for the lock but log the issue
+		<-done
+		lw.detector.recordAcquire(goroutineID, lw.name)
+	}
+}
+
+// Unlock releases the lock
+func (lw *LockWrapper) Unlock() {
+	if lw.detector != nil && lw.detector.enabled {
+		goroutineID := getGoroutineID()
+		lw.detector.recordRelease(goroutineID, lw.name)
+	}
+	lw.mu.Unlock()
+}
+
+// wouldDeadlock checks if acquiring this lock would create a deadlock
+func (d *Detector) wouldDeadlock(goroutineID, lockName string) bool {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
+	// Get the current lock holder
+	holder, held := d.lockHolders[lockName]
+	if !held {
+		return false
+	}
+
+	// Check if the holder is waiting for any lock we hold
+	myLocks := d.getLocksHeldBy(goroutineID)
+	for _, myLock := range myLocks {
+		if d.isWaitingFor(holder, myLock) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// recordWait records that a goroutine is waiting for a lock
+func (d *Detector) recordWait(goroutineID, lockName string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	d.waitForGraph[goroutineID] = append(d.waitForGraph[goroutineID], lockName)
+}
+
+// recordAcquire records that a goroutine acquired a lock
+func (d *Detector) recordAcquire(goroutineID, lockName string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	d.lockHolders[lockName] = goroutineID
+
+	// Remove from wait list
+	if waits, ok := d.waitForGraph[goroutineID]; ok {
+		for i, l := range waits {
+			if l == lockName {
+				d.waitForGraph[goroutineID] = append(waits[:i], waits[i+1:]...)
+				break
+			}
+		}
+	}
+
+	// Update lock graph
+	holder := d.lockHolders[lockName]
+	if holder != "" && holder != goroutineID {
+		d.lockGraph[holder] = append(d.lockGraph[holder], lockName)
+	}
+}
+
+// recordRelease records that a goroutine released a lock
+func (d *Detector) recordRelease(goroutineID, lockName string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	if d.lockHolders[lockName] == goroutineID {
+		delete(d.lockHolders, lockName)
+	}
+}
+
+// getLocksHeldBy returns all locks held by a goroutine
+func (d *Detector) getLocksHeldBy(goroutineID string) []string {
+	var locks []string
+	for lock, holder := range d.lockHolders {
+		if holder == goroutineID {
+			locks = append(locks, lock)
+		}
+	}
+	return locks
+}
+
+// isWaitingFor checks if a goroutine is waiting for a specific lock
+func (d *Detector) isWaitingFor(goroutineID, lockName string) bool {
+	for _, l := range d.waitForGraph[goroutineID] {
+		if l == lockName {
+			return true
+		}
+	}
+	return false
+}
+
+// DetectCycles finds cycles in the lock dependency graph
+func (d *Detector) DetectCycles() [][]string {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
+	var cycles [][]string
+	visited := make(map[string]bool)
+	recStack := make(map[string]bool)
+	path := []string{}
+
+	var dfs func(node string)
+	dfs = func(node string) {
+		visited[node] = true
+		recStack[node] = true
+		path = append(path, node)
+
+		for _, neighbor := range d.lockGraph[node] {
+			if !visited[neighbor] {
+				dfs(neighbor)
+			} else if recStack[neighbor] {
+				// Found a cycle
+				cycle := extractCycle(path, neighbor)
+				if len(cycle) > 0 {
+					cycles = append(cycles, cycle)
+				}
+			}
+		}
+
+		path = path[:len(path)-1]
+		recStack[node] = false
+	}
+
+	for node := range d.lockGraph {
+		if !visited[node] {
+			dfs(node)
+		}
+	}
+
+	return cycles
+}
+
+// extractCycle extracts the cycle from the path starting at the given node
+func extractCycle(path []string, startNode string) []string {
+	for i, node := range path {
+		if node == startNode {
+			return path[i:]
+		}
+	}
+	return nil
+}
+
+// getGoroutineID returns a unique identifier for the current goroutine
+func getGoroutineID() string {
+	var buf [64]byte
+	n := runtime.Stack(buf[:], false)
+	idField := strings.Fields(string(buf[:n]))[1]
+	return idField
+}
+
+// Report generates a deadlock detection report
+func (d *Detector) Report() *Report {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
+	cycles := d.DetectCycles()
+
+	return &Report{
+		Cycles:             cycles,
+		LockGraph:          copyMap(d.lockGraph),
+		Holders:            copyStringMap(d.lockHolders),
+		Timestamp:          time.Now(),
+		PotentialDeadlocks: len(cycles) > 0,
+	}
+}
+
+// Report contains deadlock detection results
+type Report struct {
+	Cycles             [][]string
+	LockGraph          map[string][]string
+	Holders            map[string]string
+	Timestamp          time.Time
+	PotentialDeadlocks bool
+}
+
+// String returns a string representation of the report
+func (r *Report) String() string {
+	var sb strings.Builder
+
+	sb.WriteString(fmt.Sprintf("Deadlock Detection Report - %s\n", r.Timestamp.Format(time.RFC3339)))
+	sb.WriteString(strings.Repeat("=", 50) + "\n")
+
+	if r.PotentialDeadlocks {
+		sb.WriteString("⚠️  POTENTIAL DEADLOCKS DETECTED!\n")
+		for i, cycle := range r.Cycles {
+			sb.WriteString(fmt.Sprintf("  Cycle %d: %s\n", i+1, strings.Join(cycle, " -> ")))
+		}
+	} else {
+		sb.WriteString("✅ No deadlocks detected\n")
+	}
+
+	sb.WriteString(fmt.Sprintf("\nActive Locks: %d\n", len(r.Holders)))
+	for lock, holder := range r.Holders {
+		sb.WriteString(fmt.Sprintf("  %s: held by goroutine %s\n", lock, holder))
+	}
+
+	return sb.String()
+}
+
+// copyMap creates a copy of a string slice map
+func copyMap(m map[string][]string) map[string][]string {
+	result := make(map[string][]string, len(m))
+	for k, v := range m {
+		result[k] = append([]string(nil), v...)
+	}
+	return result
+}
+
+// copyStringMap creates a copy of a string map
+func copyStringMap(m map[string]string) map[string]string {
+	result := make(map[string]string, len(m))
+	for k, v := range m {
+		result[k] = v
+	}
+	return result
+}
+
+// OrderedLock provides deadlock-safe ordered locking
+type OrderedLock struct {
+	mu      sync.Mutex
+	cond    *sync.Cond
+	order   int
+	current int
+}
+
+// NewOrderedLock creates a new ordered lock
+func NewOrderedLock() *OrderedLock {
+	ol := &OrderedLock{order: 0, current: 0}
+	ol.cond = sync.NewCond(&ol.mu)
+	return ol
+}
+
+// Acquire acquires the lock in order
+func (ol *OrderedLock) Acquire(order int) {
+	ol.mu.Lock()
+	defer ol.mu.Unlock()
+
+	for ol.current != order {
+		ol.cond.Wait()
+	}
+}
+
+// Release releases the lock and signals the next
+func (ol *OrderedLock) Release(order int) {
+	ol.mu.Lock()
+	defer ol.mu.Unlock()
+
+	ol.current = order + 1
+	ol.cond.Broadcast()
+}
+
+// TimeoutLock provides lock with timeout
+type TimeoutLock struct {
+	mu       sync.Mutex
+	acquired chan struct{}
+}
+
+// NewTimeoutLock creates a new timeout lock
+func NewTimeoutLock() *TimeoutLock {
+	return &TimeoutLock{
+		acquired: make(chan struct{}, 1),
+	}
+}
+
+// TryLock attempts to acquire lock with timeout
+func (tl *TimeoutLock) TryLock(timeout time.Duration) bool {
+	select {
+	case tl.acquired <- struct{}{}:
+		tl.mu.Lock()
+		return true
+	case <-time.After(timeout):
+		return false
+	}
+}
+
+// Unlock releases the lock
+func (tl *TimeoutLock) Unlock() {
+	select {
+	case <-tl.acquired:
+		tl.mu.Unlock()
+	default:
+		// Lock wasn't held
+	}
+}
+
+// HierarchicalLock provides deadlock prevention through lock ordering
+type HierarchicalLock struct {
+	mu    sync.Mutex
+	level int
+	name  string
+}
+
+// NewHierarchicalLock creates a new hierarchical lock
+func NewHierarchicalLock(level int, name string) *HierarchicalLock {
+	return &HierarchicalLock{
+		level: level,
+		name:  name,
+	}
+}
+
+// LockSlice provides utilities for ordered multi-locking
+type LockSlice []*HierarchicalLock
+
+func (ls LockSlice) Len() int           { return len(ls) }
+func (ls LockSlice) Swap(i, j int)      { ls[i], ls[j] = ls[j], ls[i] }
+func (ls LockSlice) Less(i, j int) bool { return ls[i].level < ls[j].level }
+
+// LockAll locks all locks in hierarchical order
+func LockAll(locks ...*HierarchicalLock) {
+	sort.Sort(LockSlice(locks))
+	for _, lock := range locks {
+		lock.mu.Lock()
+	}
+}
+
+// UnlockAll unlocks all locks
+func UnlockAll(locks ...*HierarchicalLock) {
+	for _, lock := range locks {
+		lock.mu.Unlock()
+	}
+}
