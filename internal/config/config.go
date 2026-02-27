@@ -485,6 +485,10 @@ func DefaultServicesConfig() ServicesConfig {
 	// Check if remote distribution is enabled
 	remoteEnabled := isContainersRemoteEnabled()
 
+	// Remote configuration is determined by CONTAINERS_REMOTE_ENABLED environment variable
+	// or Containers/.env file. When true, all services are marked as Remote=true for
+	// distribution to remote hosts.
+
 	cfg := ServicesConfig{
 		PostgreSQL: ServiceEndpoint{
 			Host:        "localhost",
@@ -736,6 +740,7 @@ func LoadServicesFromEnv(cfg *ServicesConfig) {
 	// Remote flag is already set in DefaultServicesConfig() based on CONTAINERS_REMOTE_ENABLED
 	// Here we just apply explicit environment variable overrides
 
+	// DEBUG: Log before and after
 	loadServiceEndpointFromEnv("SVC_POSTGRESQL", &cfg.PostgreSQL)
 	loadServiceEndpointFromEnv("SVC_REDIS", &cfg.Redis)
 	loadServiceEndpointFromEnv("SVC_COGNEE", &cfg.Cognee)
@@ -820,7 +825,9 @@ func loadServiceEndpointFromEnv(prefix string, ep *ServiceEndpoint) {
 	}
 	// Allow explicit override of Remote flag via environment variable
 	// (by default, Remote is set in DefaultServicesConfig based on CONTAINERS_REMOTE_ENABLED)
-	if v := os.Getenv(prefix + "_REMOTE"); v != "" {
+	// CRITICAL FIX: Only override Remote if CONTAINERS_REMOTE_ENABLED is not set to true
+	// This ensures global remote distribution setting takes precedence over individual service overrides
+	if v := os.Getenv(prefix + "_REMOTE"); v != "" && !isContainersRemoteEnabled() {
 		if b, err := strconv.ParseBool(v); err == nil {
 			ep.Remote = b
 		}

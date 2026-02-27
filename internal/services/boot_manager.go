@@ -192,6 +192,15 @@ func (bm *BootManager) BootAll() error {
 	remoteGroups := make(map[string][]string)  // compose_file -> []service_name for remote
 	composeGroups := make(map[string][]string) // compose_file -> []service_name for local
 	for name, ep := range endpoints {
+		bm.Logger.WithFields(logrus.Fields{
+			"service":      name,
+			"enabled":      ep.Enabled,
+			"remote":       ep.Remote,
+			"discovered":   ep.Discovered,
+			"compose_file": ep.ComposeFile,
+			"service_name": ep.ServiceName,
+		}).Debug("Processing service for deployment")
+
 		if !ep.Enabled {
 			bm.setResultIfAbsent(name, &BootResult{Name: name, Status: "skipped"})
 			bm.Logger.WithField("service", name).Debug("Service disabled, skipping")
@@ -225,6 +234,14 @@ func (bm *BootManager) BootAll() error {
 
 	// Deploy remote services grouped by compose file
 	adapter := bm.getContainerAdapter()
+
+	bm.Logger.WithFields(logrus.Fields{
+		"local_compose_groups": len(composeGroups),
+		"remote_groups":        len(remoteGroups),
+		"adapter_nil":          adapter == nil,
+		"remote_enabled":       adapter != nil && adapter.RemoteEnabled(),
+	}).Debug("Service groups ready for deployment")
+
 	if adapter != nil && adapter.RemoteEnabled() && len(remoteGroups) > 0 {
 		bm.Logger.Info("Deploying remote services to remote host...")
 		for key, services := range remoteGroups {
