@@ -132,9 +132,11 @@ echo ""
 echo -e "${GREEN}=== Running All Tests ===${NC}"
 echo ""
 
+TEST_PACKAGES="./cmd/... ./internal/... ./pkg/... ./tests/... ./challenges/..."
+
 # Run all tests with verbose output
 cd "$PROJECT_ROOT"
-go test ./... -v -timeout 300s -cover 2>&1 | tee test_results.log
+go test $TEST_PACKAGES -v -timeout 300s -cover 2>&1 | tee test_results.log
 
 # Count results
 PASSED=$(grep -c "^--- PASS" test_results.log || echo "0")

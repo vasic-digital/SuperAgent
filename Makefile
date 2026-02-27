@@ -1,10 +1,8 @@
 .PHONY: all build build-legacy-memory test run fmt lint security-scan security-scan-all security-scan-snyk security-scan-sonarqube security-scan-trivy security-scan-gosec security-scan-go security-scan-stop security-scan-semgrep security-scan-kics security-scan-grype security-scan-container security-scan-iac security-report docker-build docker-run docker-stop docker-clean docker-logs docker-test docker-dev docker-prod coverage docker-clean-all install-deps help docs check-deps test-all test-all-docker container-detect container-build container-start container-stop container-logs container-status container-test podman-build podman-run podman-stop podman-logs podman-clean podman-full test-no-skip test-all-must-pass test-performance test-performance-bench test-challenges test-coverage-100
 
-# =============================================================================
-# MAIN TARGETS
-# =============================================================================
-
 EXCLUDE_DIRS := cli_agents MCP MCP-Servers
+
+TEST_PACKAGES := ./cmd/... ./internal/... ./pkg/... ./tests/... ./challenges/...
 
 all: fmt vet lint test build
 
@@ -130,18 +128,17 @@ run-dev:
 
 test:
 	@echo "🧪 Running tests..."
-	@# Check if infrastructure is available
 	@if nc -z localhost $${POSTGRES_PORT:-15432} 2>/dev/null && nc -z localhost $${REDIS_PORT:-16379} 2>/dev/null; then \
 		echo "✅ Infrastructure available - running full tests"; \
 		DB_HOST=localhost DB_PORT=$${POSTGRES_PORT:-15432} DB_USER=helixagent DB_PASSWORD=helixagent123 DB_NAME=helixagent_db \
 		DATABASE_URL="postgres://helixagent:helixagent123@localhost:$${POSTGRES_PORT:-15432}/helixagent_db?sslmode=disable" \
 		REDIS_HOST=localhost REDIS_PORT=$${REDIS_PORT:-16379} REDIS_PASSWORD=helixagent123 \
-		go test -v ./...; \
+		go test -v $(TEST_PACKAGES); \
 	else \
 		echo "⚠️  Infrastructure not available - running unit tests only"; \
 		echo "   Run 'make test-infra-start' first for full test suite"; \
 		echo ""; \
-		go test -v -short ./...; \
+		go test -v -short $(TEST_PACKAGES); \
 	fi
 
 # Auto-start infrastructure if not running (supports Docker and Podman)
@@ -282,7 +279,7 @@ test-no-skip:
 
 test-all-must-pass:
 	@echo "🧪 Running all tests (none can fail)..."
-	@go test -v -failfast ./... 2>&1 | tee test_output.log; \
+	@go test -v -failfast $(TEST_PACKAGES) 2>&1 | tee test_output.log; \
 	if grep -q "FAIL" test_output.log; then \
 		echo "❌ Some tests failed"; \
 		rm -f test_output.log; \
