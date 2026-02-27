@@ -139,3 +139,48 @@ json_get() {
     local key=$2
     echo "$json" | grep -o "\"$key\":[^,}]*" | cut -d: -f2- | tr -d '"' | tr -d ' '
 }
+
+# Challenge test framework functions
+print_header() {
+    local name=$1
+    echo "=================================================="
+    echo "$name"
+    echo "=================================================="
+    echo ""
+}
+
+test_start() {
+    local name=$1
+    echo -n "Testing: $name ... "
+}
+
+test_pass() {
+    echo -e "${GREEN}✓ PASS${NC}"
+}
+
+test_fail() {
+    local message=$1
+    echo -e "${RED}✗ FAIL${NC}: $message"
+}
+
+test_warn() {
+    local message=$1
+    echo -e "${YELLOW}⚠ WARNING${NC}: $message"
+}
+
+print_summary() {
+    local name=$1
+    local passed=$2
+    local failed=$3
+    echo ""
+    echo "=================================================="
+    echo "Summary: $name"
+    echo "Passed: $passed"
+    echo "Failed: $failed"
+    if [ "$failed" -eq 0 ]; then
+        echo -e "${GREEN}✓ ALL TESTS PASSED${NC}"
+    else
+        echo -e "${RED}✗ SOME TESTS FAILED${NC}"
+    fi
+    echo "=================================================="
+}
