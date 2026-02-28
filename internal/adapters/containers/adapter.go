@@ -33,6 +33,7 @@ import (
 	"digital.vasic.containers/pkg/volume"
 
 	"dev.helix.agent/internal/config"
+	"gopkg.in/yaml.v3"
 )
 
 // Adapter bridges HelixAgent's container management with the
@@ -617,15 +618,130 @@ func (a *Adapter) DistributionStatus(
 }
 
 // RemoteEnabled returns true if remote distribution is configured.
+// composeBuildConfig represents a build configuration from a compose file
+type composeBuildConfig struct {
+	Context    string `yaml:"context"`
+	Dockerfile string `yaml:"dockerfile"`
+}
+
+// composeService represents a service definition from a compose file
+type composeService struct {
+	Build interface{} `yaml:"build"` // Can be string or composeBuildConfig
+}
+
+// composeFile represents the structure of a docker-compose.yml file
+type composeFile struct {
+	Services map[string]composeService `yaml:"services"`
+}
+
+// extractBuildContexts parses a compose file and extracts build context paths
+func (a *Adapter) extractBuildContexts(composePath string) ([]string, error) {
+	data, err := os.ReadFile(composePath)
+	if err != nil {
+		return nil, fmt.Errorf("read compose file: %w", err)
+	}
+
+	var cf composeFile
+	if err := yaml.Unmarshal(data, &cf); err != nil {
+		return nil, fmt.Errorf("parse compose file: %w", err)
+	}
+
+	var contexts []string
+	composeDir := filepath.Dir(composePath)
+
+	for _, service := range cf.Services {
+		if service.Build == nil {
+			continue
+		}
+
+		// Build can be a simple string (context path) or a map
+		switch build := service.Build.(type) {
+		case string:
+			// Simple string context
+			if !filepath.IsAbs(build) {
+				build = filepath.Join(composeDir, build)
+			}
+			contexts = append(contexts, build)
+		case map[string]interface{}:
+			// Map with context and dockerfile
+			if ctx, ok := build["context"].(string); ok {
+				if !filepath.IsAbs(ctx) {
+					ctx = filepath.Join(composeDir, ctx)
+				}
+				contexts = append(contexts, ctx)
+
+				// Also add dockerfile if specified
+				if df, ok := build["dockerfile"].(string); ok {
+					if !filepath.IsAbs(df) {
+						df = filepath.Join(ctx, df)
+					}
+					contexts = append(contexts, df)
+				}
+			}
+		}
+	}
+
+	return contexts, nil
+}
+
+// copyBuildContexts copies build context directories and Dockerfiles to remote host
+func (a *Adapter) copyBuildContexts(
+	ctx context.Context,
+	host remote.RemoteHost,
+	contexts []string,
+	remoteDir string,
+) error {
+	for _, buildCtx := range contexts {
+		// Get relative path from project root
+		relPath, err := filepath.Rel(a.projectDir, buildCtx)
+		if err != nil {
+			// If can't get relative path, use basename
+			relPath = filepath.Base(buildCtx)
+		}
+
+		remotePath := remoteDir + "/" + relPath
+		remoteParent := filepath.Dir(remotePath)
+
+		// Create parent directory on remote
+		mkdirCmd := fmt.Sprintf("mkdir -p %s", remoteParent)
+		if _, err := a.executor.Execute(ctx, host, mkdirCmd); err != nil {
+			a.logger.Warn("Failed to create remote directory %s: %v", remoteParent, err)
+			continue
+		}
+
+		// Check if it's a file or directory
+		info, err := os.Stat(buildCtx)
+		if err != nil {
+			a.logger.Warn("Failed to stat %s: %v", buildCtx, err)
+			continue
+		}
+
+		if info.IsDir() {
+			// Copy directory recursively
+			if err := a.executor.CopyDir(ctx, host, buildCtx, remotePath); err != nil {
+				a.logger.Warn("Failed to copy directory %s to remote: %v", buildCtx, err)
+				continue
+			}
+			a.logger.Info("Copied build context to remote: %s -> %s", buildCtx, remotePath)
+		} else {
+			// Copy file
+			if err := a.executor.CopyFile(ctx, host, buildCtx, remotePath); err != nil {
+				a.logger.Warn("Failed to copy file %s to remote: %v", buildCtx, err)
+				continue
+			}
+		}
+	}
+
+	return nil
+}
+
 func (a *Adapter) RemoteEnabled() bool {
 	return a.distributor != nil && a.hostManager != nil
 }
 
 // RemoteComposeUp deploys a compose file to the first available
 // remote host and starts its services. It copies the compose file
-// to the remote host and runs `podman compose up -d`.
-// NOTE: Only copies the compose file itself, not the entire directory,
-// to avoid copying large project directories (7.6GB+) on every boot.
+// and any build contexts to the remote host and runs `podman compose up -d`.
 func (a *Adapter) RemoteComposeUp(
 	ctx context.Context, composeFile, profile string,
 ) error {
@@ -674,6 +790,17 @@ func (a *Adapter) RemoteComposeUp(
 		return fmt.Errorf(
 			"copy compose file to %s: %w", host.Name, err,
 		)
+	}
+
+	// Extract and copy build contexts
+	contexts, err := a.extractBuildContexts(absFile)
+	if err != nil {
+		a.logger.Warn("Failed to extract build contexts from %s: %v", absFile, err)
+	} else if len(contexts) > 0 {
+		a.logger.Info("Copying %d build contexts to remote host %s", len(contexts), host.Name)
+		if err := a.copyBuildContexts(ctx, host, contexts, remoteDir); err != nil {
+			a.logger.Warn("Failed to copy some build contexts: %v", err)
+		}
 	}
 
 	// Use RemoteComposeOrchestrator to start services.
