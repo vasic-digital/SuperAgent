@@ -17,7 +17,7 @@ func TestNewProvider(t *testing.T) {
 	provider := NewUpstageProvider("test-api-key", "", "")
 	assert.NotNil(t, provider)
 	assert.Equal(t, "test-api-key", provider.apiKey)
-	assert.Equal(t, "https://api.upstage.ai", provider.baseURL)
+	assert.Equal(t, "https://api.upstage.ai/v1/chat/completions", provider.baseURL)
 	assert.Equal(t, "solar-1-mini-chat", provider.model)
 }
 

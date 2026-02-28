@@ -17,7 +17,7 @@ func TestNewProvider(t *testing.T) {
 	provider := NewModalProvider("test-api-key", "test-key-id", "", "")
 	assert.NotNil(t, provider)
 	assert.Equal(t, "test-api-key", provider.apiKey)
-	assert.Equal(t, "https://api.modal.com", provider.baseURL)
+	assert.Equal(t, "https://api.modal.com/v1/chat/completions", provider.baseURL)
 	assert.Equal(t, "llama-3.1-8b", provider.model)
 }
 

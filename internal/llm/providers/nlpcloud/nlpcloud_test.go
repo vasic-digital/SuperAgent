@@ -14,16 +14,16 @@ import (
 )
 
 func TestNewProvider(t *testing.T) {
-	provider := NewNlpcloudProvider("test-api-key", "", "")
+	provider := NewNLPCloudProvider("test-api-key", "", "")
 	assert.NotNil(t, provider)
 	assert.Equal(t, "test-api-key", provider.apiKey)
-	assert.Equal(t, "https://api.nlpcloud.io", provider.baseURL)
+	assert.Equal(t, "https://api.nlpcloud.io/v1/gpu", provider.baseURL)
 	assert.Equal(t, "finetuned-llama-3-70b", provider.model)
 }
 
 func TestNewProviderWithCustomURL(t *testing.T) {
 	customURL := "https://custom.api.com/v1/chat/completions"
-	provider := NewNlpcloudProvider("test-key", customURL, "custom-model")
+	provider := NewNLPCloudProvider("test-key", customURL, "custom-model")
 	assert.Equal(t, customURL, provider.baseURL)
 	assert.Equal(t, "custom-model", provider.model)
 }
@@ -35,7 +35,7 @@ func TestNewProviderWithRetry(t *testing.T) {
 		MaxDelay:     60 * time.Second,
 		Multiplier:   3.0,
 	}
-	provider := NewNlpcloudProviderWithRetry("test-key", "", "", retryConfig)
+	provider := NewNLPCloudProviderWithRetry("test-key", "", "", retryConfig)
 	assert.Equal(t, 5, provider.retryConfig.MaxRetries)
 	assert.Equal(t, 2*time.Second, provider.retryConfig.InitialDelay)
 }
@@ -52,7 +52,7 @@ func TestComplete(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "POST", r.Method)
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-		assert.Contains(t, r.Header.Get("Authorization"), "Bearer")
+		assert.Contains(t, r.Header.Get("Authorization"), "Token")
 
 		resp := map[string]interface{}{
 			"id":      "resp_123",
@@ -76,7 +76,7 @@ func TestComplete(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewNlpcloudProvider("test-api-key", server.URL, "")
+	provider := NewNLPCloudProvider("test-api-key", server.URL, "")
 	req := &models.LLMRequest{
 		ID:       "req-1",
 		Messages: []models.Message{{Role: "user", Content: "Hello"}},
@@ -103,7 +103,7 @@ func TestCompleteWithError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewNlpcloudProvider("invalid-key", server.URL, "")
+	provider := NewNLPCloudProvider("invalid-key", server.URL, "")
 	req := &models.LLMRequest{ID: "req-1", Messages: []models.Message{{Role: "user", Content: "Hi"}}}
 	
 	_, err := provider.Complete(context.Background(), req)
@@ -127,7 +127,7 @@ func TestCompleteStream(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewNlpcloudProvider("test-key", server.URL, "")
+	provider := NewNLPCloudProvider("test-key", server.URL, "")
 	req := &models.LLMRequest{ID: "stream-req", Messages: []models.Message{{Role: "user", Content: "Hi"}}}
 
 	ch, err := provider.CompleteStream(context.Background(), req)
@@ -141,7 +141,7 @@ func TestCompleteStream(t *testing.T) {
 }
 
 func TestGetCapabilities(t *testing.T) {
-	provider := NewNlpcloudProvider("test-key", "", "")
+	provider := NewNLPCloudProvider("test-key", "", "")
 	caps := provider.GetCapabilities()
 
 	assert.NotNil(t, caps)
@@ -164,7 +164,7 @@ func TestValidateConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			provider := NewNlpcloudProvider(tt.apiKey, "", "")
+			provider := NewNLPCloudProvider(tt.apiKey, "", "")
 			valid, errs := provider.ValidateConfig(nil)
 			assert.Equal(t, tt.wantValid, valid)
 			if !tt.wantValid {
@@ -187,7 +187,7 @@ func TestHealthCheck(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewNlpcloudProvider("test-key", server.URL, "")
+	provider := NewNLPCloudProvider("test-key", server.URL, "")
 	err := provider.HealthCheck()
 	assert.NoError(t, err)
 }
@@ -201,7 +201,7 @@ func TestHealthCheckWithError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewNlpcloudProvider("test-key", server.URL, "")
+	provider := NewNLPCloudProvider("test-key", server.URL, "")
 	err := provider.HealthCheck()
 	assert.Error(t, err)
 }

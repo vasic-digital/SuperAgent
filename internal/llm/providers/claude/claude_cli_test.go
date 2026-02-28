@@ -18,7 +18,7 @@ func TestClaudeCLIProvider_DefaultConfig(t *testing.T) {
 
 	// Model is empty by default - will be discovered dynamically
 	assert.Equal(t, "", config.Model)
-	assert.Equal(t, 120*time.Second, config.Timeout)
+	assert.Equal(t, 180*time.Second, config.Timeout)
 	assert.Equal(t, 4096, config.MaxOutputTokens)
 }
 

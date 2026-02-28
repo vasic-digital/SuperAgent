@@ -17,7 +17,7 @@ func TestNewProvider(t *testing.T) {
 	provider := NewKimiProvider("test-api-key", "", "")
 	assert.NotNil(t, provider)
 	assert.Equal(t, "test-api-key", provider.apiKey)
-	assert.Equal(t, "https://api.moonshot.cn", provider.baseURL)
+	assert.Equal(t, "https://api.moonshot.cn/v1/chat/completions", provider.baseURL)
 	assert.Equal(t, "moonshot-v1-8k", provider.model)
 }
 

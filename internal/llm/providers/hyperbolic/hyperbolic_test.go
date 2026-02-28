@@ -17,7 +17,7 @@ func TestNewProvider(t *testing.T) {
 	provider := NewHyperbolicProvider("test-api-key", "", "")
 	assert.NotNil(t, provider)
 	assert.Equal(t, "test-api-key", provider.apiKey)
-	assert.Equal(t, "https://api.hyperbolic.xyz", provider.baseURL)
+	assert.Equal(t, "https://api.hyperbolic.xyz/v1/chat/completions", provider.baseURL)
 	assert.Equal(t, "meta-llama/Meta-Llama-3-8B-Instruct", provider.model)
 }
 

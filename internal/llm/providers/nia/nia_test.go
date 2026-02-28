@@ -17,7 +17,7 @@ func TestNewProvider(t *testing.T) {
 	provider := NewNiaProvider("test-api-key", "", "")
 	assert.NotNil(t, provider)
 	assert.Equal(t, "test-api-key", provider.apiKey)
-	assert.Equal(t, "https://api.nia.ai", provider.baseURL)
+	assert.Equal(t, "https://api.nia.ai/v1/chat/completions", provider.baseURL)
 	assert.Equal(t, "nia-1.5", provider.model)
 }
 

@@ -14,16 +14,16 @@ import (
 )
 
 func TestNewProvider(t *testing.T) {
-	provider := NewSiliconflowProvider("test-api-key", "", "")
+	provider := NewSiliconFlowProvider("test-api-key", "", "")
 	assert.NotNil(t, provider)
 	assert.Equal(t, "test-api-key", provider.apiKey)
-	assert.Equal(t, "https://api.siliconflow.cn", provider.baseURL)
+	assert.Equal(t, "https://api.siliconflow.cn/v1/chat/completions", provider.baseURL)
 	assert.Equal(t, "Qwen/Qwen2.5-7B-Instruct", provider.model)
 }
 
 func TestNewProviderWithCustomURL(t *testing.T) {
 	customURL := "https://custom.api.com/v1/chat/completions"
-	provider := NewSiliconflowProvider("test-key", customURL, "custom-model")
+	provider := NewSiliconFlowProvider("test-key", customURL, "custom-model")
 	assert.Equal(t, customURL, provider.baseURL)
 	assert.Equal(t, "custom-model", provider.model)
 }
@@ -35,7 +35,7 @@ func TestNewProviderWithRetry(t *testing.T) {
 		MaxDelay:     60 * time.Second,
 		Multiplier:   3.0,
 	}
-	provider := NewSiliconflowProviderWithRetry("test-key", "", "", retryConfig)
+	provider := NewSiliconFlowProviderWithRetry("test-key", "", "", retryConfig)
 	assert.Equal(t, 5, provider.retryConfig.MaxRetries)
 	assert.Equal(t, 2*time.Second, provider.retryConfig.InitialDelay)
 }
@@ -76,7 +76,7 @@ func TestComplete(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewSiliconflowProvider("test-api-key", server.URL, "")
+	provider := NewSiliconFlowProvider("test-api-key", server.URL, "")
 	req := &models.LLMRequest{
 		ID:       "req-1",
 		Messages: []models.Message{{Role: "user", Content: "Hello"}},
@@ -103,7 +103,7 @@ func TestCompleteWithError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewSiliconflowProvider("invalid-key", server.URL, "")
+	provider := NewSiliconFlowProvider("invalid-key", server.URL, "")
 	req := &models.LLMRequest{ID: "req-1", Messages: []models.Message{{Role: "user", Content: "Hi"}}}
 	
 	_, err := provider.Complete(context.Background(), req)
@@ -127,7 +127,7 @@ func TestCompleteStream(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewSiliconflowProvider("test-key", server.URL, "")
+	provider := NewSiliconFlowProvider("test-key", server.URL, "")
 	req := &models.LLMRequest{ID: "stream-req", Messages: []models.Message{{Role: "user", Content: "Hi"}}}
 
 	ch, err := provider.CompleteStream(context.Background(), req)
@@ -141,7 +141,7 @@ func TestCompleteStream(t *testing.T) {
 }
 
 func TestGetCapabilities(t *testing.T) {
-	provider := NewSiliconflowProvider("test-key", "", "")
+	provider := NewSiliconFlowProvider("test-key", "", "")
 	caps := provider.GetCapabilities()
 
 	assert.NotNil(t, caps)
@@ -164,7 +164,7 @@ func TestValidateConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			provider := NewSiliconflowProvider(tt.apiKey, "", "")
+			provider := NewSiliconFlowProvider(tt.apiKey, "", "")
 			valid, errs := provider.ValidateConfig(nil)
 			assert.Equal(t, tt.wantValid, valid)
 			if !tt.wantValid {
@@ -187,7 +187,7 @@ func TestHealthCheck(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewSiliconflowProvider("test-key", server.URL, "")
+	provider := NewSiliconFlowProvider("test-key", server.URL, "")
 	err := provider.HealthCheck()
 	assert.NoError(t, err)
 }
@@ -201,7 +201,7 @@ func TestHealthCheckWithError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewSiliconflowProvider("test-key", server.URL, "")
+	provider := NewSiliconFlowProvider("test-key", server.URL, "")
 	err := provider.HealthCheck()
 	assert.Error(t, err)
 }

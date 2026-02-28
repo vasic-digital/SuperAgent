@@ -17,7 +17,7 @@ func TestNewProvider(t *testing.T) {
 	provider := NewKiloProvider("test-api-key", "", "")
 	assert.NotNil(t, provider)
 	assert.Equal(t, "test-api-key", provider.apiKey)
-	assert.Equal(t, "https://api.kilocode.ai", provider.baseURL)
+	assert.Equal(t, "https://api.kilocode.ai/v1/chat/completions", provider.baseURL)
 	assert.Equal(t, "kilocode-1.5", provider.model)
 }
 

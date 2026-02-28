@@ -1,3 +1,6 @@
+//go:build ignore
+// +build ignore
+
 // Package providers_test provides comprehensive test templates for LLM providers
 // This file can be used as a template for testing any LLM provider implementation
 package providers_test

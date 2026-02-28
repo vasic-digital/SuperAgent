@@ -138,7 +138,7 @@ func TestClaudeProvider_ConvertRequest(t *testing.T) {
 	}
 
 	claudeReq := provider.convertRequest(req)
-	assert.Equal(t, "claude-sonnet-4-20250514", claudeReq.Model)
+	assert.Equal(t, "claude-sonnet-4-6", claudeReq.Model)
 	assert.Equal(t, 100, claudeReq.MaxTokens)
 	assert.Equal(t, 0.7, claudeReq.Temperature)
 	assert.Equal(t, 0.9, claudeReq.TopP)
@@ -1723,8 +1723,8 @@ func TestClaudeProvider_AuthTypeConstants(t *testing.T) {
 
 func TestClaudeProvider_APIURLConstants(t *testing.T) {
 	assert.Equal(t, "https://api.anthropic.com/v1/messages", ClaudeAPIURL)
-	assert.Equal(t, "claude-sonnet-4-20250514", ClaudeModel)      // Updated to Claude 4 model
-	assert.Equal(t, "claude-sonnet-4-20250514", ClaudeOAuthModel) // Updated to Claude 4 model
+	assert.Equal(t, "claude-sonnet-4-6", ClaudeModel)      // Updated to Claude 4 model
+	assert.Equal(t, "claude-sonnet-4-6", ClaudeOAuthModel) // Updated to Claude 4 model
 }
 
 func TestClaudeProvider_Complete_ReadBodyError(t *testing.T) {

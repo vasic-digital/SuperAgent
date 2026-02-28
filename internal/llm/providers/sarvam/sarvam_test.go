@@ -17,7 +17,7 @@ func TestNewProvider(t *testing.T) {
 	provider := NewSarvamProvider("test-api-key", "", "")
 	assert.NotNil(t, provider)
 	assert.Equal(t, "test-api-key", provider.apiKey)
-	assert.Equal(t, "https://api.sarvam.ai", provider.baseURL)
+	assert.Equal(t, "https://api.sarvam.ai/v1/chat/completions", provider.baseURL)
 	assert.Equal(t, "sarvam-m", provider.model)
 }
 
