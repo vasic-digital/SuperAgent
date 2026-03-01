@@ -657,8 +657,9 @@ func TestRegistry_InitializeAll(t *testing.T) {
 	t.Run("initializes all loaders", func(t *testing.T) {
 		registry := NewRegistry()
 
-		loader1 := New(func() (string, error) { return "v1", nil }, nil)
-		loader2 := New(func() (string, error) { return "v2", nil }, nil)
+		// Note: InitializeAll only works with *Loader[interface{}] due to type assertion
+		loader1 := New(func() (interface{}, error) { return "v1", nil }, nil)
+		loader2 := New(func() (interface{}, error) { return "v2", nil }, nil)
 
 		registry.Register("loader1", loader1)
 		registry.Register("loader2", loader2)
@@ -674,8 +675,9 @@ func TestRegistry_InitializeAll(t *testing.T) {
 	t.Run("returns error if any loader fails", func(t *testing.T) {
 		registry := NewRegistry()
 
-		loader1 := New(func() (string, error) { return "v1", nil }, nil)
-		loader2 := New(func() (string, error) { return "", errors.New("fail") }, nil)
+		// Note: InitializeAll only works with *Loader[interface{}] due to type assertion
+		loader1 := New(func() (interface{}, error) { return "v1", nil }, nil)
+		loader2 := New(func() (interface{}, error) { return nil, errors.New("fail") }, nil)
 
 		registry.Register("loader1", loader1)
 		registry.Register("loader2", loader2)
@@ -694,7 +696,7 @@ func TestRegistry_InitializeAll(t *testing.T) {
 
 		// Create loaders with delays
 		for i := 0; i < 5; i++ {
-			loader := New(func() (string, error) {
+			loader := New(func() (interface{}, error) {
 				time.Sleep(50 * time.Millisecond)
 				return "value", nil
 			}, nil)
@@ -715,8 +717,9 @@ func TestRegistry_CloseAll(t *testing.T) {
 	t.Run("closes all loaders", func(t *testing.T) {
 		registry := NewRegistry()
 
-		loader1 := New(func() (string, error) { return "v1", nil }, nil)
-		loader2 := New(func() (string, error) { return "v2", nil }, nil)
+		// Note: CloseAll only works with *Loader[interface{}] due to type assertion
+		loader1 := New(func() (interface{}, error) { return "v1", nil }, nil)
+		loader2 := New(func() (interface{}, error) { return "v2", nil }, nil)
 
 		registry.Register("loader1", loader1)
 		registry.Register("loader2", loader2)
