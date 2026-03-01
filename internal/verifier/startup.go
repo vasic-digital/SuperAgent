@@ -449,14 +449,15 @@ func (sv *StartupVerifier) discoverFreeProviders(ctx context.Context) []*Provide
 		Models:      zenModels,
 	})
 
-	// Check if Ollama is running locally
-	ollamaURL := os.Getenv("OLLAMA_BASE_URL")
-	if ollamaURL == "" {
-		ollamaURL = "http://localhost:11434"
-	}
+	// Check if Ollama is explicitly enabled
+	ollamaEnabled := os.Getenv("OLLAMA_ENABLED")
+	if ollamaEnabled == "true" {
+		ollamaURL := os.Getenv("OLLAMA_BASE_URL")
+		if ollamaURL == "" {
+			ollamaURL = "http://localhost:11434"
+		}
 
-	// Health check Ollama - only add if it's actually running
-	if ollamaURL != "" {
+		// Health check Ollama - only add if it's actually running
 		ollamaModels := sv.checkOllamaHealth(ollamaURL)
 		if len(ollamaModels) > 0 {
 			providers = append(providers, &ProviderDiscoveryResult{
@@ -472,10 +473,12 @@ func (sv *StartupVerifier) discoverFreeProviders(ctx context.Context) []*Provide
 			sv.log.WithFields(logrus.Fields{
 				"url":    ollamaURL,
 				"models": ollamaModels,
-			}).Info("Ollama discovered with available models")
+			}).Info("Ollama discovered with available models (OLLAMA_ENABLED=true)")
 		} else {
-			sv.log.WithField("url", ollamaURL).Debug("Ollama not running or no models available")
+			sv.log.WithField("url", ollamaURL).Warn("Ollama enabled but not running or no models available")
 		}
+	} else {
+		sv.log.Info("Ollama disabled (set OLLAMA_ENABLED=true to enable)")
 	}
 
 	return providers
