@@ -2558,11 +2558,22 @@ func (h *UnifiedHandler) streamComprehensiveDebate(ctx context.Context, c *gin.C
 		roleStr string
 		desc    string
 	}{
+		// Design Team (2 roles)
 		{services.PositionAnalyst, comprehensive.RoleArchitect, "Architect", "System design and planning"},
-		{services.PositionProposer, comprehensive.RoleGenerator, "Generator", "Code generation"},
-		{services.PositionCritic, comprehensive.RoleCritic, "Critic", "Flaw identification"},
-		{services.PositionSynthesis, comprehensive.RoleRefactoring, "Refactoring", "Code improvement"},
-		{services.PositionMediator, comprehensive.RoleTester, "Tester", "Test generation"},
+		{services.PositionProposer, comprehensive.RoleModerator, "Moderator", "Debate facilitation"},
+		// Implementation Team (2 roles)
+		{services.PositionCritic, comprehensive.RoleGenerator, "Generator", "Code generation"},
+		{services.PositionSynthesis, comprehensive.RoleBlueTeam, "Blue Team", "Defensive implementation"},
+		// Quality Assurance Team (5 roles)
+		{services.PositionMediator, comprehensive.RoleCritic, "Critic", "Flaw identification"},
+		{services.PositionAnalyst, comprehensive.RoleTester, "Tester", "Test generation"},
+		{services.PositionProposer, comprehensive.RoleValidator, "Validator", "Correctness verification"},
+		{services.PositionCritic, comprehensive.RoleSecurity, "Security", "Security analysis"},
+		{services.PositionSynthesis, comprehensive.RolePerformance, "Performance", "Performance optimization"},
+		// Red Team (1 role)
+		{services.PositionMediator, comprehensive.RoleRedTeam, "Red Team", "Adversarial testing"},
+		// Refactoring Team (1 role)
+		{services.PositionAnalyst, comprehensive.RoleRefactoring, "Refactoring", "Code improvement"},
 	}
 	previousResponses := make(map[services.DebateTeamPosition]string)
 	collectedToolCalls := make([]StreamingToolCall, 0)
@@ -2572,19 +2583,16 @@ func (h *UnifiedHandler) streamComprehensiveDebate(ctx context.Context, c *gin.C
 		// Get member info for this position
 		member := h.debateTeamConfig.GetTeamMember(pos)
 		var memberProvider, memberModel string
-		var memberRole services.DebateRole
 		if member != nil {
 			memberProvider = member.ProviderName
 			memberModel = member.ModelName
-			memberRole = member.Role
 		} else {
 			memberProvider = "unknown"
 			memberModel = "unknown"
-			memberRole = services.RoleAnalyst
 		}
 
-		// Stream REQUEST indicator
-		requestIndicator := FormatRequestIndicatorForFormat(outputFormat, pos, memberRole, memberProvider, memberModel)
+		// Stream REQUEST indicator - use roleStr from positions array
+		requestIndicator := fmt.Sprintf("%s Requesting %s (%s)...\n", p.roleStr, memberModel, memberProvider)
 		if requestIndicator != "" {
 			reqChunk := map[string]any{
 				"id":                 streamID,
@@ -2644,7 +2652,7 @@ func (h *UnifiedHandler) streamComprehensiveDebate(ctx context.Context, c *gin.C
 			// Fallback handling is already done inside generateRealDebateResponse
 			// which has its own fallback logic
 			realResponse = fmt.Sprintf("[Error: %v]", err)
-			responseIndicator = h.formatResponseIndicator(outputFormat, pos, memberRole, memberProvider, memberModel, err, 0)
+			responseIndicator = fmt.Sprintf("> %s Response failed: %v\n\n", p.roleStr, err)
 		} else {
 			realResponse = debateResp.Content
 			// Use ActualProvider and ActualModel which track what was actually used
@@ -2656,7 +2664,8 @@ func (h *UnifiedHandler) streamComprehensiveDebate(ctx context.Context, c *gin.C
 			if actualModel == "" {
 				actualModel = debateResp.PrimaryModel
 			}
-			responseIndicator = h.formatResponseIndicator(outputFormat, pos, memberRole, actualProvider, actualModel, nil, debateResp.ResponseTime)
+			// Use roleStr from positions array instead of memberRole
+			responseIndicator = fmt.Sprintf("> %s Response received (%.1f s)\n\n", p.roleStr, debateResp.ResponseTime.Seconds())
 			if len(debateResp.ToolCalls) > 0 {
 				collectedToolCalls = append(collectedToolCalls, debateResp.ToolCalls...)
 			}
@@ -2720,8 +2729,8 @@ func (h *UnifiedHandler) streamComprehensiveDebate(ctx context.Context, c *gin.C
 
 		// Stream the actual debate response content
 		if realResponse != "" {
-			// Format as comprehensive debate response
-			formattedResponse := fmt.Sprintf("\n**[%s]**\n\n%s\n\n", getComprehensiveRoleName(memberRole), realResponse)
+			// Format as comprehensive debate response using the role string from positions array
+			formattedResponse := fmt.Sprintf("\n**[%s]**\n\n%s\n\n", p.roleStr, realResponse)
 
 			respChunk := map[string]any{
 				"id":                 streamID,
