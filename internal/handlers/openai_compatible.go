@@ -838,7 +838,8 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 
 				// Now get the REAL response from the LLM for this position
 				// CRITICAL: Pass tools so LLM knows about available coding assistant capabilities
-				debateResp, err := h.generateRealDebateResponse(ctx, pos, topic, previousResponses, req.Tools)
+				// For legacy debate, pass empty string for comprehensive role
+				debateResp, err := h.generateRealDebateResponse(ctx, pos, "", topic, previousResponses, req.Tools)
 				var realResponse string
 				var responseIndicator string
 
@@ -2618,7 +2619,8 @@ func (h *UnifiedHandler) streamComprehensiveDebate(ctx context.Context, c *gin.C
 		}
 
 		// Get REAL response from LLM with fallback tracking
-		debateResp, err := h.generateRealDebateResponse(ctx, pos, topic, previousResponses, req.Tools)
+		// Pass the comprehensive role string (roleStr) so the prompt builder can use proper role names
+		debateResp, err := h.generateRealDebateResponse(ctx, p.pos, p.roleStr, topic, previousResponses, req.Tools)
 		var realResponse string
 		var responseIndicator string
 
@@ -2952,8 +2954,9 @@ func (h *UnifiedHandler) generateDebateDialogueResponse(position services.Debate
 // generateRealDebateResponse calls the actual LLM for a position and returns the real response
 // It tries the primary provider first, then automatically falls back to fallback providers if primary fails
 // The tools parameter is passed to inform the LLM about available coding assistant capabilities
+// The comprehensiveRoleStr parameter is the role name from the 11-role comprehensive system (e.g., "Architect", "Moderator")
 // CRITICAL: Now returns *DebatePositionResponse to include tool_calls from LLM, not just content
-func (h *UnifiedHandler) generateRealDebateResponse(ctx context.Context, position services.DebateTeamPosition, topic string, previousResponses map[services.DebateTeamPosition]string, tools []OpenAITool) (*DebatePositionResponse, error) {
+func (h *UnifiedHandler) generateRealDebateResponse(ctx context.Context, position services.DebateTeamPosition, comprehensiveRoleStr string, topic string, previousResponses map[services.DebateTeamPosition]string, tools []OpenAITool) (*DebatePositionResponse, error) {
 	overallStart := time.Now()
 
 	if h.providerRegistry == nil || h.debateTeamConfig == nil {
@@ -2968,7 +2971,8 @@ func (h *UnifiedHandler) generateRealDebateResponse(ctx context.Context, positio
 
 	// Build a role-specific system prompt with tool awareness (same for all attempts)
 	// CRITICAL: Pass tools so LLM knows about available coding assistant capabilities
-	systemPrompt := h.buildDebateRoleSystemPromptWithTools(position, member.Role, tools)
+	// Pass comprehensiveRoleStr to use proper role names (Architect, Moderator, etc.) instead of legacy names
+	systemPrompt := h.buildDebateRoleSystemPromptWithTools(position, comprehensiveRoleStr, member.Role, tools)
 
 	// Build context from previous responses
 	contextStr := ""
@@ -3186,12 +3190,14 @@ func (h *UnifiedHandler) getProviderForMember(member *services.DebateTeamMember)
 // IMPORTANT: This prompt includes context about the AI coding assistant capabilities
 // so debate positions understand they have access to the user's codebase through tools
 func (h *UnifiedHandler) buildDebateRoleSystemPrompt(position services.DebateTeamPosition, role services.DebateRole) string {
-	return h.buildDebateRoleSystemPromptWithTools(position, role, nil)
+	return h.buildDebateRoleSystemPromptWithTools(position, "", role, nil)
 }
 
 // buildDebateRoleSystemPromptWithTools creates a system prompt with specific tool information
 // This is CRITICAL for AI coding assistants - the LLM needs to know what tools are available
-func (h *UnifiedHandler) buildDebateRoleSystemPromptWithTools(position services.DebateTeamPosition, role services.DebateRole, tools []OpenAITool) string {
+// The comprehensiveRoleStr is the role name from the 11-role comprehensive system (e.g., "Architect", "Moderator")
+// If comprehensiveRoleStr is empty, falls back to legacy role names (Analyst, Proposer, etc.)
+func (h *UnifiedHandler) buildDebateRoleSystemPromptWithTools(position services.DebateTeamPosition, comprehensiveRoleStr string, role services.DebateRole, tools []OpenAITool) string {
 	// Build tool description if tools are available
 	toolDescription := ""
 	if len(tools) > 0 {
@@ -3227,6 +3233,12 @@ IMPORTANT CONTEXT:
 
 You are participating in an AI debate ensemble. Provide a concise, focused response in 2-3 sentences. `, toolDescription)
 
+	// If comprehensive role string is provided (11-role system), use it; otherwise fall back to legacy
+	if comprehensiveRoleStr != "" {
+		return contextPrompt + getComprehensiveRolePrompt(comprehensiveRoleStr)
+	}
+
+	// Legacy 5-role system fallback
 	switch role {
 	case services.RoleAnalyst:
 		return contextPrompt + "Your role is THE ANALYST: Break down the problem systematically, identify key factors, and provide data-driven insights. For coding questions, analyze code structure, patterns, and potential issues."
@@ -3240,6 +3252,37 @@ You are participating in an AI debate ensemble. Provide a concise, focused respo
 		return contextPrompt + "Your role is THE MEDIATOR: Balance different viewpoints and guide toward consensus. For coding questions, recommend the most balanced and practical solution."
 	default:
 		return contextPrompt + "Contribute your perspective on the topic."
+	}
+}
+
+// getComprehensiveRolePrompt returns the role-specific prompt for the 11-role comprehensive debate system
+func getComprehensiveRolePrompt(roleStr string) string {
+	rp := comprehensive.RolePrompts{}
+	switch roleStr {
+	case "Architect":
+		return rp.Architect()
+	case "Moderator":
+		return rp.Moderator()
+	case "Generator":
+		return rp.Generator()
+	case "Blue Team":
+		return rp.BlueTeam()
+	case "Critic":
+		return rp.Critic()
+	case "Tester":
+		return rp.Tester()
+	case "Validator":
+		return rp.Validator()
+	case "Security":
+		return rp.Security()
+	case "Performance":
+		return rp.Performance()
+	case "Red Team":
+		return rp.RedTeam()
+	case "Refactoring":
+		return rp.Refactoring()
+	default:
+		return "Contribute your expertise to the debate."
 	}
 }
 
@@ -3416,7 +3459,7 @@ func (h *UnifiedHandler) generateResponseFooter() string {
 	sb.WriteString("\n\n")
 	sb.WriteString("───────────────────────────────────────────────────────────────────────────────\n")
 	sb.WriteString("                     ✨ Powered by HelixAgent AI Debate Ensemble ✨\n")
-	sb.WriteString("                  Synthesized from 5 AI perspectives for optimal results\n")
+	sb.WriteString("                  Synthesized from 11 AI perspectives for optimal results\n")
 	sb.WriteString("───────────────────────────────────────────────────────────────────────────────\n")
 
 	return sb.String()

@@ -89,6 +89,20 @@ func TestRolePrompts_Moderator(t *testing.T) {
 	assert.Contains(t, prompt, "moderator")
 }
 
+func TestRolePrompts_RedTeam(t *testing.T) {
+	rp := RolePrompts{}
+	prompt := rp.RedTeam()
+	assert.Contains(t, prompt, "adversar")
+	assert.Contains(t, prompt, "attack")
+}
+
+func TestRolePrompts_BlueTeam(t *testing.T) {
+	rp := RolePrompts{}
+	prompt := rp.BlueTeam()
+	assert.Contains(t, prompt, "defensive")
+	assert.Contains(t, prompt, "error")
+}
+
 func TestParser_ParseCodeBlocks(t *testing.T) {
 	parser := Parser{}
 	content := `

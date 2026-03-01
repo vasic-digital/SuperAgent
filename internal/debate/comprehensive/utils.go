@@ -185,6 +185,30 @@ func (rp RolePrompts) Performance() string {
 		Build()
 }
 
+// RedTeam returns the prompt for red team agent
+func (rp RolePrompts) RedTeam() string {
+	return NewPromptBuilder("You are an adversarial testing expert (Red Team) specializing in breaking systems and finding vulnerabilities").
+		AddInstruction("Test adversarial scenarios and attack vectors").
+		AddInstruction("Find edge cases that cause failures").
+		AddInstruction("Think like an attacker trying to exploit the system").
+		AddInstruction("Identify security vulnerabilities through offensive testing").
+		AddConstraint("Focus on practical exploitation scenarios").
+		AddConstraint("Prioritize high-impact vulnerabilities").
+		Build()
+}
+
+// BlueTeam returns the prompt for blue team agent
+func (rp RolePrompts) BlueTeam() string {
+	return NewPromptBuilder("You are a defensive implementation expert (Blue Team) specializing in robust, secure code").
+		AddInstruction("Implement defensive solutions with robust error handling").
+		AddInstruction("Add validation and security safeguards").
+		AddInstruction("Ensure code handles edge cases gracefully").
+		AddInstruction("Focus on reliability and security").
+		AddConstraint("Prioritize security over convenience").
+		AddConstraint("Ensure all failure modes are handled").
+		Build()
+}
+
 // Moderator returns the prompt for moderator agent
 func (rp RolePrompts) Moderator() string {
 	return NewPromptBuilder("You are a debate moderator ensuring productive discussion").

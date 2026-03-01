@@ -2049,8 +2049,8 @@ func TestUnifiedHandler_DebateDialogueConclusion_HasContent(t *testing.T) {
 		"Footer must reference HelixAgent")
 	assert.Contains(t, footer, "Powered by",
 		"Footer must contain 'Powered by'")
-	assert.Contains(t, footer, "5 AI perspectives",
-		"Footer must mention 5 AI perspectives")
+	assert.Contains(t, footer, "11 AI perspectives",
+		"Footer must mention 11 AI perspectives")
 }
 
 // TestUnifiedHandler_DialogueFormatterCharacters tests that characters are registered
@@ -2185,7 +2185,7 @@ func TestUnifiedHandler_GenerateRealDebateResponse_NoConfig(t *testing.T) {
 	previousResponses := make(map[services.DebateTeamPosition]string)
 
 	// Should return error when debate team config is not available
-	_, err := handler.generateRealDebateResponse(ctx, services.PositionAnalyst, "test topic", previousResponses, nil)
+	_, err := handler.generateRealDebateResponse(ctx, services.PositionAnalyst, "", "test topic", previousResponses, nil)
 
 	assert.Error(t, err, "Should return error when debate team config is nil")
 	assert.Contains(t, err.Error(), "not available", "Error should mention config not available")
@@ -2321,7 +2321,7 @@ func TestUnifiedHandler_FallbackChain(t *testing.T) {
 			providerRegistry: registry,
 			debateTeamConfig: nil,
 		}
-		_, err := testHandler.generateRealDebateResponse(ctx, services.PositionAnalyst, "test", previousResponses, nil)
+		_, err := testHandler.generateRealDebateResponse(ctx, services.PositionAnalyst, "", "test", previousResponses, nil)
 		assert.Error(t, err, "Should return error when config is not available")
 	})
 
@@ -2407,7 +2407,7 @@ func TestUnifiedHandler_DebateResponseErrorHandling(t *testing.T) {
 		ctx := context.Background()
 		previousResponses := make(map[services.DebateTeamPosition]string)
 
-		_, err := handlerNoRegistry.generateRealDebateResponse(ctx, services.PositionAnalyst, "test", previousResponses, nil)
+		_, err := handlerNoRegistry.generateRealDebateResponse(ctx, services.PositionAnalyst, "", "test", previousResponses, nil)
 		assert.Error(t, err, "Should return error with nil provider registry")
 		assert.Contains(t, err.Error(), "not available", "Error should mention not available")
 	})
@@ -2419,7 +2419,7 @@ func TestUnifiedHandler_DebateResponseErrorHandling(t *testing.T) {
 		ctx := context.Background()
 		previousResponses := make(map[services.DebateTeamPosition]string)
 
-		_, err := handlerNoConfig.generateRealDebateResponse(ctx, services.PositionAnalyst, "test", previousResponses, nil)
+		_, err := handlerNoConfig.generateRealDebateResponse(ctx, services.PositionAnalyst, "", "test", previousResponses, nil)
 		assert.Error(t, err, "Should return error with nil debate team config")
 		assert.Contains(t, err.Error(), "not available", "Error should mention not available")
 	})
@@ -2762,7 +2762,7 @@ func TestSystemPromptIncludesToolNames(t *testing.T) {
 	}
 
 	for _, pos := range positions {
-		prompt := handler.buildDebateRoleSystemPromptWithTools(pos.position, pos.role, tools)
+		prompt := handler.buildDebateRoleSystemPromptWithTools(pos.position, "", pos.role, tools)
 
 		// Verify tool names are included
 		assert.Contains(t, prompt, "AVAILABLE TOOLS",
@@ -2790,12 +2790,12 @@ func TestSystemPromptWithNoTools(t *testing.T) {
 
 	for _, pos := range positions {
 		// Test with nil tools
-		promptNil := handler.buildDebateRoleSystemPromptWithTools(pos.position, pos.role, nil)
+		promptNil := handler.buildDebateRoleSystemPromptWithTools(pos.position, "", pos.role, nil)
 		assert.NotContains(t, promptNil, "AVAILABLE TOOLS",
 			"Position %v prompt should not mention tools when nil", pos.position)
 
 		// Test with empty tools
-		promptEmpty := handler.buildDebateRoleSystemPromptWithTools(pos.position, pos.role, []OpenAITool{})
+		promptEmpty := handler.buildDebateRoleSystemPromptWithTools(pos.position, "", pos.role, []OpenAITool{})
 		assert.NotContains(t, promptEmpty, "AVAILABLE TOOLS",
 			"Position %v prompt should not mention tools when empty", pos.position)
 
@@ -2854,7 +2854,7 @@ func TestDebateRoleSystemPromptBackwardCompatibility(t *testing.T) {
 
 	// The old function should still work (it calls the new one with nil tools)
 	promptOld := handler.buildDebateRoleSystemPrompt(services.PositionAnalyst, services.RoleAnalyst)
-	promptNew := handler.buildDebateRoleSystemPromptWithTools(services.PositionAnalyst, services.RoleAnalyst, nil)
+	promptNew := handler.buildDebateRoleSystemPromptWithTools(services.PositionAnalyst, "", services.RoleAnalyst, nil)
 
 	assert.Equal(t, promptOld, promptNew, "Old and new functions should produce same output when no tools")
 }
@@ -2866,6 +2866,7 @@ func TestCodingAssistantContextAlwaysPresent(t *testing.T) {
 	// With tools
 	toolsPrompt := handler.buildDebateRoleSystemPromptWithTools(
 		services.PositionAnalyst,
+		"",
 		services.RoleAnalyst,
 		[]OpenAITool{{Type: "function", Function: OpenAIToolFunction{Name: "Read"}}},
 	)
@@ -2873,6 +2874,7 @@ func TestCodingAssistantContextAlwaysPresent(t *testing.T) {
 	// Without tools
 	noToolsPrompt := handler.buildDebateRoleSystemPromptWithTools(
 		services.PositionAnalyst,
+		"",
 		services.RoleAnalyst,
 		nil,
 	)
