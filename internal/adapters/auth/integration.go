@@ -9,6 +9,7 @@ import (
 
 	genericoauth "digital.vasic.auth/pkg/oauth"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/sirupsen/logrus"
 )
 
@@ -262,8 +263,59 @@ func extractBearerToken(authHeader string) (string, error) {
 	return authHeader[len(prefix):], nil
 }
 
-func ValidateJWTToken(token string, secret []byte, issuer string) (map[string]interface{}, error) {
-	return nil, fmt.Errorf("JWT validation not yet implemented - use middleware/auth.go instead")
+// Claims represents the JWT claims structure
+type Claims struct {
+	UserID   string `json:"user_id"`
+	Username string `json:"username"`
+	Role     string `json:"role"`
+	jwt.RegisteredClaims
+}
+
+// ValidateJWTToken validates a JWT token and returns the claims as a map.
+// It verifies the token signature, expiration, and issuer.
+func ValidateJWTToken(tokenString string, secret []byte, issuer string) (map[string]interface{}, error) {
+	// Parse the token with claims
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		// Validate signing method
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return secret, nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse token: %w", err)
+	}
+
+	// Validate token claims
+	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
+		// Check issuer if specified
+		if issuer != "" && claims.Issuer != issuer {
+			return nil, fmt.Errorf("invalid issuer: expected %s, got %s", issuer, claims.Issuer)
+		}
+
+		// Check expiration
+		if claims.ExpiresAt != nil && claims.ExpiresAt.Time.Before(time.Now()) {
+			return nil, fmt.Errorf("token has expired")
+		}
+
+		// Return claims as map
+		result := map[string]interface{}{
+			"user_id":  claims.UserID,
+			"username": claims.Username,
+			"role":     claims.Role,
+			"issuer":   claims.Issuer,
+			"subject":  claims.Subject,
+		}
+
+		if claims.ExpiresAt != nil {
+			result["expires_at"] = claims.ExpiresAt.Time
+		}
+
+		return result, nil
+	}
+
+	return nil, fmt.Errorf("invalid token claims")
 }
 
 func RequireScopes(scopes ...string) gin.HandlerFunc {

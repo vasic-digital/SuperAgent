@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -533,5 +534,108 @@ func TestOAuthCredentialManager_Integration(t *testing.T) {
 
 		err := manager.RefreshAll(ctx)
 		assert.NoError(t, err)
+	})
+}
+
+// Helper function to generate a valid JWT token for testing
+func generateTestJWTToken(secret []byte, issuer string, userID, username, role string, expiry time.Duration) string {
+	claims := &Claims{
+		UserID:   userID,
+		Username: username,
+		Role:     role,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(expiry)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Issuer:    issuer,
+			Subject:   userID,
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, _ := token.SignedString(secret)
+	return tokenString
+}
+
+func TestValidateJWTToken(t *testing.T) {
+	secret := []byte("test-secret-key-32-bytes-long!")
+	issuer := "helixagent"
+
+	t.Run("valid token", func(t *testing.T) {
+		tokenString := generateTestJWTToken(secret, issuer, "123", "testuser", "user", time.Hour)
+
+		claims, err := ValidateJWTToken(tokenString, secret, issuer)
+
+		require.NoError(t, err)
+		assert.Equal(t, "123", claims["user_id"])
+		assert.Equal(t, "testuser", claims["username"])
+		assert.Equal(t, "user", claims["role"])
+		assert.Equal(t, issuer, claims["issuer"])
+	})
+
+	t.Run("valid token without issuer check", func(t *testing.T) {
+		tokenString := generateTestJWTToken(secret, issuer, "456", "admin", "admin", time.Hour)
+
+		claims, err := ValidateJWTToken(tokenString, secret, "")
+
+		require.NoError(t, err)
+		assert.Equal(t, "456", claims["user_id"])
+		assert.Equal(t, "admin", claims["username"])
+	})
+
+	t.Run("invalid signature", func(t *testing.T) {
+		tokenString := generateTestJWTToken(secret, issuer, "123", "testuser", "user", time.Hour)
+		wrongSecret := []byte("wrong-secret-key-32-bytes-long")
+
+		_, err := ValidateJWTToken(tokenString, wrongSecret, issuer)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to parse token")
+	})
+
+	t.Run("expired token", func(t *testing.T) {
+		tokenString := generateTestJWTToken(secret, issuer, "123", "testuser", "user", -time.Hour)
+
+		_, err := ValidateJWTToken(tokenString, secret, issuer)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "expired")
+	})
+
+	t.Run("invalid issuer", func(t *testing.T) {
+		tokenString := generateTestJWTToken(secret, "wrong-issuer", "123", "testuser", "user", time.Hour)
+
+		_, err := ValidateJWTToken(tokenString, secret, issuer)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid issuer")
+	})
+
+	t.Run("malformed token", func(t *testing.T) {
+		_, err := ValidateJWTToken("not-a-valid-token", secret, issuer)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to parse token")
+	})
+
+	t.Run("empty token", func(t *testing.T) {
+		_, err := ValidateJWTToken("", secret, issuer)
+
+		assert.Error(t, err)
+	})
+
+	t.Run("wrong signing method", func(t *testing.T) {
+		// Create token with RS256 instead of HS256
+		claims := &Claims{
+			UserID: "123",
+			RegisteredClaims: jwt.RegisteredClaims{
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
+			},
+		}
+		token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+		tokenString, _ := token.SignedString(nil) // This will produce an invalid token
+
+		_, err := ValidateJWTToken(tokenString, secret, issuer)
+
+		assert.Error(t, err)
 	})
 }
