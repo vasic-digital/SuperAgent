@@ -144,16 +144,6 @@ type DebateResponse struct {
 	Metadata        map[string]interface{}
 }
 
-// ConsensusResult represents the consensus from a debate
-type ConsensusResult struct {
-	Reached    bool
-	Confidence float64
-	Summary    string
-	KeyPoints  []string
-	Dissents   []string
-	FinalCode  string
-}
-
 // PhaseResult represents a phase in the debate
 type PhaseResult struct {
 	Phase          string
@@ -164,17 +154,20 @@ type PhaseResult struct {
 	Duration       time.Duration
 }
 
-// AgentResponse represents an agent's response
-type AgentResponse struct {
-	AgentID    string
-	AgentRole  string
-	Provider   string
-	Model      string
-	Content    string
-	Confidence float64
-	Score      float64
-	ToolsUsed  []string
-	Latency    time.Duration
+// DebateConfig represents configuration for a debate
+type DebateConfig struct {
+	Topic        string
+	MaxRounds    int
+	EnableCognee bool
+	Strategy     string
+	Participants []ParticipantConfig
+}
+
+// ParticipantConfig represents configuration for a participant
+type ParticipantConfig struct {
+	Role     Role
+	Provider string
+	Model    string
 }
 
 // CodeChange represents a code change
@@ -210,6 +203,7 @@ func (s *System) ConductDebate(ctx context.Context, req *DebateRequest) (*Debate
 	response := &DebateResponse{
 		ID:             req.ID,
 		Success:        false,
+		Consensus:      NewConsensusResult(),
 		Phases:         make([]*PhaseResult, 0),
 		Participants:   make([]string, 0),
 		LessonsLearned: make([]string, 0),
