@@ -53,7 +53,7 @@ func TestOllama_ExplicitlyEnabled(t *testing.T) {
 	providers := sv.DiscoverProviders()
 	require.NotNil(t, providers)
 
-	// When OLLAMA_ENABLED=true but Ollama is not running, 
+	// When OLLAMA_ENABLED=true but Ollama is not running,
 	// a warning should be logged but no provider should be added
 	ollamaFound := false
 	for _, p := range providers {

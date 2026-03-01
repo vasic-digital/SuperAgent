@@ -79,7 +79,7 @@ func TestAIDebate_TeamInitializationWithVerifiedProviders(t *testing.T) {
 	for _, pos := range positions {
 		member := dtc.GetTeamMember(pos)
 		if member != nil {
-			t.Logf("Position %d: %s/%s (score: %.2f)", 
+			t.Logf("Position %d: %s/%s (score: %.2f)",
 				pos, member.ProviderName, member.ModelName, member.Score)
 			assert.NotEmpty(t, member.ProviderName, "Position %d should have a provider", pos)
 			assert.NotEmpty(t, member.ModelName, "Position %d should have a model", pos)
@@ -151,7 +151,7 @@ func TestAIDebate_TeamUsesHighQualityProviders(t *testing.T) {
 		member := dtc.GetTeamMember(pos)
 		if member != nil {
 			// Primary positions should have high-quality providers
-			assert.Greater(t, member.Score, 5.0, 
+			assert.Greater(t, member.Score, 5.0,
 				"Primary position %d should have a high-quality provider (score > 5.0)", pos)
 		}
 	}
@@ -159,7 +159,7 @@ func TestAIDebate_TeamUsesHighQualityProviders(t *testing.T) {
 	// Check that no Ollama models are used when OLLAMA_ENABLED is not set
 	if os.Getenv("OLLAMA_ENABLED") != "true" {
 		for _, llm := range llms {
-			assert.NotEqual(t, "ollama", llm.ProviderName, 
+			assert.NotEqual(t, "ollama", llm.ProviderName,
 				"Ollama should not be in debate team when OLLAMA_ENABLED is not set")
 		}
 	}
@@ -349,7 +349,7 @@ func TestAIDebate_VerifiedProvidersOnly(t *testing.T) {
 				break
 			}
 		}
-		assert.True(t, isVerified, 
+		assert.True(t, isVerified,
 			"LLM %s/%s should be from a verified provider", llm.ProviderName, llm.ModelName)
 	}
 

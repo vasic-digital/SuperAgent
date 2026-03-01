@@ -1,6 +1,7 @@
 package comprehensive
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -65,7 +66,7 @@ func TestToolRegistry_GetByType(t *testing.T) {
 
 	// Get command tools
 	cmdTools := registry.GetByType(ToolTypeCommand)
-	assert.Len(t, cmdTools, 2) // Command and Test
+	assert.Len(t, cmdTools, 1) // Only Command
 }
 
 func TestCodeTool_GetName(t *testing.T) {

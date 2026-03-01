@@ -205,7 +205,7 @@ func (p Parser) ParseCodeBlocks(content string) []CodeBlock {
 	var blocks []CodeBlock
 
 	// Match code blocks with optional language specifier
-	re := regexp.MustCompile("```(\\w+)?\\n(.*?)```")
+	re := regexp.MustCompile("(?s)```(\\w+)?\\n(.*?)```")
 	matches := re.FindAllStringSubmatch(content, -1)
 
 	for _, match := range matches {
@@ -238,9 +238,9 @@ func (p Parser) ExtractThoughts(content string) []string {
 
 	// Look for common patterns
 	patterns := []string{
-		`(?i)Thinking:([\s\S]*?)(?=\n\n|$)`,
-		`(?i)Reasoning:([\s\S]*?)(?=\n\n|$)`,
-		`(?i)Analysis:([\s\S]*?)(?=\n\n|$)`,
+		`(?i)Thinking:\s*(.+?)(?:\n\n|\n*$)`,
+		`(?i)Reasoning:\s*(.+?)(?:\n\n|\n*$)`,
+		`(?i)Analysis:\s*(.+?)(?:\n\n|\n*$)`,
 		`<think>([\s\S]*?)</think>`,
 	}
 

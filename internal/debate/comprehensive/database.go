@@ -105,14 +105,14 @@ func (t *DatabaseTool) Execute(ctx context.Context, inputs map[string]interface{
 	t.logger.WithField("query", query).Debug("Executing database query")
 
 	start := time.Now()
-	
+
 	// Check if it's a SELECT query
 	isSelect := strings.HasPrefix(strings.ToUpper(strings.TrimSpace(query)), "SELECT")
-	
+
 	if isSelect {
 		return t.executeQuery(ctx, query, params, start)
 	}
-	
+
 	return t.executeExec(ctx, query, params, start)
 }
 

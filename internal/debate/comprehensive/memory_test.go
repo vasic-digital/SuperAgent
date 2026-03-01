@@ -180,9 +180,10 @@ func TestMemoryManager_GetContext(t *testing.T) {
 	mgr := NewMemoryManager("agent-1")
 
 	mgr.AddToShortTerm("Recent", nil)
-	mgr.StoreLesson("Important lesson", 0.9, nil)
-	mgr.AddReflection("Reflection", "Error", nil)
+	mgr.StoreLesson("Important lesson about testing", 0.9, nil)
+	mgr.AddReflection("Test reflection", "Test error", nil)
 
+	// Use "test" as topic to match lesson and reflection content
 	ctx := mgr.GetContext("test")
 
 	assert.NotNil(t, ctx["recent_history"])

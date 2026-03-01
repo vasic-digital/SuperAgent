@@ -3,6 +3,7 @@ package comprehensive
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -392,6 +393,8 @@ func (m *MemoryManager) Serialize() ([]byte, error) {
 
 // Helper function
 func containsIgnoreCase(s, substr string) bool {
-	return len(s) > 0 && len(substr) > 0 &&
-		(len(s) > len(substr) || s == substr)
+	if len(s) == 0 || len(substr) == 0 {
+		return false
+	}
+	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
 }

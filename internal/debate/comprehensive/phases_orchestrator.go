@@ -40,10 +40,6 @@ func (o *PhaseOrchestrator) PlanningPhase(ctx context.Context, req *DebateReques
 		return phase, fmt.Errorf("no architect agents available")
 	}
 
-	// Create message for architects
-	msg := NewMessage("system", MessageTypeSystem,
-		fmt.Sprintf("Create architectural design for: %s", req.Topic))
-
 	// Have architects propose designs
 	for _, architect := range architects {
 		// TODO: Call actual agent.Process
@@ -93,20 +89,6 @@ func (o *PhaseOrchestrator) GenerationPhase(ctx context.Context, req *DebateRequ
 		return phase, fmt.Errorf("no generator agents available")
 	}
 
-	// Get design artifact if available
-	var design string
-	if artifact, ok := context.Artifacts["design-"+req.ID]; ok {
-		design = artifact.Content
-	}
-
-	// Create message for generators
-	msgContent := fmt.Sprintf("Generate code for: %s", req.Topic)
-	if design != "" {
-		msgContent += fmt.Sprintf("\n\nDesign:\n%s", design)
-	}
-
-	msg := NewMessage("system", MessageTypeSystem, msgContent)
-
 	// Have generators produce code
 	for _, generator := range generators {
 		// TODO: Call actual agent.Process
@@ -151,9 +133,8 @@ func (o *PhaseOrchestrator) DebatePhase(ctx context.Context, req *DebateRequest,
 		Responses: make([]AgentResponse, 0),
 	}
 
-	// Get code artifact
-	codeArtifact, hasCode := context.Artifacts["code-"+req.ID]
-	if !hasCode {
+	// Check if code artifact exists
+	if _, hasCode := context.Artifacts["code-"+req.ID]; !hasCode {
 		return phase, fmt.Errorf("no code available for debate")
 	}
 
