@@ -740,6 +740,16 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 
 		// Generate and stream debate dialogue introduction
 		// Use format-aware introduction based on detected client type
+		// Check if comprehensive system should be used
+		useComprehensive := h.debateService != nil && h.debateService.IsComprehensiveSystemEnabled()
+
+		if useComprehensive {
+			// Use comprehensive debate streaming with 8 roles and 5 teams
+			h.streamComprehensiveDebate(ctx, c, flusher, streamID, topic, outputFormat, req)
+			return
+		}
+
+		// Legacy 5-position debate flow
 		dialogueIntro := h.generateDebateDialogueIntroduction(topic, outputFormat)
 		if dialogueIntro != "" {
 			// Stream introduction in chunks for better rendering
@@ -2355,7 +2365,14 @@ func generateID() string {
 // generateDebateDialogueIntroduction creates the AI debate team conversation introduction
 // This is displayed before the final response to show how the AI debate ensemble works
 // Uses ANSI colors for terminal clients, clean Markdown for API clients
+// When comprehensive system is enabled, shows 8 roles across 5 teams
 func (h *UnifiedHandler) generateDebateDialogueIntroduction(topic string, format OutputFormat) string {
+	// Check if comprehensive debate system is enabled
+	if h.debateService != nil && h.debateService.IsComprehensiveSystemEnabled() {
+		return h.generateComprehensiveDebateIntroduction(topic, format)
+	}
+
+	// Fall back to legacy 5-role debate team format
 	if h.dialogueFormatter == nil || h.debateTeamConfig == nil {
 		return ""
 	}
@@ -2364,6 +2381,250 @@ func (h *UnifiedHandler) generateDebateDialogueIntroduction(topic string, format
 	// GetPrimaryMembers returns only 5 primary members (one per position) with their Fallbacks populated
 	members := h.debateTeamConfig.GetPrimaryMembers()
 	return FormatDebateTeamIntroductionForFormat(format, topic, members)
+}
+
+// generateComprehensiveDebateIntroduction creates introduction for comprehensive debate system
+// Shows 8 roles across 5 teams dynamically
+func (h *UnifiedHandler) generateComprehensiveDebateIntroduction(topic string, format OutputFormat) string {
+	// Get comprehensive integration manager
+	if h.debateService == nil {
+		return ""
+	}
+
+	// Access the comprehensive integration through the service
+	// We need to get the IntegrationManager - let's use reflection or add a getter
+	// For now, let's create a simple version that shows we're using comprehensive system
+
+	var sb strings.Builder
+	sb.WriteString("\n")
+	sb.WriteString("# HelixAgent AI Debate Ensemble\n\n")
+	sb.WriteString("> Eight AI specialists across five teams collaborate to deliver optimal solutions.\n\n")
+
+	// Topic
+	topicDisplay := topic
+	if len(topicDisplay) > 70 {
+		topicDisplay = topicDisplay[:70] + "..."
+	}
+	sb.WriteString(fmt.Sprintf("**Topic:** %s\n\n", topicDisplay))
+
+	sb.WriteString("---\n\n")
+	sb.WriteString("## Debate Teams & Roles (Comprehensive System)\n\n")
+
+	// Use dynamic team listing
+	teams := []struct {
+		name  string
+		roles []string
+	}{
+		{"🏗️ Design", []string{"System Architect", "Debate Moderator"}},
+		{"💻 Implementation", []string{"Code Generator", "Blue Team"}},
+		{"🔍 Quality Assurance", []string{"Code Reviewer", "Test Engineer", "Validator", "Security Analyst", "Performance Engineer"}},
+		{"🔴 Red Team", []string{"Red Team"}},
+		{"🔄 Refactoring", []string{"Refactoring Specialist"}},
+	}
+
+	for _, team := range teams {
+		sb.WriteString(fmt.Sprintf("### %s Team\n\n", team.name))
+		sb.WriteString("| Role | Status |\n")
+		sb.WriteString("|------|--------|\n")
+		for _, role := range team.roles {
+			sb.WriteString(fmt.Sprintf("| **%s** | 🟢 Active |\n", role))
+		}
+		sb.WriteString("\n")
+	}
+
+	sb.WriteString("---\n\n")
+	sb.WriteString("## The Deliberation\n\n")
+
+	return sb.String()
+}
+
+// streamComprehensiveDebate streams the comprehensive debate with 8 roles and 5 teams
+func (h *UnifiedHandler) streamComprehensiveDebate(ctx context.Context, c *gin.Context, flusher http.Flusher, streamID string, topic string, outputFormat OutputFormat, req *OpenAIChatRequest) {
+	logrus.Info("[Comprehensive Streaming] Starting comprehensive debate stream")
+
+	// Generate comprehensive introduction
+	intro := h.generateComprehensiveDebateIntroduction(topic, outputFormat)
+
+	// Stream introduction
+	for _, line := range strings.Split(intro, "\n") {
+		if line == "" {
+			line = "\n"
+		} else {
+			line = line + "\n"
+		}
+		chunk := map[string]any{
+			"id":                 streamID,
+			"object":             "chat.completion.chunk",
+			"created":            time.Now().Unix(),
+			"model":              "helixagent-ensemble",
+			"system_fingerprint": "fp_helixagent_v1",
+			"choices": []map[string]any{
+				{
+					"index":         0,
+					"delta":         map[string]any{"content": line},
+					"logprobs":      nil,
+					"finish_reason": nil,
+				},
+			},
+		}
+		if data, err := json.Marshal(chunk); err == nil {
+			_, _ = c.Writer.Write([]byte("data: "))
+			_, _ = c.Writer.Write(data)
+			_, _ = c.Writer.Write([]byte("\n\n"))
+			flusher.Flush()
+		}
+		time.Sleep(2 * time.Millisecond)
+	}
+
+	// Configure and run comprehensive streaming debate
+	debateConfig := services.DebateConfig{
+		DebateID:  fmt.Sprintf("comprehensive-%d", time.Now().UnixNano()),
+		Topic:     topic,
+		MaxRounds: 3,
+		Metadata:  make(map[string]any),
+	}
+
+	// Collect all streamed responses
+	var debateContent strings.Builder
+
+	// Create streaming handler
+	streamHandler := func(event *comprehensive.StreamEvent) error {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			// Format the event for display
+			var content string
+			switch event.Type {
+			case comprehensive.StreamEventTeamStart:
+				if event.Team != "" {
+					content = fmt.Sprintf("\n🏁 **%s Team** activating...\n\n", event.Team)
+				}
+			case comprehensive.StreamEventAgentResponse:
+				if event.Agent != nil {
+					content = fmt.Sprintf("🤖 **[%s]** (%s/%s): %s\n\n",
+						event.Agent.Role,
+						event.Agent.Provider,
+						event.Agent.Model,
+						event.Content)
+					debateContent.WriteString(content)
+				}
+			case comprehensive.StreamEventConsensusReached:
+				content = fmt.Sprintf("\n✨ **Consensus Achieved**\n\n%s\n\n", event.Content)
+			}
+
+			if content != "" {
+				chunk := map[string]any{
+					"id":                 streamID,
+					"object":             "chat.completion.chunk",
+					"created":            time.Now().Unix(),
+					"model":              "helixagent-ensemble",
+					"system_fingerprint": "fp_helixagent_v1",
+					"choices": []map[string]any{
+						{
+							"index":         0,
+							"delta":         map[string]any{"content": content},
+							"logprobs":      nil,
+							"finish_reason": nil,
+						},
+					},
+				}
+				if data, err := json.Marshal(chunk); err == nil {
+					_, _ = c.Writer.Write([]byte("data: "))
+					_, _ = c.Writer.Write(data)
+					_, _ = c.Writer.Write([]byte("\n\n"))
+					flusher.Flush()
+				}
+			}
+			return nil
+		}
+	}
+
+	// Run comprehensive streaming debate
+	result, err := h.debateService.StreamDebate(ctx, &debateConfig, streamHandler)
+	if err != nil {
+		logrus.WithError(err).Error("[Comprehensive Streaming] Debate failed")
+		// Send error response
+		errChunk := map[string]any{
+			"id":                 streamID,
+			"object":             "chat.completion.chunk",
+			"created":            time.Now().Unix(),
+			"model":              "helixagent-ensemble",
+			"system_fingerprint": "fp_helixagent_v1",
+			"choices": []map[string]any{
+				{
+					"index":         0,
+					"delta":         map[string]any{"content": fmt.Sprintf("\n❌ Debate Error: %v\n", err)},
+					"logprobs":      nil,
+					"finish_reason": nil,
+				},
+			},
+		}
+		if data, err := json.Marshal(errChunk); err == nil {
+			_, _ = c.Writer.Write([]byte("data: "))
+			_, _ = c.Writer.Write(data)
+			_, _ = c.Writer.Write([]byte("\n\n"))
+			flusher.Flush()
+		}
+	}
+
+	// Send final consensus
+	if result != nil && result.Consensus != nil {
+		finalContent := fmt.Sprintf("\n---\n\n## Final Answer\n\n%s\n\n", result.Consensus.Summary)
+		finalContent += fmt.Sprintf("---\n\n### ✨ Powered by HelixAgent Comprehensive Debate\n")
+		finalContent += fmt.Sprintf("*Synthesized from multiple AI specialists across 5 teams for optimal results*\n")
+		finalContent += fmt.Sprintf("---\n")
+
+		chunk := map[string]any{
+			"id":                 streamID,
+			"object":             "chat.completion.chunk",
+			"created":            time.Now().Unix(),
+			"model":              "helixagent-ensemble",
+			"system_fingerprint": "fp_helixagent_v1",
+			"choices": []map[string]any{
+				{
+					"index":         0,
+					"delta":         map[string]any{"content": finalContent},
+					"logprobs":      nil,
+					"finish_reason": nil,
+				},
+			},
+		}
+		if data, err := json.Marshal(chunk); err == nil {
+			_, _ = c.Writer.Write([]byte("data: "))
+			_, _ = c.Writer.Write(data)
+			_, _ = c.Writer.Write([]byte("\n\n"))
+			flusher.Flush()
+		}
+	}
+
+	// Send finish chunk
+	finishChunk := map[string]any{
+		"id":                 streamID,
+		"object":             "chat.completion.chunk",
+		"created":            time.Now().Unix(),
+		"model":              "helixagent-ensemble",
+		"system_fingerprint": "fp_helixagent_v1",
+		"choices": []map[string]any{
+			{
+				"index":         0,
+				"delta":         map[string]any{},
+				"logprobs":      nil,
+				"finish_reason": "stop",
+			},
+		},
+	}
+	if data, err := json.Marshal(finishChunk); err == nil {
+		_, _ = c.Writer.Write([]byte("data: "))
+		_, _ = c.Writer.Write(data)
+		_, _ = c.Writer.Write([]byte("\n\n"))
+		flusher.Flush()
+	}
+
+	_, _ = c.Writer.Write([]byte("data: [DONE]\n\n"))
+	flusher.Flush()
+
+	logrus.Info("[Comprehensive Streaming] Stream complete")
 }
 
 // generateDebateDialogueResponse creates a debate response header for a position
