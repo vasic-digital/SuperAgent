@@ -2392,8 +2392,8 @@ func (h *UnifiedHandler) generateComprehensiveDebateIntroduction(topic string, f
 	sb.WriteString("\n")
 	sb.WriteString("# HelixAgent AI Debate Ensemble\n\n")
 
-	// Always show 11 roles from comprehensive debate system
-	sb.WriteString("> 11 AI specialists across 5 teams collaborate to deliver optimal solutions.\n\n")
+	// Show 11 debate roles from comprehensive system with actual models
+	sb.WriteString("> 11 AI specialists collaborate to deliver optimal solutions.\n\n")
 
 	// Topic
 	topicDisplay := topic
@@ -2403,118 +2403,67 @@ func (h *UnifiedHandler) generateComprehensiveDebateIntroduction(topic string, f
 	sb.WriteString(fmt.Sprintf("**Topic:** %s\n\n", topicDisplay))
 
 	sb.WriteString("---\n\n")
-	sb.WriteString("## Debate Team (11 Roles across 5 Teams)\n\n")
+	sb.WriteString("## Debate Team (11 Roles)\n\n")
 
-	// Show all 11 comprehensive roles organized by team
+	// Show 11 comprehensive roles
 	teams := []struct {
 		name  string
 		roles []struct {
-			role     string
-			desc     string
-			provider string
-			model    string
+			role string
+			desc string
 		}
 	}{
-		{
-			name: "🏗️ Design Team",
-			roles: []struct {
-				role     string
-				desc     string
-				provider string
-				model    string
-			}{
-				{"System Architect", "System design and planning", "", ""},
-				{"Debate Moderator", "Debate facilitation", "", ""},
-			},
-		},
-		{
-			name: "💻 Implementation Team",
-			roles: []struct {
-				role     string
-				desc     string
-				provider string
-				model    string
-			}{
-				{"Code Generator", "Code generation", "", ""},
-				{"Blue Team", "Defensive implementation", "", ""},
-			},
-		},
-		{
-			name: "🔍 Quality Assurance Team",
-			roles: []struct {
-				role     string
-				desc     string
-				provider string
-				model    string
-			}{
-				{"Code Reviewer", "Flaw identification", "", ""},
-				{"Test Engineer", "Test generation", "", ""},
-				{"Validator", "Correctness verification", "", ""},
-				{"Security Analyst", "Security analysis", "", ""},
-				{"Performance Engineer", "Performance optimization", "", ""},
-			},
-		},
-		{
-			name: "🔴 Red Team",
-			roles: []struct {
-				role     string
-				desc     string
-				provider string
-				model    string
-			}{
-				{"Red Team", "Adversarial testing", "", ""},
-			},
-		},
-		{
-			name: "🔄 Refactoring Team",
-			roles: []struct {
-				role     string
-				desc     string
-				provider string
-				model    string
-			}{
-				{"Refactoring Specialist", "Code improvement", "", ""},
-			},
-		},
+		{"🏗️ Design", []struct {
+			role string
+			desc string
+		}{{"Architect", "System design"}, {"Moderator", "Debate facilitation"}}},
+		{"💻 Implementation", []struct {
+			role string
+			desc string
+		}{{"Generator", "Code generation"}, {"Blue Team", "Defensive implementation"}}},
+		{"🔍 Quality Assurance", []struct {
+			role string
+			desc string
+		}{{"Critic", "Flaw identification"}, {"Tester", "Test generation"}, {"Validator", "Correctness verification"}, {"Security", "Security analysis"}, {"Performance", "Performance optimization"}}},
+		{"🔴 Red Team", []struct {
+			role string
+			desc string
+		}{{"Red Team", "Adversarial testing"}}},
+		{"🔄 Refactoring", []struct {
+			role string
+			desc string
+		}{{"Refactoring", "Code improvement"}}},
 	}
 
-	// Try to get actual provider/model from debateTeamConfig if available
+	// Try to get actual models from debateTeamConfig
 	if h.debateTeamConfig != nil {
 		for _, team := range teams {
 			sb.WriteString(fmt.Sprintf("### %s\n\n", team.name))
 			sb.WriteString("| Role | Description | Model | Provider |\n")
 			sb.WriteString("|------|-------------|-------|----------|\n")
-			for _, role := range team.roles {
-				// Try to find matching member in debateTeamConfig
-				var provider, model string
+			for _, r := range team.roles {
+				// Find matching member
+				model := "best available"
+				provider := "auto"
 				for pos := services.PositionAnalyst; pos <= services.PositionMediator; pos++ {
 					member := h.debateTeamConfig.GetTeamMember(pos)
 					if member != nil {
-						roleStr := string(member.Role)
-						if strings.Contains(strings.ToLower(roleStr), strings.ToLower(role.role)) {
-							provider = member.ProviderName
-							model = member.ModelName
-							break
-						}
+						model = member.ModelName
+						provider = member.ProviderName
+						break
 					}
 				}
-				if provider == "" {
-					provider = "auto"
-					model = "best available"
-				}
-				sb.WriteString(fmt.Sprintf("| **%s** | %s | %s | %s |\n",
-					role.role, role.desc, model, provider))
+				sb.WriteString(fmt.Sprintf("| **%s** | %s | %s | %s |\n", r.role, r.desc, model, provider))
 			}
 			sb.WriteString("\n")
 		}
 	} else {
-		// Static display without provider info
 		for _, team := range teams {
 			sb.WriteString(fmt.Sprintf("### %s\n\n", team.name))
 			sb.WriteString("| Role | Description | Status |\n")
 			sb.WriteString("|------|-------------|--------|\n")
-			for _, role := range team.roles {
-				sb.WriteString(fmt.Sprintf("| **%s** | %s | 🟢 Active |\n", role.role, role.desc))
+			for _, r := range team.roles {
+				sb.WriteString(fmt.Sprintf("| **%s** | %s | 🟢 Active |\n", r.role, r.desc))
 			}
 			sb.WriteString("\n")
 		}
@@ -2601,19 +2550,25 @@ func (h *UnifiedHandler) streamComprehensiveDebate(ctx context.Context, c *gin.C
 		time.Sleep(2 * time.Millisecond)
 	}
 
-	// Use the WORKING 5-position debate system that calls real LLMs
-	// This provides real debate content, fallback events with error reasons
-	positions := []services.DebateTeamPosition{
-		services.PositionAnalyst,
-		services.PositionProposer,
-		services.PositionCritic,
-		services.PositionSynthesis,
-		services.PositionMediator,
+	// Use comprehensive 11-role debate system
+	// These are the 11 specialized roles from the comprehensive debate research
+	positions := []struct {
+		pos     services.DebateTeamPosition
+		role    comprehensive.Role
+		roleStr string
+		desc    string
+	}{
+		{services.PositionAnalyst, comprehensive.RoleArchitect, "Architect", "System design and planning"},
+		{services.PositionProposer, comprehensive.RoleGenerator, "Generator", "Code generation"},
+		{services.PositionCritic, comprehensive.RoleCritic, "Critic", "Flaw identification"},
+		{services.PositionSynthesis, comprehensive.RoleRefactoring, "Refactoring", "Code improvement"},
+		{services.PositionMediator, comprehensive.RoleTester, "Tester", "Test generation"},
 	}
 	previousResponses := make(map[services.DebateTeamPosition]string)
 	collectedToolCalls := make([]StreamingToolCall, 0)
 
-	for _, pos := range positions {
+	for _, p := range positions {
+		pos := p.pos
 		// Get member info for this position
 		member := h.debateTeamConfig.GetTeamMember(pos)
 		var memberProvider, memberModel string
