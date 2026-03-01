@@ -2412,28 +2412,50 @@ func (h *UnifiedHandler) generateComprehensiveDebateIntroduction(topic string, f
 		roles []struct {
 			role string
 			desc string
+			pos  services.DebateTeamPosition
 		}
 	}{
 		{"🏗️ Design", []struct {
 			role string
 			desc string
-		}{{"Architect", "System design"}, {"Moderator", "Debate facilitation"}}},
+			pos  services.DebateTeamPosition
+		}{
+			{"Architect", "System design", services.PositionAnalyst},
+			{"Moderator", "Debate facilitation", services.PositionProposer},
+		}},
 		{"💻 Implementation", []struct {
 			role string
 			desc string
-		}{{"Generator", "Code generation"}, {"Blue Team", "Defensive implementation"}}},
+			pos  services.DebateTeamPosition
+		}{
+			{"Generator", "Code generation", services.PositionCritic},
+			{"Blue Team", "Defensive implementation", services.PositionSynthesis},
+		}},
 		{"🔍 Quality Assurance", []struct {
 			role string
 			desc string
-		}{{"Critic", "Flaw identification"}, {"Tester", "Test generation"}, {"Validator", "Correctness verification"}, {"Security", "Security analysis"}, {"Performance", "Performance optimization"}}},
+			pos  services.DebateTeamPosition
+		}{
+			{"Critic", "Flaw identification", services.PositionMediator},
+			{"Tester", "Test generation", services.PositionAnalyst},
+			{"Validator", "Correctness verification", services.PositionProposer},
+			{"Security", "Security analysis", services.PositionCritic},
+			{"Performance", "Performance optimization", services.PositionSynthesis},
+		}},
 		{"🔴 Red Team", []struct {
 			role string
 			desc string
-		}{{"Red Team", "Adversarial testing"}}},
+			pos  services.DebateTeamPosition
+		}{
+			{"Red Team", "Adversarial testing", services.PositionMediator},
+		}},
 		{"🔄 Refactoring", []struct {
 			role string
 			desc string
-		}{{"Refactoring", "Code improvement"}}},
+			pos  services.DebateTeamPosition
+		}{
+			{"Refactoring", "Code improvement", services.PositionAnalyst},
+		}},
 	}
 
 	// Try to get actual models from debateTeamConfig
@@ -2443,16 +2465,13 @@ func (h *UnifiedHandler) generateComprehensiveDebateIntroduction(topic string, f
 			sb.WriteString("| Role | Description | Model | Provider |\n")
 			sb.WriteString("|------|-------------|-------|----------|\n")
 			for _, r := range team.roles {
-				// Find matching member
+				// Get member for this specific position
+				member := h.debateTeamConfig.GetTeamMember(r.pos)
 				model := "best available"
 				provider := "auto"
-				for pos := services.PositionAnalyst; pos <= services.PositionMediator; pos++ {
-					member := h.debateTeamConfig.GetTeamMember(pos)
-					if member != nil {
-						model = member.ModelName
-						provider = member.ProviderName
-						break
-					}
+				if member != nil {
+					model = member.ModelName
+					provider = member.ProviderName
 				}
 				sb.WriteString(fmt.Sprintf("| **%s** | %s | %s | %s |\n", r.role, r.desc, model, provider))
 			}
