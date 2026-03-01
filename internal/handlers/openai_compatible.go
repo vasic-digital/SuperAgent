@@ -1752,14 +1752,21 @@ func (h *UnifiedHandler) convertOpenAIChatRequest(req *OpenAIChatRequest, c *gin
 }
 
 func (h *UnifiedHandler) processWithEnsemble(ctx context.Context, req *models.LLMRequest, openaiReq *OpenAIChatRequest) (*services.EnsembleResult, error) {
+	// DEBUG: Log entry point
+	logrus.WithFields(logrus.Fields{
+		"orchestrator_set":   h.orchestratorIntegration != nil,
+		"debate_service_set": h.debateService != nil,
+	}).Debug("[DEBUG] processWithEnsemble called")
+
 	// CRITICAL: Use NEW debate orchestrator if available (8-phase protocol)
 	// This implements the full debate system from docs/requests/debate
 	if h.orchestratorIntegration != nil {
+		logrus.Info("[CODE PATH] Using NEW debate orchestrator path (processWithOrchestrator)")
 		return h.processWithOrchestrator(ctx, req, openaiReq)
 	}
 
 	// Fallback to OLD ensemble service if orchestrator not available
-	logrus.Warn("NEW debate orchestrator not available, falling back to OLD ensemble service")
+	logrus.Error("[CODE PATH] orchestratorIntegration is NIL - using OLD ensemble service (NOT using new debate system!)")
 
 	// Check if provider registry is available
 	if h.providerRegistry == nil {
@@ -1821,8 +1828,14 @@ func (h *UnifiedHandler) processWithEnsembleStream(ctx context.Context, req *mod
 // processWithOrchestrator uses the debate service with configured debate team
 // This leverages the working debate team (25 LLMs from verified providers)
 func (h *UnifiedHandler) processWithOrchestrator(ctx context.Context, req *models.LLMRequest, openaiReq *OpenAIChatRequest) (*services.EnsembleResult, error) {
+	logrus.WithFields(logrus.Fields{
+		"orchestrator_integration": h.orchestratorIntegration != nil,
+		"debate_service":           h.debateService != nil,
+	}).Info("[CODE PATH] Entered processWithOrchestrator")
+
 	// First try the NEW orchestrator if available
 	if h.orchestratorIntegration != nil {
+		logrus.Info("[CODE PATH] Attempting NEW orchestrator (8-phase protocol)")
 		debateReq := &orchestrator.DebateRequest{
 			Topic:        req.Prompt,
 			MaxRounds:    10,
@@ -1831,6 +1844,7 @@ func (h *UnifiedHandler) processWithOrchestrator(ctx context.Context, req *model
 
 		debateResp, err := h.orchestratorIntegration.GetOrchestrator().ConductDebate(ctx, debateReq)
 		if err == nil && debateResp != nil {
+			logrus.Info("[CODE PATH] NEW orchestrator SUCCEEDED - returning result")
 			// Extract the consensus response from the debate
 			var finalContent string
 			var confidence float64
@@ -1866,16 +1880,18 @@ func (h *UnifiedHandler) processWithOrchestrator(ctx context.Context, req *model
 				},
 			}, nil
 		}
-		logrus.WithError(err).Debug("Orchestrator debate failed, using debate service")
+		logrus.WithError(err).Warn("[CODE PATH] NEW orchestrator FAILED, trying debate service")
 	}
 
 	// Use the debate service with configured debate team (25 verified LLMs)
 	// This is the working system that uses the debate team config
 	if h.debateService == nil {
-		logrus.Warn("Debate service not available, falling back to old ensemble")
+		logrus.Error("[CODE PATH] Debate service NOT AVAILABLE - using OLD ensemble (this is the bug!)")
 		ensembleService := h.providerRegistry.GetEnsembleService()
 		return ensembleService.RunEnsemble(ctx, req)
 	}
+
+	logrus.Info("[CODE PATH] Using DebateService with configured team (25 LLMs)")
 
 	// Configure debate with the working team
 	debateConfig := services.DebateConfig{
@@ -1889,10 +1905,12 @@ func (h *UnifiedHandler) processWithOrchestrator(ctx context.Context, req *model
 	// Run the debate using the debate service (uses the configured 25 LLM team)
 	debateResult, err := h.debateService.AutoConductDebate(ctx, &debateConfig)
 	if err != nil {
-		logrus.WithError(err).Warn("Debate service failed, falling back to old ensemble")
+		logrus.WithError(err).Error("[CODE PATH] Debate service FAILED - falling back to OLD ensemble")
 		ensembleService := h.providerRegistry.GetEnsembleService()
 		return ensembleService.RunEnsemble(ctx, req)
 	}
+
+	logrus.Info("[CODE PATH] DebateService SUCCEEDED - returning result")
 
 	// Convert debate result to ensemble result
 	var finalContent string
