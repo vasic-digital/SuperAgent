@@ -740,356 +740,22 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 
 		// Generate and stream debate dialogue introduction
 		// Use format-aware introduction based on detected client type
-		// Check if comprehensive system should be used
-		useComprehensive := h.debateService != nil && h.debateService.IsComprehensiveSystemEnabled()
+		// DEFAULT: Use comprehensive debate system (8+ roles, 5 teams)
+		// Set USE_LEGACY_DEBATE=true to use old 5-position debate system
+		useLegacy := os.Getenv("USE_LEGACY_DEBATE") == "true"
 
-		if useComprehensive {
-			// Use comprehensive debate streaming with 8 roles and 5 teams
-			h.streamComprehensiveDebate(ctx, c, flusher, streamID, topic, outputFormat, req)
-			return
-		}
-
-		// Legacy 5-position debate flow
-		dialogueIntro := h.generateDebateDialogueIntroduction(topic, outputFormat)
-		if dialogueIntro != "" {
-			// Stream introduction in chunks for better rendering
-			for _, line := range strings.Split(dialogueIntro, "\n") {
-				if line == "" {
-					line = "\n"
-				} else {
-					line = line + "\n"
-				}
-				introChunk := map[string]any{
-					"id":                 streamID,
-					"object":             "chat.completion.chunk",
-					"created":            time.Now().Unix(),
-					"model":              "helixagent-ensemble",
-					"system_fingerprint": "fp_helixagent_v1",
-					"choices": []map[string]any{
-						{
-							"index":         0,
-							"delta":         map[string]any{"content": line},
-							"logprobs":      nil,
-							"finish_reason": nil,
-						},
-					},
-				}
-				if introData, err := json.Marshal(introChunk); err == nil {
-					_, _ = c.Writer.Write([]byte("data: "))
-					_, _ = c.Writer.Write(introData)
-					_, _ = c.Writer.Write([]byte("\n\n"))
-					flusher.Flush()
-				}
-				// Small delay for visual effect
-				time.Sleep(5 * time.Millisecond)
-			}
-			chunksSent++
-		}
-
-		// Stream REAL debate responses for each position (actual LLM calls)
-		positions := []services.DebateTeamPosition{
-			services.PositionAnalyst,
-			services.PositionProposer,
-			services.PositionCritic,
-			services.PositionSynthesis,
-			services.PositionMediator,
-		}
-		previousResponses := make(map[services.DebateTeamPosition]string)
-		// CRITICAL: Collect tool_calls from ALL debate positions for ACTION PHASE
-		collectedToolCalls := make([]StreamingToolCall, 0)
-
-		for _, pos := range positions {
-			// Get member info for this position for the request indicator
-			member := h.debateTeamConfig.GetTeamMember(pos)
-			var memberProvider, memberModel string
-			var memberRole services.DebateRole
-			if member != nil {
-				memberProvider = member.ProviderName
-				memberModel = member.ModelName
-				memberRole = member.Role
-			} else {
-				memberProvider = "unknown"
-				memberModel = "unknown"
-				memberRole = services.RoleAnalyst
-			}
-
-			// Stream REQUEST indicator: [A: Analyst] <--- Request sent to DeepSeek (deepseek-chat)
-			// Uses format-aware indicator based on client type (ANSI for terminal, Markdown for API clients)
-			requestIndicator := FormatRequestIndicatorForFormat(outputFormat, pos, memberRole, memberProvider, memberModel)
-			if requestIndicator != "" {
-				reqChunk := map[string]any{
-					"id":                 streamID,
-					"object":             "chat.completion.chunk",
-					"created":            time.Now().Unix(),
-					"model":              "helixagent-ensemble",
-					"system_fingerprint": "fp_helixagent_v1",
-					"choices": []map[string]any{
-						{
-							"index":         0,
-							"delta":         map[string]any{"content": requestIndicator},
-							"logprobs":      nil,
-							"finish_reason": nil,
-						},
-					},
-				}
-				if reqData, err := json.Marshal(reqChunk); err == nil {
-					_, _ = c.Writer.Write([]byte("data: "))
-					_, _ = c.Writer.Write(reqData)
-					_, _ = c.Writer.Write([]byte("\n\n"))
-					flusher.Flush()
-				}
-			}
-
-			// Now get the REAL response from the LLM for this position
-			// CRITICAL: Pass tools so LLM knows about available coding assistant capabilities
-			debateResp, err := h.generateRealDebateResponse(ctx, pos, topic, previousResponses, req.Tools)
-			var realResponse string
-			var responseIndicator string
-
-			if err != nil {
-				// Log error but continue with fallback message
-				logrus.WithError(err).WithField("position", pos).Warn("Failed to get real debate response, using fallback")
-				realResponse = "Unable to provide analysis at this time."
-				// Format error response indicator using format-aware version
-				responseIndicator = FormatResponseIndicatorForFormat(outputFormat, pos, memberRole, 0)
-			} else {
-				realResponse = debateResp.Content
-
-				// Format response indicator based on whether fallback was used
-				if debateResp.UsedFallback {
-					// CRITICAL: Extract error information from the fallback chain
-					// to show the exact cause of the fallback in the response
-					var primaryError string
-					var primaryDuration time.Duration
-					if len(debateResp.FallbackChain) > 0 {
-						// Find the first failed attempt (primary provider failure)
-						for _, attempt := range debateResp.FallbackChain {
-							if !attempt.Success && attempt.Error != "" {
-								primaryError = attempt.Error
-								primaryDuration = attempt.Duration
-								break
-							}
-						}
-					}
-
-					// Show fallback indicator WITH detailed error cause
-					// This is the key improvement: CLI agents see WHY the fallback happened
-					if primaryError != "" {
-						// Use format-aware detailed error formatting
-						responseIndicator = FormatFallbackWithErrorForFormat(outputFormat, memberRole,
-							debateResp.PrimaryProvider, debateResp.PrimaryModel,
-							debateResp.ActualProvider, debateResp.ActualModel,
-							primaryError, 1, primaryDuration)
-
-						// Log fallback event for observability
-						logrus.WithFields(logrus.Fields{
-							"position":         pos,
-							"role":             memberRole,
-							"primary_provider": debateResp.PrimaryProvider,
-							"primary_model":    debateResp.PrimaryModel,
-							"actual_provider":  debateResp.ActualProvider,
-							"actual_model":     debateResp.ActualModel,
-							"error":            primaryError,
-							"error_category":   categorizeErrorString(primaryError),
-							"chain_length":     len(debateResp.FallbackChain),
-							"total_time":       debateResp.ResponseTime,
-						}).Warn("Fallback triggered - detailed error in response")
+		if useLegacy {
+			// Legacy 5-position debate flow
+			dialogueIntro := h.generateDebateDialogueIntroduction(topic, outputFormat)
+			if dialogueIntro != "" {
+				// Stream introduction in chunks for better rendering
+				for _, line := range strings.Split(dialogueIntro, "\n") {
+					if line == "" {
+						line = "\n"
 					} else {
-						// Fallback without captured error (shouldn't happen but be defensive)
-						responseIndicator = FormatFallbackIndicatorForFormat(outputFormat, pos, memberRole, debateResp.ActualProvider, debateResp.ActualModel, debateResp.ResponseTime)
+						line = line + "\n"
 					}
-				} else {
-					// Normal response: [A: Analyst] ---> (450 ms)
-					responseIndicator = FormatResponseIndicatorForFormat(outputFormat, pos, memberRole, debateResp.ResponseTime)
-				}
-
-				// CRITICAL: Collect tool_calls from this position for ACTION PHASE
-				if len(debateResp.ToolCalls) > 0 {
-					logrus.WithFields(logrus.Fields{
-						"position":   pos,
-						"tool_count": len(debateResp.ToolCalls),
-					}).Info("<--- Collecting tool_calls from debate position --->")
-					// Re-index tool calls to avoid conflicts
-					for _, tc := range debateResp.ToolCalls {
-						tc.Index = len(collectedToolCalls)
-						collectedToolCalls = append(collectedToolCalls, tc)
-					}
-				}
-			}
-
-			// Store for context in subsequent positions
-			previousResponses[pos] = realResponse
-
-			// Stream RESPONSE indicator with timing: [A: Analyst] ---> (450 ms)
-			if responseIndicator != "" {
-				respIndChunk := map[string]any{
-					"id":                 streamID,
-					"object":             "chat.completion.chunk",
-					"created":            time.Now().Unix(),
-					"model":              "helixagent-ensemble",
-					"system_fingerprint": "fp_helixagent_v1",
-					"choices": []map[string]any{
-						{
-							"index":         0,
-							"delta":         map[string]any{"content": responseIndicator},
-							"logprobs":      nil,
-							"finish_reason": nil,
-						},
-					},
-				}
-				if respIndData, err := json.Marshal(respIndChunk); err == nil {
-					_, _ = c.Writer.Write([]byte("data: "))
-					_, _ = c.Writer.Write(respIndData)
-					_, _ = c.Writer.Write([]byte("\n\n"))
-					flusher.Flush()
-				}
-			}
-
-			// Stream the actual LLM response content
-			// For terminal clients: dim/gray ANSI formatting for debate phase content
-			// For API clients: clean Markdown quote block formatting
-			responseContent := FormatPhaseContentForFormat(outputFormat, realResponse) + "\n\n"
-			responseChunk := map[string]any{
-				"id":                 streamID,
-				"object":             "chat.completion.chunk",
-				"created":            time.Now().Unix(),
-				"model":              "helixagent-ensemble",
-				"system_fingerprint": "fp_helixagent_v1",
-				"choices": []map[string]any{
-					{
-						"index":         0,
-						"delta":         map[string]any{"content": responseContent},
-						"logprobs":      nil,
-						"finish_reason": nil,
-					},
-				},
-			}
-			if responseData, err := json.Marshal(responseChunk); err == nil {
-				_, _ = c.Writer.Write([]byte("data: "))
-				_, _ = c.Writer.Write(responseData)
-				_, _ = c.Writer.Write([]byte("\n\n"))
-				flusher.Flush()
-			}
-			chunksSent++
-		}
-
-		// Stream conclusion with format-aware styling
-		conclusion := h.generateDebateDialogueConclusion(outputFormat)
-		if conclusion != "" {
-			conclusionChunk := map[string]any{
-				"id":                 streamID,
-				"object":             "chat.completion.chunk",
-				"created":            time.Now().Unix(),
-				"model":              "helixagent-ensemble",
-				"system_fingerprint": "fp_helixagent_v1",
-				"choices": []map[string]any{
-					{
-						"index":         0,
-						"delta":         map[string]any{"content": conclusion},
-						"logprobs":      nil,
-						"finish_reason": nil,
-					},
-				},
-			}
-			if conclusionData, err := json.Marshal(conclusionChunk); err == nil {
-				_, _ = c.Writer.Write([]byte("data: "))
-				_, _ = c.Writer.Write(conclusionData)
-				_, _ = c.Writer.Write([]byte("\n\n"))
-				flusher.Flush()
-			}
-		}
-
-		// CRITICAL FIX: Generate FINAL SYNTHESIS based on all debate responses
-		// This is the actual "consensus" that combines all 5 perspectives
-		// IMPORTANT: Pass tools so synthesis knows about available coding assistant capabilities
-		synthesisResponse, synthesisErr := h.generateFinalSynthesis(ctx, topic, previousResponses, req.Tools)
-		if synthesisErr != nil {
-			logrus.WithError(synthesisErr).Warn("Failed to generate final synthesis")
-			synthesisResponse = "Based on the debate, a consensus could not be reached. Please consider the individual perspectives above."
-		}
-
-		// Stream the synthesis response as the consensus content
-		// IMPORTANT: Final synthesis formatting adapts to client type:
-		// - Terminal clients get ANSI bright white for visibility
-		// - API clients (OpenCode, Crush) get clean Markdown without escape codes
-		if synthesisResponse != "" {
-			// Format with client-appropriate styling for final answer visibility
-			formattedSynthesis := FormatFinalResponseForFormat(outputFormat, synthesisResponse) + "\n"
-			synthesisChunk := map[string]any{
-				"id":                 streamID,
-				"object":             "chat.completion.chunk",
-				"created":            time.Now().Unix(),
-				"model":              "helixagent-ensemble",
-				"system_fingerprint": "fp_helixagent_v1",
-				"choices": []map[string]any{
-					{
-						"index":         0,
-						"delta":         map[string]any{"content": formattedSynthesis},
-						"logprobs":      nil,
-						"finish_reason": nil,
-					},
-				},
-			}
-			if synthesisData, err := json.Marshal(synthesisChunk); err == nil {
-				_, _ = c.Writer.Write([]byte("data: "))
-				_, _ = c.Writer.Write(synthesisData)
-				_, _ = c.Writer.Write([]byte("\n\n"))
-				flusher.Flush()
-			}
-			chunksSent++
-		}
-
-		// ACTION PHASE: If tools are available, execute tool_calls from debate OR generate new ones
-		// This allows the AI coding assistant to actually USE the tools, not just talk about them
-		// PRIORITY: 1) Use collected tool_calls from debate positions, 2) Generate via LLM analysis
-		if len(req.Tools) > 0 {
-			// CRITICAL FIX: Use collected tool_calls from debate positions if available
-			var actionToolCalls []StreamingToolCall
-			if len(collectedToolCalls) > 0 {
-				logrus.WithFields(logrus.Fields{
-					"collected_count": len(collectedToolCalls),
-				}).Info("<--- ACTION PHASE: Using collected tool_calls from debate --->")
-				actionToolCalls = collectedToolCalls
-			} else {
-				// Fallback: Generate tool_calls based on topic analysis
-				logrus.Info("<--- ACTION PHASE: No debate tool_calls, analyzing topic for actions --->")
-				actionToolCalls = h.generateActionToolCalls(ctx, topic, synthesisResponse, req.Tools, previousResponses, req.Messages)
-			}
-
-			if len(actionToolCalls) > 0 {
-				// Stream action indicator to show tools are being invoked
-				actionIndicator := fmt.Sprintf("\n\n<--- EXECUTING %d ACTION(S) --->\n", len(actionToolCalls))
-				indicatorChunk := map[string]any{
-					"id":                 streamID,
-					"object":             "chat.completion.chunk",
-					"created":            time.Now().Unix(),
-					"model":              "helixagent-ensemble",
-					"system_fingerprint": "fp_helixagent_v1",
-					"choices": []map[string]any{
-						{
-							"index":         0,
-							"delta":         map[string]any{"content": actionIndicator},
-							"logprobs":      nil,
-							"finish_reason": nil,
-						},
-					},
-				}
-				if indicatorData, err := json.Marshal(indicatorChunk); err == nil {
-					_, _ = c.Writer.Write([]byte("data: "))
-					_, _ = c.Writer.Write(indicatorData)
-					_, _ = c.Writer.Write([]byte("\n\n"))
-					flusher.Flush()
-				}
-
-				// Stream the tool calls to the client
-				for _, toolCall := range actionToolCalls {
-					// Log each tool being invoked with indicators
-					logrus.WithFields(logrus.Fields{
-						"tool_name": toolCall.Function.Name,
-						"tool_id":   toolCall.ID,
-					}).Info("<--- Invoking tool --->")
-
-					toolCallChunk := map[string]any{
+					introChunk := map[string]any{
 						"id":                 streamID,
 						"object":             "chat.completion.chunk",
 						"created":            time.Now().Unix(),
@@ -1097,36 +763,189 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 						"system_fingerprint": "fp_helixagent_v1",
 						"choices": []map[string]any{
 							{
-								"index": 0,
-								"delta": map[string]any{
-									"tool_calls": []map[string]any{
-										{
-											"index": toolCall.Index,
-											"id":    toolCall.ID,
-											"type":  "function",
-											"function": map[string]any{
-												"name":      toolCall.Function.Name,
-												"arguments": toolCall.Function.Arguments,
-											},
-										},
-									},
-								},
+								"index":         0,
+								"delta":         map[string]any{"content": line},
 								"logprobs":      nil,
 								"finish_reason": nil,
 							},
 						},
 					}
-					if toolCallData, err := json.Marshal(toolCallChunk); err == nil {
-						_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
-						_, _ = c.Writer.Write(toolCallData)
+					if introData, err := json.Marshal(introChunk); err == nil {
+						_, _ = c.Writer.Write([]byte("data: "))
+						_, _ = c.Writer.Write(introData)
+						_, _ = c.Writer.Write([]byte("\n\n"))
+						flusher.Flush()
+					}
+					// Small delay for visual effect
+					time.Sleep(5 * time.Millisecond)
+				}
+				chunksSent++
+			}
+
+			// Stream REAL debate responses for each position (actual LLM calls)
+			positions := []services.DebateTeamPosition{
+				services.PositionAnalyst,
+				services.PositionProposer,
+				services.PositionCritic,
+				services.PositionSynthesis,
+				services.PositionMediator,
+			}
+			previousResponses := make(map[services.DebateTeamPosition]string)
+			// CRITICAL: Collect tool_calls from ALL debate positions for ACTION PHASE
+			collectedToolCalls := make([]StreamingToolCall, 0)
+
+			for _, pos := range positions {
+				// Get member info for this position for the request indicator
+				member := h.debateTeamConfig.GetTeamMember(pos)
+				var memberProvider, memberModel string
+				var memberRole services.DebateRole
+				if member != nil {
+					memberProvider = member.ProviderName
+					memberModel = member.ModelName
+					memberRole = member.Role
+				} else {
+					memberProvider = "unknown"
+					memberModel = "unknown"
+					memberRole = services.RoleAnalyst
+				}
+
+				// Stream REQUEST indicator: [A: Analyst] <--- Request sent to DeepSeek (deepseek-chat)
+				// Uses format-aware indicator based on client type (ANSI for terminal, Markdown for API clients)
+				requestIndicator := FormatRequestIndicatorForFormat(outputFormat, pos, memberRole, memberProvider, memberModel)
+				if requestIndicator != "" {
+					reqChunk := map[string]any{
+						"id":                 streamID,
+						"object":             "chat.completion.chunk",
+						"created":            time.Now().Unix(),
+						"model":              "helixagent-ensemble",
+						"system_fingerprint": "fp_helixagent_v1",
+						"choices": []map[string]any{
+							{
+								"index":         0,
+								"delta":         map[string]any{"content": requestIndicator},
+								"logprobs":      nil,
+								"finish_reason": nil,
+							},
+						},
+					}
+					if reqData, err := json.Marshal(reqChunk); err == nil {
+						_, _ = c.Writer.Write([]byte("data: "))
+						_, _ = c.Writer.Write(reqData)
 						_, _ = c.Writer.Write([]byte("\n\n"))
 						flusher.Flush()
 					}
 				}
-				chunksSent++
 
-				// Send finish_reason: tool_calls
-				finishChunk := map[string]any{
+				// Now get the REAL response from the LLM for this position
+				// CRITICAL: Pass tools so LLM knows about available coding assistant capabilities
+				debateResp, err := h.generateRealDebateResponse(ctx, pos, topic, previousResponses, req.Tools)
+				var realResponse string
+				var responseIndicator string
+
+				if err != nil {
+					// Log error but continue with fallback message
+					logrus.WithError(err).WithField("position", pos).Warn("Failed to get real debate response, using fallback")
+					realResponse = "Unable to provide analysis at this time."
+					// Format error response indicator using format-aware version
+					responseIndicator = FormatResponseIndicatorForFormat(outputFormat, pos, memberRole, 0)
+				} else {
+					realResponse = debateResp.Content
+
+					// Format response indicator based on whether fallback was used
+					if debateResp.UsedFallback {
+						// CRITICAL: Extract error information from the fallback chain
+						// to show the exact cause of the fallback in the response
+						var primaryError string
+						var primaryDuration time.Duration
+						if len(debateResp.FallbackChain) > 0 {
+							// Find the first failed attempt (primary provider failure)
+							for _, attempt := range debateResp.FallbackChain {
+								if !attempt.Success && attempt.Error != "" {
+									primaryError = attempt.Error
+									primaryDuration = attempt.Duration
+									break
+								}
+							}
+						}
+
+						// Show fallback indicator WITH detailed error cause
+						// This is the key improvement: CLI agents see WHY the fallback happened
+						if primaryError != "" {
+							// Use format-aware detailed error formatting
+							responseIndicator = FormatFallbackWithErrorForFormat(outputFormat, memberRole,
+								debateResp.PrimaryProvider, debateResp.PrimaryModel,
+								debateResp.ActualProvider, debateResp.ActualModel,
+								primaryError, 1, primaryDuration)
+
+							// Log fallback event for observability
+							logrus.WithFields(logrus.Fields{
+								"position":         pos,
+								"role":             memberRole,
+								"primary_provider": debateResp.PrimaryProvider,
+								"primary_model":    debateResp.PrimaryModel,
+								"actual_provider":  debateResp.ActualProvider,
+								"actual_model":     debateResp.ActualModel,
+								"error":            primaryError,
+								"error_category":   categorizeErrorString(primaryError),
+								"chain_length":     len(debateResp.FallbackChain),
+								"total_time":       debateResp.ResponseTime,
+							}).Warn("Fallback triggered - detailed error in response")
+						} else {
+							// Fallback without captured error (shouldn't happen but be defensive)
+							responseIndicator = FormatFallbackIndicatorForFormat(outputFormat, pos, memberRole, debateResp.ActualProvider, debateResp.ActualModel, debateResp.ResponseTime)
+						}
+					} else {
+						// Normal response: [A: Analyst] ---> (450 ms)
+						responseIndicator = FormatResponseIndicatorForFormat(outputFormat, pos, memberRole, debateResp.ResponseTime)
+					}
+
+					// CRITICAL: Collect tool_calls from this position for ACTION PHASE
+					if len(debateResp.ToolCalls) > 0 {
+						logrus.WithFields(logrus.Fields{
+							"position":   pos,
+							"tool_count": len(debateResp.ToolCalls),
+						}).Info("<--- Collecting tool_calls from debate position --->")
+						// Re-index tool calls to avoid conflicts
+						for _, tc := range debateResp.ToolCalls {
+							tc.Index = len(collectedToolCalls)
+							collectedToolCalls = append(collectedToolCalls, tc)
+						}
+					}
+				}
+
+				// Store for context in subsequent positions
+				previousResponses[pos] = realResponse
+
+				// Stream RESPONSE indicator with timing: [A: Analyst] ---> (450 ms)
+				if responseIndicator != "" {
+					respIndChunk := map[string]any{
+						"id":                 streamID,
+						"object":             "chat.completion.chunk",
+						"created":            time.Now().Unix(),
+						"model":              "helixagent-ensemble",
+						"system_fingerprint": "fp_helixagent_v1",
+						"choices": []map[string]any{
+							{
+								"index":         0,
+								"delta":         map[string]any{"content": responseIndicator},
+								"logprobs":      nil,
+								"finish_reason": nil,
+							},
+						},
+					}
+					if respIndData, err := json.Marshal(respIndChunk); err == nil {
+						_, _ = c.Writer.Write([]byte("data: "))
+						_, _ = c.Writer.Write(respIndData)
+						_, _ = c.Writer.Write([]byte("\n\n"))
+						flusher.Flush()
+					}
+				}
+
+				// Stream the actual LLM response content
+				// For terminal clients: dim/gray ANSI formatting for debate phase content
+				// For API clients: clean Markdown quote block formatting
+				responseContent := FormatPhaseContentForFormat(outputFormat, realResponse) + "\n\n"
+				responseChunk := map[string]any{
 					"id":                 streamID,
 					"object":             "chat.completion.chunk",
 					"created":            time.Now().Unix(),
@@ -1135,40 +954,241 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 					"choices": []map[string]any{
 						{
 							"index":         0,
-							"delta":         map[string]any{},
+							"delta":         map[string]any{"content": responseContent},
 							"logprobs":      nil,
-							"finish_reason": "tool_calls",
+							"finish_reason": nil,
 						},
 					},
 				}
-				if finishData, err := json.Marshal(finishChunk); err == nil {
+				if responseData, err := json.Marshal(responseChunk); err == nil {
 					_, _ = c.Writer.Write([]byte("data: "))
-					_, _ = c.Writer.Write(finishData)
+					_, _ = c.Writer.Write(responseData)
 					_, _ = c.Writer.Write([]byte("\n\n"))
 					flusher.Flush()
 				}
-				sentFinalChunk = true
-				logrus.WithField("tool_calls_count", len(actionToolCalls)).Info("AI Debate: sent tool_calls with finish_reason:tool_calls")
-
-				// CRITICAL: After sending tool_calls, immediately end the response
-				// The client will execute the tools and send another request with results
-				// Do NOT send any more content or footer - it confuses the tool calling protocol
-				_, _ = c.Writer.Write([]byte("data: [DONE]\n\n"))
-				flusher.Flush()
-				logrus.Info("AI Debate with tool_calls: sent [DONE] - stream complete")
-				return
+				chunksSent++
 			}
-		}
 
-		// CRITICAL FIX: If we showed debate dialogue but no tool_calls were generated,
-		// we've already streamed all content. Close the stream properly!
-		// Without this, the code falls through to StreamLoop and waits forever.
-		logrus.Info("Debate dialogue complete, no tool calls - finalizing stream")
+			// Stream conclusion with format-aware styling
+			conclusion := h.generateDebateDialogueConclusion(outputFormat)
+			if conclusion != "" {
+				conclusionChunk := map[string]any{
+					"id":                 streamID,
+					"object":             "chat.completion.chunk",
+					"created":            time.Now().Unix(),
+					"model":              "helixagent-ensemble",
+					"system_fingerprint": "fp_helixagent_v1",
+					"choices": []map[string]any{
+						{
+							"index":         0,
+							"delta":         map[string]any{"content": conclusion},
+							"logprobs":      nil,
+							"finish_reason": nil,
+						},
+					},
+				}
+				if conclusionData, err := json.Marshal(conclusionChunk); err == nil {
+					_, _ = c.Writer.Write([]byte("data: "))
+					_, _ = c.Writer.Write(conclusionData)
+					_, _ = c.Writer.Write([]byte("\n\n"))
+					flusher.Flush()
+				}
+			}
 
-		// Send response footer
-		footer := h.generateResponseFooter()
-		if footer != "" {
-			footerChunk := map[string]any{
+			// CRITICAL FIX: Generate FINAL SYNTHESIS based on all debate responses
+			// This is the actual "consensus" that combines all 5 perspectives
+			// IMPORTANT: Pass tools so synthesis knows about available coding assistant capabilities
+			synthesisResponse, synthesisErr := h.generateFinalSynthesis(ctx, topic, previousResponses, req.Tools)
+			if synthesisErr != nil {
+				logrus.WithError(synthesisErr).Warn("Failed to generate final synthesis")
+				synthesisResponse = "Based on the debate, a consensus could not be reached. Please consider the individual perspectives above."
+			}
+
+			// Stream the synthesis response as the consensus content
+			// IMPORTANT: Final synthesis formatting adapts to client type:
+			// - Terminal clients get ANSI bright white for visibility
+			// - API clients (OpenCode, Crush) get clean Markdown without escape codes
+			if synthesisResponse != "" {
+				// Format with client-appropriate styling for final answer visibility
+				formattedSynthesis := FormatFinalResponseForFormat(outputFormat, synthesisResponse) + "\n"
+				synthesisChunk := map[string]any{
+					"id":                 streamID,
+					"object":             "chat.completion.chunk",
+					"created":            time.Now().Unix(),
+					"model":              "helixagent-ensemble",
+					"system_fingerprint": "fp_helixagent_v1",
+					"choices": []map[string]any{
+						{
+							"index":         0,
+							"delta":         map[string]any{"content": formattedSynthesis},
+							"logprobs":      nil,
+							"finish_reason": nil,
+						},
+					},
+				}
+				if synthesisData, err := json.Marshal(synthesisChunk); err == nil {
+					_, _ = c.Writer.Write([]byte("data: "))
+					_, _ = c.Writer.Write(synthesisData)
+					_, _ = c.Writer.Write([]byte("\n\n"))
+					flusher.Flush()
+				}
+				chunksSent++
+			}
+
+			// ACTION PHASE: If tools are available, execute tool_calls from debate OR generate new ones
+			// This allows the AI coding assistant to actually USE the tools, not just talk about them
+			// PRIORITY: 1) Use collected tool_calls from debate positions, 2) Generate via LLM analysis
+			if len(req.Tools) > 0 {
+				// CRITICAL FIX: Use collected tool_calls from debate positions if available
+				var actionToolCalls []StreamingToolCall
+				if len(collectedToolCalls) > 0 {
+					logrus.WithFields(logrus.Fields{
+						"collected_count": len(collectedToolCalls),
+					}).Info("<--- ACTION PHASE: Using collected tool_calls from debate --->")
+					actionToolCalls = collectedToolCalls
+				} else {
+					// Fallback: Generate tool_calls based on topic analysis
+					logrus.Info("<--- ACTION PHASE: No debate tool_calls, analyzing topic for actions --->")
+					actionToolCalls = h.generateActionToolCalls(ctx, topic, synthesisResponse, req.Tools, previousResponses, req.Messages)
+				}
+
+				if len(actionToolCalls) > 0 {
+					// Stream action indicator to show tools are being invoked
+					actionIndicator := fmt.Sprintf("\n\n<--- EXECUTING %d ACTION(S) --->\n", len(actionToolCalls))
+					indicatorChunk := map[string]any{
+						"id":                 streamID,
+						"object":             "chat.completion.chunk",
+						"created":            time.Now().Unix(),
+						"model":              "helixagent-ensemble",
+						"system_fingerprint": "fp_helixagent_v1",
+						"choices": []map[string]any{
+							{
+								"index":         0,
+								"delta":         map[string]any{"content": actionIndicator},
+								"logprobs":      nil,
+								"finish_reason": nil,
+							},
+						},
+					}
+					if indicatorData, err := json.Marshal(indicatorChunk); err == nil {
+						_, _ = c.Writer.Write([]byte("data: "))
+						_, _ = c.Writer.Write(indicatorData)
+						_, _ = c.Writer.Write([]byte("\n\n"))
+						flusher.Flush()
+					}
+
+					// Stream the tool calls to the client
+					for _, toolCall := range actionToolCalls {
+						// Log each tool being invoked with indicators
+						logrus.WithFields(logrus.Fields{
+							"tool_name": toolCall.Function.Name,
+							"tool_id":   toolCall.ID,
+						}).Info("<--- Invoking tool --->")
+
+						toolCallChunk := map[string]any{
+							"id":                 streamID,
+							"object":             "chat.completion.chunk",
+							"created":            time.Now().Unix(),
+							"model":              "helixagent-ensemble",
+							"system_fingerprint": "fp_helixagent_v1",
+							"choices": []map[string]any{
+								{
+									"index": 0,
+									"delta": map[string]any{
+										"tool_calls": []map[string]any{
+											{
+												"index": toolCall.Index,
+												"id":    toolCall.ID,
+												"type":  "function",
+												"function": map[string]any{
+													"name":      toolCall.Function.Name,
+													"arguments": toolCall.Function.Arguments,
+												},
+											},
+										},
+									},
+									"logprobs":      nil,
+									"finish_reason": nil,
+								},
+							},
+						}
+						if toolCallData, err := json.Marshal(toolCallChunk); err == nil {
+							_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+							_, _ = c.Writer.Write(toolCallData)
+							_, _ = c.Writer.Write([]byte("\n\n"))
+							flusher.Flush()
+						}
+					}
+					chunksSent++
+
+					// Send finish_reason: tool_calls
+					finishChunk := map[string]any{
+						"id":                 streamID,
+						"object":             "chat.completion.chunk",
+						"created":            time.Now().Unix(),
+						"model":              "helixagent-ensemble",
+						"system_fingerprint": "fp_helixagent_v1",
+						"choices": []map[string]any{
+							{
+								"index":         0,
+								"delta":         map[string]any{},
+								"logprobs":      nil,
+								"finish_reason": "tool_calls",
+							},
+						},
+					}
+					if finishData, err := json.Marshal(finishChunk); err == nil {
+						_, _ = c.Writer.Write([]byte("data: "))
+						_, _ = c.Writer.Write(finishData)
+						_, _ = c.Writer.Write([]byte("\n\n"))
+						flusher.Flush()
+					}
+					sentFinalChunk = true
+					logrus.WithField("tool_calls_count", len(actionToolCalls)).Info("AI Debate: sent tool_calls with finish_reason:tool_calls")
+
+					// CRITICAL: After sending tool_calls, immediately end the response
+					// The client will execute the tools and send another request with results
+					// Do NOT send any more content or footer - it confuses the tool calling protocol
+					_, _ = c.Writer.Write([]byte("data: [DONE]\n\n"))
+					flusher.Flush()
+					logrus.Info("AI Debate with tool_calls: sent [DONE] - stream complete")
+					return
+				}
+			}
+
+			// CRITICAL FIX: If we showed debate dialogue but no tool_calls were generated,
+			// we've already streamed all content. Close the stream properly!
+			// Without this, the code falls through to StreamLoop and waits forever.
+			logrus.Info("Debate dialogue complete, no tool calls - finalizing stream")
+
+			// Send response footer
+			footer := h.generateResponseFooter()
+			if footer != "" {
+				footerChunk := map[string]any{
+					"id":                 streamID,
+					"object":             "chat.completion.chunk",
+					"created":            time.Now().Unix(),
+					"model":              "helixagent-ensemble",
+					"system_fingerprint": "fp_helixagent_v1",
+					"choices": []map[string]any{
+						{
+							"index":         0,
+							"delta":         map[string]any{"content": footer},
+							"logprobs":      nil,
+							"finish_reason": nil,
+						},
+					},
+				}
+				if footerData, err := json.Marshal(footerChunk); err == nil {
+					_, _ = c.Writer.Write([]byte("data: "))
+					_, _ = c.Writer.Write(footerData)
+					_, _ = c.Writer.Write([]byte("\n\n"))
+					flusher.Flush()
+				}
+			}
+
+			// Send final chunk with finish_reason: stop
+			finalChunk := map[string]any{
 				"id":                 streamID,
 				"object":             "chat.completion.chunk",
 				"created":            time.Now().Unix(),
@@ -1177,47 +1197,29 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 				"choices": []map[string]any{
 					{
 						"index":         0,
-						"delta":         map[string]any{"content": footer},
+						"delta":         map[string]any{},
 						"logprobs":      nil,
-						"finish_reason": nil,
+						"finish_reason": "stop",
 					},
 				},
 			}
-			if footerData, err := json.Marshal(footerChunk); err == nil {
+			if finalData, err := json.Marshal(finalChunk); err == nil {
 				_, _ = c.Writer.Write([]byte("data: "))
-				_, _ = c.Writer.Write(footerData)
+				_, _ = c.Writer.Write(finalData)
 				_, _ = c.Writer.Write([]byte("\n\n"))
 				flusher.Flush()
 			}
-		}
 
-		// Send final chunk with finish_reason: stop
-		finalChunk := map[string]any{
-			"id":                 streamID,
-			"object":             "chat.completion.chunk",
-			"created":            time.Now().Unix(),
-			"model":              "helixagent-ensemble",
-			"system_fingerprint": "fp_helixagent_v1",
-			"choices": []map[string]any{
-				{
-					"index":         0,
-					"delta":         map[string]any{},
-					"logprobs":      nil,
-					"finish_reason": "stop",
-				},
-			},
-		}
-		if finalData, err := json.Marshal(finalChunk); err == nil {
-			_, _ = c.Writer.Write([]byte("data: "))
-			_, _ = c.Writer.Write(finalData)
-			_, _ = c.Writer.Write([]byte("\n\n"))
+			// Send [DONE] and return - stream is complete
+			_, _ = c.Writer.Write([]byte("data: [DONE]\n\n"))
 			flusher.Flush()
+			logrus.Info("Debate dialogue: sent [DONE] - stream complete")
+			return
 		}
 
-		// Send [DONE] and return - stream is complete
-		_, _ = c.Writer.Write([]byte("data: [DONE]\n\n"))
-		flusher.Flush()
-		logrus.Info("Debate dialogue: sent [DONE] - stream complete")
+		// DEFAULT: Comprehensive debate system (8+ roles, 5 teams)
+		// This implements the research from docs/requests/debate/
+		h.streamComprehensiveDebate(ctx, c, flusher, streamID, topic, outputFormat, req)
 		return
 	}
 
@@ -2384,19 +2386,14 @@ func (h *UnifiedHandler) generateDebateDialogueIntroduction(topic string, format
 }
 
 // generateComprehensiveDebateIntroduction creates introduction for comprehensive debate system
-// Shows 8 roles across 5 teams dynamically with models and fallbacks
+// Shows 11 roles across 5 teams dynamically with models and fallbacks
 func (h *UnifiedHandler) generateComprehensiveDebateIntroduction(topic string, format OutputFormat) string {
 	var sb strings.Builder
 	sb.WriteString("\n")
 	sb.WriteString("# HelixAgent AI Debate Ensemble\n\n")
 
-	// Use debate team config if available to get actual models
-	if h.debateTeamConfig != nil {
-		members := h.debateTeamConfig.GetPrimaryMembers()
-		sb.WriteString(fmt.Sprintf("> %d AI minds deliberate to synthesize the optimal response.\n\n", len(members)))
-	} else {
-		sb.WriteString("> Eight AI specialists across five teams collaborate to deliver optimal solutions.\n\n")
-	}
+	// Always show 11 roles from comprehensive debate system
+	sb.WriteString("> 11 AI specialists across 5 teams collaborate to deliver optimal solutions.\n\n")
 
 	// Topic
 	topicDisplay := topic
@@ -2406,52 +2403,118 @@ func (h *UnifiedHandler) generateComprehensiveDebateIntroduction(topic string, f
 	sb.WriteString(fmt.Sprintf("**Topic:** %s\n\n", topicDisplay))
 
 	sb.WriteString("---\n\n")
-	sb.WriteString("## Debate Team\n\n")
+	sb.WriteString("## Debate Team (11 Roles across 5 Teams)\n\n")
 
-	// If we have debate team config, show actual models and fallbacks
+	// Show all 11 comprehensive roles organized by team
+	teams := []struct {
+		name  string
+		roles []struct {
+			role     string
+			desc     string
+			provider string
+			model    string
+		}
+	}{
+		{
+			name: "🏗️ Design Team",
+			roles: []struct {
+				role     string
+				desc     string
+				provider string
+				model    string
+			}{
+				{"System Architect", "System design and planning", "", ""},
+				{"Debate Moderator", "Debate facilitation", "", ""},
+			},
+		},
+		{
+			name: "💻 Implementation Team",
+			roles: []struct {
+				role     string
+				desc     string
+				provider string
+				model    string
+			}{
+				{"Code Generator", "Code generation", "", ""},
+				{"Blue Team", "Defensive implementation", "", ""},
+			},
+		},
+		{
+			name: "🔍 Quality Assurance Team",
+			roles: []struct {
+				role     string
+				desc     string
+				provider string
+				model    string
+			}{
+				{"Code Reviewer", "Flaw identification", "", ""},
+				{"Test Engineer", "Test generation", "", ""},
+				{"Validator", "Correctness verification", "", ""},
+				{"Security Analyst", "Security analysis", "", ""},
+				{"Performance Engineer", "Performance optimization", "", ""},
+			},
+		},
+		{
+			name: "🔴 Red Team",
+			roles: []struct {
+				role     string
+				desc     string
+				provider string
+				model    string
+			}{
+				{"Red Team", "Adversarial testing", "", ""},
+			},
+		},
+		{
+			name: "🔄 Refactoring Team",
+			roles: []struct {
+				role     string
+				desc     string
+				provider string
+				model    string
+			}{
+				{"Refactoring Specialist", "Code improvement", "", ""},
+			},
+		},
+	}
+
+	// Try to get actual provider/model from debateTeamConfig if available
 	if h.debateTeamConfig != nil {
-		members := h.debateTeamConfig.GetPrimaryMembers()
-		sb.WriteString("| Role | Model | Provider |\n")
-		sb.WriteString("|------|-------|----------|\n")
-
-		for _, member := range members {
-			if member == nil {
-				continue
-			}
-			roleName := getComprehensiveRoleName(member.Role)
-			sb.WriteString(fmt.Sprintf("| **%s** | %s | %s |\n",
-				roleName, member.ModelName, member.ProviderName))
-
-			// Show all fallbacks
-			if len(member.Fallbacks) > 0 {
-				for i, fb := range member.Fallbacks {
-					sb.WriteString(fmt.Sprintf("| └─ Fallback %d | %s | %s |\n",
-						i+1, fb.ModelName, fb.ProviderName))
+		for _, team := range teams {
+			sb.WriteString(fmt.Sprintf("### %s\n\n", team.name))
+			sb.WriteString("| Role | Description | Model | Provider |\n")
+			sb.WriteString("|------|-------------|-------|----------|\n")
+			for _, role := range team.roles {
+				// Try to find matching member in debateTeamConfig
+				var provider, model string
+				for pos := services.PositionAnalyst; pos <= services.PositionMediator; pos++ {
+					member := h.debateTeamConfig.GetTeamMember(pos)
+					if member != nil {
+						roleStr := string(member.Role)
+						if strings.Contains(strings.ToLower(roleStr), strings.ToLower(role.role)) {
+							provider = member.ProviderName
+							model = member.ModelName
+							break
+						}
+					}
 				}
-			} else if member.Fallback != nil {
-				sb.WriteString(fmt.Sprintf("| └─ Fallback | %s | %s |\n",
-					member.Fallback.ModelName, member.Fallback.ProviderName))
+				if provider == "" {
+					provider = "auto"
+					model = "best available"
+				}
+				sb.WriteString(fmt.Sprintf("| **%s** | %s | %s | %s |\n",
+					role.role, role.desc, model, provider))
 			}
+			sb.WriteString("\n")
 		}
 	} else {
-		// Fallback to static display
-		teams := []struct {
-			name  string
-			roles []string
-		}{
-			{"🏗️ Design", []string{"System Architect", "Debate Moderator"}},
-			{"💻 Implementation", []string{"Code Generator", "Blue Team"}},
-			{"🔍 Quality Assurance", []string{"Code Reviewer", "Test Engineer", "Validator", "Security Analyst", "Performance Engineer"}},
-			{"🔴 Red Team", []string{"Red Team"}},
-			{"🔄 Refactoring", []string{"Refactoring Specialist"}},
-		}
-
+		// Static display without provider info
 		for _, team := range teams {
-			sb.WriteString(fmt.Sprintf("### %s Team\n\n", team.name))
-			sb.WriteString("| Role | Status |\n")
-			sb.WriteString("|------|--------|\n")
+			sb.WriteString(fmt.Sprintf("### %s\n\n", team.name))
+			sb.WriteString("| Role | Description | Status |\n")
+			sb.WriteString("|------|-------------|--------|\n")
 			for _, role := range team.roles {
-				sb.WriteString(fmt.Sprintf("| **%s** | 🟢 Active |\n", role))
+				sb.WriteString(fmt.Sprintf("| **%s** | %s | 🟢 Active |\n", role.role, role.desc))
 			}
 			sb.WriteString("\n")
 		}
@@ -2478,6 +2541,24 @@ func getComprehensiveRoleName(role services.DebateRole) string {
 		return "Mediator"
 	default:
 		return string(role)
+	}
+}
+
+// getComprehensiveRoleNameFromPosition maps debate position to role name
+func getComprehensiveRoleNameFromPosition(pos services.DebateTeamPosition) string {
+	switch pos {
+	case services.PositionAnalyst:
+		return "Analyst"
+	case services.PositionProposer:
+		return "Proposer"
+	case services.PositionCritic:
+		return "Critic"
+	case services.PositionSynthesis:
+		return "Synthesis"
+	case services.PositionMediator:
+		return "Mediator"
+	default:
+		return fmt.Sprintf("Position%d", pos)
 	}
 }
 
@@ -2829,7 +2910,8 @@ func (h *UnifiedHandler) formatFallbackInfo(format OutputFormat, position servic
 	}
 
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("\n⚡ **%s Fallback Triggered**\n", position))
+	posName := getComprehensiveRoleName(member.Role)
+	sb.WriteString(fmt.Sprintf("\n⚡ **%s Fallback Triggered**\n", posName))
 	sb.WriteString(fmt.Sprintf("   Primary: %s/%s (0 ms)\n", member.ProviderName, member.ModelName))
 	sb.WriteString(fmt.Sprintf("   ❓ Error: %v\n", err))
 	sb.WriteString(fmt.Sprintf("   → Trying: %s/%s\n\n", member.Fallback.ProviderName, member.Fallback.ModelName))
@@ -2841,7 +2923,7 @@ func (h *UnifiedHandler) formatFallbackInfo(format OutputFormat, position servic
 func (h *UnifiedHandler) formatResponseIndicator(format OutputFormat, position services.DebateTeamPosition, role services.DebateRole, provider, model string, err error, duration time.Duration) string {
 	positionStr := getComprehensiveRoleName(role)
 	if positionStr == "" {
-		positionStr = string(position)
+		positionStr = fmt.Sprintf("Position%d", position)
 	}
 	if err != nil {
 		return fmt.Sprintf("❌ %s Response failed: %v\n\n", positionStr, err)
@@ -2862,7 +2944,7 @@ func (h *UnifiedHandler) formatFallbackChain(chain []FallbackAttempt) string {
 		if !attempt.Success {
 			status = "❌"
 		}
-		sb.WriteString(fmt.Sprintf("   %s Attempt %d: %s/%s (%.0f ms)\n",
+		sb.WriteString(fmt.Sprintf("   %s Attempt %d: %s/%s (%d ms)\n",
 			status, attempt.AttemptNum, attempt.Provider, attempt.Model, attempt.Duration.Milliseconds()))
 		if attempt.Error != "" {
 			sb.WriteString(fmt.Sprintf("      Error: %s\n", attempt.Error))
@@ -2879,7 +2961,8 @@ func (h *UnifiedHandler) generateFallbackSynthesis(responses map[services.Debate
 
 	for pos, content := range responses {
 		if content != "" {
-			sb.WriteString(fmt.Sprintf("**%s**: %s\n\n", pos, content))
+			posName := getComprehensiveRoleNameFromPosition(pos)
+			sb.WriteString(fmt.Sprintf("**%s**: %s\n\n", posName, content))
 		}
 	}
 
