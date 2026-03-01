@@ -885,8 +885,8 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 
 		debateHandler.RegisterRoutes(protected)
 
-		// Add debate team configuration endpoint
-		protected.GET("/debates/team", func(c *gin.Context) {
+		// Add debate team configuration endpoint (PUBLIC - no auth required for debugging)
+		r.GET("/v1/debates/team", func(c *gin.Context) {
 			c.JSON(http.StatusOK, debateTeamConfig.GetTeamSummary())
 		})
 
