@@ -129,7 +129,7 @@ func (m *MockBaseLLMProvider) HealthCheck() error {
 func (m *MockBaseLLMProvider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
 		SupportsStreaming: true,
-		Metadata:         make(map[string]string),
+		Metadata:          make(map[string]string),
 	}
 }
 

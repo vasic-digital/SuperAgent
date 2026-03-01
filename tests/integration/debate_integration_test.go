@@ -301,8 +301,8 @@ func TestDebateIntegration_MetadataPropagation(t *testing.T) {
 	service := services.NewDebateServiceWithDeps(logger, registry, nil)
 
 	customMetadata := map[string]any{
-		"test_key":     "test_value",
-		"environment":  "integration",
+		"test_key":    "test_value",
+		"environment": "integration",
 		"test_run_id": "12345",
 	}
 
@@ -412,7 +412,7 @@ func TestDebateIntegration_TimeoutHandling(t *testing.T) {
 	config := &services.DebateConfig{
 		DebateID:  "integration-test-timeout",
 		Topic:     "Test timeout handling",
-		MaxRounds: 10, // Many rounds
+		MaxRounds: 10,              // Many rounds
 		Timeout:   2 * time.Second, // Short timeout
 		Participants: []services.ParticipantConfig{
 			{

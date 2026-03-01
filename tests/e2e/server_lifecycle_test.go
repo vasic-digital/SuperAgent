@@ -84,7 +84,7 @@ func TestAPIServerLifecycle(t *testing.T) {
 		resp, err := http.Get(baseURL + "/v1/models")
 		require.NoError(t, err)
 		defer resp.Body.Close()
-		
+
 		assert.Equal(t, http.StatusOK, resp.StatusCode,
 			"Models endpoint should return 200")
 
@@ -179,7 +179,7 @@ func TestServerRestart(t *testing.T) {
 			}
 			time.Sleep(100 * time.Millisecond)
 		}
-		
+
 		t.Fatal("Server did not start")
 		return nil
 	}
@@ -234,18 +234,18 @@ func TestServerSignalHandling(t *testing.T) {
 	}
 
 	tests := []struct {
-		name   string
-		signal syscall.Signal
+		name    string
+		signal  syscall.Signal
 		maxWait time.Duration
 	}{
 		{
-			name:   "SIGTERM graceful shutdown",
-			signal: syscall.SIGTERM,
+			name:    "SIGTERM graceful shutdown",
+			signal:  syscall.SIGTERM,
 			maxWait: 5 * time.Second,
 		},
 		{
-			name:   "SIGINT graceful shutdown",
-			signal: syscall.SIGINT,
+			name:    "SIGINT graceful shutdown",
+			signal:  syscall.SIGINT,
 			maxWait: 5 * time.Second,
 		},
 	}
@@ -260,7 +260,7 @@ func TestServerSignalHandling(t *testing.T) {
 				"GIN_MODE=test",
 				"LOG_LEVEL=error",
 			)
-			
+
 			err := cmd.Start()
 			require.NoError(t, err)
 

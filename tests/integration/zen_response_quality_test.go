@@ -142,18 +142,18 @@ func TestZenModelNormalization(t *testing.T) {
 		// With opencode/ prefix - current free models
 		{"opencode/big-pickle", "big-pickle", true},
 		// With opencode/ prefix - deprecated/removed models (normalization should still work)
-		{"opencode/gpt-5-nano", "gpt-5-nano", false},  // gpt-5-nano removed from free list
+		{"opencode/gpt-5-nano", "gpt-5-nano", false}, // gpt-5-nano removed from free list
 		{"opencode/grok-code", "grok-code", false},
 		{"opencode/glm-4.7-free", "glm-4.7-free", false},
 		// With opencode- prefix - current free models
 		{"opencode-big-pickle", "big-pickle", true},
-		{"opencode-gpt-5-nano", "gpt-5-nano", false},  // gpt-5-nano removed from free list
+		{"opencode-gpt-5-nano", "gpt-5-nano", false}, // gpt-5-nano removed from free list
 		// With opencode- prefix - deprecated models
 		{"opencode-grok-code", "grok-code", false},
 		{"opencode-glm-4.7-free", "glm-4.7-free", false},
 		// Already normalized - current free models
 		{"big-pickle", "big-pickle", true},
-		{"gpt-5-nano", "gpt-5-nano", false},  // gpt-5-nano removed from free list
+		{"gpt-5-nano", "gpt-5-nano", false}, // gpt-5-nano removed from free list
 		// Already normalized - deprecated models
 		{"grok-code", "grok-code", false},
 		{"glm-4.7-free", "glm-4.7-free", false},

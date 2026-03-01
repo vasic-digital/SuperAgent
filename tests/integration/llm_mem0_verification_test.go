@@ -1224,4 +1224,3 @@ func TestMem0ServiceFromConfig(t *testing.T) {
 		assert.True(t, stats["enabled"].(bool))
 	})
 }
-

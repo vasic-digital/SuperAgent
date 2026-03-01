@@ -50,19 +50,19 @@ func (m *mockInvoker) Invoke(
 	}
 
 	return &protocol.PhaseResponse{
-		AgentID:    agent.ID,
-		Role:       agent.Role,
-		Provider:   agent.Provider,
-		Model:      agent.Model,
-		Content:    "Mock response for " + string(debateCtx.CurrentPhase),
-		Confidence: confidence,
-		Vote:       vote,
-		Score:      agent.Score,
-		Latency:    50 * time.Millisecond,
-		Timestamp:  time.Now(),
-		Arguments:  []string{"argument-1"},
+		AgentID:     agent.ID,
+		Role:        agent.Role,
+		Provider:    agent.Provider,
+		Model:       agent.Model,
+		Content:     "Mock response for " + string(debateCtx.CurrentPhase),
+		Confidence:  confidence,
+		Vote:        vote,
+		Score:       agent.Score,
+		Latency:     50 * time.Millisecond,
+		Timestamp:   time.Now(),
+		Arguments:   []string{"argument-1"},
 		Suggestions: []string{"suggestion-1"},
-		Metadata:   map[string]interface{}{"mock": true},
+		Metadata:    map[string]interface{}{"mock": true},
 	}, nil
 }
 

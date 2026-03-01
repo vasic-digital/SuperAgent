@@ -19,9 +19,9 @@ import (
 // These tests verify that Mem0 Memory is running, features are enabled, and all functionality works
 
 const (
-	mem0BaseURL             = "http://localhost:7061/v1/cognee"
-	mem0HelixagentBaseURL   = "http://localhost:7061"
-	mem0StartTimeout        = 60 * time.Second
+	mem0BaseURL           = "http://localhost:7061/v1/cognee"
+	mem0HelixagentBaseURL = "http://localhost:7061"
+	mem0StartTimeout      = 60 * time.Second
 )
 
 // TestMem0Infrastructure verifies Mem0 Memory service containers are running

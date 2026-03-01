@@ -444,11 +444,11 @@ func TestMemoryStore_EntityGraphUnderLoad(t *testing.T) {
 			// Add relationships
 			for j := 0; j < 5; j++ {
 				rel := &memory.Relationship{
-					ID:       fmt.Sprintf("rel-%d-%d", id, j),
-					SourceID: fmt.Sprintf("entity-%d-%d", id, j),
-					TargetID: fmt.Sprintf("entity-%d-%d", id, (j+1)%10),
-					Type:     "related_to",
-					Strength: 0.8,
+					ID:         fmt.Sprintf("rel-%d-%d", id, j),
+					SourceID:   fmt.Sprintf("entity-%d-%d", id, j),
+					TargetID:   fmt.Sprintf("entity-%d-%d", id, (j+1)%10),
+					Type:       "related_to",
+					Strength:   0.8,
 					Properties: map[string]interface{}{},
 				}
 				if err := store.AddRelationship(ctx, rel); err == nil {

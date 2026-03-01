@@ -62,8 +62,8 @@ type stressMockSubscription struct{}
 
 func (s *stressMockSubscription) Unsubscribe() error { return nil }
 func (s *stressMockSubscription) IsActive() bool     { return true }
-func (s *stressMockSubscription) Topic() string       { return "test" }
-func (s *stressMockSubscription) ID() string          { return "stress-sub" }
+func (s *stressMockSubscription) Topic() string      { return "test" }
+func (s *stressMockSubscription) ID() string         { return "stress-sub" }
 
 // stressMockEventLog implements memory.EventLog for stress testing.
 type stressMockEventLog struct {

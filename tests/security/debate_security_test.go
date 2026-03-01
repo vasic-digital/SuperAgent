@@ -343,7 +343,7 @@ func TestDebate_AdversarialProtocol_InputSanitization(t *testing.T) {
 	maliciousInputs := []string{
 		"malicious_payload('sensitive_data')\nos.getenv('SECRET')",
 		strings.Repeat("A", 500000), // oversized input
-		"\\x00\\x01\\x02\\x03",     // null bytes
+		"\\x00\\x01\\x02\\x03",      // null bytes
 		"{{template \"exploit\"}}",  // template injection
 	}
 
