@@ -27,6 +27,7 @@ const (
 	StreamEventAgentResponse StreamEventType = "agent_response"
 	StreamEventAgentError    StreamEventType = "agent_error"
 	StreamEventAgentComplete StreamEventType = "agent_complete"
+	StreamEventAgentFallback StreamEventType = "agent_fallback"
 
 	// Tool events
 	StreamEventToolCall   StreamEventType = "tool_call"
@@ -53,11 +54,19 @@ type StreamEvent struct {
 
 // AgentInfo represents agent information for streaming
 type AgentInfo struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Role     Role   `json:"role"`
+	ID        string         `json:"id"`
+	Name      string         `json:"name"`
+	Role      Role           `json:"role"`
+	Provider  string         `json:"provider"`
+	Model     string         `json:"model"`
+	Fallbacks []FallbackInfo `json:"fallbacks,omitempty"`
+}
+
+// FallbackInfo represents fallback provider information
+type FallbackInfo struct {
 	Provider string `json:"provider"`
 	Model    string `json:"model"`
+	Reason   string `json:"reason,omitempty"`
 }
 
 // StreamHandler is called for each streaming event

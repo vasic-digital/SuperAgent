@@ -2384,21 +2384,19 @@ func (h *UnifiedHandler) generateDebateDialogueIntroduction(topic string, format
 }
 
 // generateComprehensiveDebateIntroduction creates introduction for comprehensive debate system
-// Shows 8 roles across 5 teams dynamically
+// Shows 8 roles across 5 teams dynamically with models and fallbacks
 func (h *UnifiedHandler) generateComprehensiveDebateIntroduction(topic string, format OutputFormat) string {
-	// Get comprehensive integration manager
-	if h.debateService == nil {
-		return ""
-	}
-
-	// Access the comprehensive integration through the service
-	// We need to get the IntegrationManager - let's use reflection or add a getter
-	// For now, let's create a simple version that shows we're using comprehensive system
-
 	var sb strings.Builder
 	sb.WriteString("\n")
 	sb.WriteString("# HelixAgent AI Debate Ensemble\n\n")
-	sb.WriteString("> Eight AI specialists across five teams collaborate to deliver optimal solutions.\n\n")
+
+	// Use debate team config if available to get actual models
+	if h.debateTeamConfig != nil {
+		members := h.debateTeamConfig.GetPrimaryMembers()
+		sb.WriteString(fmt.Sprintf("> %d AI minds deliberate to synthesize the optimal response.\n\n", len(members)))
+	} else {
+		sb.WriteString("> Eight AI specialists across five teams collaborate to deliver optimal solutions.\n\n")
+	}
 
 	// Topic
 	topicDisplay := topic
@@ -2408,34 +2406,79 @@ func (h *UnifiedHandler) generateComprehensiveDebateIntroduction(topic string, f
 	sb.WriteString(fmt.Sprintf("**Topic:** %s\n\n", topicDisplay))
 
 	sb.WriteString("---\n\n")
-	sb.WriteString("## Debate Teams & Roles (Comprehensive System)\n\n")
+	sb.WriteString("## Debate Team\n\n")
 
-	// Use dynamic team listing
-	teams := []struct {
-		name  string
-		roles []string
-	}{
-		{"🏗️ Design", []string{"System Architect", "Debate Moderator"}},
-		{"💻 Implementation", []string{"Code Generator", "Blue Team"}},
-		{"🔍 Quality Assurance", []string{"Code Reviewer", "Test Engineer", "Validator", "Security Analyst", "Performance Engineer"}},
-		{"🔴 Red Team", []string{"Red Team"}},
-		{"🔄 Refactoring", []string{"Refactoring Specialist"}},
-	}
+	// If we have debate team config, show actual models and fallbacks
+	if h.debateTeamConfig != nil {
+		members := h.debateTeamConfig.GetPrimaryMembers()
+		sb.WriteString("| Role | Model | Provider |\n")
+		sb.WriteString("|------|-------|----------|\n")
 
-	for _, team := range teams {
-		sb.WriteString(fmt.Sprintf("### %s Team\n\n", team.name))
-		sb.WriteString("| Role | Status |\n")
-		sb.WriteString("|------|--------|\n")
-		for _, role := range team.roles {
-			sb.WriteString(fmt.Sprintf("| **%s** | 🟢 Active |\n", role))
+		for _, member := range members {
+			if member == nil {
+				continue
+			}
+			roleName := getComprehensiveRoleName(member.Role)
+			sb.WriteString(fmt.Sprintf("| **%s** | %s | %s |\n",
+				roleName, member.ModelName, member.ProviderName))
+
+			// Show all fallbacks
+			if len(member.Fallbacks) > 0 {
+				for i, fb := range member.Fallbacks {
+					sb.WriteString(fmt.Sprintf("| └─ Fallback %d | %s | %s |\n",
+						i+1, fb.ModelName, fb.ProviderName))
+				}
+			} else if member.Fallback != nil {
+				sb.WriteString(fmt.Sprintf("| └─ Fallback | %s | %s |\n",
+					member.Fallback.ModelName, member.Fallback.ProviderName))
+			}
 		}
-		sb.WriteString("\n")
+	} else {
+		// Fallback to static display
+		teams := []struct {
+			name  string
+			roles []string
+		}{
+			{"🏗️ Design", []string{"System Architect", "Debate Moderator"}},
+			{"💻 Implementation", []string{"Code Generator", "Blue Team"}},
+			{"🔍 Quality Assurance", []string{"Code Reviewer", "Test Engineer", "Validator", "Security Analyst", "Performance Engineer"}},
+			{"🔴 Red Team", []string{"Red Team"}},
+			{"🔄 Refactoring", []string{"Refactoring Specialist"}},
+		}
+
+		for _, team := range teams {
+			sb.WriteString(fmt.Sprintf("### %s Team\n\n", team.name))
+			sb.WriteString("| Role | Status |\n")
+			sb.WriteString("|------|--------|\n")
+			for _, role := range team.roles {
+				sb.WriteString(fmt.Sprintf("| **%s** | 🟢 Active |\n", role))
+			}
+			sb.WriteString("\n")
+		}
 	}
 
-	sb.WriteString("---\n\n")
+	sb.WriteString("\n---\n\n")
 	sb.WriteString("## The Deliberation\n\n")
 
 	return sb.String()
+}
+
+// getComprehensiveRoleName maps debate role to comprehensive role name
+func getComprehensiveRoleName(role services.DebateRole) string {
+	switch role {
+	case services.RoleAnalyst:
+		return "Analyst"
+	case services.RoleProposer:
+		return "Proposer"
+	case services.RoleCritic:
+		return "Critic"
+	case services.RoleSynthesis:
+		return "Synthesis"
+	case services.RoleMediator:
+		return "Mediator"
+	default:
+		return string(role)
+	}
 }
 
 // streamComprehensiveDebate streams the comprehensive debate with 8 roles and 5 teams
