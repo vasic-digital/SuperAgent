@@ -2618,8 +2618,8 @@ func (h *UnifiedHandler) streamComprehensiveDebate(ctx context.Context, c *gin.C
 		{services.PositionProposer, comprehensive.RoleValidator, "Validator", "Correctness verification", "Quality Assurance", "🔍"},
 		{services.PositionCritic, comprehensive.RoleSecurity, "Security", "Security analysis", "Quality Assurance", "🔍"},
 		{services.PositionSynthesis, comprehensive.RolePerformance, "Performance", "Performance optimization", "Quality Assurance", "🔍"},
-		// Red Team (1 role)
-		{services.PositionMediator, comprehensive.RoleRedTeam, "Red Team", "Adversarial testing", "Red Team", "🔴"},
+		// Red Team (1 role) - Changed team name to "Adversarial" to avoid confusion
+		{services.PositionMediator, comprehensive.RoleRedTeam, "Red Team", "Adversarial testing", "Adversarial", "🔴"},
 		// Refactoring Team (1 role)
 		{services.PositionAnalyst, comprehensive.RoleRefactoring, "Refactoring", "Code improvement", "Refactoring", "🔄"},
 	}
@@ -2628,10 +2628,10 @@ func (h *UnifiedHandler) streamComprehensiveDebate(ctx context.Context, c *gin.C
 
 	currentTeam := ""
 	for _, p := range positions {
-		// Emit team header if team changed
+		// Emit team header if team changed - make it very clear and visible
 		if p.teamName != currentTeam {
 			currentTeam = p.teamName
-			teamHeader := fmt.Sprintf("\n### %s %s Team\n\n", p.teamEmoji, p.teamName)
+			teamHeader := fmt.Sprintf("\n---\n\n## %s %s\n\n", p.teamEmoji, p.teamName)
 			chunk := map[string]any{
 				"id":                 streamID,
 				"object":             "chat.completion.chunk",

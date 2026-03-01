@@ -862,6 +862,16 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 		// CRITICAL: Set debate service on UnifiedHandler so it can use the configured debate team
 		unifiedHandler.SetDebateService(debateService)
 
+		// Initialize verification report generator for provider scores
+		// Note: This will generate reports on-demand during debates
+		reportGenerator := services.NewVerificationReportGenerator(
+			nil, // verificationSvc - will be initialized on first use
+			nil, // scoreAdapter - will be initialized on first use
+			logger,
+		)
+		unifiedHandler.SetReportGenerator(reportGenerator)
+		logger.WithField("report_path", reportGenerator.GetReportPath()).Info("Verification report generator initialized")
+
 		// Log agent pool status for verification
 		agentCount := orchestratorIntegration.GetOrchestrator().GetAgentPool().Size()
 		logger.WithFields(logrus.Fields{
