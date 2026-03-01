@@ -16,7 +16,8 @@ WORKDIR /app
 # Copy all source code first (needed for local replace directives)
 COPY . .
 
-# Download dependencies (skip verify for local replace directives)
+# Download dependencies with GOTOOLCHAIN=auto to handle newer Go versions
+ENV GOTOOLCHAIN=auto
 RUN go mod download
 
 # Note: Tests are run in CI before Docker build, skip here for faster builds
