@@ -3065,7 +3065,12 @@ func (h *UnifiedHandler) generateRealDebateResponse(ctx context.Context, positio
 		}
 
 		// Call the LLM with a timeout
-		llmCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
+		// CRITICAL: OAuth providers (Claude, Qwen) need longer timeouts due to CLI overhead
+		timeout := 20 * time.Second
+		if currentMember.IsOAuth {
+			timeout = 45 * time.Second // OAuth CLI needs more time
+		}
+		llmCtx, cancel := context.WithTimeout(ctx, timeout)
 		resp, err := provider.Complete(llmCtx, llmReq)
 		cancel()
 
@@ -4484,7 +4489,12 @@ Based on this context, call the appropriate tool(s) to execute the planned actio
 	}
 
 	// Call the LLM with timeout
-	llmCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	// CRITICAL: OAuth providers need longer timeouts
+	timeout := 20 * time.Second
+	if mediatorMember.IsOAuth {
+		timeout = 45 * time.Second
+	}
+	llmCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	resp, err := provider.Complete(llmCtx, llmReq)
