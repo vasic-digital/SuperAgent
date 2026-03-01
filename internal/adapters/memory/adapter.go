@@ -4,6 +4,7 @@ package memory
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	helixmem "dev.helix.agent/internal/memory"
@@ -91,30 +92,39 @@ func (a *StoreAdapter) GetBySession(ctx context.Context, sessionID string) ([]*h
 	return result, nil
 }
 
-// AddEntity adds an entity (not supported by base module store).
+// Entity and Relationship methods
+// Note: These methods require a graph backend (digital.vasic.memory/pkg/graph)
+// which is not available in the current vendor. They return errors indicating
+// that entity/relationship storage requires graph integration.
+
+// AddEntity adds an entity to the knowledge graph.
+// This feature requires graph backend integration (not available in vendor).
 func (a *StoreAdapter) AddEntity(ctx context.Context, entity *helixmem.Entity) error {
-	// Base module store does not support entities; this is a HelixAgent extension
-	return nil
+	return errors.New("entity storage requires graph backend (digital.vasic.memory/pkg/graph) - not available in vendor")
 }
 
-// GetEntity retrieves an entity (not supported by base module store).
+// GetEntity retrieves an entity from the knowledge graph.
+// This feature requires graph backend integration (not available in vendor).
 func (a *StoreAdapter) GetEntity(ctx context.Context, id string) (*helixmem.Entity, error) {
-	return nil, nil
+	return nil, errors.New("entity retrieval requires graph backend (digital.vasic.memory/pkg/graph) - not available in vendor")
 }
 
-// SearchEntities searches for entities (not supported by base module store).
+// SearchEntities searches for entities in the knowledge graph.
+// This feature requires graph backend integration (not available in vendor).
 func (a *StoreAdapter) SearchEntities(ctx context.Context, query string, limit int) ([]*helixmem.Entity, error) {
-	return nil, nil
+	return nil, errors.New("entity search requires graph backend (digital.vasic.memory/pkg/graph) - not available in vendor")
 }
 
-// AddRelationship adds a relationship (not supported by base module store).
+// AddRelationship adds a relationship between entities.
+// This feature requires graph backend integration (not available in vendor).
 func (a *StoreAdapter) AddRelationship(ctx context.Context, rel *helixmem.Relationship) error {
-	return nil
+	return errors.New("relationship storage requires graph backend (digital.vasic.memory/pkg/graph) - not available in vendor")
 }
 
-// GetRelationships gets relationships (not supported by base module store).
+// GetRelationships gets all relationships for an entity.
+// This feature requires graph backend integration (not available in vendor).
 func (a *StoreAdapter) GetRelationships(ctx context.Context, entityID string) ([]*helixmem.Relationship, error) {
-	return nil, nil
+	return nil, errors.New("relationship retrieval requires graph backend (digital.vasic.memory/pkg/graph) - not available in vendor")
 }
 
 // ToModuleMemory converts a HelixAgent Memory to a module Memory.
@@ -137,10 +147,9 @@ func ToModuleMemory(h *helixmem.Memory) *modmem.Memory {
 		ID:        h.ID,
 		Content:   h.Content,
 		Metadata:  metadata,
-		Scope:     modmem.ScopeUser,
+		Embedding: h.Embedding,
 		CreatedAt: h.CreatedAt,
 		UpdatedAt: h.UpdatedAt,
-		Embedding: h.Embedding,
 	}
 }
 
@@ -149,41 +158,46 @@ func ToHelixMemory(m *modmem.Memory) *helixmem.Memory {
 	if m == nil {
 		return nil
 	}
-	metadata := make(map[string]interface{})
+	h := &helixmem.Memory{
+		ID:        m.ID,
+		Content:   m.Content,
+		Metadata:  make(map[string]interface{}),
+		Embedding: m.Embedding,
+		CreatedAt: m.CreatedAt,
+		UpdatedAt: m.UpdatedAt,
+	}
+
+	// Extract HelixAgent-specific fields from metadata
 	for k, v := range m.Metadata {
-		if k != "user_id" && k != "session_id" && k != "type" && k != "category" &&
-			k != "importance" && k != "access_count" {
-			metadata[k] = v
+		switch k {
+		case "user_id":
+			h.UserID, _ = v.(string)
+		case "session_id":
+			h.SessionID, _ = v.(string)
+		case "type":
+			h.Type = helixmem.MemoryType(v.(string))
+		case "category":
+			h.Category, _ = v.(string)
+		case "importance":
+			if imp, ok := v.(float64); ok {
+				h.Importance = imp
+			}
+		case "access_count":
+			if count, ok := v.(int); ok {
+				h.AccessCount = count
+			}
+		default:
+			h.Metadata[k] = v
 		}
 	}
 
-	userID, _ := m.Metadata["user_id"].(string) //nolint:errcheck
-	sessionID, _ := m.Metadata["session_id"].(string) //nolint:errcheck
-	memType, _ := m.Metadata["type"].(string) //nolint:errcheck
-	category, _ := m.Metadata["category"].(string)
-	importance, _ := m.Metadata["importance"].(float64)
-	accessCount, _ := m.Metadata["access_count"].(int)
-
-	return &helixmem.Memory{
-		ID:          m.ID,
-		UserID:      userID,
-		SessionID:   sessionID,
-		Content:     m.Content,
-		Type:        helixmem.MemoryType(memType),
-		Category:    category,
-		Metadata:    metadata,
-		Embedding:   m.Embedding,
-		Importance:  importance,
-		AccessCount: accessCount,
-		CreatedAt:   m.CreatedAt,
-		UpdatedAt:   m.UpdatedAt,
-	}
+	return h
 }
 
-// ToHelixMemories converts a slice of module memories.
-func ToHelixMemories(mems []*modmem.Memory) []*helixmem.Memory {
-	result := make([]*helixmem.Memory, len(mems))
-	for i, m := range mems {
+// ToHelixMemories converts a slice of module Memories to HelixAgent Memories.
+func ToHelixMemories(modMemories []*modmem.Memory) []*helixmem.Memory {
+	result := make([]*helixmem.Memory, len(modMemories))
+	for i, m := range modMemories {
 		result[i] = ToHelixMemory(m)
 	}
 	return result
