@@ -2839,10 +2839,14 @@ func (h *UnifiedHandler) formatFallbackInfo(format OutputFormat, position servic
 
 // formatResponseIndicator formats response received indicator with duration or error
 func (h *UnifiedHandler) formatResponseIndicator(format OutputFormat, position services.DebateTeamPosition, role services.DebateRole, provider, model string, err error, duration time.Duration) string {
-	if err != nil {
-		return fmt.Sprintf("❌ %s Response failed: %v\n\n", position, err)
+	positionStr := getComprehensiveRoleName(role)
+	if positionStr == "" {
+		positionStr = string(position)
 	}
-	return fmt.Sprintf("> %s Response received (%.1f s)\n\n", position, duration.Seconds())
+	if err != nil {
+		return fmt.Sprintf("❌ %s Response failed: %v\n\n", positionStr, err)
+	}
+	return fmt.Sprintf("> %s Response received (%.1f s)\n\n", positionStr, duration.Seconds())
 }
 
 // formatFallbackChain formats the fallback chain details
