@@ -1,0 +1,283 @@
+package services
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+	"time"
+
+	"dev.helix.agent/internal/verifier"
+	"github.com/sirupsen/logrus"
+)
+
+type VerificationReportGenerator struct {
+	verificationSvc *verifier.VerificationService
+	scoreAdapter    *LLMsVerifierScoreAdapter
+	log             *logrus.Logger
+	reportPath      string
+}
+
+type ModelReportEntry struct {
+	ModelID            string
+	ProviderName       string
+	OverallScore       float64
+	Status             string
+	ErrorReason        string
+	CodeVisible        bool
+	Verified           bool
+	Tests              map[string]bool
+	VerificationTimeMs int64
+	CompletedAt        time.Time
+}
+
+func NewVerificationReportGenerator(
+	verificationSvc *verifier.VerificationService,
+	scoreAdapter *LLMsVerifierScoreAdapter,
+	log *logrus.Logger,
+) *VerificationReportGenerator {
+	if log == nil {
+		log = logrus.New()
+	}
+
+	homeDir, _ := os.UserHomeDir()
+	reportPath := filepath.Join(homeDir, ".helixagent", "reports", "provider_verification_report.md")
+
+	return &VerificationReportGenerator{
+		verificationSvc: verificationSvc,
+		scoreAdapter:    scoreAdapter,
+		log:             log,
+		reportPath:      reportPath,
+	}
+}
+
+func (g *VerificationReportGenerator) GenerateReport(ctx context.Context) (string, error) {
+	g.log.Info("Generating provider verification report")
+
+	entries, err := g.collectReportData(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to collect report data: %w", err)
+	}
+
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].OverallScore > entries[j].OverallScore
+	})
+
+	reportContent := g.formatReport(entries)
+
+	if err := g.saveReport(reportContent); err != nil {
+		return "", fmt.Errorf("failed to save report: %w", err)
+	}
+
+	g.log.WithField("path", g.reportPath).Info("Provider verification report generated successfully")
+
+	return g.reportPath, nil
+}
+
+func (g *VerificationReportGenerator) collectReportData(ctx context.Context) ([]ModelReportEntry, error) {
+	if g.verificationSvc == nil {
+		return nil, fmt.Errorf("verification service not available")
+	}
+
+	verifications, err := g.verificationSvc.GetAllVerifications(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get verifications: %w", err)
+	}
+
+	entries := make([]ModelReportEntry, 0, len(verifications))
+
+	for _, v := range verifications {
+		entry := ModelReportEntry{
+			ModelID:            v.ModelID,
+			ProviderName:       v.Provider,
+			OverallScore:       v.OverallScore,
+			Status:             v.Status,
+			CodeVisible:        v.CodeVisible,
+			Verified:           v.Verified,
+			Tests:              v.Tests,
+			VerificationTimeMs: v.VerificationTimeMs,
+			CompletedAt:        v.CompletedAt,
+		}
+
+		if !v.Verified {
+			entry.ErrorReason = g.inferErrorReason(v)
+		}
+
+		entries = append(entries, entry)
+	}
+
+	return entries, nil
+}
+
+func (g *VerificationReportGenerator) inferErrorReason(v *verifier.VerificationStatus) string {
+	if v.OverallScore == 0 {
+		return "Model failed verification - score is 0"
+	}
+
+	if v.VerificationTimeMs > 30000 {
+		return fmt.Sprintf("Model too slow (verification time: %dms > 30s threshold)", v.VerificationTimeMs)
+	}
+
+	if !v.CodeVisible {
+		return "Model code visibility check failed"
+	}
+
+	failedTests := []string{}
+	for testName, passed := range v.Tests {
+		if !passed {
+			failedTests = append(failedTests, testName)
+		}
+	}
+
+	if len(failedTests) > 0 {
+		return fmt.Sprintf("Failed tests: %s", strings.Join(failedTests, ", "))
+	}
+
+	return "Verification failed - reason unknown"
+}
+
+func (g *VerificationReportGenerator) formatReport(entries []ModelReportEntry) string {
+	var sb strings.Builder
+
+	sb.WriteString("# Provider Verification Report\n\n")
+	sb.WriteString(fmt.Sprintf("**Generated at:** %s\n\n", time.Now().Format(time.RFC1123)))
+	sb.WriteString(fmt.Sprintf("**Total models:** %d\n\n", len(entries)))
+
+	healthyCount := 0
+	failedCount := 0
+	for _, e := range entries {
+		if e.Verified {
+			healthyCount++
+		} else {
+			failedCount++
+		}
+	}
+
+	sb.WriteString(fmt.Sprintf("**Healthy:** %d | **Failed:** %d\n\n", healthyCount, failedCount))
+	sb.WriteString("---\n\n")
+
+	sb.WriteString("## 📊 Model Rankings (Best to Worst)\n\n")
+
+	sb.WriteString("| Rank | Model | Provider | Score | Verified | Code Visible | Tests | Time |\n")
+	sb.WriteString("|------|-------|----------|-------|----------|--------------|-------|------|\n")
+
+	for i, entry := range entries {
+		rank := i + 1
+		statusEmoji := "✅"
+		if !entry.Verified {
+			statusEmoji = "❌"
+		}
+
+		scoreDisplay := fmt.Sprintf("%.2f", entry.OverallScore)
+		if entry.OverallScore >= 8.0 {
+			scoreDisplay = fmt.Sprintf("**%.2f** 🌟", entry.OverallScore)
+		}
+
+		codeVisible := "—"
+		if entry.CodeVisible {
+			codeVisible = "✓"
+		}
+
+		testsSummary := fmt.Sprintf("%d/%d", countPassedTests(entry.Tests), len(entry.Tests))
+
+		timeDisplay := fmt.Sprintf("%dms", entry.VerificationTimeMs)
+		if entry.VerificationTimeMs > 20000 {
+			timeDisplay = fmt.Sprintf("%dms ⚠️", entry.VerificationTimeMs)
+		}
+
+		sb.WriteString(fmt.Sprintf("| %d | `%s` | %s | %s | %s | %s | %s | %s |\n",
+			rank,
+			entry.ModelID,
+			entry.ProviderName,
+			scoreDisplay,
+			statusEmoji,
+			codeVisible,
+			testsSummary,
+			timeDisplay,
+		))
+	}
+
+	sb.WriteString("\n---\n\n")
+
+	sb.WriteString("## 📋 Detailed Breakdown\n\n")
+
+	sb.WriteString("### ✅ Healthy Models\n\n")
+	for _, entry := range entries {
+		if entry.Verified {
+			sb.WriteString(g.formatModelDetails(entry))
+		}
+	}
+
+	sb.WriteString("### ❌ Failed Models\n\n")
+	for _, entry := range entries {
+		if !entry.Verified {
+			sb.WriteString(g.formatModelDetails(entry))
+			if entry.ErrorReason != "" {
+				sb.WriteString(fmt.Sprintf("**Error:** %s\n\n", entry.ErrorReason))
+			}
+		}
+	}
+
+	sb.WriteString("---\n\n")
+	sb.WriteString("*This report is auto-generated by HelixAgent LLMsVerifier*\n")
+
+	return sb.String()
+}
+
+func countPassedTests(tests map[string]bool) int {
+	count := 0
+	for _, passed := range tests {
+		if passed {
+			count++
+		}
+	}
+	return count
+}
+
+func (g *VerificationReportGenerator) formatModelDetails(entry ModelReportEntry) string {
+	var sb strings.Builder
+
+	sb.WriteString(fmt.Sprintf("#### `%s` (%s)\n\n", entry.ModelID, entry.ProviderName))
+	sb.WriteString(fmt.Sprintf("- **Overall Score:** %.2f / 10.0\n", entry.OverallScore))
+	sb.WriteString(fmt.Sprintf("- **Status:** %s\n", entry.Status))
+	sb.WriteString(fmt.Sprintf("- **Code Visible:** %v\n", entry.CodeVisible))
+	sb.WriteString(fmt.Sprintf("- **Verification Time:** %dms\n", entry.VerificationTimeMs))
+
+	if len(entry.Tests) > 0 {
+		sb.WriteString("- **Tests:**\n")
+		for testName, passed := range entry.Tests {
+			status := "❌ Failed"
+			if passed {
+				status = "✅ Passed"
+			}
+			sb.WriteString(fmt.Sprintf("  - %s: %s\n", testName, status))
+		}
+	}
+
+	sb.WriteString(fmt.Sprintf("- **Completed at:** %s\n\n", entry.CompletedAt.Format(time.RFC1123)))
+
+	return sb.String()
+}
+
+func (g *VerificationReportGenerator) saveReport(content string) error {
+	dir := filepath.Dir(g.reportPath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create report directory: %w", err)
+	}
+
+	if err := os.WriteFile(g.reportPath, []byte(content), 0644); err != nil {
+		return fmt.Errorf("failed to write report file: %w", err)
+	}
+
+	return nil
+}
+
+func (g *VerificationReportGenerator) GetReportPath() string {
+	return g.reportPath
+}
+
+func (g *VerificationReportGenerator) GetReportURL() string {
+	return fmt.Sprintf("file://%s", g.reportPath)
+}

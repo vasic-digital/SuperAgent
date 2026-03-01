@@ -36,6 +36,7 @@ type UnifiedHandler struct {
 	orchestratorIntegration *orchestrator.ServiceIntegration
 	debateService           *services.DebateService
 	showDebateDialogue      bool
+	reportGenerator         *services.VerificationReportGenerator
 }
 
 // NewUnifiedHandler creates a new unified handler
@@ -109,6 +110,14 @@ func (h *UnifiedHandler) SetOrchestratorIntegration(integration *orchestrator.Se
 			"orchestrator_set": true,
 			"agent_count":      integration.GetOrchestrator().GetAgentPool().Size(),
 		}).Info("NEW Debate Orchestrator integration set - will use 8-phase protocol instead of old ensemble")
+	}
+}
+
+// SetReportGenerator sets the verification report generator for generating provider reports
+func (h *UnifiedHandler) SetReportGenerator(generator *services.VerificationReportGenerator) {
+	h.reportGenerator = generator
+	if generator != nil {
+		logrus.WithField("report_path", generator.GetReportPath()).Info("Verification report generator set")
 	}
 }
 
@@ -2396,6 +2405,23 @@ func (h *UnifiedHandler) generateComprehensiveDebateIntroduction(topic string, f
 	// Show 11 debate roles from comprehensive system with actual models
 	sb.WriteString("> 11 AI specialists collaborate to deliver optimal solutions.\n\n")
 
+	// Add link to provider verification report if generator is available
+	if h.reportGenerator != nil {
+		// Generate the report file
+		ctx := context.Background()
+		reportPath, err := h.reportGenerator.GenerateReport(ctx)
+		if err == nil {
+			reportURL := h.reportGenerator.GetReportURL()
+			sb.WriteString(fmt.Sprintf("📊 **[Provider Verification Report](%s)** - Full provider scores and model rankings\n\n", reportURL))
+			logrus.WithFields(logrus.Fields{
+				"report_path": reportPath,
+				"report_url":  reportURL,
+			}).Debug("Added provider verification report link to debate introduction")
+		} else {
+			logrus.WithError(err).Warning("Failed to generate provider verification report")
+		}
+	}
+
 	// Topic
 	topicDisplay := topic
 	if len(topicDisplay) > 70 {
@@ -2573,32 +2599,62 @@ func (h *UnifiedHandler) streamComprehensiveDebate(ctx context.Context, c *gin.C
 	// Use comprehensive 11-role debate system
 	// These are the 11 specialized roles from the comprehensive debate research
 	positions := []struct {
-		pos     services.DebateTeamPosition
-		role    comprehensive.Role
-		roleStr string
-		desc    string
+		pos       services.DebateTeamPosition
+		role      comprehensive.Role
+		roleStr   string
+		desc      string
+		teamName  string
+		teamEmoji string
 	}{
 		// Design Team (2 roles)
-		{services.PositionAnalyst, comprehensive.RoleArchitect, "Architect", "System design and planning"},
-		{services.PositionProposer, comprehensive.RoleModerator, "Moderator", "Debate facilitation"},
+		{services.PositionAnalyst, comprehensive.RoleArchitect, "Architect", "System design and planning", "Design", "🏗️"},
+		{services.PositionProposer, comprehensive.RoleModerator, "Moderator", "Debate facilitation", "Design", "🏗️"},
 		// Implementation Team (2 roles)
-		{services.PositionCritic, comprehensive.RoleGenerator, "Generator", "Code generation"},
-		{services.PositionSynthesis, comprehensive.RoleBlueTeam, "Blue Team", "Defensive implementation"},
+		{services.PositionCritic, comprehensive.RoleGenerator, "Generator", "Code generation", "Implementation", "💻"},
+		{services.PositionSynthesis, comprehensive.RoleBlueTeam, "Blue Team", "Defensive implementation", "Implementation", "💻"},
 		// Quality Assurance Team (5 roles)
-		{services.PositionMediator, comprehensive.RoleCritic, "Critic", "Flaw identification"},
-		{services.PositionAnalyst, comprehensive.RoleTester, "Tester", "Test generation"},
-		{services.PositionProposer, comprehensive.RoleValidator, "Validator", "Correctness verification"},
-		{services.PositionCritic, comprehensive.RoleSecurity, "Security", "Security analysis"},
-		{services.PositionSynthesis, comprehensive.RolePerformance, "Performance", "Performance optimization"},
+		{services.PositionMediator, comprehensive.RoleCritic, "Critic", "Flaw identification", "Quality Assurance", "🔍"},
+		{services.PositionAnalyst, comprehensive.RoleTester, "Tester", "Test generation", "Quality Assurance", "🔍"},
+		{services.PositionProposer, comprehensive.RoleValidator, "Validator", "Correctness verification", "Quality Assurance", "🔍"},
+		{services.PositionCritic, comprehensive.RoleSecurity, "Security", "Security analysis", "Quality Assurance", "🔍"},
+		{services.PositionSynthesis, comprehensive.RolePerformance, "Performance", "Performance optimization", "Quality Assurance", "🔍"},
 		// Red Team (1 role)
-		{services.PositionMediator, comprehensive.RoleRedTeam, "Red Team", "Adversarial testing"},
+		{services.PositionMediator, comprehensive.RoleRedTeam, "Red Team", "Adversarial testing", "Red Team", "🔴"},
 		// Refactoring Team (1 role)
-		{services.PositionAnalyst, comprehensive.RoleRefactoring, "Refactoring", "Code improvement"},
+		{services.PositionAnalyst, comprehensive.RoleRefactoring, "Refactoring", "Code improvement", "Refactoring", "🔄"},
 	}
 	previousResponses := make(map[services.DebateTeamPosition]string)
 	collectedToolCalls := make([]StreamingToolCall, 0)
 
+	currentTeam := ""
 	for _, p := range positions {
+		// Emit team header if team changed
+		if p.teamName != currentTeam {
+			currentTeam = p.teamName
+			teamHeader := fmt.Sprintf("\n### %s %s Team\n\n", p.teamEmoji, p.teamName)
+			chunk := map[string]any{
+				"id":                 streamID,
+				"object":             "chat.completion.chunk",
+				"created":            time.Now().Unix(),
+				"model":              "helixagent-ensemble",
+				"system_fingerprint": "fp_helixagent_v1",
+				"choices": []map[string]any{
+					{
+						"index":         0,
+						"delta":         map[string]any{"content": teamHeader},
+						"logprobs":      nil,
+						"finish_reason": nil,
+					},
+				},
+			}
+			if data, err := json.Marshal(chunk); err == nil {
+				_, _ = c.Writer.Write([]byte("data: "))
+				_, _ = c.Writer.Write(data)
+				_, _ = c.Writer.Write([]byte("\n\n"))
+				flusher.Flush()
+			}
+		}
+
 		pos := p.pos
 		// Get member info for this position
 		member := h.debateTeamConfig.GetTeamMember(pos)
