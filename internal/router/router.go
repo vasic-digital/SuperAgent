@@ -859,6 +859,9 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 		// CRITICAL: Also set orchestrator on UnifiedHandler so chat completions use NEW debate system
 		unifiedHandler.SetOrchestratorIntegration(orchestratorIntegration)
 
+		// CRITICAL: Set debate service on UnifiedHandler so it can use the configured debate team
+		unifiedHandler.SetDebateService(debateService)
+
 		// Log agent pool status for verification
 		agentCount := orchestratorIntegration.GetOrchestrator().GetAgentPool().Size()
 		logger.WithFields(logrus.Fields{

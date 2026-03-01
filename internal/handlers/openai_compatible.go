@@ -33,6 +33,7 @@ type UnifiedHandler struct {
 	skillsIntegration       *skills.Integration
 	intentRouter            *services.IntentBasedRouter
 	orchestratorIntegration *orchestrator.ServiceIntegration
+	debateService           *services.DebateService
 	showDebateDialogue      bool
 }
 
@@ -90,6 +91,12 @@ func (h *UnifiedHandler) SetSkillsIntegration(integration *skills.Integration) {
 func (h *UnifiedHandler) SetIntentBasedRouter(router *services.IntentBasedRouter) {
 	h.intentRouter = router
 	logrus.WithField("router_set", router != nil).Info("IntentBasedRouter set")
+}
+
+// SetDebateService sets the debate service for conducting debates
+func (h *UnifiedHandler) SetDebateService(debateService *services.DebateService) {
+	h.debateService = debateService
+	logrus.WithField("debate_service_set", debateService != nil).Info("DebateService set")
 }
 
 // SetOrchestratorIntegration sets the NEW debate orchestrator integration
@@ -1811,60 +1818,121 @@ func (h *UnifiedHandler) processWithEnsembleStream(ctx context.Context, req *mod
 	return ensembleService.RunEnsembleStream(ctx, req)
 }
 
-// processWithOrchestrator uses the NEW debate orchestrator (8-phase protocol)
-// This is the implementation from docs/requests/debate requirements
+// processWithOrchestrator uses the debate service with configured debate team
+// This leverages the working debate team (25 LLMs from verified providers)
 func (h *UnifiedHandler) processWithOrchestrator(ctx context.Context, req *models.LLMRequest, openaiReq *OpenAIChatRequest) (*services.EnsembleResult, error) {
-	// Build debate request for orchestrator
-	debateReq := &orchestrator.DebateRequest{
-		Topic:        req.Prompt,
-		MaxRounds:    10, // From debate requirements
-		MinConsensus: 0.8,
+	// First try the NEW orchestrator if available
+	if h.orchestratorIntegration != nil {
+		debateReq := &orchestrator.DebateRequest{
+			Topic:        req.Prompt,
+			MaxRounds:    10,
+			MinConsensus: 0.8,
+		}
+
+		debateResp, err := h.orchestratorIntegration.GetOrchestrator().ConductDebate(ctx, debateReq)
+		if err == nil && debateResp != nil {
+			// Extract the consensus response from the debate
+			var finalContent string
+			var confidence float64
+			if debateResp.Consensus != nil {
+				finalContent = debateResp.Consensus.Summary
+				confidence = debateResp.Consensus.Confidence
+			} else if len(debateResp.Phases) > 0 {
+				lastPhase := debateResp.Phases[len(debateResp.Phases)-1]
+				if len(lastPhase.Responses) > 0 {
+					finalContent = lastPhase.Responses[0].Content
+				}
+			}
+
+			finalResponse := &models.LLMResponse{
+				ID:           debateResp.ID,
+				Content:      finalContent,
+				Confidence:   confidence,
+				FinishReason: "stop",
+				CreatedAt:    time.Now(),
+			}
+
+			return &services.EnsembleResult{
+				Responses:    []*models.LLMResponse{finalResponse},
+				Selected:     finalResponse,
+				VotingMethod: "new_orchestrator_debate",
+				Scores:       map[string]float64{"consensus": confidence},
+				Metadata: map[string]any{
+					"framework":     "new_debate_orchestrator",
+					"phases":        len(debateResp.Phases),
+					"participants":  len(debateResp.Participants),
+					"documentation": "docs/requests/debate",
+					"duration_ms":   debateResp.Duration.Milliseconds(),
+				},
+			}, nil
+		}
+		logrus.WithError(err).Debug("Orchestrator debate failed, using debate service")
 	}
 
-	// Run the debate using the NEW orchestrator
-	debateResp, err := h.orchestratorIntegration.GetOrchestrator().ConductDebate(ctx, debateReq)
-	if err != nil {
-		logrus.WithError(err).Warn("NEW orchestrator debate failed, falling back to old ensemble")
-		// Fallback to old ensemble service
+	// Use the debate service with configured debate team (25 verified LLMs)
+	// This is the working system that uses the debate team config
+	if h.debateService == nil {
+		logrus.Warn("Debate service not available, falling back to old ensemble")
 		ensembleService := h.providerRegistry.GetEnsembleService()
 		return ensembleService.RunEnsemble(ctx, req)
 	}
 
-	// Extract the consensus response from the debate
-	var finalContent string
-	var confidence float64
-	if debateResp.Consensus != nil {
-		finalContent = debateResp.Consensus.Summary
-		confidence = debateResp.Consensus.Confidence
-	} else if len(debateResp.Phases) > 0 {
-		// Fallback to last phase if no consensus
-		lastPhase := debateResp.Phases[len(debateResp.Phases)-1]
-		if len(lastPhase.Responses) > 0 {
-			finalContent = lastPhase.Responses[0].Content
-		}
+	// Configure debate with the working team
+	debateConfig := services.DebateConfig{
+		Topic:        req.Prompt,
+		MaxRounds:    3,
+		EnableCognee: false,
+		Strategy:     "collaborative",
+		Participants: []services.ParticipantConfig{},
 	}
 
-	// Create a synthetic LLM response from debate result
+	// Run the debate using the debate service (uses the configured 25 LLM team)
+	debateResult, err := h.debateService.AutoConductDebate(ctx, &debateConfig)
+	if err != nil {
+		logrus.WithError(err).Warn("Debate service failed, falling back to old ensemble")
+		ensembleService := h.providerRegistry.GetEnsembleService()
+		return ensembleService.RunEnsemble(ctx, req)
+	}
+
+	// Convert debate result to ensemble result
+	var finalContent string
+	var confidence float64
+	if debateResult.Consensus != nil && debateResult.Consensus.Summary != "" {
+		finalContent = debateResult.Consensus.Summary
+		confidence = debateResult.Consensus.Confidence
+	} else if debateResult.BestResponse != nil {
+		// Use the best response
+		finalContent = debateResult.BestResponse.Content
+		confidence = debateResult.BestResponse.Confidence
+	} else if len(debateResult.AllResponses) > 0 {
+		finalContent = debateResult.AllResponses[0].Content
+		confidence = debateResult.AllResponses[0].Confidence
+	}
+
+	if confidence == 0 {
+		confidence = debateResult.QualityScore
+	}
+
 	finalResponse := &models.LLMResponse{
-		ID:           debateResp.ID,
+		ID:           debateResult.DebateID,
 		Content:      finalContent,
 		Confidence:   confidence,
 		FinishReason: "stop",
 		CreatedAt:    time.Now(),
 	}
 
-	// Convert debate response to ensemble result format
 	return &services.EnsembleResult{
 		Responses:    []*models.LLMResponse{finalResponse},
 		Selected:     finalResponse,
-		VotingMethod: "new_orchestrator_debate",
-		Scores:       map[string]float64{"consensus": confidence},
+		VotingMethod: "debate_service_team",
+		Scores:       map[string]float64{"debate_confidence": confidence},
 		Metadata: map[string]any{
-			"framework":     "new_debate_orchestrator",
-			"phases":        len(debateResp.Phases),
-			"participants":  len(debateResp.Participants),
+			"framework":     "debate_service_with_verified_team",
+			"rounds":        debateResult.TotalRounds,
+			"participants":  len(debateResult.Participants),
+			"duration_ms":   debateResult.Duration.Milliseconds(),
+			"team_size":     25,
 			"documentation": "docs/requests/debate",
-			"duration_ms":   debateResp.Duration.Milliseconds(),
 		},
 	}, nil
 }
