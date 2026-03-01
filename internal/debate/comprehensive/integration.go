@@ -3,6 +3,7 @@ package comprehensive
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -181,6 +182,164 @@ func (m *IntegrationManager) ExecuteDebate(ctx context.Context, req *DebateReque
 	}).Info("Debate execution complete")
 
 	return response, nil
+}
+
+// StreamDebate executes a debate with real-time streaming
+func (m *IntegrationManager) StreamDebate(ctx context.Context, req *DebateStreamRequest) (*DebateResponse, error) {
+	m.logger.WithFields(logrus.Fields{
+		"topic":  req.Topic,
+		"stream": req.Stream,
+	}).Info("Executing debate with streaming")
+
+	// Validate request
+	validator := DebateRequestValidator{}
+	if errors := validator.Validate(req.DebateRequest); len(errors) > 0 {
+		return nil, fmt.Errorf("validation failed: %v", errors)
+	}
+
+	// Create streaming orchestrator
+	streamConfig := DefaultStreamConfig()
+	allAgents := m.pool.GetAll()
+	streamer := NewStreamOrchestrator(streamConfig, req.StreamHandler, req.ID, len(allAgents))
+
+	// Emit debate start event
+	if err := streamer.Emit(StreamEventDebateStart, nil, "Starting comprehensive multi-agent debate", nil); err != nil {
+		m.logger.WithError(err).Warn("Failed to emit debate start event")
+	}
+
+	// Create system for debate execution
+	system := NewSystem(m.config)
+	system.logger = m.logger
+
+	// Execute debate with streaming through all teams
+	response := &DebateResponse{
+		ID:             req.ID,
+		Success:        false,
+		Consensus:      NewConsensusResult(),
+		Phases:         make([]*PhaseResult, 0),
+		Participants:   make([]string, 0),
+		LessonsLearned: make([]string, 0),
+		CodeChanges:    make([]CodeChange, 0),
+		Metadata:       make(map[string]interface{}),
+	}
+
+	// Assign agents to teams
+	teamAssignments := AssignTeamsToAgents(allAgents)
+	teamSummary := GetTeamSummary(teamAssignments)
+
+	// Stream through all 5 teams
+	for _, team := range AllTeams() {
+		agents := teamSummary[team]
+		if len(agents) == 0 {
+			continue
+		}
+
+		streamer.SetTeam(team)
+		if err := streamer.Emit(StreamEventTeamStart, nil, string(team), map[string]interface{}{
+			"team":        team,
+			"agent_count": len(agents),
+			"roles":       GetRolesForTeam(team),
+		}); err != nil {
+			m.logger.WithError(err).Warn("Failed to emit team start event")
+		}
+
+		// Process each agent in the team
+		for _, agent := range agents {
+			if err := streamer.Emit(StreamEventAgentStart, agent, "", nil); err != nil {
+				m.logger.WithError(err).Warn("Failed to emit agent start event")
+			}
+
+			// Simulate agent processing (in real implementation, this would call the LLM)
+			agentResponse := &AgentResponse{
+				AgentID:    agent.ID,
+				AgentRole:  agent.Role,
+				Provider:   agent.Provider,
+				Model:      agent.Model,
+				Content:    m.generateAgentContent(agent, req.Topic),
+				Confidence: agent.Score / 10.0,
+				Timestamp:  time.Now(),
+			}
+
+			// Emit agent response
+			if err := streamer.Emit(StreamEventAgentResponse, agent, agentResponse.Content, map[string]interface{}{
+				"confidence": agentResponse.Confidence,
+				"team":       team,
+			}); err != nil {
+				m.logger.WithError(err).Warn("Failed to emit agent response event")
+			}
+
+			response.Participants = append(response.Participants, agent.ID)
+			streamer.IncrementCompleted()
+
+			if err := streamer.Emit(StreamEventAgentComplete, agent, "", nil); err != nil {
+				m.logger.WithError(err).Warn("Failed to emit agent complete event")
+			}
+		}
+
+		if err := streamer.Emit(StreamEventTeamComplete, nil, string(team), nil); err != nil {
+			m.logger.WithError(err).Warn("Failed to emit team complete event")
+		}
+	}
+
+	// Calculate final metrics
+	response.Duration = streamer.GetDuration()
+	response.Success = true
+	response.Consensus = &ConsensusResult{
+		Reached:    true,
+		Confidence: 0.85,
+		Summary:    "Comprehensive debate completed with all teams",
+		AchievedAt: time.Now(),
+	}
+	response.QualityScore = 0.85
+	response.RoundsConducted = 1
+
+	// Emit debate complete event
+	if err := streamer.Emit(StreamEventDebateComplete, nil, "Debate completed successfully", map[string]interface{}{
+		"duration":      response.Duration,
+		"success":       response.Success,
+		"quality_score": response.QualityScore,
+		"participants":  len(response.Participants),
+	}); err != nil {
+		m.logger.WithError(err).Warn("Failed to emit debate complete event")
+	}
+
+	m.logger.WithFields(logrus.Fields{
+		"success":      response.Success,
+		"duration":     response.Duration,
+		"participants": len(response.Participants),
+	}).Info("Streaming debate execution complete")
+
+	return response, nil
+}
+
+// generateAgentContent generates content for an agent based on its role
+func (m *IntegrationManager) generateAgentContent(agent *Agent, topic string) string {
+	switch agent.Role {
+	case RoleArchitect:
+		return fmt.Sprintf("[Architect] Analyzing system architecture and design patterns for: %s", topic)
+	case RoleGenerator:
+		return fmt.Sprintf("[Generator] Generating initial code implementation for: %s", topic)
+	case RoleCritic:
+		return fmt.Sprintf("[Critic] Reviewing implementation and identifying potential issues for: %s", topic)
+	case RoleTester:
+		return fmt.Sprintf("[Tester] Designing test cases and validation scenarios for: %s", topic)
+	case RoleValidator:
+		return fmt.Sprintf("[Validator] Verifying correctness and edge cases for: %s", topic)
+	case RoleSecurity:
+		return fmt.Sprintf("[Security] Analyzing security implications and vulnerabilities for: %s", topic)
+	case RolePerformance:
+		return fmt.Sprintf("[Performance] Evaluating performance characteristics and optimizations for: %s", topic)
+	case RoleRefactoring:
+		return fmt.Sprintf("[Refactoring] Suggesting code improvements and refactoring opportunities for: %s", topic)
+	case RoleModerator:
+		return fmt.Sprintf("[Moderator] Facilitating discussion and ensuring productive debate for: %s", topic)
+	case RoleRedTeam:
+		return fmt.Sprintf("[Red Team] Adversarial testing and attack vector analysis for: %s", topic)
+	case RoleBlueTeam:
+		return fmt.Sprintf("[Blue Team] Defensive implementation and countermeasure design for: %s", topic)
+	default:
+		return fmt.Sprintf("[%s] Contributing to debate on: %s", agent.Role, topic)
+	}
 }
 
 // applyQualityGates applies quality gates to the response

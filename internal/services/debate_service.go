@@ -84,6 +84,27 @@ type DebateService struct {
 	useComprehensiveSystem   bool                              // Feature flag to enable new system
 }
 
+// IsComprehensiveSystemEnabled returns whether the comprehensive debate system is enabled
+func (ds *DebateService) IsComprehensiveSystemEnabled() bool {
+	return ds.useComprehensiveSystem && ds.comprehensiveIntegration != nil
+}
+
+// StreamDebate conducts a streaming debate with the given configuration and handler
+func (ds *DebateService) StreamDebate(ctx context.Context, config *DebateConfig, streamHandler comprehensive.StreamHandler) (*DebateResult, error) {
+	startTime := time.Now()
+	sessionID := fmt.Sprintf("session-%s-%s", config.DebateID, uuid.New().String()[:8])
+
+	ds.logger.Infof("Starting streaming debate %s with topic: %s", config.DebateID, config.Topic)
+
+	// Use Comprehensive Multi-Agent Debate System when enabled
+	if ds.IsComprehensiveSystemEnabled() {
+		ds.logger.Info("[Comprehensive Debate] Using new streaming multi-agent debate system")
+		return ds.conductComprehensiveDebateStreaming(ctx, config, startTime, sessionID, streamHandler)
+	}
+
+	return nil, fmt.Errorf("comprehensive streaming debate system is not enabled")
+}
+
 // DebateLogRepository interface for logging debate activities
 type DebateLogRepository interface {
 	Insert(ctx context.Context, entry *database.DebateLogEntry) error

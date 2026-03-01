@@ -16,6 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"dev.helix.agent/internal/config"
+	"dev.helix.agent/internal/debate/comprehensive"
 	"dev.helix.agent/internal/debate/orchestrator"
 	"dev.helix.agent/internal/llm"
 	"dev.helix.agent/internal/models"
@@ -1809,6 +1810,12 @@ func (h *UnifiedHandler) processWithEnsemble(ctx context.Context, req *models.LL
 }
 
 func (h *UnifiedHandler) processWithEnsembleStream(ctx context.Context, req *models.LLMRequest, openaiReq *OpenAIChatRequest) (<-chan *models.LLMResponse, error) {
+	// Check if comprehensive debate streaming is available
+	if h.debateService != nil && h.debateService.IsComprehensiveSystemEnabled() {
+		logrus.Info("[Comprehensive Streaming] Using comprehensive multi-agent debate system")
+		return h.processWithComprehensiveStream(ctx, req, openaiReq)
+	}
+
 	// Check if provider registry is available
 	if h.providerRegistry == nil {
 		return nil, services.NewConfigurationError("provider registry not available", nil)
@@ -1823,6 +1830,79 @@ func (h *UnifiedHandler) processWithEnsembleStream(ctx context.Context, req *mod
 	// For streaming, we'll use the first available provider
 	// In a more sophisticated implementation, we could merge streams
 	return ensembleService.RunEnsembleStream(ctx, req)
+}
+
+// processWithComprehensiveStream uses the comprehensive multi-agent debate system for streaming
+func (h *UnifiedHandler) processWithComprehensiveStream(ctx context.Context, req *models.LLMRequest, openaiReq *OpenAIChatRequest) (<-chan *models.LLMResponse, error) {
+	streamChan := make(chan *models.LLMResponse, 100)
+
+	go func() {
+		defer close(streamChan)
+
+		debateConfig := services.DebateConfig{
+			DebateID:  fmt.Sprintf("comp-%d", time.Now().UnixNano()),
+			Topic:     req.Prompt,
+			MaxRounds: 3,
+			Metadata:  make(map[string]any),
+		}
+
+		// Create streaming handler that forwards to channel
+		streamHandler := func(event *comprehensive.StreamEvent) error {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case streamChan <- h.convertStreamEventToLLMResponse(event):
+				return nil
+			}
+		}
+
+		// Run comprehensive streaming debate
+		result, err := h.debateService.StreamDebate(ctx, &debateConfig, streamHandler)
+		if err != nil {
+			logrus.WithError(err).Error("[Comprehensive Streaming] Debate failed")
+			return
+		}
+
+		// Send final result
+		if result != nil && result.Consensus != nil {
+			select {
+			case <-ctx.Done():
+				return
+			case streamChan <- &models.LLMResponse{
+				ID:           debateConfig.DebateID,
+				Content:      result.Consensus.Summary,
+				Confidence:   result.Consensus.Confidence,
+				FinishReason: "stop",
+				CreatedAt:    time.Now(),
+				Metadata:     result.Metadata,
+			}:
+			}
+		}
+	}()
+
+	return streamChan, nil
+}
+
+// convertStreamEventToLLMResponse converts a comprehensive stream event to LLM response
+func (h *UnifiedHandler) convertStreamEventToLLMResponse(event *comprehensive.StreamEvent) *models.LLMResponse {
+	content := ""
+	if event.Agent != nil {
+		content = fmt.Sprintf("[%s:%s] ", event.Team, event.Agent.Role)
+	}
+	content += event.Content
+
+	return &models.LLMResponse{
+		ID:        event.DebateID,
+		Content:   content,
+		CreatedAt: event.Timestamp,
+		Metadata: map[string]any{
+			"event_type": event.Type,
+			"phase":      event.Phase,
+			"team":       event.Team,
+			"progress":   event.Progress,
+			"agent_id":   event.Agent,
+		},
+	}
 }
 
 // processWithOrchestrator uses the debate service with configured debate team
