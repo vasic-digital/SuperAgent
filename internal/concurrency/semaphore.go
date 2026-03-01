@@ -124,7 +124,6 @@ type PrioritySemaphore struct {
 	lowPriority  chan struct{}
 	maxHigh      int
 	maxLow       int
-	mu           sync.Mutex
 }
 
 func NewPrioritySemaphore(maxHigh, maxLow int) *PrioritySemaphore {

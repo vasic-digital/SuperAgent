@@ -126,17 +126,17 @@ func (s *SelfEvolvementPhase) Execute(
 		select {
 		case <-ctx.Done():
 			return &SelfEvolvementResult{
-				FinalSolution: currentSolution,
-				Iterations:    iteration,
-				TestResults:   allTestResults,
-				Improvements:  improvements,
-				FinalPassRate: finalPassRate,
-				Duration:      time.Since(startTime),
-				Skipped:       false,
-			}, fmt.Errorf(
-				"self-evolvement timeout after %d iterations for agent %s: %w",
-				iteration, agentID, ctx.Err(),
-			)
+					FinalSolution: currentSolution,
+					Iterations:    iteration,
+					TestResults:   allTestResults,
+					Improvements:  improvements,
+					FinalPassRate: finalPassRate,
+					Duration:      time.Since(startTime),
+					Skipped:       false,
+				}, fmt.Errorf(
+					"self-evolvement timeout after %d iterations for agent %s: %w",
+					iteration, agentID, ctx.Err(),
+				)
 		default:
 		}
 
@@ -145,17 +145,17 @@ func (s *SelfEvolvementPhase) Execute(
 		if err != nil {
 			// If test generation fails, return with what we have.
 			return &SelfEvolvementResult{
-				FinalSolution: currentSolution,
-				Iterations:    iteration,
-				TestResults:   allTestResults,
-				Improvements:  improvements,
-				FinalPassRate: finalPassRate,
-				Duration:      time.Since(startTime),
-				Skipped:       false,
-			}, fmt.Errorf(
-				"self-test generation failed at iteration %d for agent %s: %w",
-				iteration, agentID, err,
-			)
+					FinalSolution: currentSolution,
+					Iterations:    iteration,
+					TestResults:   allTestResults,
+					Improvements:  improvements,
+					FinalPassRate: finalPassRate,
+					Duration:      time.Since(startTime),
+					Skipped:       false,
+				}, fmt.Errorf(
+					"self-test generation failed at iteration %d for agent %s: %w",
+					iteration, agentID, err,
+				)
 		}
 
 		// If no tests generated, treat as all-pass and break.

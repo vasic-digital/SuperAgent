@@ -244,7 +244,7 @@ func (g *GitAdapter) Status(ctx context.Context, repoPath string) (*GitStatus, e
 		if err == nil {
 			parts := strings.Fields(revList)
 			if len(parts) == 2 {
-				_, _ = fmt.Sscanf(parts[0], "%d", &status.Ahead) //nolint:errcheck
+				_, _ = fmt.Sscanf(parts[0], "%d", &status.Ahead)  //nolint:errcheck
 				_, _ = fmt.Sscanf(parts[1], "%d", &status.Behind) //nolint:errcheck
 			}
 		}
@@ -565,7 +565,7 @@ func (g *GitAdapter) Commit(ctx context.Context, repoPath, message string, amend
 		return nil, fmt.Errorf("failed to get commit hash: %w", err)
 	}
 
-	shortHash, _ := g.runGitCommand(ctx, repoPath, "rev-parse", "--short", "HEAD") //nolint:errcheck
+	shortHash, _ := g.runGitCommand(ctx, repoPath, "rev-parse", "--short", "HEAD")   //nolint:errcheck
 	branch, _ := g.runGitCommand(ctx, repoPath, "rev-parse", "--abbrev-ref", "HEAD") //nolint:errcheck
 
 	return &GitCommitResult{

@@ -134,12 +134,6 @@ type promptResponse struct {
 	Result     []contentBlock `json:"result"`
 }
 
-// sessionUpdateNotification is sent during streaming
-type sessionUpdateNotification struct {
-	SessionID string         `json:"sessionId"`
-	Updates   []contentBlock `json:"updates"`
-}
-
 // QwenACPConfig holds configuration for the ACP provider
 type QwenACPConfig struct {
 	Model     string
@@ -443,7 +437,7 @@ func (p *QwenACPProvider) Stop() {
 	if p.cmd != nil && p.cmd.Process != nil {
 		_ = p.stdin.Close()
 		_ = p.cmd.Process.Kill() //nolint:errcheck
-		_ = p.cmd.Wait() //nolint:errcheck
+		_ = p.cmd.Wait()         //nolint:errcheck
 	}
 	p.isRunning = false
 	p.initialized = false

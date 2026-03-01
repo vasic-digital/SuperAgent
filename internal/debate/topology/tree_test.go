@@ -19,31 +19,31 @@ func createTreeTestAgents() []*Agent {
 			ID: "architect-1", Role: RoleArchitect,
 			Provider: "p1", Model: "m1", Score: 9.0,
 			Capabilities: []string{"design"},
-			Metadata:      map[string]interface{}{},
+			Metadata:     map[string]interface{}{},
 		},
 		{
 			ID: "security-1", Role: RoleSecurity,
 			Provider: "p2", Model: "m2", Score: 8.5,
 			Capabilities: []string{"security"},
-			Metadata:      map[string]interface{}{},
+			Metadata:     map[string]interface{}{},
 		},
 		{
 			ID: "perf-1", Role: RolePerformanceAnalyzer,
 			Provider: "p3", Model: "m3", Score: 8.0,
 			Capabilities: []string{"performance"},
-			Metadata:      map[string]interface{}{},
+			Metadata:     map[string]interface{}{},
 		},
 		{
 			ID: "proposer-1", Role: RoleProposer,
 			Provider: "p4", Model: "m4", Score: 7.5,
 			Capabilities: []string{"code"},
-			Metadata:      map[string]interface{}{},
+			Metadata:     map[string]interface{}{},
 		},
 		{
 			ID: "critic-1", Role: RoleCritic,
 			Provider: "p5", Model: "m5", Score: 7.0,
 			Capabilities: []string{"review"},
-			Metadata:      map[string]interface{}{},
+			Metadata:     map[string]interface{}{},
 		},
 	}
 }
@@ -115,7 +115,7 @@ func TestTreeTopology_Initialize(t *testing.T) {
 			ID: "solo", Role: RoleProposer,
 			Provider: "p1", Model: "m1", Score: 8.0,
 			Capabilities: []string{"code"},
-			Metadata:      map[string]interface{}{},
+			Metadata:     map[string]interface{}{},
 		}
 
 		err := tt.Initialize(ctx, []*Agent{agent})
@@ -474,7 +474,7 @@ func TestTreeTopology_GetParallelGroups(t *testing.T) {
 			ID: "solo", Role: RoleArchitect,
 			Provider: "p", Model: "m", Score: 9.0,
 			Capabilities: []string{"all"},
-			Metadata:      map[string]interface{}{},
+			Metadata:     map[string]interface{}{},
 		}
 		err := singleTree.Initialize(ctxSingle, []*Agent{solo})
 		require.NoError(t, err)

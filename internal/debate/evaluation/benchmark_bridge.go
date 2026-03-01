@@ -29,8 +29,8 @@ const (
 // EvaluationScore captures the result of evaluating a debate outcome.
 type EvaluationScore struct {
 	BenchmarkType BenchmarkType          `json:"benchmark_type"`
-	Score         float64                `json:"score"`              // 0-1
-	Details       map[string]float64     `json:"details"`            // per-metric scores
+	Score         float64                `json:"score"`   // 0-1
+	Details       map[string]float64     `json:"details"` // per-metric scores
 	Timestamp     time.Time              `json:"timestamp"`
 	Metadata      map[string]interface{} `json:"metadata,omitempty"`
 }

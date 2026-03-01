@@ -13,10 +13,7 @@ import (
 
 	"dev.helix.agent/internal/llm/discovery"
 	"dev.helix.agent/internal/models"
-	"github.com/sirupsen/logrus"
 )
-
-var log = logrus.New()
 
 const (
 	KimiAPIURL     = "https://api.moonshot.cn/v1/chat/completions"

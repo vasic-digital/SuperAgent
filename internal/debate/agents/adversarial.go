@@ -14,8 +14,8 @@ import (
 // Vulnerability represents a security or correctness issue found by the red team.
 type Vulnerability struct {
 	ID          string `json:"id"`
-	Category    string `json:"category"`    // injection, overflow, race_condition, logic_error, etc.
-	Severity    string `json:"severity"`    // critical, high, medium, low
+	Category    string `json:"category"` // injection, overflow, race_condition, logic_error, etc.
+	Severity    string `json:"severity"` // critical, high, medium, low
 	Description string `json:"description"`
 	Evidence    string `json:"evidence"`
 	Exploit     string `json:"exploit"` // how to exploit

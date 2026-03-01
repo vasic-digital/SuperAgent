@@ -4,7 +4,6 @@ package testing
 import (
 	"context"
 	"fmt"
-	"sync"
 )
 
 // DebateTestIntegration integrates test-driven debate into protocol phases.
@@ -12,7 +11,6 @@ type DebateTestIntegration struct {
 	generator TestCaseGenerator
 	executor  TestExecutor
 	analyzer  ContrastiveAnalyzer
-	mu        sync.RWMutex
 	testCache map[string][]*TestCase // solution_id -> tests
 }
 

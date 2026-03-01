@@ -61,8 +61,8 @@ func TestComplete(t *testing.T) {
 			"model":   "test-model",
 			"choices": []map[string]interface{}{
 				{
-					"index":   0,
-					"message": map[string]string{"role": "assistant", "content": "Hello!"},
+					"index":         0,
+					"message":       map[string]string{"role": "assistant", "content": "Hello!"},
 					"finish_reason": "stop",
 				},
 			},
@@ -105,7 +105,7 @@ func TestCompleteWithError(t *testing.T) {
 
 	provider := NewUpstageProvider("invalid-key", server.URL, "")
 	req := &models.LLMRequest{ID: "req-1", Messages: []models.Message{{Role: "user", Content: "Hi"}}}
-	
+
 	_, err := provider.Complete(context.Background(), req)
 	assert.Error(t, err)
 }
@@ -154,8 +154,8 @@ func TestGetCapabilities(t *testing.T) {
 
 func TestValidateConfig(t *testing.T) {
 	tests := []struct {
-		name     string
-		apiKey   string
+		name      string
+		apiKey    string
 		wantValid bool
 	}{
 		{name: "valid config", apiKey: "test-key", wantValid: true},

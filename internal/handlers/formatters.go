@@ -965,14 +965,6 @@ func (f *TerminalFormatter) color256(colorCode int) string {
 	return fmt.Sprintf("%s%dm", ANSI256FgPrefix, colorCode)
 }
 
-func (f *TerminalFormatter) bgColor256(colorCode int) string {
-	return fmt.Sprintf("%s%dm", ANSI256BgPrefix, colorCode)
-}
-
-func (f *TerminalFormatter) trueColor(r, g, b int) string {
-	return fmt.Sprintf("%s%d;%d;%dm", ANSITrueColorFg, r, g, b)
-}
-
 func (f *TerminalFormatter) FormatDebateTeamIntroduction(topic string, members []*services.DebateTeamMember) string {
 	var sb strings.Builder
 

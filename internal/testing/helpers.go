@@ -229,7 +229,7 @@ func (m *MockMCPServer) setupDefaultHandlers() {
 		// Handle known tools
 		switch params.Name {
 		case "echo":
-			msg, _ := params.Arguments["message"].(string) //nolint:errcheck
+			msg, _ := params.Arguments["message"].(string)    //nolint:errcheck
 			result, _ := json.Marshal(map[string]interface{}{ //nolint:errcheck
 				"content": []map[string]interface{}{
 					{
@@ -610,7 +610,7 @@ func AssertJSONEqual(t *testing.T, expected, actual string) {
 	}
 
 	expectedBytes, _ := json.Marshal(expectedObj) //nolint:errcheck
-	actualBytes, _ := json.Marshal(actualObj) //nolint:errcheck
+	actualBytes, _ := json.Marshal(actualObj)     //nolint:errcheck
 
 	if string(expectedBytes) != string(actualBytes) {
 		t.Errorf("JSON not equal:\nExpected: %s\nActual: %s", expected, actual)
@@ -634,7 +634,7 @@ func AssertJSONContains(t *testing.T, jsonStr string, expected map[string]interf
 		}
 
 		expectedBytes, _ := json.Marshal(expectedValue) //nolint:errcheck
-		actualBytes, _ := json.Marshal(actualValue) //nolint:errcheck
+		actualBytes, _ := json.Marshal(actualValue)     //nolint:errcheck
 
 		if string(expectedBytes) != string(actualBytes) {
 			t.Errorf("Key %q: expected %v, got %v", key, expectedValue, actualValue)

@@ -344,4 +344,3 @@ func FilterAvailablePackages(packages []MCPPackage) []MCPPackage {
 	}
 	return available
 }
-

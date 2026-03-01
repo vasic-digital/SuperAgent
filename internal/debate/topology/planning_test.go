@@ -40,12 +40,12 @@ func TestPlanningStyleSelector_SelectStyle_LargeTeam(t *testing.T) {
 
 func TestPlanningStyleSelector_SelectStyle_TableDriven(t *testing.T) {
 	tests := []struct {
-		name           string
-		complexity     float64
-		ambiguity      float64
-		agentCount     int
-		defaultStyle   PlanningStyle
-		expectedStyle  PlanningStyle
+		name          string
+		complexity    float64
+		ambiguity     float64
+		agentCount    int
+		defaultStyle  PlanningStyle
+		expectedStyle PlanningStyle
 	}{
 		{
 			name:          "high complexity low ambiguity => CPDE",

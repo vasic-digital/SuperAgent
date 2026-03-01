@@ -39,7 +39,6 @@ type KimiCodeCLIProvider struct {
 	maxOutputTokens     int
 	sessionID           string
 	availableModels     []string
-	modelsDiscovered    bool
 	modelsDiscoveryOnce sync.Once
 }
 

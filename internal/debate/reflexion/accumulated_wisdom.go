@@ -12,12 +12,12 @@ import (
 // Wisdom represents a generalized insight extracted from episodes.
 type Wisdom struct {
 	ID          string    `json:"id"`
-	Pattern     string    `json:"pattern"`      // generalized insight
-	Source      string    `json:"source"`        // extracted from which episodes
-	Frequency   int       `json:"frequency"`     // how often this pattern appeared
-	Impact      float64   `json:"impact"`        // how much it improved outcomes (0-1)
-	Domain      string    `json:"domain"`        // code, testing, architecture, etc.
-	Tags        []string  `json:"tags"`          // searchable tags
+	Pattern     string    `json:"pattern"`   // generalized insight
+	Source      string    `json:"source"`    // extracted from which episodes
+	Frequency   int       `json:"frequency"` // how often this pattern appeared
+	Impact      float64   `json:"impact"`    // how much it improved outcomes (0-1)
+	Domain      string    `json:"domain"`    // code, testing, architecture, etc.
+	Tags        []string  `json:"tags"`      // searchable tags
 	CreatedAt   time.Time `json:"created_at"`
 	LastUsedAt  time.Time `json:"last_used_at"`
 	UseCount    int       `json:"use_count"`

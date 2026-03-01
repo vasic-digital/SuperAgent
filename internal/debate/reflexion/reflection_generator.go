@@ -132,13 +132,13 @@ func (rg *ReflectionGenerator) parseReflectionResponse(
 	response string,
 ) (*Reflection, error) {
 	var (
-		rootCause      string
-		whatWentWrong  string
-		whatToChange   string
-		confidence     float64
-		foundRoot      bool
-		foundWrong     bool
-		foundChange    bool
+		rootCause       string
+		whatWentWrong   string
+		whatToChange    string
+		confidence      float64
+		foundRoot       bool
+		foundWrong      bool
+		foundChange     bool
 		foundConfidence bool
 	)
 

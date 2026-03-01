@@ -168,13 +168,13 @@ func TestDehallucationPhase_ParseClarifications(t *testing.T) {
 	phase := NewDehallucationPhase(DefaultDehallucationConfig(), nil)
 
 	tests := []struct {
-		name             string
-		response         string
-		expectedCount    int
-		expectedConf     float64
-		checkQuestion    string
-		checkCategory    string
-		checkPriority    int
+		name          string
+		response      string
+		expectedCount int
+		expectedConf  float64
+		checkQuestion string
+		checkCategory string
+		checkPriority int
 	}{
 		{
 			name: "single question with all fields",

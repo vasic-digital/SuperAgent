@@ -68,8 +68,8 @@ type HookResult struct {
 type HookConfig struct {
 	Enabled    bool                       `json:"enabled"`
 	HookPoints map[HookPoint][]HookAction `json:"hook_points"`
-	Timeout    time.Duration              `json:"timeout"`    // per action timeout
-	FailFast   bool                       `json:"fail_fast"`  // stop on first failure
+	Timeout    time.Duration              `json:"timeout"`   // per action timeout
+	FailFast   bool                       `json:"fail_fast"` // stop on first failure
 }
 
 // DefaultHookConfig returns sensible defaults.

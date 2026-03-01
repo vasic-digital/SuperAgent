@@ -618,11 +618,6 @@ func (a *Adapter) DistributionStatus(
 }
 
 // RemoteEnabled returns true if remote distribution is configured.
-// composeBuildConfig represents a build configuration from a compose file
-type composeBuildConfig struct {
-	Context    string `yaml:"context"`
-	Dockerfile string `yaml:"dockerfile"`
-}
 
 // composeService represents a service definition from a compose file
 type composeService struct {

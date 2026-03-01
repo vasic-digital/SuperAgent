@@ -153,19 +153,19 @@ func TestSkillsHandler_SetLogger(t *testing.T) {
 
 func TestSkillResponse_Fields(t *testing.T) {
 	resp := SkillResponse{
-		Name:        "test-skill",
-		Description: "A test skill",
-		Category:    "testing",
-		Tags:        []string{"test", "example"},
-		Version:     "2.0.0",
-		Author:      "tester",
-		License:     "MIT",
-		Overview:    "overview text",
-		WhenToUse:   "when testing",
+		Name:         "test-skill",
+		Description:  "A test skill",
+		Category:     "testing",
+		Tags:         []string{"test", "example"},
+		Version:      "2.0.0",
+		Author:       "tester",
+		License:      "MIT",
+		Overview:     "overview text",
+		WhenToUse:    "when testing",
 		Instructions: "do the thing",
-		FilePath:    "/skills/test.md",
-		LoadedAt:    "2024-01-01T00:00:00Z",
-		UpdatedAt:   "2024-01-01T00:00:00Z",
+		FilePath:     "/skills/test.md",
+		LoadedAt:     "2024-01-01T00:00:00Z",
+		UpdatedAt:    "2024-01-01T00:00:00Z",
 	}
 
 	assert.Equal(t, "test-skill", resp.Name)
@@ -589,8 +589,8 @@ func TestConvertSkillToResponse(t *testing.T) {
 func TestConvertSkillToResponse_EmptyFields(t *testing.T) {
 	now := time.Now()
 	skill := &skills.Skill{
-		Name:     "minimal",
-		LoadedAt: now,
+		Name:      "minimal",
+		LoadedAt:  now,
 		UpdatedAt: now,
 	}
 

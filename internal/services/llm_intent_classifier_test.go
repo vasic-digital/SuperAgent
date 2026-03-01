@@ -285,21 +285,21 @@ func TestLLMIntentClassifier_convertToClassificationResult(t *testing.T) {
 	lic := NewLLMIntentClassifier(nil, logger)
 
 	tests := []struct {
-		name                     string
-		llmResult                *LLMIntentResponse
-		expectedIntent           UserIntent
-		expectedRequiresClarify  bool
-		expectedIsActionable     bool
+		name                       string
+		llmResult                  *LLMIntentResponse
+		expectedIntent             UserIntent
+		expectedRequiresClarify    bool
+		expectedIsActionable       bool
 		expectedReasoningInSignals bool
 	}{
 		{
 			name: "confirmation maps correctly",
 			llmResult: &LLMIntentResponse{
-				Intent:       "confirmation",
-				Confidence:   0.9,
-				IsActionable: true,
+				Intent:        "confirmation",
+				Confidence:    0.9,
+				IsActionable:  true,
 				ShouldProceed: true,
-				Reasoning:    "User confirmed",
+				Reasoning:     "User confirmed",
 			},
 			expectedIntent:             IntentConfirmation,
 			expectedRequiresClarify:    false,
@@ -697,10 +697,10 @@ func TestIntentClassificationCache_Set_And_Get(t *testing.T) {
 	cache := NewIntentClassificationCache(10, 5*time.Minute)
 
 	result := &IntentClassificationResult{
-		Intent:     IntentConfirmation,
-		Confidence: 0.95,
+		Intent:       IntentConfirmation,
+		Confidence:   0.95,
 		IsActionable: true,
-		Signals:    []string{"yes"},
+		Signals:      []string{"yes"},
 	}
 
 	cache.Set("test message", result)

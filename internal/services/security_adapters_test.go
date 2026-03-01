@@ -401,10 +401,10 @@ func TestCalculateConsensusConfidence(t *testing.T) {
 
 func TestParseDebateSecurityResult(t *testing.T) {
 	tests := []struct {
-		name           string
-		result         *SecurityDebateResult
-		expectVuln     bool
-		expectConf     float64
+		name            string
+		result          *SecurityDebateResult
+		expectVuln      bool
+		expectConf      float64
 		expectReasoning string
 	}{
 		{
@@ -413,8 +413,8 @@ func TestParseDebateSecurityResult(t *testing.T) {
 				Response:   `{"is_vulnerable": true, "confidence": 0.95, "reasoning": "Attack succeeded"}`,
 				Confidence: 0.8,
 			},
-			expectVuln:     true,
-			expectConf:     0.95,
+			expectVuln:      true,
+			expectConf:      0.95,
 			expectReasoning: "Attack succeeded",
 		},
 		{
@@ -423,8 +423,8 @@ func TestParseDebateSecurityResult(t *testing.T) {
 				Response:   `{"is_vulnerable": false, "confidence": 0.1, "reasoning": "Attack blocked"}`,
 				Confidence: 0.9,
 			},
-			expectVuln:     false,
-			expectConf:     0.1,
+			expectVuln:      false,
+			expectConf:      0.1,
 			expectReasoning: "Attack blocked",
 		},
 		{
@@ -433,8 +433,8 @@ func TestParseDebateSecurityResult(t *testing.T) {
 				Response:   `{"is_vulnerable": true, "reasoning": "test"}`,
 				Confidence: 0.7,
 			},
-			expectVuln:     true,
-			expectConf:     0.7,
+			expectVuln:      true,
+			expectConf:      0.7,
 			expectReasoning: "test",
 		},
 		{
@@ -445,8 +445,8 @@ func TestParseDebateSecurityResult(t *testing.T) {
 			},
 			// extractJSONFromText returns "{}" which parses as empty JSON (all zero values)
 			// So it takes the JSON path with IsVulnerable=false, Confidence=0
-			expectVuln:     false,
-			expectConf:     0.5,
+			expectVuln:      false,
+			expectConf:      0.5,
 			expectReasoning: "",
 		},
 		{
@@ -457,8 +457,8 @@ func TestParseDebateSecurityResult(t *testing.T) {
 			},
 			// extractJSONFromText finds '{' but no matching '}', returns "{}"
 			// "{}" parses fine, so falls through to JSON path
-			expectVuln:     false,
-			expectConf:     0.5,
+			expectVuln:      false,
+			expectConf:      0.5,
 			expectReasoning: "",
 		},
 		{
@@ -467,8 +467,8 @@ func TestParseDebateSecurityResult(t *testing.T) {
 				Response:   `Analysis: {"is_vulnerable": true, "confidence": 0.8, "reasoning": "found"} end`,
 				Confidence: 0.6,
 			},
-			expectVuln:     true,
-			expectConf:     0.8,
+			expectVuln:      true,
+			expectConf:      0.8,
 			expectReasoning: "found",
 		},
 	}
@@ -977,4 +977,3 @@ func TestParseContentEvaluationResult_EmptyResponse(t *testing.T) {
 	assert.False(t, eval.IsSafe)
 	assert.Equal(t, 0.5, eval.Confidence)
 }
-

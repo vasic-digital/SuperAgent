@@ -153,16 +153,16 @@ type DebatePhase string
 
 const (
 	// Pre-debate phases
-	PhaseDehallucination DebatePhase = "dehallucination"  // Proactive clarification to reduce hallucination
-	PhaseSelfEvolvement  DebatePhase = "self_evolvement"  // Agents self-test and refine before debate
+	PhaseDehallucination DebatePhase = "dehallucination" // Proactive clarification to reduce hallucination
+	PhaseSelfEvolvement  DebatePhase = "self_evolvement" // Agents self-test and refine before debate
 
 	// Core debate phases
 	PhaseProposal     DebatePhase = "proposal"     // Initial solution generation
-	PhaseCritique     DebatePhase = "critique"      // Weakness identification
-	PhaseReview       DebatePhase = "review"        // Quality evaluation
-	PhaseOptimization DebatePhase = "optimization"  // Solution improvement
-	PhaseAdversarial  DebatePhase = "adversarial"   // Red/Blue Team attack-defend cycle
-	PhaseConvergence  DebatePhase = "convergence"   // Final consensus
+	PhaseCritique     DebatePhase = "critique"     // Weakness identification
+	PhaseReview       DebatePhase = "review"       // Quality evaluation
+	PhaseOptimization DebatePhase = "optimization" // Solution improvement
+	PhaseAdversarial  DebatePhase = "adversarial"  // Red/Blue Team attack-defend cycle
+	PhaseConvergence  DebatePhase = "convergence"  // Final consensus
 )
 
 // CommunicationChannel represents a communication pathway between agents.

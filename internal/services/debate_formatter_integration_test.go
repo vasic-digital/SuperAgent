@@ -294,7 +294,7 @@ func TestDebateFormatterIntegration_shouldFormat_WhitelistFilter(t *testing.T) {
 	}{
 		{"go", true},
 		{"python", true},
-		{"Go", true},   // case insensitive
+		{"Go", true},     // case insensitive
 		{"PYTHON", true}, // case insensitive
 		{"javascript", false},
 		{"rust", false},

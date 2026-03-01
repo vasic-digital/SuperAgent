@@ -13,11 +13,11 @@ package memory
 import (
 	"log"
 
-	helixcfg "digital.vasic.helixmemory/pkg/config"
 	cogneeclient "digital.vasic.helixmemory/pkg/clients/cognee"
 	graphiticlient "digital.vasic.helixmemory/pkg/clients/graphiti"
 	lettaclient "digital.vasic.helixmemory/pkg/clients/letta"
 	mem0client "digital.vasic.helixmemory/pkg/clients/mem0"
+	helixcfg "digital.vasic.helixmemory/pkg/config"
 	helixprovider "digital.vasic.helixmemory/pkg/provider"
 )
 

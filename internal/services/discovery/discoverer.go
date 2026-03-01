@@ -454,8 +454,8 @@ func buildMDNSQuery(queryName string) ([]byte, error) {
 	// Question section: NAME + TYPE(PTR=12) + CLASS(IN=1, with unicast-response bit clear)
 	question := make([]byte, len(encodedName)+4)
 	copy(question, encodedName)
-	binary.BigEndian.PutUint16(question[len(encodedName):], 12)   // QTYPE: PTR
-	binary.BigEndian.PutUint16(question[len(encodedName)+2:], 1)  // QCLASS: IN
+	binary.BigEndian.PutUint16(question[len(encodedName):], 12)  // QTYPE: PTR
+	binary.BigEndian.PutUint16(question[len(encodedName)+2:], 1) // QCLASS: IN
 
 	packet := make([]byte, 0, len(header)+len(question))
 	packet = append(packet, header...)

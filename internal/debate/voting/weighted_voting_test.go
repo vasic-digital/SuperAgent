@@ -945,7 +945,7 @@ func TestCalculateUnanimous_Disagreement(t *testing.T) {
 	assert.Equal(t, VotingMethodUnanimous, result.Method)
 	assert.True(t, result.IsTie) // No unanimity
 	assert.Less(t, result.Consensus, 1.0)
-	assert.Len(t, result.TieChoices, 2) // A and B
+	assert.Len(t, result.TieChoices, 2)        // A and B
 	assert.Equal(t, "A", result.WinningChoice) // Still reports most-voted
 }
 

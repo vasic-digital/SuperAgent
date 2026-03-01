@@ -127,18 +127,18 @@ func TestDebateSessionEntry_NullableFields(t *testing.T) {
 
 	t.Run("NilFieldsWithPopulatedOptionalStrings", func(t *testing.T) {
 		entry := &DebateSessionEntry{
-			ID:                  "session-mixed",
-			DebateID:            "debate-4",
-			Topic:               "Mixed nullability",
-			Status:              "completed",
-			TopologyType:        "",
+			ID:                   "session-mixed",
+			DebateID:             "debate-4",
+			Topic:                "Mixed nullability",
+			Status:               "completed",
+			TopologyType:         "",
 			CoordinationProtocol: "",
-			Config:              "",
-			InitiatedBy:         "",
-			CompletedAt:         nil,
-			FinalConsensusScore: nil,
-			Outcome:             "",
-			Metadata:            "",
+			Config:               "",
+			InitiatedBy:          "",
+			CompletedAt:          nil,
+			FinalConsensusScore:  nil,
+			Outcome:              "",
+			Metadata:             "",
 		}
 
 		assert.Empty(t, entry.TopologyType)

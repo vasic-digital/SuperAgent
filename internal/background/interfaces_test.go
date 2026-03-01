@@ -454,7 +454,7 @@ type ifaceProgressReporter struct{}
 func (m *ifaceProgressReporter) ReportProgress(percent float64, message string) error { return nil }
 func (m *ifaceProgressReporter) ReportHeartbeat() error                               { return nil }
 func (m *ifaceProgressReporter) ReportCheckpoint(data []byte) error                   { return nil }
-func (m *ifaceProgressReporter) ReportMetrics(metrics map[string]interface{}) error    { return nil }
+func (m *ifaceProgressReporter) ReportMetrics(metrics map[string]interface{}) error   { return nil }
 func (m *ifaceProgressReporter) ReportLog(level, message string, fields map[string]interface{}) error {
 	return nil
 }
@@ -474,8 +474,8 @@ func (m *ifaceTaskQueue) Requeue(ctx context.Context, taskID string, delay time.
 func (m *ifaceTaskQueue) MoveToDeadLetter(ctx context.Context, taskID string, reason string) error {
 	return nil
 }
-func (m *ifaceTaskQueue) GetPendingCount(ctx context.Context) (int64, error)  { return 0, nil }
-func (m *ifaceTaskQueue) GetRunningCount(ctx context.Context) (int64, error)  { return 0, nil }
+func (m *ifaceTaskQueue) GetPendingCount(ctx context.Context) (int64, error) { return 0, nil }
+func (m *ifaceTaskQueue) GetRunningCount(ctx context.Context) (int64, error) { return 0, nil }
 func (m *ifaceTaskQueue) GetQueueDepth(ctx context.Context) (map[models.TaskPriority]int64, error) {
 	return nil, nil
 }
@@ -567,7 +567,7 @@ type ifaceStuckDetector struct{}
 func (m *ifaceStuckDetector) IsStuck(ctx context.Context, task *models.BackgroundTask, snapshots []*models.ResourceSnapshot) (bool, string) {
 	return false, ""
 }
-func (m *ifaceStuckDetector) GetStuckThreshold(taskType string) time.Duration { return 0 }
+func (m *ifaceStuckDetector) GetStuckThreshold(taskType string) time.Duration       { return 0 }
 func (m *ifaceStuckDetector) SetThreshold(taskType string, threshold time.Duration) {}
 
 type ifaceNotificationService struct{}
@@ -592,12 +592,12 @@ type ifaceWebSocketClient struct{}
 
 func (m *ifaceWebSocketClient) Send(data []byte) error { return nil }
 func (m *ifaceWebSocketClient) Close() error           { return nil }
-func (m *ifaceWebSocketClient) ID() string              { return "iface-ws-client" }
+func (m *ifaceWebSocketClient) ID() string             { return "iface-ws-client" }
 
 type ifaceWorkerPool struct{}
 
-func (m *ifaceWorkerPool) Start(ctx context.Context) error                        { return nil }
-func (m *ifaceWorkerPool) Stop(gracePeriod time.Duration) error                   { return nil }
+func (m *ifaceWorkerPool) Start(ctx context.Context) error                         { return nil }
+func (m *ifaceWorkerPool) Stop(gracePeriod time.Duration) error                    { return nil }
 func (m *ifaceWorkerPool) RegisterExecutor(taskType string, executor TaskExecutor) {}
 func (m *ifaceWorkerPool) GetWorkerCount() int                                     { return 0 }
 func (m *ifaceWorkerPool) GetActiveTaskCount() int                                 { return 0 }

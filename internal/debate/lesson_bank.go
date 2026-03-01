@@ -699,14 +699,6 @@ func (lb *LessonBank) removeFromTagIndex(lesson *Lesson) {
 	}
 }
 
-// isDuplicate checks if a lesson is a duplicate (thread-safe version).
-// This method acquires the lock internally for safe standalone use.
-func (lb *LessonBank) isDuplicate(ctx context.Context, lesson *Lesson) bool {
-	lb.mu.RLock()
-	defer lb.mu.RUnlock()
-	return lb.isDuplicateLocked(ctx, lesson)
-}
-
 // isDuplicateLocked checks if a lesson is a duplicate.
 // IMPORTANT: Caller MUST hold lb.mu lock (read or write) before calling.
 func (lb *LessonBank) isDuplicateLocked(ctx context.Context, lesson *Lesson) bool {

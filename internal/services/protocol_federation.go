@@ -370,7 +370,7 @@ func (d *ProtocolDiscovery) periodicDiscovery() {
 		case <-ticker.C:
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			_ = d.DiscoverServers(ctx) //nolint:errcheck
-			_ = d.HealthCheck(ctx) //nolint:errcheck
+			_ = d.HealthCheck(ctx)     //nolint:errcheck
 			cancel()
 		}
 	}

@@ -17,10 +17,10 @@ type LazyFormatterFunc func() (Formatter, error)
 
 // lazyFormatter holds a factory for deferred formatter initialization.
 type lazyFormatter struct {
-	factory  LazyFormatterFunc
-	once     sync.Once
-	result   Formatter
-	initErr  error
+	factory LazyFormatterFunc
+	once    sync.Once
+	result  Formatter
+	initErr error
 }
 
 // get returns the initialized formatter, calling the factory on first access.

@@ -379,10 +379,10 @@ func (t *LLMTracer) StartToolExecution(ctx context.Context, toolName string) (co
 
 // Global tracer instance
 var (
-	globalTracer  *LLMTracer
-	tracerOnce    sync.Once
-	tracerMu      sync.Mutex
-	tracerClosed  bool
+	globalTracer *LLMTracer
+	tracerOnce   sync.Once
+	tracerMu     sync.Mutex
+	tracerClosed bool
 )
 
 // InitGlobalTracer initializes the global tracer

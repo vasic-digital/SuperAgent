@@ -292,7 +292,7 @@ func (s *SQLiteAdapter) Execute(ctx context.Context, query string, args ...inter
 	}
 
 	affected, _ := result.RowsAffected() //nolint:errcheck
-	lastID, _ := result.LastInsertId() //nolint:errcheck
+	lastID, _ := result.LastInsertId()   //nolint:errcheck
 
 	return &SQLiteQueryResult{
 		AffectedRows: affected,

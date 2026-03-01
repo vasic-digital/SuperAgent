@@ -3,7 +3,6 @@ package openai
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -508,14 +507,4 @@ func TestProvider_ContextCancellation(t *testing.T) {
 
 	_, err := p.Complete(ctx, req)
 	assert.Error(t, err)
-}
-
-// Helper function
-func stringPtr(s string) *string {
-	return &s
-}
-
-// Helper to avoid fmt import issues
-func errorf(format string, args ...interface{}) error {
-	return fmt.Errorf(format, args...)
 }

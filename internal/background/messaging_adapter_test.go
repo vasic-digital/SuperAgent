@@ -571,11 +571,10 @@ func (m *mockProgressReporter) ReportLog(level, message string, fields map[strin
 
 // mockTaskExecutor is a mock implementation of TaskExecutor for testing.
 type mockTaskExecutor struct {
-	canPause      bool
-	requirements  ResourceRequirements
-	executeError  error
-	pauseData     []byte
-	executeResult interface{}
+	canPause     bool
+	requirements ResourceRequirements
+	executeError error
+	pauseData    []byte
 }
 
 func (m *mockTaskExecutor) Execute(ctx context.Context, task *models.BackgroundTask, reporter ProgressReporter) error {

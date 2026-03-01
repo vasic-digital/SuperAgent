@@ -81,10 +81,10 @@ type AdapterFactory func() (MCPAdapter, error)
 
 // lazyAdapter holds a factory and its sync.Once for deferred initialization.
 type lazyAdapter struct {
-	factory  AdapterFactory
-	once     sync.Once
-	adapter  MCPAdapter
-	initErr  error
+	factory AdapterFactory
+	once    sync.Once
+	adapter MCPAdapter
+	initErr error
 }
 
 // get returns the initialized adapter, calling the factory on first access.

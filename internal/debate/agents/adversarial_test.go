@@ -375,7 +375,7 @@ func TestAdversarialProtocol_GenerateFallbackDefense_AllCategories(
 	ap := NewAdversarialProtocol(DefaultAdversarialConfig(), nil)
 
 	categories := []struct {
-		category    string
+		category      string
 		patchContains string
 	}{
 		{"injection", "parameterized"},

@@ -50,15 +50,6 @@ func (r *pgxRow) Scan(dest ...any) error {
 	return r.row.Scan(dest...)
 }
 
-// dbRow wraps the database module's Row to implement our Row interface.
-type dbRow struct {
-	row db.Row
-}
-
-func (r *dbRow) Scan(dest ...any) error {
-	return r.row.Scan(dest...)
-}
-
 // NewPostgresDB creates a new PostgresDB using the extracted database module.
 func NewPostgresDB(cfg *config.Config) (*PostgresDB, error) {
 	pgCfg := buildPostgresConfig(cfg)

@@ -95,12 +95,12 @@ func TestNewDefaultSSHCommandRunner_CreatesRunner(t *testing.T) {
 
 func TestDefaultSSHCommandRunner_ToRemoteHost(t *testing.T) {
 	tests := []struct {
-		name         string
-		host         *config.RemoteDeploymentHost
-		config       *config.RemoteDeploymentConfig
-		expectUser   string
-		expectAddr   string
-		expectKey    string
+		name       string
+		host       *config.RemoteDeploymentHost
+		config     *config.RemoteDeploymentConfig
+		expectUser string
+		expectAddr string
+		expectKey  string
 	}{
 		{
 			name: "host with user@address format",

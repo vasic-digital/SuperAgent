@@ -34,13 +34,13 @@ type mockFormatter struct {
 	languages []string
 	meta      *formatters.FormatterMetadata
 
-	formatFunc       func(ctx context.Context, req *formatters.FormatRequest) (*formatters.FormatResult, error)
-	healthCheckFunc  func(ctx context.Context) error
-	validateCfgFunc  func(config map[string]interface{}) error
+	formatFunc      func(ctx context.Context, req *formatters.FormatRequest) (*formatters.FormatResult, error)
+	healthCheckFunc func(ctx context.Context) error
+	validateCfgFunc func(config map[string]interface{}) error
 }
 
-func (m *mockFormatter) Name() string      { return m.name }
-func (m *mockFormatter) Version() string    { return m.version }
+func (m *mockFormatter) Name() string        { return m.name }
+func (m *mockFormatter) Version() string     { return m.version }
 func (m *mockFormatter) Languages() []string { return m.languages }
 
 func (m *mockFormatter) SupportsStdin() bool   { return m.meta.SupportsStdin }

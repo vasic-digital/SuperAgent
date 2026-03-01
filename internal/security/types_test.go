@@ -1068,9 +1068,9 @@ func TestAuditStats_FullyPopulated(t *testing.T) {
 			AuditEventRateLimit:      1500,
 		},
 		EventsByRisk: map[Severity]int64{
-			SeverityLow:    3500,
-			SeverityMedium: 1000,
-			SeverityHigh:   400,
+			SeverityLow:      3500,
+			SeverityMedium:   1000,
+			SeverityHigh:     400,
 			SeverityCritical: 100,
 		},
 		TopUsers: []UserAuditStat{
