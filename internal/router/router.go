@@ -815,14 +815,14 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 		if sv := providerRegistry.GetStartupVerifier(); sv != nil {
 			debateTeamConfig.SetStartupVerifier(sv)
 			logger.Info("DebateTeamConfig configured with StartupVerifier (OAuth providers will be included)")
-		} else {
-			logger.Warn("StartupVerifier not available - using legacy provider discovery (OAuth may not work)")
-		}
 
-		// Initialize the debate team (Claude Sonnet/Opus for positions 1-2,
-		// LLMsVerifier-scored providers for 3-5, Qwen as fallbacks)
-		if err := debateTeamConfig.InitializeTeam(context.Background()); err != nil {
-			logger.WithError(err).Warn("Failed to initialize debate team, some positions may be unfilled")
+			// Initialize the debate team (Claude Sonnet/Opus for positions 1-2,
+			// LLMsVerifier-scored providers for 3-5, Qwen as fallbacks)
+			if err := debateTeamConfig.InitializeTeam(context.Background()); err != nil {
+				logger.WithError(err).Warn("Failed to initialize debate team, some positions may be unfilled")
+			}
+		} else {
+			logger.Warn("StartupVerifier not available - skipping debate team initialization (will be initialized later via ReinitializeDebateTeam)")
 		}
 
 		// 		// Set the debate team config on the unified handler for dialogue display
