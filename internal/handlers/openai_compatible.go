@@ -16,6 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"dev.helix.agent/internal/config"
+	"dev.helix.agent/internal/debate/orchestrator"
 	"dev.helix.agent/internal/llm"
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/services"
@@ -25,13 +26,14 @@ import (
 
 // UnifiedHandler provides 100% OpenAI-compatible API with automatic ensemble support
 type UnifiedHandler struct {
-	providerRegistry   *services.ProviderRegistry
-	config             *config.Config
-	dialogueFormatter  *services.DialogueFormatter
-	debateTeamConfig   *services.DebateTeamConfig
-	skillsIntegration  *skills.Integration
-	intentRouter       *services.IntentBasedRouter
-	showDebateDialogue bool
+	providerRegistry        *services.ProviderRegistry
+	config                  *config.Config
+	dialogueFormatter       *services.DialogueFormatter
+	debateTeamConfig        *services.DebateTeamConfig
+	skillsIntegration       *skills.Integration
+	intentRouter            *services.IntentBasedRouter
+	orchestratorIntegration *orchestrator.ServiceIntegration
+	showDebateDialogue      bool
 }
 
 // NewUnifiedHandler creates a new unified handler
@@ -88,6 +90,18 @@ func (h *UnifiedHandler) SetSkillsIntegration(integration *skills.Integration) {
 func (h *UnifiedHandler) SetIntentBasedRouter(router *services.IntentBasedRouter) {
 	h.intentRouter = router
 	logrus.WithField("router_set", router != nil).Info("IntentBasedRouter set")
+}
+
+// SetOrchestratorIntegration sets the NEW debate orchestrator integration
+// This enables the 8-phase debate protocol (Dehallucination → SelfEvolvement → Proposal → Critique → Review → Optimization → Adversarial → Convergence)
+func (h *UnifiedHandler) SetOrchestratorIntegration(integration *orchestrator.ServiceIntegration) {
+	h.orchestratorIntegration = integration
+	if integration != nil {
+		logrus.WithFields(logrus.Fields{
+			"orchestrator_set": true,
+			"agent_count":      integration.GetOrchestrator().GetAgentPool().Size(),
+		}).Info("NEW Debate Orchestrator integration set - will use 8-phase protocol instead of old ensemble")
+	}
 }
 
 // isToolResultProcessingTurn determines if the current request is specifically for processing
@@ -1731,6 +1745,15 @@ func (h *UnifiedHandler) convertOpenAIChatRequest(req *OpenAIChatRequest, c *gin
 }
 
 func (h *UnifiedHandler) processWithEnsemble(ctx context.Context, req *models.LLMRequest, openaiReq *OpenAIChatRequest) (*services.EnsembleResult, error) {
+	// CRITICAL: Use NEW debate orchestrator if available (8-phase protocol)
+	// This implements the full debate system from docs/requests/debate
+	if h.orchestratorIntegration != nil {
+		return h.processWithOrchestrator(ctx, req, openaiReq)
+	}
+
+	// Fallback to OLD ensemble service if orchestrator not available
+	logrus.Warn("NEW debate orchestrator not available, falling back to OLD ensemble service")
+
 	// Check if provider registry is available
 	if h.providerRegistry == nil {
 		return nil, services.NewConfigurationError("provider registry not available", nil)
@@ -1786,6 +1809,64 @@ func (h *UnifiedHandler) processWithEnsembleStream(ctx context.Context, req *mod
 	// For streaming, we'll use the first available provider
 	// In a more sophisticated implementation, we could merge streams
 	return ensembleService.RunEnsembleStream(ctx, req)
+}
+
+// processWithOrchestrator uses the NEW debate orchestrator (8-phase protocol)
+// This is the implementation from docs/requests/debate requirements
+func (h *UnifiedHandler) processWithOrchestrator(ctx context.Context, req *models.LLMRequest, openaiReq *OpenAIChatRequest) (*services.EnsembleResult, error) {
+	// Build debate request for orchestrator
+	debateReq := &orchestrator.DebateRequest{
+		Topic:        req.Prompt,
+		MaxRounds:    10, // From debate requirements
+		MinConsensus: 0.8,
+	}
+
+	// Run the debate using the NEW orchestrator
+	debateResp, err := h.orchestratorIntegration.GetOrchestrator().ConductDebate(ctx, debateReq)
+	if err != nil {
+		logrus.WithError(err).Warn("NEW orchestrator debate failed, falling back to old ensemble")
+		// Fallback to old ensemble service
+		ensembleService := h.providerRegistry.GetEnsembleService()
+		return ensembleService.RunEnsemble(ctx, req)
+	}
+
+	// Extract the consensus response from the debate
+	var finalContent string
+	var confidence float64
+	if debateResp.Consensus != nil {
+		finalContent = debateResp.Consensus.Summary
+		confidence = debateResp.Consensus.Confidence
+	} else if len(debateResp.Phases) > 0 {
+		// Fallback to last phase if no consensus
+		lastPhase := debateResp.Phases[len(debateResp.Phases)-1]
+		if len(lastPhase.Responses) > 0 {
+			finalContent = lastPhase.Responses[0].Content
+		}
+	}
+
+	// Create a synthetic LLM response from debate result
+	finalResponse := &models.LLMResponse{
+		ID:           debateResp.ID,
+		Content:      finalContent,
+		Confidence:   confidence,
+		FinishReason: "stop",
+		CreatedAt:    time.Now(),
+	}
+
+	// Convert debate response to ensemble result format
+	return &services.EnsembleResult{
+		Responses:    []*models.LLMResponse{finalResponse},
+		Selected:     finalResponse,
+		VotingMethod: "new_orchestrator_debate",
+		Scores:       map[string]float64{"consensus": confidence},
+		Metadata: map[string]any{
+			"framework":     "new_debate_orchestrator",
+			"phases":        len(debateResp.Phases),
+			"participants":  len(debateResp.Participants),
+			"documentation": "docs/requests/debate",
+			"duration_ms":   debateResp.Duration.Milliseconds(),
+		},
+	}, nil
 }
 
 func (h *UnifiedHandler) convertToOpenAIChatResponse(result *services.EnsembleResult, req *OpenAIChatRequest) *OpenAIChatResponse {
