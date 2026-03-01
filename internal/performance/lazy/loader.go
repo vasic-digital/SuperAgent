@@ -90,11 +90,16 @@ func (l *Loader[T]) Get(ctx context.Context) (T, error) {
 		}
 
 		instance := l.instance
+		l.mu.RUnlock()
+
+		// Update metrics and lastAccess with write lock
+		l.mu.Lock()
 		l.lastAccess = time.Now()
 		if l.metrics != nil {
 			l.metrics.AccessCount++
 		}
-		l.mu.RUnlock()
+		l.mu.Unlock()
+
 		return instance, nil
 	}
 	l.mu.RUnlock()
@@ -116,15 +121,22 @@ func (l *Loader[T]) initialize(ctx context.Context) (T, error) {
 	start := time.Now()
 
 	// Perform initialization with context support
-	done := make(chan struct{})
+	// Use local variables to avoid race conditions with goroutine
+	type result struct {
+		instance T
+		err      error
+	}
+	resultChan := make(chan result, 1)
+
 	go func() {
-		l.instance, l.err = l.factory()
-		close(done)
+		instance, err := l.factory()
+		resultChan <- result{instance: instance, err: err}
 	}()
 
 	select {
-	case <-done:
-		// Initialization completed
+	case res := <-resultChan:
+		l.instance = res.instance
+		l.err = res.err
 	case <-ctx.Done():
 		return l.instance, fmt.Errorf("initialization cancelled: %w", ctx.Err())
 	case <-l.ctx.Done():
