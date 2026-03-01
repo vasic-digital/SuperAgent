@@ -383,13 +383,20 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 	}
 
 	// Initialize messaging adapter for Kafka/RabbitMQ
-	var messagingAdapt *messagingadapter.BrokerAdapter
 	if !standaloneMode && (cfg.Services.Kafka.Enabled || cfg.Services.RabbitMQ.Enabled) {
-		// Note: This is a placeholder - actual broker initialization would require
-		// a real broker instance from the messaging module
-		logger.Info("Messaging adapter initialization placeholder - configure messaging for full integration")
-		// messagingAdapt = messagingadapter.NewBrokerAdapter(broker)
-		rc.messagingAdapter = messagingAdapt
+		// Messaging services are configured but initialization requires
+		// specific broker implementations from the messaging module.
+		// For now, log that messaging is enabled but adapter initialization
+		// requires additional configuration.
+		if cfg.Services.Kafka.Enabled {
+			logger.WithField("url", cfg.Services.Kafka.ResolvedURL()).
+				Info("Kafka messaging enabled - broker initialization requires messaging module configuration")
+		}
+		if cfg.Services.RabbitMQ.Enabled {
+			logger.WithField("url", cfg.Services.RabbitMQ.ResolvedURL()).
+				Info("RabbitMQ messaging enabled - broker initialization requires messaging module configuration")
+		}
+		logger.Info("To enable messaging adapter, configure broker.NewKafkaBroker or broker.NewRabbitMQBroker with the service URLs above")
 	}
 
 	// Health endpoints
