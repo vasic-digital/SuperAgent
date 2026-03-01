@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -23,6 +24,7 @@ import (
 
 	// NEW: Integrated AI Debate Features
 	"dev.helix.agent/internal/debate/audit"
+	"dev.helix.agent/internal/debate/comprehensive" // Comprehensive Multi-Agent Debate System
 	"dev.helix.agent/internal/debate/evaluation"
 	"dev.helix.agent/internal/debate/gates"
 	"dev.helix.agent/internal/debate/reflexion"
@@ -76,6 +78,10 @@ type DebateService struct {
 
 	// Performance Optimizer
 	performanceOptimizer *DebatePerformanceOptimizer
+
+	// Comprehensive Multi-Agent Debate System (NEW)
+	comprehensiveIntegration *comprehensive.IntegrationManager // New comprehensive debate system
+	useComprehensiveSystem   bool                              // Feature flag to enable new system
 }
 
 // DebateLogRepository interface for logging debate activities
@@ -240,7 +246,24 @@ func NewDebateServiceWithDeps(
 		logger,
 	)
 
-	logger.Info("[Debate Service] Initialized with integrated features: Test-Driven, 4-Pass Validation, Tool Integration, Enhanced Intent, HelixSpecifier, SpecKit, Reflexion, Adversarial, Approval Gates, Provenance, Performance Optimizer")
+	// Initialize Comprehensive Multi-Agent Debate System
+	compConfig := comprehensive.DefaultConfig()
+	compConfig.MaxRounds = 5
+	compConfig.MinConsensus = 0.8
+	compConfig.QualityThreshold = 0.85
+	comprehensiveIntegration, err := comprehensive.NewIntegrationManager(compConfig, logger)
+	if err != nil {
+		logger.WithError(err).Warn("[Debate Service] Failed to initialize comprehensive debate system, using legacy debate")
+		comprehensiveIntegration = nil
+	}
+
+	// Enable comprehensive system by default (can be disabled via env var)
+	useComprehensive := os.Getenv("HELIXAGENT_DISABLE_COMPREHENSIVE_DEBATE") != "true"
+	if comprehensiveIntegration != nil && useComprehensive {
+		logger.Info("[Debate Service] Comprehensive Multi-Agent Debate System enabled (set HELIXAGENT_DISABLE_COMPREHENSIVE_DEBATE=true to disable)")
+	}
+
+	logger.Info("[Debate Service] Initialized with integrated features: Test-Driven, 4-Pass Validation, Tool Integration, Enhanced Intent, HelixSpecifier, SpecKit, Reflexion, Adversarial, Approval Gates, Provenance, Performance Optimizer, Comprehensive Multi-Agent Debate")
 
 	return &DebateService{
 		logger:           logger,
@@ -276,6 +299,10 @@ func NewDebateServiceWithDeps(
 
 		// Performance Optimizer
 		performanceOptimizer: performanceOptimizer,
+
+		// Comprehensive Multi-Agent Debate System
+		comprehensiveIntegration: comprehensiveIntegration,
+		useComprehensiveSystem:   useComprehensive,
 	}
 }
 
@@ -594,6 +621,12 @@ func (ds *DebateService) ConductDebate(
 	sessionID := fmt.Sprintf("session-%s-%s", config.DebateID, uuid.New().String()[:8])
 
 	ds.logger.Infof("Starting debate %s with topic: %s", config.DebateID, config.Topic)
+
+	// NEW: Use Comprehensive Multi-Agent Debate System when enabled
+	if ds.useComprehensiveSystem && ds.comprehensiveIntegration != nil {
+		ds.logger.Info("[Comprehensive Debate] Using new multi-agent debate system")
+		return ds.conductComprehensiveDebate(ctx, config, startTime, sessionID)
+	}
 
 	// Require provider registry for real LLM calls - no fallback to simulated data
 	if ds.providerRegistry == nil {
