@@ -104,19 +104,18 @@ var featureRegistry = map[Feature]*FeatureInfo{
 		DisplayName:  "HTTP/2",
 		Description:  "HTTP/2 multiplexing and server push support",
 		Category:     CategoryTransport,
-		DefaultValue: true, // Default on - widely supported
+		DefaultValue: true, // Default on - fallback transport when HTTP/3 unavailable
 		HeaderName:   "X-Feature-HTTP2",
 		QueryParam:   "http2",
 	},
 	FeatureHTTP3: {
-		Name:          FeatureHTTP3,
-		DisplayName:   "HTTP/3 QUIC",
-		Description:   "HTTP/3 with QUIC transport for improved latency",
-		Category:      CategoryTransport,
-		DefaultValue:  false, // Default off - limited client support
-		ConflictsWith: []Feature{FeatureHTTP2},
-		HeaderName:    "X-Feature-HTTP3",
-		QueryParam:    "http3",
+		Name:         FeatureHTTP3,
+		DisplayName:  "HTTP/3 QUIC",
+		Description:  "HTTP/3 with QUIC transport for improved latency",
+		Category:     CategoryTransport,
+		DefaultValue: true, // Default on - primary transport per constitution
+		HeaderName:   "X-Feature-HTTP3",
+		QueryParam:   "http3",
 	},
 	FeatureWebSocket: {
 		Name:         FeatureWebSocket,
@@ -152,7 +151,7 @@ var featureRegistry = map[Feature]*FeatureInfo{
 		DisplayName:  "Brotli Compression",
 		Description:  "Brotli compression for efficient data transfer",
 		Category:     CategoryCompression,
-		DefaultValue: false, // Default off - not all clients support
+		DefaultValue: true, // Default on - primary compression per constitution
 		HeaderName:   "X-Feature-Brotli",
 		QueryParam:   "brotli",
 	},

@@ -177,12 +177,12 @@ func TestFeatureContextValidate(t *testing.T) {
 	err = fc2.Validate()
 	assert.Error(t, err)
 
-	// Invalid: HTTP2 and HTTP3 together
+	// Valid: HTTP2 and HTTP3 can coexist (HTTP/3 primary, HTTP/2 fallback)
 	fc3 := NewFeatureContext()
 	fc3.SetEnabled(FeatureHTTP2, true)
 	fc3.SetEnabled(FeatureHTTP3, true)
 	err = fc3.Validate()
-	assert.Error(t, err)
+	assert.NoError(t, err)
 }
 
 func TestFeatureContextToJSON(t *testing.T) {

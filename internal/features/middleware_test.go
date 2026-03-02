@@ -210,14 +210,14 @@ func TestMiddlewareStrictMode(t *testing.T) {
 		c.JSON(http.StatusOK, gin.H{"ok": true})
 	})
 
-	// Invalid combination: HTTP2 and HTTP3 together
+	// Valid combination: HTTP2 and HTTP3 can coexist (HTTP/3 primary, HTTP/2 fallback)
 	req, _ := http.NewRequest("GET", "/test", nil)
 	req.Header.Set("X-Features", "http2=true,http3=true")
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Contains(t, w.Body.String(), "Invalid feature combination")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.NotContains(t, w.Body.String(), "Invalid feature combination")
 }
 
 func TestMiddlewareResponseHeaders(t *testing.T) {

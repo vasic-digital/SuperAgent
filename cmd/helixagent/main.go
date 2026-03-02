@@ -59,6 +59,7 @@ import (
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/router"
 	"dev.helix.agent/internal/services"
+	"dev.helix.agent/internal/transport"
 	"dev.helix.agent/internal/utils"
 	"dev.helix.agent/internal/verifier"
 	appversion "dev.helix.agent/internal/version"
@@ -1602,12 +1603,21 @@ func run(appCfg *AppConfig) error {
 		startBackgroundMCPPreinstall(logger)
 	}
 
-	server := &http.Server{
-		Addr:         fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port),
-		Handler:      r,
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 300 * time.Second, // 5 minutes for SSE streaming support
-		IdleTimeout:  120 * time.Second,
+	// Create HTTP/3 server with HTTP/2 fallback
+	http3Config := &transport.HTTP3Config{
+		Address:        fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port),
+		EnableHTTP3:    true,
+		EnableHTTP2:    true,
+		TLSCertFile:    "", // Auto-generate self-signed cert
+		TLSKeyFile:     "",
+		MaxConnections: 1000,
+		IdleTimeout:    30 * time.Second,
+		ReadTimeout:    30 * time.Second,
+		WriteTimeout:   300 * time.Second, // 5 minutes for SSE streaming support
+	}
+	http3Server, err := transport.NewHTTP3Server(r, http3Config)
+	if err != nil {
+		return fmt.Errorf("failed to create HTTP/3 server: %w", err)
 	}
 
 	// Channel for server errors
@@ -1617,9 +1627,9 @@ func run(appCfg *AppConfig) error {
 		logger.WithFields(logrus.Fields{
 			"host": cfg.Server.Host,
 			"port": cfg.Server.Port,
-		}).Info("Starting HelixAgent server with Models.dev integration")
+		}).Info("Starting HelixAgent server with HTTP/3 QUIC and Models.dev integration")
 
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := http3Server.Start(); err != nil {
 			serverErr <- err
 		}
 	}()
@@ -1675,7 +1685,7 @@ func run(appCfg *AppConfig) error {
 	// Use r variable to avoid unused import
 	_ = r
 
-	if err := server.Shutdown(shutdownCtx); err != nil {
+	if err := http3Server.Stop(); err != nil {
 		logger.WithError(err).Error("Server forced to shutdown")
 		return fmt.Errorf("server shutdown error: %w", err)
 	}

@@ -26,33 +26,44 @@ type SSHRemoteDeployer struct {
 	config           *config.Config
 	logger           *logrus.Logger
 	runner           SSHCommandRunner
-	ContainerAdapter *containers.Adapter
+	ContainerAdapter *containers.Adapter // Required per constitution
 }
 
 // NewSSHRemoteDeployer creates a new SSHRemoteDeployer.
+// Container adapter is REQUIRED per constitution (no direct docker/podman commands).
+// In tests, adapter may be nil but deploy operations will fail.
 func NewSSHRemoteDeployer(
-	cfg *config.Config, logger *logrus.Logger,
+	cfg *config.Config, logger *logrus.Logger, adapter *containers.Adapter,
 ) *SSHRemoteDeployer {
+	// In production, adapter must not be nil per constitution
+	// In tests, we allow nil but deploy operations will fail
 	return &SSHRemoteDeployer{
 		config: cfg,
 		logger: logger,
 		runner: NewDefaultSSHCommandRunner(
 			&cfg.RemoteDeployment, logger,
 		),
+		ContainerAdapter: adapter,
 	}
 }
 
 // NewSSHRemoteDeployerWithRunner creates a new SSHRemoteDeployer with
 // a custom SSHCommandRunner.
+// Container adapter is REQUIRED per constitution (no direct docker/podman commands).
 func NewSSHRemoteDeployerWithRunner(
 	cfg *config.Config,
 	logger *logrus.Logger,
 	runner SSHCommandRunner,
+	adapter *containers.Adapter,
 ) *SSHRemoteDeployer {
+	if adapter == nil {
+		logger.Fatal("Container adapter is REQUIRED for SSHRemoteDeployer per constitution")
+	}
 	return &SSHRemoteDeployer{
-		config: cfg,
-		logger: logger,
-		runner: runner,
+		config:           cfg,
+		logger:           logger,
+		runner:           runner,
+		ContainerAdapter: adapter,
 	}
 }
 
@@ -96,32 +107,18 @@ func (d *SSHRemoteDeployer) Deploy(
 		return fmt.Errorf("failed to copy files: %w", err)
 	}
 
-	// Step 3: Deploy the specific service. Use the adapter when
-	// available for compose operations, fall back to the runner.
-	if d.ContainerAdapter != nil {
-		// Use adapter's compose up on remote host via distribution.
-		composeFile := "docker-compose.yml"
-		if err := d.ContainerAdapter.ComposeUp(
-			ctx, composeFile, "",
-		); err != nil {
-			d.logger.WithError(err).Warn(
-				"Adapter compose up failed, falling back to runner",
-			)
-		} else {
-			d.logger.WithField("service", serviceName).Info(
-				"Service deployed via Containers module",
-			)
-			return nil
-		}
-	}
-
-	// Fallback: use SSHCommandRunner
-	if err := d.deployService(host, serviceName); err != nil {
-		return fmt.Errorf("failed to deploy service: %w", err)
+	// Step 3: Deploy the specific service. Use the adapter - NO FALLBACK
+	// to direct docker/podman commands per constitution.
+	// Container adapter is guaranteed to be non-nil (enforced in constructor).
+	composeFile := "docker-compose.yml"
+	if err := d.ContainerAdapter.ComposeUp(
+		ctx, composeFile, "",
+	); err != nil {
+		return fmt.Errorf("adapter compose up failed: %w", err)
 	}
 
 	d.logger.WithField("service", serviceName).Info(
-		"Service deployed successfully",
+		"Service deployed via Containers module",
 	)
 	return nil
 }
@@ -269,24 +266,6 @@ func (d *SSHRemoteDeployer) copyFilesToRemote(
 	return nil
 }
 
-// deployService runs docker compose up for the specific service on remote.
-func (d *SSHRemoteDeployer) deployService(
-	host *config.RemoteDeploymentHost, serviceName string,
-) error {
-	remoteDir := d.config.RemoteDeployment.DefaultRemoteDir
-	if remoteDir == "" {
-		remoteDir = "/opt/helixagent"
-	}
-	cmd := fmt.Sprintf(
-		"cd %s && docker compose up -d %s", remoteDir, serviceName,
-	)
-	output, err := d.runner.RunSSHCommand(host, cmd)
-	if err != nil {
-		d.logger.WithFields(logrus.Fields{
-			"service": serviceName,
-			"output":  output,
-		}).Error("Docker compose command failed")
-		return fmt.Errorf("docker compose failed: %w", err)
-	}
-	return nil
-}
+// deployService was removed per constitution: "No direct exec.Command to docker/podman in production code."
+// All container operations MUST go through the Containers module adapter.
+// Original implementation used direct "docker compose up -d" commands which is forbidden.

@@ -718,7 +718,7 @@ func verifyLocalContainers(t *testing.T, projectRoot string) error {
 	}
 
 	if !allRequiredHealthy {
-		return fmt.Errorf("one or more required services are not running - run 'make test-infra-start' to start them")
+		return fmt.Errorf("one or more required services are not running - run './bin/helixagent' for proper container orchestration (or set SKIP_INFRA_SETUP=true to skip)")
 	}
 
 	return nil

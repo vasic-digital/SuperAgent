@@ -2,11 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -58,7 +58,7 @@ func (m *Manager) initializeServers() {
 }
 
 func (m *Manager) checkServer(server *LSPServer) {
-	addr := fmt.Sprintf("%s:%d", server.Host, server.Port)
+	addr := net.JoinHostPort(server.Host, strconv.Itoa(server.Port))
 	conn, err := net.DialTimeout("tcp", addr, 2*time.Second)
 	if err != nil {
 		m.mu.Lock()

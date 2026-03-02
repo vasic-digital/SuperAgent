@@ -4,11 +4,19 @@ import (
 	"context"
 	"testing"
 
+	"dev.helix.agent/internal/adapters/containers"
 	"dev.helix.agent/internal/config"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// newTestAdapter creates a minimal container adapter for testing.
+// Returns nil for tests that don't need adapter functionality.
+func newTestAdapter() *containers.Adapter {
+	adapter, _ := containers.NewAdapter()
+	return adapter
+}
 
 func TestSSHRemoteDeployer_FindHostForService(t *testing.T) {
 	logger := logrus.New()
@@ -30,7 +38,7 @@ func TestSSHRemoteDeployer_FindHostForService(t *testing.T) {
 		},
 	}
 
-	deployer := NewSSHRemoteDeployer(cfg, logger)
+	deployer := NewSSHRemoteDeployer(cfg, logger, nil)
 
 	// Test service mapped to host1
 	host, err := deployer.findHostForService("postgresql")
@@ -69,7 +77,7 @@ func TestSSHRemoteDeployer_FindHostForService_SingleHostFallback(t *testing.T) {
 		},
 	}
 
-	deployer := NewSSHRemoteDeployer(cfg, logger)
+	deployer := NewSSHRemoteDeployer(cfg, logger, nil)
 
 	// Any service should fall back to the single host
 	host, err := deployer.findHostForService("any-service")
@@ -88,7 +96,7 @@ func TestSSHRemoteDeployer_Deploy_NonRemoteService(t *testing.T) {
 		},
 	}
 
-	deployer := NewSSHRemoteDeployer(cfg, logger)
+	deployer := NewSSHRemoteDeployer(cfg, logger, nil)
 
 	endpoint := &config.ServiceEndpoint{
 		Remote: false,
@@ -143,7 +151,7 @@ func TestSSHRemoteDeployer_EnsureRemoteDirectory(t *testing.T) {
 		commands: []string{},
 		errors:   map[string]error{},
 	}
-	deployer := NewSSHRemoteDeployerWithRunner(cfg, logger, mockRunner)
+	deployer := NewSSHRemoteDeployerWithRunner(cfg, logger, mockRunner, newTestAdapter())
 	host := &config.RemoteDeploymentHost{SSHHost: "user@host1"}
 
 	err := deployer.ensureRemoteDirectory(host)
@@ -166,7 +174,7 @@ func TestSSHRemoteDeployer_DeployAll_NoRemoteServices(t *testing.T) {
 		},
 	}
 
-	deployer := NewSSHRemoteDeployer(cfg, logger)
+	deployer := NewSSHRemoteDeployer(cfg, logger, nil)
 	err := deployer.DeployAll(context.Background())
 	assert.NoError(t, err) // Should skip non-remote services
 }
@@ -182,7 +190,7 @@ func TestSSHRemoteDeployer_HealthCheckRemote_NoRemoteServices(t *testing.T) {
 		},
 	}
 
-	deployer := NewSSHRemoteDeployer(cfg, logger)
+	deployer := NewSSHRemoteDeployer(cfg, logger, nil)
 	err := deployer.HealthCheckRemote(context.Background())
 	assert.NoError(t, err)
 }

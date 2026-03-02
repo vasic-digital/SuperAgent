@@ -136,7 +136,7 @@ test:
 		go test -v $(TEST_PACKAGES); \
 	else \
 		echo "⚠️  Infrastructure not available - running unit tests only"; \
-		echo "   Run 'make test-infra-start' first for full test suite"; \
+		echo "   Run './bin/helixagent' first for proper container orchestration"; \
 		echo ""; \
 		go test -v -short $(TEST_PACKAGES); \
 	fi
@@ -338,10 +338,12 @@ test-complete-keep:
 	@./scripts/run_complete_test_suite.sh --verbose --coverage --keep
 
 test-infra-start:
+	@echo "⚠️  WARNING: Manual container startup is deprecated. Use './bin/helixagent' instead."
 	@echo "🐳 Starting test infrastructure..."
 	@./scripts/deploy-containers.sh docker-compose.test.yml postgres redis mock-llm
 
 test-infra-stop:
+	@echo "⚠️  WARNING: Manual container stop is deprecated. Use './bin/helixagent' and Ctrl-C instead."
 	@echo "🐳 Stopping test infrastructure..."
 	@source ./scripts/container-runtime.sh 2>/dev/null || true; \
 	if [ -z "$$COMPOSE_CMD" ]; then \
@@ -463,6 +465,7 @@ test-integration-full:
 	@echo "✅ Integration tests completed!"
 
 test-with-infra:
+	@echo "⚠️  WARNING: This target uses manual container startup. Use './bin/helixagent' for proper container orchestration."
 	@echo "🧪 Running tests with infrastructure..."
 	@$(MAKE) test-infra-start
 	@echo ""
@@ -1120,8 +1123,8 @@ help:
 	@echo "  test-unit          Run unit tests only"
 	@echo ""
 	@echo "🐳 Test Infrastructure:"
-	@echo "  test-infra-start   Start test infrastructure (PostgreSQL, Redis, Mock LLM)"
-	@echo "  test-infra-stop    Stop test infrastructure"
+	@echo "  test-infra-start   Start test infrastructure (PostgreSQL, Redis, Mock LLM) [DEPRECATED: use ./bin/helixagent]"
+	@echo "  test-infra-stop    Stop test infrastructure [DEPRECATED: use ./bin/helixagent]"
 	@echo "  test-infra-clean   Stop and clean test infrastructure (remove volumes)"
 	@echo "  test-infra-logs    Show test infrastructure logs"
 	@echo "  test-infra-status  Show test infrastructure status"

@@ -144,6 +144,19 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 	})
 	r.Use(featureMiddleware)
 
+	// Compression middleware that respects feature flags
+	r.Use(func(c *gin.Context) {
+		fc := features.GetFeatureContextFromGin(c)
+		if fc.IsEnabled(features.FeatureBrotli) || fc.IsEnabled(features.FeatureGzip) {
+			config := middleware.DefaultCompressionConfig()
+			config.EnableBrotli = fc.IsEnabled(features.FeatureBrotli)
+			config.EnableGzip = fc.IsEnabled(features.FeatureGzip)
+			middleware.CompressionMiddleware(config)(c)
+		} else {
+			c.Next()
+		}
+	})
+
 	// Add pprof debugging endpoints if enabled
 	if os.Getenv("ENABLE_PPROF") == "true" {
 		// Register pprof handlers

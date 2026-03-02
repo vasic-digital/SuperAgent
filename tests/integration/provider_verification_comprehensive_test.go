@@ -254,25 +254,25 @@ func TestProviderVerification_DebateTeamUsesVerifiedProviders(t *testing.T) {
 	}
 }
 
-// MockLLMProvider is a mock implementation for testing
-type MockLLMProvider struct{}
+// MockLLMProviderForVerification is a mock implementation for testing
+type MockLLMProviderForVerification struct{}
 
-func (m *MockLLMProvider) Complete(ctx context.Context, req interface{}) (interface{}, error) {
+func (m *MockLLMProviderForVerification) Complete(ctx context.Context, req interface{}) (interface{}, error) {
 	return nil, nil
 }
 
-func (m *MockLLMProvider) CompleteStream(ctx context.Context, req interface{}) (<-chan interface{}, error) {
+func (m *MockLLMProviderForVerification) CompleteStream(ctx context.Context, req interface{}) (<-chan interface{}, error) {
 	return nil, nil
 }
 
-func (m *MockLLMProvider) HealthCheck() error {
+func (m *MockLLMProviderForVerification) HealthCheck() error {
 	return nil
 }
 
-func (m *MockLLMProvider) GetCapabilities() interface{} {
+func (m *MockLLMProviderForVerification) GetCapabilities() interface{} {
 	return nil
 }
 
-func (m *MockLLMProvider) ValidateConfig(config map[string]interface{}) (bool, []string) {
+func (m *MockLLMProviderForVerification) ValidateConfig(config map[string]interface{}) (bool, []string) {
 	return true, nil
 }
