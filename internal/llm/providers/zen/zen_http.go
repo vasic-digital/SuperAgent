@@ -248,7 +248,10 @@ func (p *ZenHTTPProvider) createSession(ctx context.Context) (string, error) {
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return "", fmt.Errorf("failed to create session: %s, failed to read body: %v", resp.Status, err)
+		}
 		return "", fmt.Errorf("failed to create session: %s - %s", resp.Status, string(body))
 	}
 
@@ -274,7 +277,10 @@ func (p *ZenHTTPProvider) sendMessage(ctx context.Context, sessionID, content st
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to send message: %s, failed to read body: %v", resp.Status, err)
+		}
 		return nil, fmt.Errorf("failed to send message: %s - %s", resp.Status, string(body))
 	}
 

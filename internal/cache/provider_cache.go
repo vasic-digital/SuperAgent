@@ -104,7 +104,11 @@ func (c *ProviderCache) CacheKey(req *models.LLMRequest, provider string) string
 		Provider:    provider,
 	}
 
-	data, _ := json.Marshal(keyData)
+	data, err := json.Marshal(keyData)
+	if err != nil {
+		// Fallback to simple key
+		return "provider:" + provider + ":error"
+	}
 	hash := sha256.Sum256(data)
 	return "provider:" + provider + ":" + hex.EncodeToString(hash[:16])
 }
@@ -129,7 +133,12 @@ func (c *ProviderCache) Get(ctx context.Context, req *models.LLMRequest, provide
 // Set caches a response
 func (c *ProviderCache) Set(ctx context.Context, req *models.LLMRequest, resp *models.LLMResponse, provider string) error {
 	// Check response size
-	respData, _ := json.Marshal(resp)
+	respData, err := json.Marshal(resp)
+	if err != nil {
+		// Cannot marshal response, skip caching
+		atomic.AddInt64(&c.metrics.SkippedLarge, 1)
+		return nil
+	}
 	if len(respData) > c.config.MaxResponseSize {
 		atomic.AddInt64(&c.metrics.SkippedLarge, 1)
 		return nil

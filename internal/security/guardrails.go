@@ -217,7 +217,10 @@ func (p *StandardGuardrailPipeline) updateStats(name string, result *GuardrailRe
 
 	// Update per-guardrail stats
 	val, _ := p.stats.byGuardrail.LoadOrStore(name, &GuardrailStat{Name: name})
-	stat := val.(*GuardrailStat)
+	stat, ok := val.(*GuardrailStat)
+	if !ok {
+		return
+	}
 	stat.Checks++
 	if result.Triggered {
 		stat.Triggers++
@@ -274,8 +277,14 @@ func (p *StandardGuardrailPipeline) GetStats() *GuardrailStats {
 	p.stats.mu.RUnlock()
 
 	p.stats.byGuardrail.Range(func(key, value interface{}) bool {
-		name := key.(string)
-		stat := value.(*GuardrailStat)
+		name, ok := key.(string)
+		if !ok {
+			return true
+		}
+		stat, ok := value.(*GuardrailStat)
+		if !ok {
+			return true
+		}
 		stats.ByGuardrail[name] = &GuardrailStat{
 			Name:        stat.Name,
 			Checks:      stat.Checks,

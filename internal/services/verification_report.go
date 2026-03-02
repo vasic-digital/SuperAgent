@@ -42,7 +42,10 @@ func NewVerificationReportGenerator(
 		log = logrus.New()
 	}
 
-	homeDir, _ := os.UserHomeDir()
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		homeDir = "."
+	}
 	reportPath := filepath.Join(homeDir, ".helixagent", "reports", "provider_verification_report.md")
 
 	return &VerificationReportGenerator{

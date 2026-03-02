@@ -249,8 +249,11 @@ func (p *GeminiProvider) CompleteStream(ctx context.Context, req *models.LLMRequ
 
 	// Check for non-2xx status codes before starting stream
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
+		body, readErr := io.ReadAll(resp.Body)
 		_ = resp.Body.Close()
+		if readErr != nil {
+			return nil, fmt.Errorf("Gemini API error: HTTP %d - failed to read response body: %v", resp.StatusCode, readErr)
+		}
 		return nil, fmt.Errorf("Gemini API error: HTTP %d - %s", resp.StatusCode, string(body))
 	}
 
@@ -504,8 +507,14 @@ func (p *GeminiProvider) convertResponse(req *models.LLMRequest, geminiResp *Gem
 				// Parse function calls from Gemini response
 				if part.FunctionCall != nil {
 					// Extract function name and arguments
-					name, _ := part.FunctionCall["name"].(string)
-					args, _ := part.FunctionCall["args"].(map[string]interface{})
+					name, ok := part.FunctionCall["name"].(string)
+					if !ok {
+						name = ""
+					}
+					args, ok2 := part.FunctionCall["args"].(map[string]interface{})
+					if !ok2 {
+						args = map[string]interface{}{}
+					}
 
 					// Convert args to JSON string
 					argsJSON, _ := json.Marshal(args) //nolint:errcheck

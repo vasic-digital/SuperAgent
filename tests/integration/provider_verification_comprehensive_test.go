@@ -53,15 +53,16 @@ func TestProviderVerification_AllProvidersHaveAPIKeys(t *testing.T) {
 // TestProviderVerification_StartupVerifierCreation tests that the startup verifier
 // can be created with proper configuration
 func TestProviderVerification_StartupVerifierCreation(t *testing.T) {
+	logger := logrus.New()
 	config := &verifier.StartupConfig{
-		Timeout:              60,
+		VerificationTimeout:  60 * time.Second,
+		HealthCheckTimeout:   10 * time.Second,
 		ParallelVerification: true,
-		MaxRetries:           3,
 	}
 
-	sv := verifier.NewStartupVerifier(config)
+	sv := verifier.NewStartupVerifier(config, logger)
 	require.NotNil(t, sv)
-	assert.NotNil(t, sv.GetLog())
+	// GetLog() is not exported, but we can verify the verifier was created
 }
 
 // TestProviderVerification_ModelVerificationLifecycle tests the full lifecycle
@@ -74,17 +75,22 @@ func TestProviderVerification_ModelVerificationLifecycle(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
+	logger := logrus.New()
 	config := &verifier.StartupConfig{
-		Timeout:              60,
+		VerificationTimeout:  60 * time.Second,
+		HealthCheckTimeout:   10 * time.Second,
 		ParallelVerification: true,
-		MaxRetries:           2,
 	}
 
-	sv := verifier.NewStartupVerifier(config)
+	sv := verifier.NewStartupVerifier(config, logger)
 	require.NotNil(t, sv)
 
-	// Discover providers
-	discovered := sv.DiscoverProviders()
+	// Run verification to get discovered providers
+	result, err := sv.VerifyAllProviders(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	discovered := result.Providers
 	require.NotNil(t, discovered)
 
 	t.Logf("Discovered %d providers", len(discovered))
@@ -130,15 +136,18 @@ func TestProviderVerification_VerifiedModelsCanBeUsed(t *testing.T) {
 		t.Skip("Skipping test - no API keys configured")
 	}
 
+	logger := logrus.New()
 	config := &verifier.StartupConfig{
-		Timeout:              60,
+		VerificationTimeout:  60 * time.Second,
+		HealthCheckTimeout:   10 * time.Second,
 		ParallelVerification: true,
 	}
 
-	sv := verifier.NewStartupVerifier(config)
+	sv := verifier.NewStartupVerifier(config, logger)
 
 	// Run startup verification
-	result := sv.Run(ctx)
+	result, err := sv.VerifyAllProviders(ctx)
+	require.NoError(t, err)
 	require.NotNil(t, result)
 
 	t.Logf("Verification result: %d verified, %d failed", result.VerifiedCount, result.FailedCount)
@@ -147,7 +156,7 @@ func TestProviderVerification_VerifiedModelsCanBeUsed(t *testing.T) {
 	assert.Greater(t, result.VerifiedCount, 0, "Should have at least one verified provider")
 
 	// Get ranked providers
-	ranked := sv.GetRankedProviders()
+	ranked := result.RankedProviders
 	require.NotNil(t, ranked)
 
 	// Check that verified providers have valid scores
@@ -169,19 +178,22 @@ func TestProviderVerification_FailedProvidersHaveReasons(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
+	logger := logrus.New()
 	config := &verifier.StartupConfig{
-		Timeout:              60,
+		VerificationTimeout:  60 * time.Second,
+		HealthCheckTimeout:   10 * time.Second,
 		ParallelVerification: true,
 	}
 
-	sv := verifier.NewStartupVerifier(config)
+	sv := verifier.NewStartupVerifier(config, logger)
 
 	// Run verification
-	result := sv.Run(ctx)
+	result, err := sv.VerifyAllProviders(ctx)
+	require.NoError(t, err)
 	require.NotNil(t, result)
 
 	// Check failed providers have reasons
-	ranked := sv.GetRankedProviders()
+	ranked := result.RankedProviders
 	failedCount := 0
 	for _, p := range ranked {
 		if !p.Verified {
@@ -217,12 +229,14 @@ func TestProviderVerification_DebateTeamUsesVerifiedProviders(t *testing.T) {
 
 	ctx := context.Background()
 
+	logger := logrus.New()
 	config := &verifier.StartupConfig{
-		Timeout:              60,
+		VerificationTimeout:  60 * time.Second,
+		HealthCheckTimeout:   10 * time.Second,
 		ParallelVerification: true,
 	}
 
-	sv := verifier.NewStartupVerifier(config)
+	sv := verifier.NewStartupVerifier(config, logger)
 	require.NotNil(t, sv)
 
 	// Set up instance creator for the debate team
@@ -232,11 +246,17 @@ func TestProviderVerification_DebateTeamUsesVerifiedProviders(t *testing.T) {
 	})
 
 	// Run verification
-	result := sv.Run(ctx)
+	result, err := sv.VerifyAllProviders(ctx)
+	require.NoError(t, err)
 	require.NotNil(t, result)
 
 	// Get verified providers
-	verifiedProviders := sv.GetVerifiedProviders()
+	var verifiedProviders []*verifier.UnifiedProvider
+	for _, p := range result.Providers {
+		if p.Verified {
+			verifiedProviders = append(verifiedProviders, p)
+		}
+	}
 	require.NotNil(t, verifiedProviders)
 
 	t.Logf("Verified providers: %d", len(verifiedProviders))

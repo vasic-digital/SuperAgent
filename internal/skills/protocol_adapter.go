@@ -693,7 +693,7 @@ func GetSkillUsageHeader(usages []SkillUsage) string {
 		names[i] = u.SkillName
 	}
 
-	data, _ := json.Marshal(map[string]interface{}{
+	data, _ := json.Marshal(map[string]interface{}{ //nolint:errcheck // marshaling simple map should never fail
 		"skills_used": names,
 		"count":       len(usages),
 	})

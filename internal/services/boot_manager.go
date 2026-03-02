@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"fmt"
-	"os/exec"
 	"strings"
 	"sync"
 	"time"
@@ -727,86 +726,40 @@ func (bm *BootManager) ShutdownAll() error {
 }
 
 func (bm *BootManager) startComposeServices(composeFile, profile string, services []string) error {
-	// Use Containers module adapter when available.
-	if ca := bm.getContainerAdapter(); ca != nil && composeFile != "" {
-		bm.Logger.WithFields(logrus.Fields{
-			"file":     composeFile,
-			"profile":  profile,
-			"services": strings.Join(services, ", "),
-		}).Info("Starting compose services via Containers module")
-		ctx := context.Background()
-		return ca.ComposeUp(ctx, composeFile, profile)
+	// Container orchestration MUST go through the Containers module adapter.
+	ca := bm.getContainerAdapter()
+	if ca == nil {
+		return fmt.Errorf("container adapter not available: container orchestration must be handled by HelixAgent binary via Containers/.env configuration. Run ./bin/helixagent to start services automatically")
 	}
-
-	// Fallback: direct exec.Command.
-	composeCmd, composeArgs := detectComposeCmd()
-
-	var cmdArgs []string
-	cmdArgs = append(cmdArgs, composeArgs...)
-	if composeFile != "" {
-		cmdArgs = append(cmdArgs, "-f", composeFile)
+	if composeFile == "" {
+		return fmt.Errorf("compose file path is empty")
 	}
-	if profile != "" {
-		cmdArgs = append(cmdArgs, "--profile", profile)
-	}
-	cmdArgs = append(cmdArgs, "up", "-d")
-	cmdArgs = append(cmdArgs, services...)
 
 	bm.Logger.WithFields(logrus.Fields{
-		"command":  composeCmd,
+		"file":     composeFile,
+		"profile":  profile,
 		"services": strings.Join(services, ", "),
-	}).Info("Starting compose services")
-
-	cmd := exec.Command(composeCmd, cmdArgs...)
-	if bm.ProjectDir != "" {
-		cmd.Dir = bm.ProjectDir
-	}
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("compose up failed: %w\nOutput: %s", err, string(output))
-	}
-	return nil
+	}).Info("Starting compose services via Containers module")
+	ctx := context.Background()
+	return ca.ComposeUp(ctx, composeFile, profile)
 }
 
 func (bm *BootManager) stopComposeServices(composeFile, profile string, services []string) error {
-	// Use Containers module adapter when available.
-	if ca := bm.getContainerAdapter(); ca != nil && composeFile != "" {
-		bm.Logger.WithFields(logrus.Fields{
-			"file":     composeFile,
-			"services": strings.Join(services, ", "),
-		}).Info("Stopping compose services via Containers module")
-		ctx := context.Background()
-		return ca.ComposeDown(ctx, composeFile, profile)
+	// Container orchestration MUST go through the Containers module adapter.
+	ca := bm.getContainerAdapter()
+	if ca == nil {
+		return fmt.Errorf("container adapter not available: container orchestration must be handled by HelixAgent binary via Containers/.env configuration. Run ./bin/helixagent to manage services automatically")
 	}
-
-	// Fallback: direct exec.Command.
-	composeCmd, composeArgs := detectComposeCmd()
-
-	var cmdArgs []string
-	cmdArgs = append(cmdArgs, composeArgs...)
-	if composeFile != "" {
-		cmdArgs = append(cmdArgs, "-f", composeFile)
+	if composeFile == "" {
+		return fmt.Errorf("compose file path is empty")
 	}
-	if profile != "" {
-		cmdArgs = append(cmdArgs, "--profile", profile)
-	}
-	cmdArgs = append(cmdArgs, "stop")
-	cmdArgs = append(cmdArgs, services...)
 
 	bm.Logger.WithFields(logrus.Fields{
-		"command":  composeCmd,
+		"file":     composeFile,
 		"services": strings.Join(services, ", "),
-	}).Info("Stopping compose services")
-
-	cmd := exec.Command(composeCmd, cmdArgs...)
-	if bm.ProjectDir != "" {
-		cmd.Dir = bm.ProjectDir
-	}
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("compose stop failed: %w\nOutput: %s", err, string(output))
-	}
-	return nil
+	}).Info("Stopping compose services via Containers module")
+	ctx := context.Background()
+	return ca.ComposeDown(ctx, composeFile, profile)
 }
 
 func (bm *BootManager) logSummary() {
@@ -837,30 +790,6 @@ func (bm *BootManager) logSummary() {
 		"skipped":    skipped,
 		"total":      total,
 	}).Info("Service boot summary")
-}
-
-// detectComposeCmd returns the compose command and any prefix args.
-func detectComposeCmd() (string, []string) {
-	// Try "docker compose" (v2) first
-	if path, err := exec.LookPath("docker"); err == nil {
-		cmd := exec.Command(path, "compose", "version")
-		if err := cmd.Run(); err == nil {
-			return path, []string{"compose"}
-		}
-	}
-	// Fallback to docker-compose (v1)
-	if path, err := exec.LookPath("docker-compose"); err == nil {
-		return path, nil
-	}
-	// Try podman-compose
-	if path, err := exec.LookPath("podman-compose"); err == nil {
-		return path, nil
-	}
-	// Try podman compose
-	if path, err := exec.LookPath("podman"); err == nil {
-		return path, []string{"compose"}
-	}
-	return "docker", []string{"compose"}
 }
 
 // DeployRemoteServices deploys all remote-enabled services using the remote deployer.

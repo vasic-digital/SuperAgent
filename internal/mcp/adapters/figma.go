@@ -490,7 +490,10 @@ func (a *FigmaAdapter) postComment(ctx context.Context, args map[string]interfac
 		}
 	}
 
-	bodyJSON, _ := json.Marshal(body)
+	bodyJSON, err := json.Marshal(body)
+	if err != nil {
+		return &ToolResult{IsError: true, Content: []ContentBlock{{Type: "text", Text: fmt.Sprintf("failed to marshal request body: %v", err)}}}, nil
+	}
 	endpoint := fmt.Sprintf("/files/%s/comments", fileKey)
 	resp, err := a.makeRequest(ctx, http.MethodPost, endpoint, bodyJSON)
 	if err != nil {

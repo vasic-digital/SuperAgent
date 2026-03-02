@@ -238,7 +238,10 @@ func (c *ACPClient) GetServerInfo(ctx context.Context, serverURL string) (*ACPSe
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("HTTP request failed with status %d - failed to read response body: %w", resp.StatusCode, err)
+		}
 		return nil, fmt.Errorf("HTTP request failed with status %d: %s", resp.StatusCode, string(body))
 	}
 

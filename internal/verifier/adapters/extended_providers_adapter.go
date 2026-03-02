@@ -337,7 +337,10 @@ func (epa *ExtendedProvidersAdapter) testCompletion(ctx context.Context, req *Pr
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("API returned status %d - failed to read response body: %v", resp.StatusCode, err)
+		}
 		return fmt.Errorf("API returned status %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
@@ -393,7 +396,10 @@ func (epa *ExtendedProvidersAdapter) testCohereCompletion(ctx context.Context, r
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("API returned status %d - failed to read response body: %v", resp.StatusCode, err)
+		}
 		return fmt.Errorf("API returned status %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 

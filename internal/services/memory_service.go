@@ -625,8 +625,12 @@ func (m *MemoryService) convertInsightsToMemorySources(resp *llm.InsightsRespons
 			content = c
 		} else {
 			// Convert map to JSON string
-			contentBytes, _ := json.Marshal(insight)
-			content = string(contentBytes)
+			contentBytes, err := json.Marshal(insight)
+			if err != nil {
+				content = ""
+			} else {
+				content = string(contentBytes)
+			}
 		}
 
 		sources = append(sources, models.MemorySource{

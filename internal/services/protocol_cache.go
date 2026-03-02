@@ -430,13 +430,22 @@ func (c *ProtocolCache) calculateSize(data interface{}) int {
 	case []byte:
 		return len(v)
 	case map[string]interface{}:
-		jsonData, _ := json.Marshal(v)
+		jsonData, err := json.Marshal(v)
+		if err != nil {
+			return 0
+		}
 		return len(jsonData)
 	case []interface{}:
-		jsonData, _ := json.Marshal(v)
+		jsonData, err := json.Marshal(v)
+		if err != nil {
+			return 0
+		}
 		return len(jsonData)
 	default:
-		jsonData, _ := json.Marshal(v)
+		jsonData, err := json.Marshal(v)
+		if err != nil {
+			return 0
+		}
 		return len(jsonData)
 	}
 }
@@ -446,8 +455,12 @@ func GenerateCacheKey(protocol, operation string, params map[string]interface{})
 	// Create a deterministic key from parameters
 	paramStr := ""
 	if params != nil {
-		paramBytes, _ := json.Marshal(params)
-		paramStr = string(paramBytes)
+		paramBytes, err := json.Marshal(params)
+		if err != nil {
+			paramStr = ""
+		} else {
+			paramStr = string(paramBytes)
+		}
 	}
 
 	key := fmt.Sprintf("%s:%s:%s", protocol, operation, paramStr)

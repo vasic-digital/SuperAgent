@@ -452,7 +452,13 @@ func (c *CacheService) generateCacheKey(req *models.LLMRequest) string {
 	}
 
 	// Convert to JSON and hash
-	jsonData, _ := json.Marshal(keyData)
+	jsonData, err := json.Marshal(keyData)
+	if err != nil {
+		// Fallback to hash of prompt and model
+		fallback := fmt.Sprintf("%s:%s", req.Prompt, req.ModelParams.Model)
+		hash := c.hashString(fallback)
+		return fmt.Sprintf("llm:%s", hash)
+	}
 	hash := c.hashString(string(jsonData))
 
 	return fmt.Sprintf("llm:%s", hash)

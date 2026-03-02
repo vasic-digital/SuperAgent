@@ -165,7 +165,10 @@ func (m *CohereEmbedding) EmbedBatch(ctx context.Context, texts []string) ([][]f
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
+		respBody, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			return nil, fmt.Errorf("Cohere API error: %s - failed to read response body: %v", resp.Status, readErr)
+		}
 		return nil, fmt.Errorf("Cohere API error: %s - %s", resp.Status, string(respBody))
 	}
 
@@ -330,7 +333,10 @@ func (m *VoyageEmbedding) EmbedBatch(ctx context.Context, texts []string) ([][]f
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
+		respBody, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			return nil, fmt.Errorf("Voyage API error: %s - failed to read response body: %v", resp.Status, readErr)
+		}
 		return nil, fmt.Errorf("Voyage API error: %s - %s", resp.Status, string(respBody))
 	}
 
@@ -498,7 +504,10 @@ func (m *JinaEmbedding) EmbedBatch(ctx context.Context, texts []string) ([][]flo
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
+		respBody, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			return nil, fmt.Errorf("Jina API error: %s - failed to read response body: %v", resp.Status, readErr)
+		}
 		return nil, fmt.Errorf("Jina API error: %s - %s", resp.Status, string(respBody))
 	}
 
@@ -675,7 +684,10 @@ func (m *GoogleEmbedding) EmbedBatch(ctx context.Context, texts []string) ([][]f
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
+		respBody, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			return nil, fmt.Errorf("Google API error: %s - failed to read response body: %v", resp.Status, readErr)
+		}
 		return nil, fmt.Errorf("Google API error: %s - %s", resp.Status, string(respBody))
 	}
 
@@ -872,7 +884,10 @@ func (m *BedrockEmbedding) embedTitan(ctx context.Context, text string) ([]float
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
+		respBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("Bedrock API error: %s, failed to read body: %v", resp.Status, err)
+		}
 		return nil, fmt.Errorf("Bedrock API error: %s - %s", resp.Status, string(respBody))
 	}
 
@@ -917,7 +932,10 @@ func (m *BedrockEmbedding) embedCohere(ctx context.Context, texts []string) ([][
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
+		respBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("Bedrock API error: %s, failed to read body: %v", resp.Status, err)
+		}
 		return nil, fmt.Errorf("Bedrock API error: %s - %s", resp.Status, string(respBody))
 	}
 

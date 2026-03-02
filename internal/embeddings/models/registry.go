@@ -436,7 +436,10 @@ func (m *OpenAIEmbeddingModel) Encode(ctx context.Context, texts []string) ([][]
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("API error: status %d, failed to read error body: %w", resp.StatusCode, err)
+		}
 		return nil, fmt.Errorf("API error: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
 
@@ -518,7 +521,10 @@ func (m *OllamaEmbeddingModel) EncodeSingle(ctx context.Context, text string) ([
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("API error: status %d, failed to read error body: %w", resp.StatusCode, err)
+		}
 		return nil, fmt.Errorf("API error: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
 
@@ -620,7 +626,10 @@ func (m *SentenceTransformersModel) Encode(ctx context.Context, texts []string) 
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("API error: status %d, failed to read error body: %w", resp.StatusCode, err)
+		}
 		return nil, fmt.Errorf("API error: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
 

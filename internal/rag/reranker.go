@@ -147,7 +147,10 @@ func (r *CrossEncoderReranker) scoreBatch(ctx context.Context, pairs [][2]string
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("reranker returned status %d - failed to read response body: %w", resp.StatusCode, err)
+		}
 		return nil, fmt.Errorf("reranker returned status %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -252,7 +255,10 @@ func (r *CohereReranker) Rerank(ctx context.Context, query string, results []*Se
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("Cohere returned status %d - failed to read response body: %w", resp.StatusCode, err)
+		}
 		return nil, fmt.Errorf("Cohere returned status %d: %s", resp.StatusCode, string(body))
 	}
 

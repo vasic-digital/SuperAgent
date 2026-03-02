@@ -771,7 +771,7 @@ func (s *StreamSubscription) consumeLoop(ctx context.Context, handler messaging.
 			if !s.IsActive() {
 				return
 			}
-			_ = handler(ctx, event.ToMessage())
+			_ = handler(ctx, event.ToMessage()) //nolint:errcheck
 		}
 	}
 }

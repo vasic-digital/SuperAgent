@@ -136,7 +136,7 @@ func (pq priorityQueue) Swap(i, j int) {
 // Push adds an item to the queue.
 func (pq *priorityQueue) Push(x interface{}) {
 	n := len(*pq)
-	item := x.(*queueItem)
+	item := x.(*queueItem) //nolint:errcheck
 	item.index = n
 	*pq = append(*pq, item)
 }

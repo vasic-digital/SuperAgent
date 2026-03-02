@@ -191,7 +191,10 @@ func (m *OpenAIEmbedding) EmbedBatch(ctx context.Context, texts []string) ([][]f
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
+		respBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("OpenAI API error: %s - failed to read error body: %w", resp.Status, err)
+		}
 		return nil, fmt.Errorf("OpenAI API error: %s - %s", resp.Status, string(respBody))
 	}
 
@@ -297,7 +300,10 @@ func (m *OllamaEmbedding) Embed(ctx context.Context, text string) ([]float64, er
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
+		respBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("Ollama API error: %s - failed to read error body: %w", resp.Status, err)
+		}
 		return nil, fmt.Errorf("Ollama API error: %s - %s", resp.Status, string(respBody))
 	}
 
@@ -421,7 +427,10 @@ func (m *HuggingFaceEmbedding) Embed(ctx context.Context, text string) ([]float6
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
+		respBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("HuggingFace API error: %s - failed to read error body: %w", resp.Status, err)
+		}
 		return nil, fmt.Errorf("HuggingFace API error: %s - %s", resp.Status, string(respBody))
 	}
 
@@ -429,7 +438,10 @@ func (m *HuggingFaceEmbedding) Embed(ctx context.Context, text string) ([]float6
 	if err := json.NewDecoder(resp.Body).Decode(&embedding); err != nil {
 		// Try nested format
 		var nested [][]float64
-		respBody, _ := io.ReadAll(resp.Body)
+		respBody, err2 := io.ReadAll(resp.Body)
+		if err2 != nil {
+			return nil, fmt.Errorf("failed to read response body: %w", err2)
+		}
 		if err := json.Unmarshal(respBody, &nested); err == nil && len(nested) > 0 {
 			embedding = nested[0]
 		} else {
@@ -474,7 +486,10 @@ func (m *HuggingFaceEmbedding) EmbedBatch(ctx context.Context, texts []string) (
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
+		respBody, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			return nil, fmt.Errorf("HuggingFace API error: %s - failed to read response body: %v", resp.Status, readErr)
+		}
 		return nil, fmt.Errorf("HuggingFace API error: %s - %s", resp.Status, string(respBody))
 	}
 

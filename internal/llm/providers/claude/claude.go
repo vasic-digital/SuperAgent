@@ -855,7 +855,10 @@ func (p *ClaudeProvider) HealthCheck() error {
 	defer func() { _ = resp.Body.Close() }()
 
 	// Read response body for error detection
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("health check failed to read response body: %w", err)
+	}
 	bodyStr := string(body)
 
 	// Claude API returns 400 for GET requests to messages endpoint (expected)

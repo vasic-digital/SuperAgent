@@ -194,8 +194,11 @@ func (p *KimiProvider) CompleteStream(ctx context.Context, req *models.LLMReques
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		_ = resp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("Kimi API error: HTTP %d - failed to read response body: %w", resp.StatusCode, err)
+		}
 		return nil, fmt.Errorf("Kimi API error: HTTP %d - %s", resp.StatusCode, string(body))
 	}
 

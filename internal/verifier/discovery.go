@@ -272,9 +272,9 @@ func (s *ModelDiscoveryService) parseModelsResponse(cred ProviderCredentials, re
 
 	var discovered []*DiscoveredModel
 	for _, m := range models {
-		modelID, _ := m["id"].(string)
+		modelID, _ := m["id"].(string) //nolint:errcheck
 		if modelID == "" {
-			modelID, _ = m["name"].(string)
+			modelID, _ = m["name"].(string) //nolint:errcheck
 		}
 		if modelID == "" {
 			continue

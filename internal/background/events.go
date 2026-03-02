@@ -161,7 +161,7 @@ func NewBackgroundTaskEvent(eventType TaskEventType, task *models.BackgroundTask
 
 // ToMessagingEvent converts BackgroundTaskEvent to messaging.Event.
 func (e *BackgroundTaskEvent) ToMessagingEvent() *messaging.Event {
-	data, _ := json.Marshal(e)
+	data, _ := json.Marshal(e) //nolint:errcheck // marshaling of simple struct should never fail
 	return &messaging.Event{
 		ID:            e.EventID,
 		Type:          messaging.EventType(e.EventType),

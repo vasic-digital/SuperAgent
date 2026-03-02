@@ -646,7 +646,10 @@ func (t *HTTPTransport) Send(ctx context.Context, message interface{}) error {
 
 	// Check response status
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			return fmt.Errorf("HTTP request failed with status %d (failed to read body: %v)", resp.StatusCode, readErr)
+		}
 		return fmt.Errorf("HTTP request failed with status %d: %s", resp.StatusCode, string(body))
 	}
 

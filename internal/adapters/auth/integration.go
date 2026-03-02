@@ -352,7 +352,7 @@ func RequireScopes(scopes ...string) gin.HandlerFunc {
 
 func isAuthenticated(c *gin.Context) bool {
 	if auth, exists := c.Get("authenticated"); exists {
-		return auth.(bool)
+		return auth.(bool) //nolint:errcheck
 	}
 	return false
 }

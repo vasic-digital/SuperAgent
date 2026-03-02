@@ -287,8 +287,8 @@ func (h *ProtocolSSEHandler) handleSSEConnection(
 	// CRITICAL: Send initial endpoint event IMMEDIATELY before any other operations
 	// This is required for OpenCode/Crush/HelixCode which have strict timeout (120ms)
 	endpointEvent := fmt.Sprintf("event: endpoint\ndata: /v1/%s\n\n", protocol)
-	_, _ = c.Writer.Write([]byte(endpointEvent))
-	flusher.Flush()
+	_, _ = c.Writer.Write([]byte(endpointEvent)) //nolint:errcheck
+	flusher.Flush() //nolint:errcheck
 
 	// Create client channel and ID AFTER the initial response
 	clientChan := make(chan []byte, 100)
@@ -330,15 +330,15 @@ func (h *ProtocolSSEHandler) handleSSEConnection(
 				return
 			}
 			// Send SSE message
-			_, _ = c.Writer.Write([]byte("event: message\n"))
-			_, _ = c.Writer.Write([]byte("data: "))
-			_, _ = c.Writer.Write(msg)
-			_, _ = c.Writer.Write([]byte("\n\n"))
-			flusher.Flush()
+			_, _ = c.Writer.Write([]byte("event: message\n")) //nolint:errcheck
+			_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+			_, _ = c.Writer.Write(msg) //nolint:errcheck
+			_, _ = c.Writer.Write([]byte("\n\n")) //nolint:errcheck
+			flusher.Flush() //nolint:errcheck
 		case <-heartbeat.C:
 			// Send heartbeat as comment
-			_, _ = c.Writer.Write([]byte(": heartbeat\n\n"))
-			flusher.Flush()
+			_, _ = c.Writer.Write([]byte(": heartbeat\n\n")) //nolint:errcheck
+			flusher.Flush() //nolint:errcheck
 		}
 	}
 }
@@ -904,13 +904,19 @@ func (h *ProtocolSSEHandler) executeMCPTool(name string, args map[string]interfa
 	case "mcp_list_providers":
 		if h.mcpHandler != nil && h.mcpHandler.providerRegistry != nil {
 			providers := h.mcpHandler.providerRegistry.ListProviders()
-			data, _ := json.Marshal(providers)
+			data, err := json.Marshal(providers)
+			if err != nil {
+				return "", fmt.Errorf("failed to marshal providers: %w", err)
+			}
 			return string(data), nil
 		}
 		return "[]", nil
 	case "mcp_get_capabilities":
 		caps := h.getMCPCapabilities()
-		data, _ := json.Marshal(caps)
+		data, err := json.Marshal(caps)
+		if err != nil {
+			return "", fmt.Errorf("failed to marshal capabilities: %w", err)
+		}
 		return string(data), nil
 	default:
 		return "", fmt.Errorf("unknown MCP tool: %s", name)

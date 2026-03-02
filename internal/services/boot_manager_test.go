@@ -1,6 +1,7 @@
 package services
 
 import (
+	"os/exec"
 	"testing"
 	"time"
 
@@ -238,4 +239,27 @@ func TestDetectComposeCmd(t *testing.T) {
 		// It could be a full path, that's fine
 		t.Logf("Compose command: %s %v", cmd, args)
 	}
+}
+
+func detectComposeCmd() (string, []string) {
+	// Try "docker compose" (v2) first
+	if path, err := exec.LookPath("docker"); err == nil {
+		cmd := exec.Command(path, "compose", "version")
+		if err := cmd.Run(); err == nil {
+			return path, []string{"compose"}
+		}
+	}
+	// Fallback to docker-compose (v1)
+	if path, err := exec.LookPath("docker-compose"); err == nil {
+		return path, nil
+	}
+	// Try podman-compose
+	if path, err := exec.LookPath("podman-compose"); err == nil {
+		return path, nil
+	}
+	// Try podman compose
+	if path, err := exec.LookPath("podman"); err == nil {
+		return path, []string{"compose"}
+	}
+	return "docker", []string{"compose"}
 }

@@ -1,10 +1,13 @@
 package integration
 
 import (
+	"context"
 	"os"
 	"testing"
+	"time"
 
 	"dev.helix.agent/internal/verifier"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,16 +18,23 @@ func TestOllama_ExplicitlyDisabledByDefault(t *testing.T) {
 	os.Unsetenv("OLLAMA_BASE_URL")
 
 	// Create a startup verifier with test config
+	logger := logrus.New()
 	config := &verifier.StartupConfig{
-		Timeout:              30,
+		VerificationTimeout:  30 * time.Second,
+		HealthCheckTimeout:   10 * time.Second,
 		ParallelVerification: true,
 	}
 
-	sv := verifier.NewStartupVerifier(config)
+	sv := verifier.NewStartupVerifier(config, logger)
 	require.NotNil(t, sv)
 
-	// Discover providers
-	providers := sv.DiscoverProviders()
+	// Run verification to get discovered providers
+	ctx := context.Background()
+	result, err := sv.VerifyAllProviders(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	providers := result.Providers
 	require.NotNil(t, providers)
 
 	// Check that Ollama is NOT in the discovered providers when OLLAMA_ENABLED is not set
@@ -40,17 +50,23 @@ func TestOllama_ExplicitlyEnabled(t *testing.T) {
 
 	// Note: We can't actually test Ollama discovery without a running Ollama instance
 	// but we can verify the configuration logic
+	logger := logrus.New()
 	config := &verifier.StartupConfig{
-		Timeout:              30,
+		VerificationTimeout:  30 * time.Second,
+		HealthCheckTimeout:   10 * time.Second,
 		ParallelVerification: true,
 	}
 
-	sv := verifier.NewStartupVerifier(config)
+	sv := verifier.NewStartupVerifier(config, logger)
 	require.NotNil(t, sv)
 
-	// The provider discovery should check OLLAMA_ENABLED
-	// If Ollama is not running, it won't be added, but the check should happen
-	providers := sv.DiscoverProviders()
+	// Run verification to get discovered providers
+	ctx := context.Background()
+	result, err := sv.VerifyAllProviders(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	providers := result.Providers
 	require.NotNil(t, providers)
 
 	// When OLLAMA_ENABLED=true but Ollama is not running,

@@ -193,8 +193,11 @@ func (p *CodestralProvider) CompleteStream(ctx context.Context, req *models.LLMR
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
+		body, readErr := io.ReadAll(resp.Body)
 		_ = resp.Body.Close()
+		if readErr != nil {
+			return nil, fmt.Errorf("Codestral API error: HTTP %d - failed to read response body: %v", resp.StatusCode, readErr)
+		}
 		return nil, fmt.Errorf("Codestral API error: HTTP %d - %s", resp.StatusCode, string(body))
 	}
 

@@ -41,15 +41,17 @@ func TestAIDebate_TeamInitializationWithVerifiedProviders(t *testing.T) {
 
 	// Create startup verifier
 	config := &verifier.StartupConfig{
-		Timeout:              60,
+		VerificationTimeout:  60 * time.Second,
+		HealthCheckTimeout:   10 * time.Second,
 		ParallelVerification: true,
 	}
 
-	sv := verifier.NewStartupVerifier(config)
+	sv := verifier.NewStartupVerifier(config, logger)
 	require.NotNil(t, sv)
 
 	// Run verification to get verified providers
-	result := sv.Run(ctx)
+	result, err := sv.VerifyAllProviders(ctx)
+	require.NoError(t, err)
 	require.NotNil(t, result)
 
 	t.Logf("Startup verification: %d verified, %d failed", result.VerifiedCount, result.FailedCount)
@@ -59,7 +61,7 @@ func TestAIDebate_TeamInitializationWithVerifiedProviders(t *testing.T) {
 	require.NotNil(t, dtc)
 
 	// Initialize the debate team
-	err := dtc.InitializeTeam(ctx)
+	err = dtc.InitializeTeam(ctx)
 	require.NoError(t, err)
 
 	// Verify team has members
@@ -118,15 +120,18 @@ func TestAIDebate_TeamUsesHighQualityProviders(t *testing.T) {
 
 	// Create startup verifier
 	config := &verifier.StartupConfig{
-		Timeout:              60,
+		VerificationTimeout:  60 * time.Second,
+		HealthCheckTimeout:   10 * time.Second,
 		ParallelVerification: true,
 	}
 
-	sv := verifier.NewStartupVerifier(config)
+	sv := verifier.NewStartupVerifier(config, logger)
 	require.NotNil(t, sv)
 
 	// Run verification
-	result := sv.Run(ctx)
+	result, err := sv.VerifyAllProviders(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, result)
 	require.NotNil(t, result)
 
 	// Create debate team config
@@ -134,7 +139,7 @@ func TestAIDebate_TeamUsesHighQualityProviders(t *testing.T) {
 	require.NotNil(t, dtc)
 
 	// Initialize team
-	err := dtc.InitializeTeam(ctx)
+	err = dtc.InitializeTeam(ctx)
 	require.NoError(t, err)
 
 	// Get all LLMs
@@ -192,22 +197,24 @@ func TestAIDebate_FallbackActivation(t *testing.T) {
 
 	// Create startup verifier
 	config := &verifier.StartupConfig{
-		Timeout:              60,
+		VerificationTimeout:  60 * time.Second,
+		HealthCheckTimeout:   10 * time.Second,
 		ParallelVerification: true,
 	}
 
-	sv := verifier.NewStartupVerifier(config)
+	sv := verifier.NewStartupVerifier(config, logger)
 	require.NotNil(t, sv)
 
 	// Run verification
-	sv.Run(ctx)
+	_, err := sv.VerifyAllProviders(ctx)
+	require.NoError(t, err)
 
 	// Create debate team config
 	dtc := services.NewDebateTeamConfigWithStartupVerifier(sv, logger)
 	require.NotNil(t, dtc)
 
 	// Initialize team
-	err := dtc.InitializeTeam(ctx)
+	err = dtc.InitializeTeam(ctx)
 	require.NoError(t, err)
 
 	// Check fallbacks for each position
@@ -261,22 +268,24 @@ func TestAIDebate_NoOllamaWhenDisabled(t *testing.T) {
 
 	// Create startup verifier
 	config := &verifier.StartupConfig{
-		Timeout:              60,
+		VerificationTimeout:  60 * time.Second,
+		HealthCheckTimeout:   10 * time.Second,
 		ParallelVerification: true,
 	}
 
-	sv := verifier.NewStartupVerifier(config)
+	sv := verifier.NewStartupVerifier(config, logger)
 	require.NotNil(t, sv)
 
 	// Run verification
-	sv.Run(ctx)
+	_, err := sv.VerifyAllProviders(ctx)
+	require.NoError(t, err)
 
 	// Create debate team config
 	dtc := services.NewDebateTeamConfigWithStartupVerifier(sv, logger)
 	require.NotNil(t, dtc)
 
 	// Initialize team
-	err := dtc.InitializeTeam(ctx)
+	err = dtc.InitializeTeam(ctx)
 	require.NoError(t, err)
 
 	// Get all LLMs and verify no Ollama
@@ -316,15 +325,18 @@ func TestAIDebate_VerifiedProvidersOnly(t *testing.T) {
 
 	// Create startup verifier
 	config := &verifier.StartupConfig{
-		Timeout:              60,
+		VerificationTimeout:  60 * time.Second,
+		HealthCheckTimeout:   10 * time.Second,
 		ParallelVerification: true,
 	}
 
-	sv := verifier.NewStartupVerifier(config)
+	sv := verifier.NewStartupVerifier(config, logger)
 	require.NotNil(t, sv)
 
 	// Run verification
-	result := sv.Run(ctx)
+	result, err := sv.VerifyAllProviders(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, result)
 	require.NotNil(t, result)
 
 	// Create debate team config
@@ -332,7 +344,7 @@ func TestAIDebate_VerifiedProvidersOnly(t *testing.T) {
 	require.NotNil(t, dtc)
 
 	// Initialize team
-	err := dtc.InitializeTeam(ctx)
+	err = dtc.InitializeTeam(ctx)
 	require.NoError(t, err)
 
 	// Get all LLMs

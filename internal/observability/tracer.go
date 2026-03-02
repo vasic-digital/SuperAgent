@@ -398,7 +398,7 @@ func InitGlobalTracer(config *TracerConfig) error {
 func GetTracer() *LLMTracer {
 	if globalTracer == nil {
 		// Initialize with defaults if not set
-		globalTracer, _ = NewLLMTracer(nil)
+		globalTracer, _ = NewLLMTracer(nil) //nolint:errcheck
 	}
 	return globalTracer
 }

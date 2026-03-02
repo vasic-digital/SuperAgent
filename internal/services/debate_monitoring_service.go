@@ -439,14 +439,14 @@ func (dms *DebateMonitoringService) GetStats() map[string]interface{} {
 			stats["active_sessions"] = stats["active_sessions"].(int) + 1 //nolint:errcheck
 		}
 		for _, alert := range session.Alerts {
-			stats["total_alerts"] = stats["total_alerts"].(int) + 1
+			stats["total_alerts"] = stats["total_alerts"].(int) + 1 //nolint:errcheck
 			switch alert.Level {
 			case "critical":
-				stats["critical_alerts"] = stats["critical_alerts"].(int) + 1
+				stats["critical_alerts"] = stats["critical_alerts"].(int) + 1 //nolint:errcheck
 			case "error":
-				stats["error_alerts"] = stats["error_alerts"].(int) + 1
+				stats["error_alerts"] = stats["error_alerts"].(int) + 1 //nolint:errcheck
 			case "warning":
-				stats["warning_alerts"] = stats["warning_alerts"].(int) + 1
+				stats["warning_alerts"] = stats["warning_alerts"].(int) + 1 //nolint:errcheck
 			}
 		}
 	}

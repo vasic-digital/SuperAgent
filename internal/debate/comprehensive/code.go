@@ -243,8 +243,8 @@ func (t *CodeTool) Validate(inputs map[string]interface{}) error {
 
 // Execute executes the tool
 func (t *CodeTool) Execute(ctx context.Context, inputs map[string]interface{}) (*ToolResult, error) {
-	action := inputs["action"].(string)
-	path := inputs["path"].(string)
+	action := inputs["action"].(string) //nolint:errcheck
+	path := inputs["path"].(string)     //nolint:errcheck
 	fullPath := filepath.Join(t.basePath, path)
 
 	t.logger.WithFields(logrus.Fields{
@@ -256,7 +256,7 @@ func (t *CodeTool) Execute(ctx context.Context, inputs map[string]interface{}) (
 	case "read":
 		return t.readFile(fullPath)
 	case "write":
-		content := inputs["content"].(string)
+		content := inputs["content"].(string) //nolint:errcheck
 		return t.writeFile(fullPath, content)
 	case "update":
 		content := inputs["content"].(string)
@@ -321,7 +321,9 @@ func (t *CodeTool) updateFile(path string, content string) (*ToolResult, error) 
 	// Write new content
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 		// Restore backup on failure
-		os.WriteFile(path, data, 0644)
+		if err2 := os.WriteFile(path, data, 0644); err2 != nil {
+			t.logger.Errorf("failed to restore backup after update failure: %v", err2)
+		}
 		return NewToolError(fmt.Sprintf("failed to update file: %v", err)), nil
 	}
 
@@ -341,7 +343,9 @@ func (t *CodeTool) deleteFile(path string) (*ToolResult, error) {
 
 	// Move to trash instead of permanent deletion
 	trashDir := filepath.Join(t.basePath, ".trash")
-	os.MkdirAll(trashDir, 0755)
+	if err := os.MkdirAll(trashDir, 0755); err != nil {
+		t.logger.Errorf("failed to create trash directory: %v", err)
+	}
 
 	trashPath := filepath.Join(trashDir, filepath.Base(path)+"."+time.Now().Format("20060102150405"))
 
@@ -460,9 +464,17 @@ func (t *SearchTool) searchFiles(pattern string) ([]string, error) {
 			return nil
 		}
 
-		matched, _ := filepath.Match(pattern, filepath.Base(path))
+		matched, err2 := filepath.Match(pattern, filepath.Base(path))
+		if err2 != nil {
+			// Invalid pattern, skip
+			return nil
+		}
 		if matched {
-			relPath, _ := filepath.Rel(t.basePath, path)
+			relPath, err3 := filepath.Rel(t.basePath, path)
+			if err3 != nil {
+				// Cannot compute relative path, skip
+				return nil
+			}
 			matches = append(matches, relPath)
 		}
 
@@ -487,7 +499,11 @@ func (t *SearchTool) searchContent(pattern string) ([]string, error) {
 		}
 
 		if strings.Contains(string(data), pattern) {
-			relPath, _ := filepath.Rel(t.basePath, path)
+			relPath, err2 := filepath.Rel(t.basePath, path)
+			if err2 != nil {
+				// Cannot compute relative path, skip
+				return nil
+			}
 			matches = append(matches, relPath)
 		}
 

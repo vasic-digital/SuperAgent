@@ -430,7 +430,10 @@ func (sbp *SparkBatchProcessor) GetJobStatus(ctx context.Context, jobID string) 
 
 	// Check response status
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("Spark REST API returned status %d - failed to read response body: %w", resp.StatusCode, err)
+		}
 		return nil, fmt.Errorf("Spark REST API returned status %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -528,7 +531,10 @@ func (sbp *SparkBatchProcessor) CancelJob(ctx context.Context, jobID string) err
 	// Check response status
 	// Spark REST API returns 200 OK for successful kill
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("Spark REST API returned status %d - failed to read response body: %w", resp.StatusCode, err)
+		}
 		return fmt.Errorf("Spark REST API returned status %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -585,7 +591,10 @@ func (sbp *SparkBatchProcessor) ListCompletedJobs(
 
 	// Check response status
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("Spark History Server returned status %d - failed to read response body: %w", resp.StatusCode, err)
+		}
 		return nil, fmt.Errorf("Spark History Server returned status %d: %s", resp.StatusCode, string(body))
 	}
 

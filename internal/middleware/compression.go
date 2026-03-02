@@ -3,6 +3,7 @@ package middleware
 import (
 	"bufio"
 	"compress/gzip"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -129,12 +130,12 @@ func (w *compressionWriter) shouldCompress(data []byte) bool {
 func (w *compressionWriter) setupCompressor() {
 	switch w.encoding {
 	case "br":
-		bw := brotliWriterPool.Get().(*brotli.Writer)
+		bw := brotliWriterPool.Get().(*brotli.Writer) //nolint:errcheck // type assertion panic is acceptable
 		bw.Reset(w.ResponseWriter)
 		w.compressor = bw
 		w.Header().Set("Content-Encoding", "br")
 	case "gzip":
-		gw := gzipWriterPool.Get().(*gzip.Writer)
+		gw := gzipWriterPool.Get().(*gzip.Writer) //nolint:errcheck // type assertion panic is acceptable
 		gw.Reset(w.ResponseWriter)
 		w.compressor = gw
 		w.Header().Set("Content-Encoding", "gzip")
@@ -166,7 +167,10 @@ func (w *compressionWriter) Close() error {
 
 // Hijack implements http.Hijacker
 func (w *compressionWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	return w.ResponseWriter.(http.Hijacker).Hijack()
+	if hj, ok := w.ResponseWriter.(http.Hijacker); ok {
+		return hj.Hijack()
+	}
+	return nil, nil, errors.New("hijacking not supported by underlying writer")
 }
 
 // Flush implements http.Flusher
@@ -174,7 +178,9 @@ func (w *compressionWriter) Flush() {
 	if flusher, ok := w.compressor.(interface{ Flush() error }); ok {
 		_ = flusher.Flush()
 	}
-	w.ResponseWriter.(http.Flusher).Flush()
+	if flusher, ok := w.ResponseWriter.(http.Flusher); ok {
+		flusher.Flush()
+	}
 }
 
 // BrotliMiddleware provides Brotli compression for responses

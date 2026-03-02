@@ -593,42 +593,42 @@ func InitExtendedMetrics(serviceName string) error {
 
 func GetMCPMetrics() *MCPMetrics {
 	if globalMCPMetrics == nil {
-		globalMCPMetrics, _ = NewMCPMetrics("helixagent")
+		globalMCPMetrics, _ = NewMCPMetrics("helixagent") //nolint:errcheck
 	}
 	return globalMCPMetrics
 }
 
 func GetEmbeddingMetrics() *EmbeddingMetrics {
 	if globalEmbeddingMetrics == nil {
-		globalEmbeddingMetrics, _ = NewEmbeddingMetrics("helixagent")
+		globalEmbeddingMetrics, _ = NewEmbeddingMetrics("helixagent") //nolint:errcheck
 	}
 	return globalEmbeddingMetrics
 }
 
 func GetVectorDBMetrics() *VectorDBMetrics {
 	if globalVectorDBMetrics == nil {
-		globalVectorDBMetrics, _ = NewVectorDBMetrics("helixagent")
+		globalVectorDBMetrics, _ = NewVectorDBMetrics("helixagent") //nolint:errcheck
 	}
 	return globalVectorDBMetrics
 }
 
 func GetMemoryMetrics() *MemoryMetrics {
 	if globalMemoryMetrics == nil {
-		globalMemoryMetrics, _ = NewMemoryMetrics("helixagent")
+		globalMemoryMetrics, _ = NewMemoryMetrics("helixagent") //nolint:errcheck
 	}
 	return globalMemoryMetrics
 }
 
 func GetStreamingMetrics() *StreamingMetrics {
 	if globalStreamingMetrics == nil {
-		globalStreamingMetrics, _ = NewStreamingMetrics("helixagent")
+		globalStreamingMetrics, _ = NewStreamingMetrics("helixagent") //nolint:errcheck
 	}
 	return globalStreamingMetrics
 }
 
 func GetProtocolMetrics() *ProtocolMetrics {
 	if globalProtocolMetrics == nil {
-		globalProtocolMetrics, _ = NewProtocolMetrics("helixagent")
+		globalProtocolMetrics, _ = NewProtocolMetrics("helixagent") //nolint:errcheck
 	}
 	return globalProtocolMetrics
 }

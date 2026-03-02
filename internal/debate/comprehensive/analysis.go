@@ -73,7 +73,10 @@ func (t *StaticAnalysisTool) Validate(inputs map[string]interface{}) error {
 
 // Execute executes the tool
 func (t *StaticAnalysisTool) Execute(ctx context.Context, inputs map[string]interface{}) (*ToolResult, error) {
-	code := inputs["code"].(string)
+	code, ok := inputs["code"].(string)
+	if !ok {
+		return nil, fmt.Errorf("missing or invalid 'code' parameter (must be string)")
+	}
 	language := "go"
 	if l, ok := inputs["language"].(string); ok {
 		language = l
@@ -321,7 +324,10 @@ func (t *ComplexityTool) Validate(inputs map[string]interface{}) error {
 
 // Execute executes the tool
 func (t *ComplexityTool) Execute(ctx context.Context, inputs map[string]interface{}) (*ToolResult, error) {
-	code := inputs["code"].(string)
+	code, ok := inputs["code"].(string)
+	if !ok {
+		return nil, fmt.Errorf("missing or invalid 'code' parameter (must be string)")
+	}
 
 	lines := strings.Split(code, "\n")
 	lineCount := len(lines)
@@ -423,7 +429,10 @@ func (t *LintTool) Validate(inputs map[string]interface{}) error {
 
 // Execute executes the tool
 func (t *LintTool) Execute(ctx context.Context, inputs map[string]interface{}) (*ToolResult, error) {
-	code := inputs["code"].(string)
+	code, ok := inputs["code"].(string)
+	if !ok {
+		return nil, fmt.Errorf("missing or invalid 'code' parameter (must be string)")
+	}
 
 	var violations []string
 

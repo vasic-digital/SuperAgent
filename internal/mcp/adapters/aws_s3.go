@@ -315,8 +315,8 @@ func (a *AWSS3Adapter) listBuckets(ctx context.Context) (*ToolResult, error) {
 }
 
 func (a *AWSS3Adapter) listObjects(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	bucket, _ := args["bucket"].(string)
-	prefix, _ := args["prefix"].(string)
+	bucket := getStringArg(args, "bucket", "")
+	prefix := getStringArg(args, "prefix", "")
 	maxKeys := getIntArg(args, "max_keys", 1000)
 
 	objects, err := a.client.ListObjects(ctx, bucket, prefix, maxKeys)
@@ -342,8 +342,8 @@ func (a *AWSS3Adapter) listObjects(ctx context.Context, args map[string]interfac
 }
 
 func (a *AWSS3Adapter) getObject(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	bucket, _ := args["bucket"].(string)
-	key, _ := args["key"].(string)
+	bucket := getStringArg(args, "bucket", "")
+	key := getStringArg(args, "key", "")
 
 	reader, err := a.client.GetObject(ctx, bucket, key)
 	if err != nil {
@@ -362,10 +362,10 @@ func (a *AWSS3Adapter) getObject(ctx context.Context, args map[string]interface{
 }
 
 func (a *AWSS3Adapter) putObject(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	bucket, _ := args["bucket"].(string)
-	key, _ := args["key"].(string)
-	content, _ := args["content"].(string)
-	contentType, _ := args["content_type"].(string)
+	bucket := getStringArg(args, "bucket", "")
+	key := getStringArg(args, "key", "")
+	content := getStringArg(args, "content", "")
+	contentType := getStringArg(args, "content_type", "")
 	if contentType == "" {
 		contentType = "application/octet-stream"
 	}
@@ -381,8 +381,8 @@ func (a *AWSS3Adapter) putObject(ctx context.Context, args map[string]interface{
 }
 
 func (a *AWSS3Adapter) deleteObject(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	bucket, _ := args["bucket"].(string)
-	key, _ := args["key"].(string)
+	bucket := getStringArg(args, "bucket", "")
+	key := getStringArg(args, "key", "")
 
 	err := a.client.DeleteObject(ctx, bucket, key)
 	if err != nil {
@@ -395,10 +395,10 @@ func (a *AWSS3Adapter) deleteObject(ctx context.Context, args map[string]interfa
 }
 
 func (a *AWSS3Adapter) copyObject(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	srcBucket, _ := args["source_bucket"].(string)
-	srcKey, _ := args["source_key"].(string)
-	dstBucket, _ := args["destination_bucket"].(string)
-	dstKey, _ := args["destination_key"].(string)
+	srcBucket := getStringArg(args, "source_bucket", "")
+	srcKey := getStringArg(args, "source_key", "")
+	dstBucket := getStringArg(args, "destination_bucket", "")
+	dstKey := getStringArg(args, "destination_key", "")
 
 	err := a.client.CopyObject(ctx, srcBucket, srcKey, dstBucket, dstKey)
 	if err != nil {
@@ -411,8 +411,8 @@ func (a *AWSS3Adapter) copyObject(ctx context.Context, args map[string]interface
 }
 
 func (a *AWSS3Adapter) getObjectMetadata(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	bucket, _ := args["bucket"].(string)
-	key, _ := args["key"].(string)
+	bucket := getStringArg(args, "bucket", "")
+	key := getStringArg(args, "key", "")
 
 	metadata, err := a.client.GetObjectMetadata(ctx, bucket, key)
 	if err != nil {
@@ -426,7 +426,7 @@ func (a *AWSS3Adapter) getObjectMetadata(ctx context.Context, args map[string]in
 }
 
 func (a *AWSS3Adapter) createBucket(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	bucket, _ := args["bucket"].(string)
+	bucket := getStringArg(args, "bucket", "")
 
 	err := a.client.CreateBucket(ctx, bucket)
 	if err != nil {
@@ -439,7 +439,7 @@ func (a *AWSS3Adapter) createBucket(ctx context.Context, args map[string]interfa
 }
 
 func (a *AWSS3Adapter) deleteBucket(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	bucket, _ := args["bucket"].(string)
+	bucket := getStringArg(args, "bucket", "")
 
 	err := a.client.DeleteBucket(ctx, bucket)
 	if err != nil {

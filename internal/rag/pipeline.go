@@ -572,10 +572,14 @@ func (p *Pipeline) searchQdrant(ctx context.Context, queryEmbedding []float32, t
 
 	searchResults := make([]PipelineSearchResult, 0, len(results))
 	for _, result := range results {
-		content, _ := result.Payload["content"].(string)
-		docID, _ := result.Payload["doc_id"].(string)
-		startIdx, _ := result.Payload["start_idx"].(float64)
-		endIdx, _ := result.Payload["end_idx"].(float64)
+		content, ok1 := result.Payload["content"].(string)
+		docID, ok2 := result.Payload["doc_id"].(string)
+		startIdx, ok3 := result.Payload["start_idx"].(float64)
+		endIdx, ok4 := result.Payload["end_idx"].(float64)
+		if !ok1 || !ok2 || !ok3 || !ok4 {
+			// Skip malformed result
+			continue
+		}
 
 		var id string
 		switch v := result.ID.(type) {
@@ -613,11 +617,11 @@ func (p *Pipeline) searchWeaviate(ctx context.Context, queryEmbedding []float32,
 
 	searchResults := make([]PipelineSearchResult, 0, len(results))
 	for _, result := range results {
-		content, _ := result.Properties["content"].(string)
-		docID, _ := result.Properties["doc_id"].(string)
-		chunkID, _ := result.Properties["chunk_id"].(string)
-		startIdx, _ := result.Properties["start_idx"].(float64)
-		endIdx, _ := result.Properties["end_idx"].(float64)
+		content, _ := result.Properties["content"].(string)     //nolint:errcheck // bool ignored intentionally
+		docID, _ := result.Properties["doc_id"].(string)        //nolint:errcheck // bool ignored intentionally
+		chunkID, _ := result.Properties["chunk_id"].(string)    //nolint:errcheck // bool ignored intentionally
+		startIdx, _ := result.Properties["start_idx"].(float64) //nolint:errcheck // bool ignored intentionally
+		endIdx, _ := result.Properties["end_idx"].(float64)     //nolint:errcheck // bool ignored intentionally
 
 		chunk := PipelineChunk{
 			ID:       chunkID,
@@ -721,7 +725,10 @@ func (p *Pipeline) convertChromaResults(result *servers.ChromaQueryResult) []Pip
 func (p *Pipeline) convertQdrantResults(results []servers.QdrantSearchResult) []PipelineSearchResult {
 	searchResults := make([]PipelineSearchResult, 0, len(results))
 	for _, result := range results {
-		content, _ := result.Payload["content"].(string)
+		content := ""
+		if c, ok := result.Payload["content"].(string); ok {
+			content = c
+		}
 		var id string
 		switch v := result.ID.(type) {
 		case string:
@@ -747,7 +754,10 @@ func (p *Pipeline) convertQdrantResults(results []servers.QdrantSearchResult) []
 func (p *Pipeline) convertWeaviateResults(results []servers.WeaviateSearchResult) []PipelineSearchResult {
 	searchResults := make([]PipelineSearchResult, 0, len(results))
 	for _, result := range results {
-		content, _ := result.Properties["content"].(string)
+		content := ""
+		if c, ok := result.Properties["content"].(string); ok {
+			content = c
+		}
 		chunk := PipelineChunk{
 			ID:       result.ID,
 			Content:  content,

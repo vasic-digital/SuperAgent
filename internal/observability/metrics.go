@@ -289,7 +289,7 @@ func InitGlobalMetrics(serviceName string) error {
 // GetMetrics returns the global metrics
 func GetMetrics() *LLMMetrics {
 	if globalMetrics == nil {
-		globalMetrics, _ = NewLLMMetrics("helixagent")
+		globalMetrics, _ = NewLLMMetrics("helixagent") //nolint:errcheck
 	}
 	return globalMetrics
 }

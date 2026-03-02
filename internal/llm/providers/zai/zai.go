@@ -392,8 +392,11 @@ func (z *ZAIProvider) makeStreamingRequest(ctx context.Context, req *ZAIRequest)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, readErr := io.ReadAll(resp.Body)
 		_ = resp.Body.Close()
+		if readErr != nil {
+			return nil, fmt.Errorf("Zhipu GLM API error: %d (failed to read body: %v)", resp.StatusCode, readErr)
+		}
 		var zaiErr ZAIError
 		if err := json.Unmarshal(body, &zaiErr); err == nil && zaiErr.Error.Message != "" {
 			// Handle Zhipu-specific error codes

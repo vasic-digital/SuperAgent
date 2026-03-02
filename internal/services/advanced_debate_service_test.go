@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -11,6 +12,11 @@ import (
 
 	"dev.helix.agent/internal/models"
 )
+
+func init() {
+	// Disable comprehensive debate system in tests to avoid dependency on external services
+	_ = os.Setenv("HELIXAGENT_DISABLE_COMPREHENSIVE_DEBATE", "true")
+}
 
 func newAdvancedDebateTestLogger() *logrus.Logger {
 	log := logrus.New()

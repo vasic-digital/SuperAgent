@@ -200,7 +200,11 @@ func (p *Provider) CompleteStream(ctx context.Context, req *models.LLMRequest) (
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			_ = resp.Body.Close()
+			return nil, fmt.Errorf("OpenAI API error: %d - failed to read response body: %v", resp.StatusCode, err)
+		}
 		_ = resp.Body.Close()
 		return nil, fmt.Errorf("OpenAI API error: %d - %s", resp.StatusCode, string(body))
 	}

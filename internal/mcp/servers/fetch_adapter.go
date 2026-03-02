@@ -447,7 +447,10 @@ func (f *FetchAdapter) ExecuteTool(ctx context.Context, toolName string, params 
 
 	switch toolName {
 	case "fetch_url":
-		targetURL, _ := params["url"].(string) //nolint:errcheck
+		targetURL, ok := params["url"].(string)
+		if !ok {
+			return nil, fmt.Errorf("missing or invalid 'url' parameter")
+		}
 		method, _ := params["method"].(string) //nolint:errcheck
 		body, _ := params["body"].(string)     //nolint:errcheck
 		var headers map[string]string
@@ -460,7 +463,10 @@ func (f *FetchAdapter) ExecuteTool(ctx context.Context, toolName string, params 
 		return f.Fetch(ctx, targetURL, method, headers, body)
 
 	case "fetch_json":
-		targetURL, _ := params["url"].(string)
+		targetURL, ok := params["url"].(string)
+		if !ok {
+			return nil, fmt.Errorf("missing or invalid 'url' parameter")
+		}
 		var headers map[string]string
 		if h, ok := params["headers"].(map[string]interface{}); ok {
 			headers = make(map[string]string)
@@ -471,7 +477,10 @@ func (f *FetchAdapter) ExecuteTool(ctx context.Context, toolName string, params 
 		return f.FetchJSON(ctx, targetURL, headers)
 
 	case "fetch_extract_links":
-		targetURL, _ := params["url"].(string)
+		targetURL, ok := params["url"].(string)
+		if !ok {
+			return nil, fmt.Errorf("missing or invalid 'url' parameter")
+		}
 		result, err := f.Fetch(ctx, targetURL, "GET", nil, "")
 		if err != nil {
 			return nil, err
@@ -482,7 +491,10 @@ func (f *FetchAdapter) ExecuteTool(ctx context.Context, toolName string, params 
 		return f.ExtractLinks(result.Content, result.FinalURL)
 
 	case "fetch_extract_text":
-		targetURL, _ := params["url"].(string)
+		targetURL, ok := params["url"].(string)
+		if !ok {
+			return nil, fmt.Errorf("missing or invalid 'url' parameter")
+		}
 		result, err := f.Fetch(ctx, targetURL, "GET", nil, "")
 		if err != nil {
 			return nil, err

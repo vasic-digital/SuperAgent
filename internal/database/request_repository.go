@@ -51,10 +51,22 @@ func (r *RequestRepository) Create(ctx context.Context, req *LLMRequest) error {
 		RETURNING id, created_at
 	`
 
-	messagesJSON, _ := json.Marshal(req.Messages)
-	modelParamsJSON, _ := json.Marshal(req.ModelParams)
-	ensembleConfigJSON, _ := json.Marshal(req.EnsembleConfig)
-	memoryJSON, _ := json.Marshal(req.Memory)
+	messagesJSON, err1 := json.Marshal(req.Messages)
+	if err1 != nil {
+		messagesJSON = []byte("null")
+	}
+	modelParamsJSON, err2 := json.Marshal(req.ModelParams)
+	if err2 != nil {
+		modelParamsJSON = []byte("null")
+	}
+	ensembleConfigJSON, err3 := json.Marshal(req.EnsembleConfig)
+	if err3 != nil {
+		ensembleConfigJSON = []byte("null")
+	}
+	memoryJSON, err4 := json.Marshal(req.Memory)
+	if err4 != nil {
+		memoryJSON = []byte("null")
+	}
 
 	err := r.pool.QueryRow(ctx, query,
 		req.SessionID, req.UserID, req.Prompt, messagesJSON, modelParamsJSON,

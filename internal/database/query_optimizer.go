@@ -96,7 +96,12 @@ func (c *QueryCache) Get(key string) (interface{}, bool) {
 	if !exists {
 		return nil, false
 	}
-	entry := elem.Value.(*cacheEntry)
+	entry, ok := elem.Value.(*cacheEntry)
+	if !ok {
+		// Corrupted entry, remove it
+		c.removeLocked(elem)
+		return nil, false
+	}
 	if time.Now().After(entry.expiresAt) {
 		c.removeLocked(elem)
 		return nil, false
@@ -361,7 +366,10 @@ func (o *QueryOptimizer) GetMCPServerHealth(ctx context.Context) ([]MCPServerHea
 	if o.queryCache != nil {
 		if cached, ok := o.queryCache.Get(cacheKey); ok {
 			atomic.AddInt64(&o.metrics.CacheHits, 1)
-			return cached.([]MCPServerHealth), nil
+			if health, ok := cached.([]MCPServerHealth); ok {
+				return health, nil
+			}
+			// Type mismatch, treat as cache miss
 		}
 		atomic.AddInt64(&o.metrics.CacheMisses, 1)
 	}

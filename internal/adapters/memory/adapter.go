@@ -171,13 +171,21 @@ func ToHelixMemory(m *modmem.Memory) *helixmem.Memory {
 	for k, v := range m.Metadata {
 		switch k {
 		case "user_id":
-			h.UserID, _ = v.(string)
+			if id, ok := v.(string); ok {
+				h.UserID = id
+			}
 		case "session_id":
-			h.SessionID, _ = v.(string)
+			if id, ok := v.(string); ok {
+				h.SessionID = id
+			}
 		case "type":
-			h.Type = helixmem.MemoryType(v.(string))
+			if typ, ok := v.(string); ok {
+				h.Type = helixmem.MemoryType(typ)
+			}
 		case "category":
-			h.Category, _ = v.(string)
+			if cat, ok := v.(string); ok {
+				h.Category = cat
+			}
 		case "importance":
 			if imp, ok := v.(float64); ok {
 				h.Importance = imp

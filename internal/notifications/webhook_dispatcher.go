@@ -347,7 +347,7 @@ func (d *WebhookDispatcher) deliver(delivery *WebhookDelivery) {
 	defer func() { _ = resp.Body.Close() }()
 
 	// Read response body (limited to 1KB)
-	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 1024)) //nolint:errcheck
 
 	delivery.ResponseStatus = resp.StatusCode
 	delivery.ResponseBody = string(respBody)

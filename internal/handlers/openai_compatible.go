@@ -492,8 +492,16 @@ func (h *UnifiedHandler) ChatCompletions(c *gin.Context) {
 				// We'll create a new response map with skills_used field.
 				responseMap := make(map[string]any)
 				// Convert response to map via JSON (simplest)
-				jsonBytes, _ := json.Marshal(response)
-				_ = json.Unmarshal(jsonBytes, &responseMap)
+				jsonBytes, err := json.Marshal(response)
+				if err != nil {
+					// Can't marshal, just send original response without skills_used
+					c.JSON(http.StatusOK, response)
+					return
+				}
+				if err := json.Unmarshal(jsonBytes, &responseMap); err != nil {
+					c.JSON(http.StatusOK, response)
+					return
+				}
 				responseMap["skills_used"] = skillsMetadata
 				c.JSON(http.StatusOK, responseMap)
 				return
@@ -577,7 +585,7 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 		_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
 		_, _ = c.Writer.Write(firstData)        //nolint:errcheck
 		_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck
-		flusher.Flush()
+		flusher.Flush()                         //nolint:errcheck
 	}
 	isFirstChunk = false
 
@@ -617,7 +625,7 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 					_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
 					_, _ = c.Writer.Write(errData)          //nolint:errcheck
 					_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck
-					flusher.Flush()
+					flusher.Flush() //nolint:errcheck
 				}
 			}
 		}
@@ -641,7 +649,7 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 				_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
 				_, _ = c.Writer.Write(respData)         //nolint:errcheck
 				_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck
-				flusher.Flush()
+				flusher.Flush() //nolint:errcheck
 			}
 		}
 
@@ -662,15 +670,15 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 			},
 		}
 		if finishData, err := json.Marshal(finishChunk); err == nil {
-			_, _ = c.Writer.Write([]byte("data: "))
-			_, _ = c.Writer.Write(finishData)
-			_, _ = c.Writer.Write([]byte("\n\n"))
-			flusher.Flush()
+			_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+			_, _ = c.Writer.Write(finishData)       //nolint:errcheck
+			_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck
+			flusher.Flush() //nolint:errcheck
 			logrus.Info("Tool results: sent finish_reason:stop chunk")
 		}
 
-		_, _ = c.Writer.Write([]byte("data: [DONE]\n\n"))
-		flusher.Flush()
+		_, _ = c.Writer.Write([]byte("data: [DONE]\n\n")) //nolint:errcheck
+		flusher.Flush() //nolint:errcheck
 		logrus.Info("Tool results: sent [DONE] - stream complete")
 		return
 	}
@@ -780,10 +788,10 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 						},
 					}
 					if introData, err := json.Marshal(introChunk); err == nil {
-						_, _ = c.Writer.Write([]byte("data: "))
-						_, _ = c.Writer.Write(introData)
-						_, _ = c.Writer.Write([]byte("\n\n"))
-						flusher.Flush()
+						_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+						_, _ = c.Writer.Write(introData)        //nolint:errcheck
+						_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck
+						flusher.Flush() //nolint:errcheck
 					}
 					// Small delay for visual effect
 					time.Sleep(5 * time.Millisecond)
@@ -838,10 +846,10 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 						},
 					}
 					if reqData, err := json.Marshal(reqChunk); err == nil {
-						_, _ = c.Writer.Write([]byte("data: "))
-						_, _ = c.Writer.Write(reqData)
-						_, _ = c.Writer.Write([]byte("\n\n"))
-						flusher.Flush()
+						_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+						_, _ = c.Writer.Write(reqData)          //nolint:errcheck
+						_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck
+						flusher.Flush() //nolint:errcheck
 					}
 				}
 
@@ -944,10 +952,10 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 						},
 					}
 					if respIndData, err := json.Marshal(respIndChunk); err == nil {
-						_, _ = c.Writer.Write([]byte("data: "))
-						_, _ = c.Writer.Write(respIndData)
-						_, _ = c.Writer.Write([]byte("\n\n"))
-						flusher.Flush()
+						_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck // streaming write errors cannot be handled
+						_, _ = c.Writer.Write(respIndData)      //nolint:errcheck // streaming write errors cannot be handled
+						_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck // streaming write errors cannot be handled
+						flusher.Flush() //nolint:errcheck
 					}
 				}
 
@@ -971,10 +979,10 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 					},
 				}
 				if responseData, err := json.Marshal(responseChunk); err == nil {
-					_, _ = c.Writer.Write([]byte("data: "))
-					_, _ = c.Writer.Write(responseData)
-					_, _ = c.Writer.Write([]byte("\n\n"))
-					flusher.Flush()
+					_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck // streaming write errors cannot be handled
+					_, _ = c.Writer.Write(responseData)     //nolint:errcheck // streaming write errors cannot be handled
+					_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck // streaming write errors cannot be handled
+					flusher.Flush() //nolint:errcheck
 				}
 				chunksSent++
 			}
@@ -998,10 +1006,10 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 					},
 				}
 				if conclusionData, err := json.Marshal(conclusionChunk); err == nil {
-					_, _ = c.Writer.Write([]byte("data: "))
-					_, _ = c.Writer.Write(conclusionData)
-					_, _ = c.Writer.Write([]byte("\n\n"))
-					flusher.Flush()
+					_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck // streaming write errors cannot be handled
+					_, _ = c.Writer.Write(conclusionData)   //nolint:errcheck // streaming write errors cannot be handled
+					_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck // streaming write errors cannot be handled
+					flusher.Flush() //nolint:errcheck
 				}
 			}
 
@@ -1037,10 +1045,10 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 					},
 				}
 				if synthesisData, err := json.Marshal(synthesisChunk); err == nil {
-					_, _ = c.Writer.Write([]byte("data: "))
-					_, _ = c.Writer.Write(synthesisData)
-					_, _ = c.Writer.Write([]byte("\n\n"))
-					flusher.Flush()
+					_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+					_, _ = c.Writer.Write(synthesisData)    //nolint:errcheck
+					_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck
+					flusher.Flush() //nolint:errcheck
 				}
 				chunksSent++
 			}
@@ -1081,10 +1089,10 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 						},
 					}
 					if indicatorData, err := json.Marshal(indicatorChunk); err == nil {
-						_, _ = c.Writer.Write([]byte("data: "))
-						_, _ = c.Writer.Write(indicatorData)
-						_, _ = c.Writer.Write([]byte("\n\n"))
-						flusher.Flush()
+						_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+						_, _ = c.Writer.Write(indicatorData)    //nolint:errcheck
+						_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck
+						flusher.Flush() //nolint:errcheck
 					}
 
 					// Stream the tool calls to the client
@@ -1124,9 +1132,9 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 						}
 						if toolCallData, err := json.Marshal(toolCallChunk); err == nil {
 							_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
-							_, _ = c.Writer.Write(toolCallData)
-							_, _ = c.Writer.Write([]byte("\n\n"))
-							flusher.Flush()
+							_, _ = c.Writer.Write(toolCallData)     //nolint:errcheck
+							_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck
+							flusher.Flush() //nolint:errcheck
 						}
 					}
 					chunksSent++
@@ -1148,10 +1156,10 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 						},
 					}
 					if finishData, err := json.Marshal(finishChunk); err == nil {
-						_, _ = c.Writer.Write([]byte("data: "))
-						_, _ = c.Writer.Write(finishData)
-						_, _ = c.Writer.Write([]byte("\n\n"))
-						flusher.Flush()
+						_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+						_, _ = c.Writer.Write(finishData)       //nolint:errcheck
+						_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck
+						flusher.Flush() //nolint:errcheck
 					}
 					sentFinalChunk = true
 					logrus.WithField("tool_calls_count", len(actionToolCalls)).Info("AI Debate: sent tool_calls with finish_reason:tool_calls")
@@ -1159,8 +1167,8 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 					// CRITICAL: After sending tool_calls, immediately end the response
 					// The client will execute the tools and send another request with results
 					// Do NOT send any more content or footer - it confuses the tool calling protocol
-					_, _ = c.Writer.Write([]byte("data: [DONE]\n\n"))
-					flusher.Flush()
+					_, _ = c.Writer.Write([]byte("data: [DONE]\n\n")) //nolint:errcheck
+					flusher.Flush() //nolint:errcheck
 					logrus.Info("AI Debate with tool_calls: sent [DONE] - stream complete")
 					return
 				}
@@ -1190,10 +1198,10 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 					},
 				}
 				if footerData, err := json.Marshal(footerChunk); err == nil {
-					_, _ = c.Writer.Write([]byte("data: "))
-					_, _ = c.Writer.Write(footerData)
-					_, _ = c.Writer.Write([]byte("\n\n"))
-					flusher.Flush()
+					_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+					_, _ = c.Writer.Write(footerData)       //nolint:errcheck
+					_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck
+					flusher.Flush() //nolint:errcheck
 				}
 			}
 
@@ -1214,15 +1222,15 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 				},
 			}
 			if finalData, err := json.Marshal(finalChunk); err == nil {
-				_, _ = c.Writer.Write([]byte("data: "))
-				_, _ = c.Writer.Write(finalData)
-				_, _ = c.Writer.Write([]byte("\n\n"))
-				flusher.Flush()
+				_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+				_, _ = c.Writer.Write(finalData)        //nolint:errcheck
+				_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck
+				flusher.Flush()                         //nolint:errcheck
 			}
 
 			// Send [DONE] and return - stream is complete
-			_, _ = c.Writer.Write([]byte("data: [DONE]\n\n"))
-			flusher.Flush()
+			_, _ = c.Writer.Write([]byte("data: [DONE]\n\n")) //nolint:errcheck
+			flusher.Flush() //nolint:errcheck
 			logrus.Info("Debate dialogue: sent [DONE] - stream complete")
 			return
 		}
@@ -1287,7 +1295,7 @@ StreamLoop:
 				cancel()
 				return
 			}
-			flusher.Flush()
+			flusher.Flush() //nolint:errcheck
 			chunksSent++
 		}
 	}
@@ -1312,10 +1320,10 @@ StreamLoop:
 				},
 			}
 			if footerData, err := json.Marshal(footerChunk); err == nil {
-				_, _ = c.Writer.Write([]byte("data: "))
-				_, _ = c.Writer.Write(footerData)
-				_, _ = c.Writer.Write([]byte("\n\n"))
-				flusher.Flush()
+				_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+				_, _ = c.Writer.Write(footerData)       //nolint:errcheck
+				_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck
+				flusher.Flush() //nolint:errcheck
 			}
 		}
 	}
@@ -1337,16 +1345,16 @@ StreamLoop:
 				},
 			},
 		}
-		finalData, _ := json.Marshal(finalChunk)
-		_, _ = c.Writer.Write([]byte("data: "))
-		_, _ = c.Writer.Write(finalData)
-		_, _ = c.Writer.Write([]byte("\n\n"))
-		flusher.Flush()
+		finalData, _ := json.Marshal(finalChunk) //nolint:errcheck
+		_, _ = c.Writer.Write([]byte("data: "))  //nolint:errcheck
+		_, _ = c.Writer.Write(finalData)         //nolint:errcheck
+		_, _ = c.Writer.Write([]byte("\n\n"))    //nolint:errcheck
+		flusher.Flush() //nolint:errcheck
 	}
 
 	// Always send [DONE] to properly close the stream
-	_, _ = c.Writer.Write([]byte("data: [DONE]\n\n"))
-	flusher.Flush()
+	_, _ = c.Writer.Write([]byte("data: [DONE]\n\n")) //nolint:errcheck
+	flusher.Flush() //nolint:errcheck
 }
 
 // ChatCompletionsStream handles streaming OpenAI chat completions
@@ -1421,10 +1429,10 @@ func (h *UnifiedHandler) ChatCompletionsStream(c *gin.Context) {
 	firstChunkResp := &models.LLMResponse{ID: streamID, CreatedAt: time.Now()}
 	firstChunk := h.convertToOpenAIChatStreamResponse(firstChunkResp, &req, true, streamID)
 	if firstData, err := json.Marshal(firstChunk); err == nil {
-		_, _ = c.Writer.Write([]byte("data: "))
-		_, _ = c.Writer.Write(firstData)
-		_, _ = c.Writer.Write([]byte("\n\n"))
-		flusher.Flush()
+		_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+		_, _ = c.Writer.Write(firstData) //nolint:errcheck
+		_, _ = c.Writer.Write([]byte("\n\n")) //nolint:errcheck
+		flusher.Flush() //nolint:errcheck
 	}
 	isFirstChunk = false
 
@@ -1482,7 +1490,7 @@ StreamLoop:
 				cancel()
 				return
 			}
-			flusher.Flush()
+			flusher.Flush() //nolint:errcheck
 		}
 	}
 
@@ -1503,16 +1511,16 @@ StreamLoop:
 				},
 			},
 		}
-		finalData, _ := json.Marshal(finalChunk)
-		_, _ = c.Writer.Write([]byte("data: "))
-		_, _ = c.Writer.Write(finalData)
-		_, _ = c.Writer.Write([]byte("\n\n"))
-		flusher.Flush()
+		finalData, _ := json.Marshal(finalChunk) //nolint:errcheck
+		_, _ = c.Writer.Write([]byte("data: "))  //nolint:errcheck
+		_, _ = c.Writer.Write(finalData)         //nolint:errcheck
+		_, _ = c.Writer.Write([]byte("\n\n"))    //nolint:errcheck
+		flusher.Flush() //nolint:errcheck
 	}
 
 	// Always send [DONE] to properly close the stream
-	_, _ = c.Writer.Write([]byte("data: [DONE]\n\n"))
-	flusher.Flush()
+	_, _ = c.Writer.Write([]byte("data: [DONE]\n\n")) //nolint:errcheck
+	flusher.Flush() //nolint:errcheck
 }
 
 // Completions handles legacy text completions
@@ -2588,10 +2596,10 @@ func (h *UnifiedHandler) streamComprehensiveDebate(ctx context.Context, c *gin.C
 			},
 		}
 		if data, err := json.Marshal(chunk); err == nil {
-			_, _ = c.Writer.Write([]byte("data: "))
-			_, _ = c.Writer.Write(data)
-			_, _ = c.Writer.Write([]byte("\n\n"))
-			flusher.Flush()
+			_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+			_, _ = c.Writer.Write(data) //nolint:errcheck
+			_, _ = c.Writer.Write([]byte("\n\n")) //nolint:errcheck
+			flusher.Flush() //nolint:errcheck
 		}
 		time.Sleep(2 * time.Millisecond)
 	}
@@ -2648,10 +2656,10 @@ func (h *UnifiedHandler) streamComprehensiveDebate(ctx context.Context, c *gin.C
 				},
 			}
 			if data, err := json.Marshal(chunk); err == nil {
-				_, _ = c.Writer.Write([]byte("data: "))
-				_, _ = c.Writer.Write(data)
-				_, _ = c.Writer.Write([]byte("\n\n"))
-				flusher.Flush()
+				_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+				_, _ = c.Writer.Write(data) //nolint:errcheck
+				_, _ = c.Writer.Write([]byte("\n\n")) //nolint:errcheck
+				flusher.Flush() //nolint:errcheck
 			}
 		}
 
@@ -2686,10 +2694,10 @@ func (h *UnifiedHandler) streamComprehensiveDebate(ctx context.Context, c *gin.C
 				},
 			}
 			if reqData, err := json.Marshal(reqChunk); err == nil {
-				_, _ = c.Writer.Write([]byte("data: "))
-				_, _ = c.Writer.Write(reqData)
-				_, _ = c.Writer.Write([]byte("\n\n"))
-				flusher.Flush()
+				_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+				_, _ = c.Writer.Write(reqData) //nolint:errcheck
+				_, _ = c.Writer.Write([]byte("\n\n")) //nolint:errcheck
+				flusher.Flush() //nolint:errcheck
 			}
 		}
 
@@ -2719,10 +2727,10 @@ func (h *UnifiedHandler) streamComprehensiveDebate(ctx context.Context, c *gin.C
 					},
 				}
 				if fbData, err := json.Marshal(fallbackChunk); err == nil {
-					_, _ = c.Writer.Write([]byte("data: "))
-					_, _ = c.Writer.Write(fbData)
-					_, _ = c.Writer.Write([]byte("\n\n"))
-					flusher.Flush()
+					_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+					_, _ = c.Writer.Write(fbData) //nolint:errcheck
+					_, _ = c.Writer.Write([]byte("\n\n")) //nolint:errcheck
+					flusher.Flush() //nolint:errcheck
 				}
 			}
 
@@ -2767,10 +2775,10 @@ func (h *UnifiedHandler) streamComprehensiveDebate(ctx context.Context, c *gin.C
 						},
 					}
 					if fbData, err := json.Marshal(fbDetailChunk); err == nil {
-						_, _ = c.Writer.Write([]byte("data: "))
-						_, _ = c.Writer.Write(fbData)
-						_, _ = c.Writer.Write([]byte("\n\n"))
-						flusher.Flush()
+						_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+						_, _ = c.Writer.Write(fbData) //nolint:errcheck
+						_, _ = c.Writer.Write([]byte("\n\n")) //nolint:errcheck
+						flusher.Flush() //nolint:errcheck
 					}
 				}
 			}
@@ -2794,10 +2802,10 @@ func (h *UnifiedHandler) streamComprehensiveDebate(ctx context.Context, c *gin.C
 				},
 			}
 			if respIndData, err := json.Marshal(respIndChunk); err == nil {
-				_, _ = c.Writer.Write([]byte("data: "))
-				_, _ = c.Writer.Write(respIndData)
-				_, _ = c.Writer.Write([]byte("\n\n"))
-				flusher.Flush()
+				_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+				_, _ = c.Writer.Write(respIndData) //nolint:errcheck
+				_, _ = c.Writer.Write([]byte("\n\n")) //nolint:errcheck
+				flusher.Flush() //nolint:errcheck
 			}
 		}
 
@@ -2825,10 +2833,10 @@ func (h *UnifiedHandler) streamComprehensiveDebate(ctx context.Context, c *gin.C
 				},
 			}
 			if respData, err := json.Marshal(respChunk); err == nil {
-				_, _ = c.Writer.Write([]byte("data: "))
-				_, _ = c.Writer.Write(respData)
-				_, _ = c.Writer.Write([]byte("\n\n"))
-				flusher.Flush()
+				_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+				_, _ = c.Writer.Write(respData) //nolint:errcheck
+				_, _ = c.Writer.Write([]byte("\n\n")) //nolint:errcheck
+				flusher.Flush() //nolint:errcheck
 			}
 		}
 	}
@@ -2851,10 +2859,10 @@ func (h *UnifiedHandler) streamComprehensiveDebate(ctx context.Context, c *gin.C
 		},
 	}
 	if consData, err := json.Marshal(consensusChunk); err == nil {
-		_, _ = c.Writer.Write([]byte("data: "))
-		_, _ = c.Writer.Write(consData)
-		_, _ = c.Writer.Write([]byte("\n\n"))
-		flusher.Flush()
+		_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+		_, _ = c.Writer.Write(consData) //nolint:errcheck
+		_, _ = c.Writer.Write([]byte("\n\n")) //nolint:errcheck
+		flusher.Flush() //nolint:errcheck
 	}
 
 	// Generate final synthesis
@@ -2882,10 +2890,10 @@ func (h *UnifiedHandler) streamComprehensiveDebate(ctx context.Context, c *gin.C
 			},
 		}
 		if synthData, err := json.Marshal(synthChunk); err == nil {
-			_, _ = c.Writer.Write([]byte("data: "))
-			_, _ = c.Writer.Write(synthData)
-			_, _ = c.Writer.Write([]byte("\n\n"))
-			flusher.Flush()
+			_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+			_, _ = c.Writer.Write(synthData) //nolint:errcheck
+			_, _ = c.Writer.Write([]byte("\n\n")) //nolint:errcheck
+			flusher.Flush() //nolint:errcheck
 		}
 	}
 
@@ -2908,10 +2916,10 @@ func (h *UnifiedHandler) streamComprehensiveDebate(ctx context.Context, c *gin.C
 			},
 		}
 		if footerData, err := json.Marshal(footerChunk); err == nil {
-			_, _ = c.Writer.Write([]byte("data: "))
-			_, _ = c.Writer.Write(footerData)
-			_, _ = c.Writer.Write([]byte("\n\n"))
-			flusher.Flush()
+			_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+			_, _ = c.Writer.Write(footerData) //nolint:errcheck
+			_, _ = c.Writer.Write([]byte("\n\n")) //nolint:errcheck
+			flusher.Flush() //nolint:errcheck
 		}
 	}
 
@@ -2932,14 +2940,14 @@ func (h *UnifiedHandler) streamComprehensiveDebate(ctx context.Context, c *gin.C
 		},
 	}
 	if data, err := json.Marshal(finishChunk); err == nil {
-		_, _ = c.Writer.Write([]byte("data: "))
-		_, _ = c.Writer.Write(data)
-		_, _ = c.Writer.Write([]byte("\n\n"))
-		flusher.Flush()
+		_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+		_, _ = c.Writer.Write(data) //nolint:errcheck
+		_, _ = c.Writer.Write([]byte("\n\n")) //nolint:errcheck
+		flusher.Flush() //nolint:errcheck
 	}
 
-	_, _ = c.Writer.Write([]byte("data: [DONE]\n\n"))
-	flusher.Flush()
+	_, _ = c.Writer.Write([]byte("data: [DONE]\n\n")) //nolint:errcheck
+	flusher.Flush() //nolint:errcheck
 
 	logrus.Info("[Comprehensive Streaming] Stream complete with real LLM calls")
 }

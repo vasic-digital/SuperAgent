@@ -116,7 +116,10 @@ func (a *AWSBedrockIntegration) ListModels(ctx context.Context) ([]map[string]in
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("AWS Bedrock API error: %d - failed to read response body: %w", resp.StatusCode, err)
+		}
 		return nil, fmt.Errorf("AWS Bedrock API error: %d - %s", resp.StatusCode, string(body))
 	}
 
@@ -493,7 +496,10 @@ func (g *GCPVertexAIIntegration) ListModels(ctx context.Context) ([]map[string]i
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("GCP Vertex AI API error: %d - failed to read response body: %w", resp.StatusCode, err)
+		}
 		return nil, fmt.Errorf("GCP Vertex AI API error: %d - %s", resp.StatusCode, string(body))
 	}
 
@@ -648,7 +654,10 @@ func (g *GCPVertexAIIntegration) HealthCheck(ctx context.Context) error {
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode >= 400 {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("health check failed: %d - failed to read response body: %w", resp.StatusCode, err)
+		}
 		return fmt.Errorf("health check failed: %d - %s", resp.StatusCode, string(body))
 	}
 
@@ -741,7 +750,10 @@ func (az *AzureOpenAIIntegration) ListModels(ctx context.Context) ([]map[string]
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("Azure OpenAI API error: %d - failed to read response body: %v", resp.StatusCode, err)
+		}
 		return nil, fmt.Errorf("Azure OpenAI API error: %d - %s", resp.StatusCode, string(body))
 	}
 

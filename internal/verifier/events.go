@@ -117,7 +117,10 @@ func NewProviderVerificationEvent(eventType VerificationEventType, provider *Uni
 
 // ToMessagingEvent converts VerificationEvent to messaging.Event.
 func (e *VerificationEvent) ToMessagingEvent() *messaging.Event {
-	data, _ := json.Marshal(e)
+	data, err := json.Marshal(e)
+	if err != nil {
+		data = []byte{}
+	}
 	return &messaging.Event{
 		ID:            e.ID,
 		Type:          messaging.EventType(e.Type),

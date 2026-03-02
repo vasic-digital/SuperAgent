@@ -182,9 +182,12 @@ func (a *BraveSearchAdapter) CallTool(ctx context.Context, name string, args map
 }
 
 func (a *BraveSearchAdapter) webSearch(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	query, _ := args["query"].(string)
+	query, ok := args["query"].(string)
+	if !ok || query == "" {
+		return nil, fmt.Errorf("missing or invalid 'query' parameter")
+	}
 	count := getIntArg(args, "count", a.config.MaxResults)
-	freshness, _ := args["freshness"].(string)
+	freshness, _ := args["freshness"].(string) //nolint:errcheck
 
 	params := url.Values{}
 	params.Set("q", query)
@@ -222,7 +225,10 @@ func (a *BraveSearchAdapter) webSearch(ctx context.Context, args map[string]inte
 }
 
 func (a *BraveSearchAdapter) localSearch(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	query, _ := args["query"].(string)
+	query, ok := args["query"].(string)
+	if !ok || query == "" {
+		return nil, fmt.Errorf("missing or invalid 'query' parameter")
+	}
 	count := getIntArg(args, "count", 5)
 
 	params := url.Values{}

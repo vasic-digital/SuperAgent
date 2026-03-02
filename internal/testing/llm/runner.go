@@ -414,8 +414,12 @@ Include edge cases and boundary conditions. Format as JSON array:
 
 	var cases []*TestCase
 	for i, g := range generated {
-		inputJSON, _ := json.Marshal(g.Input)
-		expectedJSON, _ := json.Marshal(g.ExpectedOutput)
+		inputJSON, err1 := json.Marshal(g.Input)
+		expectedJSON, err2 := json.Marshal(g.ExpectedOutput)
+		if err1 != nil || err2 != nil {
+			// Skip invalid test case
+			continue
+		}
 
 		cases = append(cases, &TestCase{
 			ID:             uuid.New().String(),

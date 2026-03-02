@@ -278,7 +278,7 @@ func (cr *CRDTResolver) DetectConflict(local *Memory, remote *MemoryEvent) (bool
 	}
 
 	// Tag conflict (from metadata)
-	localTags, _ := local.Metadata["tags"].([]string)
+	localTags, _ := local.Metadata["tags"].([]string) //nolint:errcheck
 	if !cr.tagsEqual(localTags, remote.Tags) {
 		conflicts = append(conflicts, "tags")
 	}
@@ -350,8 +350,8 @@ func (cr *CRDTResolver) ResolveWithReport(local *Memory, remote *MemoryEvent) *C
 	report.Details["importance_changed"] = local.Importance != report.Resolution.Importance
 
 	// Get tags from metadata for comparison
-	localTags, _ := local.Metadata["tags"].([]string)
-	resolvedTags, _ := report.Resolution.Metadata["tags"].([]string)
+	localTags, _ := local.Metadata["tags"].([]string)                //nolint:errcheck
+	resolvedTags, _ := report.Resolution.Metadata["tags"].([]string) //nolint:errcheck
 	report.Details["tags_merged"] = len(resolvedTags) > len(localTags)
 
 	return report

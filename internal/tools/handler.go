@@ -412,11 +412,26 @@ func (h *TestHandler) GenerateDefaultArgs(context string) map[string]interface{}
 }
 
 func (h *TestHandler) Execute(ctx context.Context, args map[string]interface{}) (ToolResult, error) {
-	testPath, _ := args["test_path"].(string)
-	coverage, _ := args["coverage"].(bool)
-	verbose, _ := args["verbose"].(bool)
-	filter, _ := args["filter"].(string)
-	timeout, _ := args["timeout"].(string)
+	testPath, ok := args["test_path"].(string)
+	if !ok {
+		testPath = ""
+	}
+	coverage, ok := args["coverage"].(bool)
+	if !ok {
+		coverage = false
+	}
+	verbose, ok := args["verbose"].(bool)
+	if !ok {
+		verbose = false
+	}
+	filter, ok := args["filter"].(string)
+	if !ok {
+		filter = ""
+	}
+	timeout, ok := args["timeout"].(string)
+	if !ok {
+		timeout = ""
+	}
 
 	if testPath == "" {
 		testPath = "./..."
@@ -497,9 +512,18 @@ func (h *LintHandler) GenerateDefaultArgs(context string) map[string]interface{}
 }
 
 func (h *LintHandler) Execute(ctx context.Context, args map[string]interface{}) (ToolResult, error) {
-	path, _ := args["path"].(string)
-	linter, _ := args["linter"].(string)
-	autoFix, _ := args["auto_fix"].(bool)
+	path, ok := args["path"].(string)
+	if !ok {
+		path = ""
+	}
+	linter, ok := args["linter"].(string)
+	if !ok {
+		linter = ""
+	}
+	autoFix, ok := args["auto_fix"].(bool)
+	if !ok {
+		autoFix = false
+	}
 
 	// Validate path if not a pattern
 	if path != "" && !strings.Contains(path, "...") {
@@ -602,10 +626,10 @@ func (h *DiffHandler) GenerateDefaultArgs(context string) map[string]interface{}
 }
 
 func (h *DiffHandler) Execute(ctx context.Context, args map[string]interface{}) (ToolResult, error) {
-	filePath, _ := args["file_path"].(string)
-	mode, _ := args["mode"].(string)
-	compareWith, _ := args["compare_with"].(string)
-	contextLines, _ := args["context_lines"].(float64)
+	filePath, _ := args["file_path"].(string)          //nolint:errcheck
+	mode, _ := args["mode"].(string)                   //nolint:errcheck
+	compareWith, _ := args["compare_with"].(string)    //nolint:errcheck
+	contextLines, _ := args["context_lines"].(float64) //nolint:errcheck
 
 	// Validate inputs
 	if filePath != "" && !utils.ValidatePath(filePath) {
@@ -705,10 +729,22 @@ func (h *TreeViewHandler) GenerateDefaultArgs(context string) map[string]interfa
 }
 
 func (h *TreeViewHandler) Execute(ctx context.Context, args map[string]interface{}) (ToolResult, error) {
-	path, _ := args["path"].(string)
-	maxDepth, _ := args["max_depth"].(float64)
-	showHidden, _ := args["show_hidden"].(bool)
-	ignorePatterns, _ := args["ignore_patterns"].([]interface{})
+	path := ""
+	if p, ok := args["path"].(string); ok {
+		path = p
+	}
+	maxDepth := 0.0
+	if md, ok := args["max_depth"].(float64); ok {
+		maxDepth = md
+	}
+	showHidden := false
+	if sh, ok := args["show_hidden"].(bool); ok {
+		showHidden = sh
+	}
+	ignorePatterns := []interface{}{}
+	if ip, ok := args["ignore_patterns"].([]interface{}); ok {
+		ignorePatterns = ip
+	}
 
 	// Validate inputs
 	if path != "." && !utils.ValidatePath(path) {

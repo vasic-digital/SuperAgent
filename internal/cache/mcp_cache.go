@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"sync/atomic"
 	"time"
 )
@@ -122,7 +123,11 @@ func (c *MCPServerCache) CacheKey(server, tool string, args interface{}) string 
 		Args:   args,
 	}
 
-	data, _ := json.Marshal(keyData)
+	data, err := json.Marshal(keyData)
+	if err != nil {
+		// Fallback to simple key
+		return fmt.Sprintf("mcp:%s:%s:error", server, tool)
+	}
 	hash := sha256.Sum256(data)
 	return "mcp:" + server + ":" + tool + ":" + hex.EncodeToString(hash[:12])
 }
@@ -161,7 +166,12 @@ func (c *MCPServerCache) SetToolResult(ctx context.Context, server, tool string,
 	}
 
 	// Check result size
-	resultData, _ := json.Marshal(result)
+	resultData, err := json.Marshal(result)
+	if err != nil {
+		// Cannot marshal result, skip caching
+		atomic.AddInt64(&c.metrics.SkippedLarge, 1)
+		return nil
+	}
 	if len(resultData) > c.config.MaxResultSize {
 		atomic.AddInt64(&c.metrics.SkippedLarge, 1)
 		return nil

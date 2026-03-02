@@ -151,7 +151,10 @@ func (a *FigmaAdapter) Connect(ctx context.Context) error {
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyBytes, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			return fmt.Errorf("Figma authentication failed: status %d (failed to read body: %v)", resp.StatusCode, readErr)
+		}
 		return fmt.Errorf("Figma authentication failed: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
 
@@ -189,7 +192,10 @@ func (a *FigmaAdapter) GetFile(ctx context.Context, fileKey string) (*FigmaFile,
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyBytes, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			return nil, fmt.Errorf("failed to get file: status %d (failed to read body: %v)", resp.StatusCode, readErr)
+		}
 		return nil, fmt.Errorf("failed to get file: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
 
@@ -213,7 +219,10 @@ func (a *FigmaAdapter) GetFileNodes(ctx context.Context, fileKey string, nodeIDs
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyBytes, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			return nil, fmt.Errorf("failed to get nodes: status %d (failed to read body: %v)", resp.StatusCode, readErr)
+		}
 		return nil, fmt.Errorf("failed to get nodes: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
 
@@ -252,7 +261,10 @@ func (a *FigmaAdapter) GetImages(ctx context.Context, fileKey string, nodeIDs []
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get images: status %d, failed to read body: %v", resp.StatusCode, err)
+		}
 		return nil, fmt.Errorf("failed to get images: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
 
@@ -280,7 +292,10 @@ func (a *FigmaAdapter) GetComments(ctx context.Context, fileKey string) ([]Figma
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get comments: status %d, failed to read body: %v", resp.StatusCode, err)
+		}
 		return nil, fmt.Errorf("failed to get comments: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
 
@@ -313,7 +328,10 @@ func (a *FigmaAdapter) PostComment(ctx context.Context, fileKey, message string,
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to post comment: status %d, failed to read body: %v", resp.StatusCode, err)
+		}
 		return nil, fmt.Errorf("failed to post comment: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
 
@@ -334,7 +352,10 @@ func (a *FigmaAdapter) GetTeamProjects(ctx context.Context, teamID string) (*Fig
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get team projects: status %d, failed to read body: %v", resp.StatusCode, err)
+		}
 		return nil, fmt.Errorf("failed to get team projects: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
 
@@ -355,7 +376,10 @@ func (a *FigmaAdapter) GetProjectFiles(ctx context.Context, projectID string) ([
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get project files: status %d, failed to read body: %v", resp.StatusCode, err)
+		}
 		return nil, fmt.Errorf("failed to get project files: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
 
@@ -378,7 +402,10 @@ func (a *FigmaAdapter) GetFileComponents(ctx context.Context, fileKey string) (m
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get components: status %d, failed to read body: %v", resp.StatusCode, err)
+		}
 		return nil, fmt.Errorf("failed to get components: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
 
@@ -403,7 +430,10 @@ func (a *FigmaAdapter) GetFileStyles(ctx context.Context, fileKey string) (map[s
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get styles: status %d, failed to read body: %v", resp.StatusCode, err)
+		}
 		return nil, fmt.Errorf("failed to get styles: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
 

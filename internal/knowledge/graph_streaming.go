@@ -542,7 +542,11 @@ func (skg *StreamingKnowledgeGraph) GetEntity(ctx context.Context, entityID stri
 		if !ok {
 			return nil, fmt.Errorf("key 'e' not found in record")
 		}
-		return nodeToEntity(node.(neo4j.Node)), nil
+		neoNode, ok := node.(neo4j.Node)
+		if !ok {
+			return nil, fmt.Errorf("node is not a neo4j.Node")
+		}
+		return nodeToEntity(neoNode), nil
 	}
 
 	return nil, fmt.Errorf("entity not found: %s", entityID)
@@ -579,7 +583,11 @@ func (skg *StreamingKnowledgeGraph) GetRelatedEntities(ctx context.Context, enti
 		if !ok {
 			continue
 		}
-		entities = append(entities, nodeToEntity(node.(neo4j.Node)))
+		neoNode, ok := node.(neo4j.Node)
+		if !ok {
+			continue
+		}
+		entities = append(entities, nodeToEntity(neoNode))
 	}
 
 	return entities, nil
@@ -629,7 +637,11 @@ func (skg *StreamingKnowledgeGraph) SearchKnowledgeGraph(ctx context.Context, qu
 		if !ok {
 			continue
 		}
-		entities = append(entities, nodeToEntity(node.(neo4j.Node)))
+		neoNode, ok := node.(neo4j.Node)
+		if !ok {
+			continue
+		}
+		entities = append(entities, nodeToEntity(neoNode))
 	}
 
 	return entities, nil

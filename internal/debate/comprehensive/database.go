@@ -170,8 +170,14 @@ func (t *DatabaseTool) executeExec(ctx context.Context, query string, params []i
 		return NewToolError(fmt.Sprintf("execution failed: %v", err)), nil
 	}
 
-	rowsAffected, _ := res.RowsAffected()
-	lastID, _ := res.LastInsertId()
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		rowsAffected = -1
+	}
+	lastID, err := res.LastInsertId()
+	if err != nil {
+		lastID = -1
+	}
 
 	result := NewToolResult(fmt.Sprintf("Query executed successfully, %d rows affected", rowsAffected))
 	result.Duration = time.Since(start)

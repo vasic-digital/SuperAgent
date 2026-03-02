@@ -1472,23 +1472,26 @@ func (c *LSPConnection) Close() error {
 
 	// Send shutdown request (best effort)
 	if c.stdin != nil {
+		// Send shutdown request (best effort)
 		shutdownReq := LSPJSONRPCRequest{
 			JSONRPC: "2.0",
 			ID:      999999,
 			Method:  "shutdown",
 		}
-		content, _ := json.Marshal(shutdownReq)
-		header := fmt.Sprintf("Content-Length: %d\r\n\r\n", len(content))
-		_, _ = c.stdin.Write([]byte(header + string(content))) //nolint:errcheck
+		if content, err := json.Marshal(shutdownReq); err == nil {
+			header := fmt.Sprintf("Content-Length: %d\r\n\r\n", len(content))
+			_, _ = c.stdin.Write([]byte(header + string(content))) //nolint:errcheck
+		}
 
-		// Send exit notification
+		// Send exit notification (best effort)
 		exitNotif := LSPJSONRPCNotification{
 			JSONRPC: "2.0",
 			Method:  "exit",
 		}
-		content, _ = json.Marshal(exitNotif)
-		header = fmt.Sprintf("Content-Length: %d\r\n\r\n", len(content))
-		_, _ = c.stdin.Write([]byte(header + string(content))) //nolint:errcheck
+		if content, err := json.Marshal(exitNotif); err == nil {
+			header := fmt.Sprintf("Content-Length: %d\r\n\r\n", len(content))
+			_, _ = c.stdin.Write([]byte(header + string(content))) //nolint:errcheck
+		}
 	}
 
 	if c.stdin != nil {

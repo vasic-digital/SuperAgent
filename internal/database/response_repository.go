@@ -50,7 +50,10 @@ func (r *ResponseRepository) Create(ctx context.Context, resp *LLMResponse) erro
 		RETURNING id, created_at
 	`
 
-	metadataJSON, _ := json.Marshal(resp.Metadata)
+	metadataJSON, marshalErr := json.Marshal(resp.Metadata)
+	if marshalErr != nil {
+		metadataJSON = []byte("{}")
+	}
 
 	err := r.pool.QueryRow(ctx, query,
 		resp.RequestID, resp.ProviderID, resp.ProviderName, resp.Content, resp.Confidence,
@@ -270,7 +273,9 @@ func (r *ResponseRepository) GetByProviderID(ctx context.Context, providerID str
 		}
 
 		if len(metadataJSON) > 0 {
-			_ = json.Unmarshal(metadataJSON, &resp.Metadata)
+			if err := json.Unmarshal(metadataJSON, &resp.Metadata); err != nil {
+				r.log.Errorf("failed to unmarshal metadata JSON: %v", err)
+			}
 		}
 
 		responses = append(responses, resp)

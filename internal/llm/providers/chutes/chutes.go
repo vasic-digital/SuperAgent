@@ -225,9 +225,13 @@ func (p *Provider) CompleteStream(ctx context.Context, req *models.LLMRequest) (
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		_ = resp.Body.Close()
-		return nil, fmt.Errorf("Chutes AI API error: %d - %s", resp.StatusCode, string(body))
+		bodyStr := string(body)
+		if err != nil {
+			bodyStr = fmt.Sprintf("failed to read response body: %v", err)
+		}
+		return nil, fmt.Errorf("Chutes AI API error: %d - %s", resp.StatusCode, bodyStr)
 	}
 
 	ch := make(chan *models.LLMResponse)

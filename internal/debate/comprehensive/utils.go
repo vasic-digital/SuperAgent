@@ -294,12 +294,14 @@ func (p Parser) ParseConfidence(content string) float64 {
 		matches := re.FindStringSubmatch(content)
 		if len(matches) > 1 {
 			var score float64
-			fmt.Sscanf(matches[1], "%f", &score)
-			if score > 1.0 {
-				score = score / 100.0
-			}
-			if score >= 0 && score <= 1 {
-				return score
+			n, err := fmt.Sscanf(matches[1], "%f", &score)
+			if n == 1 && err == nil {
+				if score > 1.0 {
+					score = score / 100.0
+				}
+				if score >= 0 && score <= 1 {
+					return score
+				}
 			}
 		}
 	}

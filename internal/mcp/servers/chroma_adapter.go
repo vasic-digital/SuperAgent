@@ -248,7 +248,10 @@ func (a *ChromaAdapter) Query(ctx context.Context, collectionName string, queryE
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to query collection: status %d - failed to read response body: %w", resp.StatusCode, err)
+		}
 		return nil, fmt.Errorf("failed to query collection: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
 
@@ -311,7 +314,10 @@ func (a *ChromaAdapter) UpdateDocuments(ctx context.Context, collectionName stri
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyBytes, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			return fmt.Errorf("failed to update documents: status %d (failed to read body: %v)", resp.StatusCode, readErr)
+		}
 		return fmt.Errorf("failed to update documents: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
 

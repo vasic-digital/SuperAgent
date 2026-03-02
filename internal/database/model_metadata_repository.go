@@ -530,7 +530,10 @@ func (r *ModelMetadataRepository) UpdateBenchmark(ctx context.Context, benchmark
 		WHERE id = $1
 	`
 
-	metadataJSON, _ := json.Marshal(benchmark.Metadata)
+	metadataJSON, err := json.Marshal(benchmark.Metadata)
+	if err != nil {
+		metadataJSON = []byte("{}")
+	}
 
 	result, err := r.pool.Exec(ctx, query,
 		benchmark.ID, benchmark.BenchmarkType, benchmark.Score, benchmark.Rank,
@@ -706,9 +709,12 @@ func (r *ModelMetadataRepository) CreateRefreshHistory(ctx context.Context, hist
 	`
 
 	var id string
-	metadataJSON, _ := json.Marshal(history.Metadata)
+	metadataJSON, err := json.Marshal(history.Metadata)
+	if err != nil {
+		metadataJSON = []byte("{}")
+	}
 
-	err := r.pool.QueryRow(ctx, query,
+	err = r.pool.QueryRow(ctx, query,
 		history.RefreshType, history.Status, history.ModelsRefreshed, history.ModelsFailed,
 		history.ErrorMessage, history.StartedAt, history.CompletedAt, history.DurationSeconds, metadataJSON,
 	).Scan(&id)
