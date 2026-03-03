@@ -71,7 +71,7 @@ func handleRunChallenges(appCfg *AppConfig) error {
 			"bigdata", "memory", "performance", "grpc",
 			"release", "speckit", "subscription",
 			"verification", "fallback", "semantic",
-			"integration", "shell",
+			"integration", "shell", "userflow",
 		}
 		isCategory := false
 		for _, cat := range knownCategories {

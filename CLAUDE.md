@@ -368,6 +368,7 @@ Registry: `internal/agents/registry.go`. Generate configs: `./bin/helixagent --g
 ./challenges/scripts/debate_performance_optimizer_challenge.sh   # 36 tests
 ./challenges/scripts/helixmemory_challenge.sh                   # 80+ tests
 ./challenges/scripts/helixspecifier_challenge.sh                # 138 tests
+./challenges/scripts/userflow_comprehensive_challenge.sh        # 30+ tests
 ```
 
 ## LLMsVerifier

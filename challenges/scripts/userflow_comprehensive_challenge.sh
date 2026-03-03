@@ -170,15 +170,14 @@ echo ""
 # Phase 1: Health Endpoints
 log_info "Phase 1: Health Endpoints"
 test_get "health_root" "/health" "200"
-test_get "health_live" "/health/live" "200"
-test_get "health_ready" "/health/ready" "200 503"
-test_get "version" "/version" "200"
+test_get "health_enhanced" "/v1/health" "200"
+test_get "monitoring_status" "/v1/monitoring/status" "200"
 echo ""
 
 # Phase 2: Feature Flags (public, no auth)
 log_info "Phase 2: Feature Flags"
 test_get "feature_flags" "/v1/features" "200"
-test_get "feature_status" "/v1/features/status" "200 404"
+test_get "feature_available" "/v1/features/available" "200"
 echo ""
 
 # Phase 3: Model Discovery
@@ -191,10 +190,10 @@ echo ""
 log_info "Phase 4: Monitoring & Observability"
 test_get "monitoring_status" "/v1/monitoring/status" "200"
 test_get "circuit_breakers" "/v1/monitoring/circuit-breakers" "200"
-test_get "provider_health" "/v1/monitoring/providers/health" "200"
+test_get "provider_health" "/v1/monitoring/provider-health" "200"
 test_get "fallback_chain" "/v1/monitoring/fallback-chain" "200"
 test_get "concurrency_stats" "/v1/monitoring/concurrency" "200"
-test_get "active_requests" "/v1/monitoring/active-requests" "200 404"
+test_get "concurrency_alerts" "/v1/monitoring/concurrency/alerts" "200"
 echo ""
 
 # Phase 5: Code Formatters (public)
@@ -222,7 +221,7 @@ echo ""
 
 # Phase 8: Embeddings
 log_info "Phase 8: Embeddings"
-test_post "create_embedding" "/v1/embeddings" \
+test_post "create_embedding" "/v1/embeddings/generate" \
     '{"model":"text-embedding-ada-002","input":"Hello world"}' \
     "200 503"
 echo ""
@@ -237,14 +236,14 @@ echo ""
 
 # Phase 10: Protocol Endpoints
 log_info "Phase 10: Protocol Endpoints"
-test_get "mcp_status" "/v1/mcp/status" "200 404"
-test_get "mcp_adapters" "/v1/mcp/adapters" "200 404"
+test_get "mcp_stats" "/v1/mcp/stats" "200 404"
+test_get "mcp_adapters_search" "/v1/mcp/adapters/search" "200 404"
 test_get "mcp_capabilities" "/v1/mcp/capabilities" "200 404"
 echo ""
 
 # Phase 11: RAG Pipeline
 log_info "Phase 11: RAG Pipeline"
-test_get "rag_status" "/v1/rag/status" "200 404 503"
+test_get "rag_health" "/v1/rag/health" "200 404 503"
 test_post "rag_search" "/v1/rag/search" \
     '{"query":"How does HelixAgent work?","top_k":3}' \
     "200 404 503"

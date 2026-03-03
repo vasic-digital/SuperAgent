@@ -26,29 +26,23 @@ func HealthCheckFlow() uf.APIFlow {
 				},
 			},
 			{
-				Name:           "health_liveness",
+				Name:           "health_enhanced",
 				Method:         "GET",
-				Path:           "/health/live",
-				ExpectedStatus: 200,
-			},
-			{
-				Name:           "health_readiness",
-				Method:         "GET",
-				Path:           "/health/ready",
-				AcceptedStatuses: []int{200, 503},
-			},
-			{
-				Name:           "version",
-				Method:         "GET",
-				Path:           "/version",
+				Path:           "/v1/health",
 				ExpectedStatus: 200,
 				Assertions: []uf.StepAssertion{
 					{
 						Type:   "response_contains",
-						Target: "version",
-						Value:  "version",
+						Target: "providers",
+						Value:  "providers",
 					},
 				},
+			},
+			{
+				Name:           "monitoring_status",
+				Method:         "GET",
+				Path:           "/v1/monitoring/status",
+				ExpectedStatus: 200,
 			},
 		},
 	}
@@ -75,7 +69,7 @@ func ProviderDiscoveryFlow(token string) uf.APIFlow {
 			{
 				Name:           "provider_health",
 				Method:         "GET",
-				Path:           "/v1/monitoring/providers/health",
+				Path:           "/v1/monitoring/provider-health",
 				ExpectedStatus: 200,
 			},
 			{
@@ -169,7 +163,7 @@ func EmbeddingsFlow() uf.APIFlow {
 			{
 				Name:   "create_embedding",
 				Method: "POST",
-				Path:   "/v1/embeddings",
+				Path:   "/v1/embeddings/generate",
 				Body: `{
 					"model": "text-embedding-ada-002",
 					"input": "Hello world"
@@ -263,7 +257,7 @@ func MonitoringFlow() uf.APIFlow {
 			{
 				Name:           "provider_health",
 				Method:         "GET",
-				Path:           "/v1/monitoring/providers/health",
+				Path:           "/v1/monitoring/provider-health",
 				ExpectedStatus: 200,
 			},
 			{
@@ -279,10 +273,10 @@ func MonitoringFlow() uf.APIFlow {
 				ExpectedStatus: 200,
 			},
 			{
-				Name:             "active_requests",
-				Method:           "GET",
-				Path:             "/v1/monitoring/active-requests",
-				AcceptedStatuses: []int{200, 404},
+				Name:           "concurrency_alerts",
+				Method:         "GET",
+				Path:           "/v1/monitoring/concurrency/alerts",
+				ExpectedStatus: 200,
 			},
 		},
 	}
@@ -294,15 +288,15 @@ func MCPProtocolFlow() uf.APIFlow {
 	return uf.APIFlow{
 		Steps: []uf.APIStep{
 			{
-				Name:             "mcp_status",
+				Name:             "mcp_stats",
 				Method:           "GET",
-				Path:             "/v1/mcp/status",
+				Path:             "/v1/mcp/stats",
 				AcceptedStatuses: []int{200, 404},
 			},
 			{
-				Name:             "mcp_adapters",
+				Name:             "mcp_adapters_search",
 				Method:           "GET",
-				Path:             "/v1/mcp/adapters",
+				Path:             "/v1/mcp/adapters/search",
 				AcceptedStatuses: []int{200, 404},
 			},
 			{
@@ -321,9 +315,9 @@ func RAGFlow() uf.APIFlow {
 	return uf.APIFlow{
 		Steps: []uf.APIStep{
 			{
-				Name:             "rag_status",
+				Name:             "rag_health",
 				Method:           "GET",
-				Path:             "/v1/rag/status",
+				Path:             "/v1/rag/health",
 				AcceptedStatuses: []int{200, 404, 503},
 			},
 			{
@@ -355,10 +349,10 @@ func FeatureFlagsFlow() uf.APIFlow {
 				},
 			},
 			{
-				Name:             "feature_status",
-				Method:           "GET",
-				Path:             "/v1/features/status",
-				AcceptedStatuses: []int{200, 404},
+				Name:           "feature_available",
+				Method:         "GET",
+				Path:           "/v1/features/available",
+				ExpectedStatus: 200,
 			},
 		},
 	}
@@ -378,9 +372,9 @@ func FullSystemFlow() uf.APIFlow {
 				ExpectedStatus: 200,
 			},
 			{
-				Name:           "liveness",
+				Name:           "health_enhanced",
 				Method:         "GET",
-				Path:           "/health/live",
+				Path:           "/v1/health",
 				ExpectedStatus: 200,
 			},
 			// Phase 2: Discovery
@@ -406,7 +400,7 @@ func FullSystemFlow() uf.APIFlow {
 			{
 				Name:           "providers",
 				Method:         "GET",
-				Path:           "/v1/monitoring/providers/health",
+				Path:           "/v1/monitoring/provider-health",
 				ExpectedStatus: 200,
 			},
 			// Phase 4: Formatting (public)

@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"digital.vasic.challenges/pkg/challenge"
 	uf "digital.vasic.challenges/pkg/userflow"
 )
 
@@ -55,7 +56,7 @@ func TestStreamingCompletionFlow(t *testing.T) {
 func TestEmbeddingsFlow(t *testing.T) {
 	flow := EmbeddingsFlow()
 	require.Len(t, flow.Steps, 1)
-	assert.Equal(t, "/v1/embeddings", flow.Steps[0].Path)
+	assert.Equal(t, "/v1/embeddings/generate", flow.Steps[0].Path)
 }
 
 func TestFormattersFlow(t *testing.T) {
@@ -88,7 +89,7 @@ func TestMonitoringFlow(t *testing.T) {
 	assert.Contains(t, paths,
 		"/v1/monitoring/circuit-breakers")
 	assert.Contains(t, paths,
-		"/v1/monitoring/providers/health")
+		"/v1/monitoring/provider-health")
 }
 
 func TestMCPProtocolFlow(t *testing.T) {
@@ -119,22 +120,88 @@ func TestFullSystemFlow(t *testing.T) {
 }
 
 func TestChallengeConstructors_NotNil(t *testing.T) {
-	// Use a nil adapter - constructors should not panic.
 	var adapter mockAPIAdapter
+	healthDep := []challenge.ID{"helix-health-check"}
+	providerDep := []challenge.ID{
+		"helix-provider-discovery",
+	}
+	completionDep := []challenge.ID{
+		"helix-chat-completion",
+	}
+	embeddingsDep := []challenge.ID{
+		"helix-embeddings",
+	}
 
 	tests := []struct {
-		name string
-		fn   func() interface{}
+		name       string
+		expectedID string
+		fn         func() interface{}
 	}{
-		{"HealthCheck",
+		{"HealthCheck", "helix-health-check",
 			func() interface{} {
 				return NewHealthCheckChallenge(&adapter)
 			}},
-		{"FeatureFlags",
+		{"FeatureFlags", "helix-feature-flags",
 			func() interface{} {
 				return NewFeatureFlagsChallenge(&adapter)
 			}},
-		{"FullSystem",
+		{"ProviderDiscovery",
+			"helix-provider-discovery",
+			func() interface{} {
+				return NewProviderDiscoveryChallenge(
+					&adapter, healthDep,
+				)
+			}},
+		{"Monitoring", "helix-monitoring",
+			func() interface{} {
+				return NewMonitoringChallenge(
+					&adapter, healthDep,
+				)
+			}},
+		{"Formatters", "helix-formatters",
+			func() interface{} {
+				return NewFormattersChallenge(
+					&adapter, healthDep,
+				)
+			}},
+		{"ChatCompletion", "helix-chat-completion",
+			func() interface{} {
+				return NewChatCompletionChallenge(
+					&adapter, providerDep,
+				)
+			}},
+		{"StreamingCompletion",
+			"helix-streaming-completion",
+			func() interface{} {
+				return NewStreamingCompletionChallenge(
+					&adapter, completionDep,
+				)
+			}},
+		{"Embeddings", "helix-embeddings",
+			func() interface{} {
+				return NewEmbeddingsChallenge(
+					&adapter, providerDep,
+				)
+			}},
+		{"Debate", "helix-debate",
+			func() interface{} {
+				return NewDebateChallenge(
+					&adapter, completionDep,
+				)
+			}},
+		{"MCPProtocol", "helix-mcp-protocol",
+			func() interface{} {
+				return NewMCPChallenge(
+					&adapter, healthDep,
+				)
+			}},
+		{"RAG", "helix-rag",
+			func() interface{} {
+				return NewRAGChallenge(
+					&adapter, embeddingsDep,
+				)
+			}},
+		{"FullSystem", "helix-full-system",
 			func() interface{} {
 				return NewFullSystemChallenge(&adapter)
 			}},
@@ -143,7 +210,14 @@ func TestChallengeConstructors_NotNil(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := tt.fn()
-			assert.NotNil(t, result)
+			require.NotNil(t, result)
+			c, ok := result.(challenge.Challenge)
+			require.True(t, ok,
+				"must implement challenge.Challenge")
+			assert.Equal(t,
+				challenge.ID(tt.expectedID),
+				c.ID(),
+			)
 		})
 	}
 }
