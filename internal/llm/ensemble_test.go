@@ -376,3 +376,60 @@ func TestEnsembleConcurrency(t *testing.T) {
 
 // Ensure ensembleMockProvider implements LLMProvider
 var _ LLMProvider = (*ensembleMockProvider)(nil)
+
+// --- Benchmarks ---
+
+func BenchmarkRunEnsembleWithProviders_SingleProvider(b *testing.B) {
+	provider := &ensembleMockProvider{
+		name: "bench-provider",
+		response: &models.LLMResponse{
+			Content:    "Benchmark response",
+			Confidence: 0.9,
+		},
+	}
+
+	req := &models.LLMRequest{Prompt: "benchmark prompt"}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _, _ = RunEnsembleWithProviders(context.Background(), req, []LLMProvider{provider})
+	}
+}
+
+func BenchmarkRunEnsembleWithProviders_ThreeProviders(b *testing.B) {
+	providers := []LLMProvider{
+		&ensembleMockProvider{
+			name:     "bench-1",
+			response: &models.LLMResponse{Content: "R1", Confidence: 0.7},
+		},
+		&ensembleMockProvider{
+			name:     "bench-2",
+			response: &models.LLMResponse{Content: "R2", Confidence: 0.9},
+		},
+		&ensembleMockProvider{
+			name:     "bench-3",
+			response: &models.LLMResponse{Content: "R3", Confidence: 0.8},
+		},
+	}
+
+	req := &models.LLMRequest{Prompt: "benchmark prompt"}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _, _ = RunEnsembleWithProviders(context.Background(), req, providers)
+	}
+}
+
+func BenchmarkGetMaxConcurrentProviders(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = GetMaxConcurrentProviders()
+	}
+}
+
+func BenchmarkSetMaxConcurrentProviders(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		SetMaxConcurrentProviders(i%10 + 1)
+	}
+}

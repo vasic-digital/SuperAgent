@@ -9,6 +9,7 @@ import (
 	"dev.helix.agent/internal/database"
 	"dev.helix.agent/internal/services"
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 type ModelMetadataHandler struct {
@@ -205,8 +206,7 @@ func (h *ModelMetadataHandler) RefreshModels(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 		defer cancel()
 		if err := h.service.RefreshModels(ctx); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to refresh models", "details": err.Error()})
-			return
+			logrus.WithError(err).Error("Background model refresh failed")
 		}
 	}()
 

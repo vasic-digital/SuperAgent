@@ -5987,7 +5987,7 @@ When asked to create files like AGENTS.md:
 
 		// Create a per-provider timeout context (60 seconds per provider)
 		// This prevents one slow provider from exhausting the entire timeout
-		providerCtx, providerCancel := context.WithTimeout(context.Background(), 60*time.Second)
+		providerCtx, providerCancel := context.WithTimeout(ctx, 60*time.Second)
 
 		logrus.WithField("provider", providerName).Debug("Attempting tool result processing")
 

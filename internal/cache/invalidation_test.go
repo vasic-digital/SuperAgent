@@ -294,3 +294,69 @@ func BenchmarkContainsWildcard(b *testing.B) {
 		_ = containsWildcard(inputs[i%len(inputs)])
 	}
 }
+
+func BenchmarkTrimWildcard(b *testing.B) {
+	inputs := []string{"prefix:*", "*:suffix", "pre*fix", "no_wildcard", ""}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = trimWildcard(inputs[i%len(inputs)])
+	}
+}
+
+func BenchmarkTagBasedInvalidation_GetTags(b *testing.B) {
+	inv := NewTagBasedInvalidation()
+	for i := 0; i < 100; i++ {
+		inv.AddTag("key-"+string(rune('a'+i%26)), "tag-a", "tag-b", "tag-c")
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		key := "key-" + string(rune('a'+i%26))
+		_ = inv.GetTags(key)
+	}
+}
+
+func BenchmarkTagBasedInvalidation_GetKeys(b *testing.B) {
+	inv := NewTagBasedInvalidation()
+	for i := 0; i < 1000; i++ {
+		tag := "tag-" + string(rune('a'+i%10))
+		inv.AddTag("key-"+string(rune(i)), tag)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		tag := "tag-" + string(rune('a'+i%10))
+		_ = inv.GetKeys(tag)
+	}
+}
+
+func BenchmarkTagBasedInvalidation_RemoveKey(b *testing.B) {
+	b.StopTimer()
+	inv := NewTagBasedInvalidation()
+	for i := 0; i < b.N; i++ {
+		key := "key-" + string(rune('a'+i%26))
+		inv.AddTag(key, "tag-a", "tag-b")
+	}
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		key := "key-" + string(rune('a'+i%26))
+		inv.RemoveKey(key)
+	}
+}
+
+func BenchmarkTagBasedInvalidation_InvalidateByTags(b *testing.B) {
+	inv := NewTagBasedInvalidation()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		for j := 0; j < 100; j++ {
+			tag := "tag-" + string(rune('a'+j%5))
+			inv.AddTag("key-"+string(rune(j)), tag)
+		}
+		b.StartTimer()
+		_ = inv.InvalidateByTags("tag-a", "tag-b")
+	}
+}
