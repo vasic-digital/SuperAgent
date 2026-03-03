@@ -9,10 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Benchmark test coverage for 40/40 LLM providers, 7 debate packages, and 17 core packages (556+ benchmarks)
+- Additional 98 benchmark functions across 20 internal packages (benchmark, challenges, concurrency, conversation, features, knowledge, llmops, models, modelsdev, observability, planning, profiling, selfimprove, tools, toon, debate/agents, debate/protocol, debate/reflexion, debate/testing, debate/tools)
 - Penetration testing expansion: SSRF prevention, API key leakage, rate limit bypass, provider security (37 test functions across 7 files)
 - Test type expansion for 23 extracted modules (integration, E2E, security, stress, benchmark)
 - Module-specific challenge scripts for all 23 extracted modules (EventBus, Auth, Cache, Concurrency, Embeddings, Formatters, Storage, Streaming, Observability, Optimization, Plugins, Database, Messaging, Security, VectorDB, Memory, RAG, MCP, Agentic, LLMOps, SelfImprove, Planning, Benchmark)
-- Architecture documentation (ARCHITECTURE.md) for Agentic, LLMOps, SelfImprove, Planning, Benchmark modules
+- Architecture documentation (ARCHITECTURE.md) for Agentic, LLMOps, SelfImprove, Planning, Benchmark, HelixMemory, HelixSpecifier modules
 - LICENSE file (MIT)
 
 ### Fixed
@@ -20,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Context propagation in ensemble execution, auth middleware, gRPC streaming, model metadata refresh, and tool result processing
 - Response writer race in model_metadata.go RefreshModels goroutine
 - Crash bugs in comprehensive debate system (nil pointer, timeout, map mutation)
+
+### Refactored
+- Comprehensive debate system PhaseOrchestrator: replaced all manual placeholder responses with proper agent.Process() calls across all 6 phases (Planning, Generation, Debate, Validation, Refactoring, Integration)
+- Wired System to PhaseOrchestrator with pool and orchestrator fields, implemented real convergence checking (quality threshold, consensus level, early stopping)
 
 ### Security
 - gosec scan completed: all 122 G704 (SSRF) findings are expected for multi-provider LLM service, 5 G117 (exported struct secrets) are informational
