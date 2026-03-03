@@ -713,3 +713,66 @@ func TestOrchestratorStatistics_Structure(t *testing.T) {
 	assert.Equal(t, 100, stats.TotalDebatesLearned)
 	assert.Equal(t, 0.85, stats.OverallSuccessRate)
 }
+
+// =============================================================================
+// Benchmarks
+// =============================================================================
+
+func BenchmarkNewOrchestrator(b *testing.B) {
+	registry := newMockProviderRegistry()
+	lbConfig := debate.DefaultLessonBankConfig()
+	lbConfig.EnableSemanticSearch = false
+	lessonBank := debate.NewLessonBank(lbConfig, nil, nil)
+	config := DefaultOrchestratorConfig()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		NewOrchestrator(registry, lessonBank, config)
+	}
+}
+
+func BenchmarkOrchestrator_RegisterProvider(b *testing.B) {
+	registry := newMockProviderRegistry()
+	for _, name := range []string{"claude", "deepseek", "gemini", "openai", "mistral"} {
+		provider := newMockLLMProvider(name)
+		registry.AddProvider(name, provider)
+	}
+	lbConfig := debate.DefaultLessonBankConfig()
+	lbConfig.EnableSemanticSearch = false
+	lessonBank := debate.NewLessonBank(lbConfig, nil, nil)
+	config := DefaultOrchestratorConfig()
+	orch := NewOrchestrator(registry, lessonBank, config)
+	providers := []string{"claude", "deepseek", "gemini", "openai", "mistral"}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		p := providers[i%len(providers)]
+		_ = orch.RegisterProvider(p, fmt.Sprintf("model-%d", i), 7.5+float64(i%5)*0.5)
+	}
+}
+
+func BenchmarkOrchestrator_GetStatistics(b *testing.B) {
+	registry := newMockProviderRegistry()
+	for _, name := range []string{"claude", "deepseek", "gemini", "openai", "mistral"} {
+		provider := newMockLLMProvider(name)
+		registry.AddProvider(name, provider)
+	}
+	lbConfig := debate.DefaultLessonBankConfig()
+	lbConfig.EnableSemanticSearch = false
+	lessonBank := debate.NewLessonBank(lbConfig, nil, nil)
+	config := DefaultOrchestratorConfig()
+	orch := NewOrchestrator(registry, lessonBank, config)
+	for i, name := range []string{"claude", "deepseek", "gemini", "openai", "mistral"} {
+		_ = orch.RegisterProvider(name, fmt.Sprintf("model-%d", i), 8.0+float64(i)*0.2)
+	}
+	ctx := context.Background()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = orch.GetStatistics(ctx)
+	}
+}
+
+func BenchmarkDefaultOrchestratorConfig(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		DefaultOrchestratorConfig()
+	}
+}

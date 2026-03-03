@@ -1440,3 +1440,62 @@ func TestSimpleOpenRouterProvider_Complete_NilID(t *testing.T) {
 	require.NotNil(t, resp)
 	assert.Equal(t, "", resp.ID) // Should be empty when id is nil
 }
+
+// =============================================================================
+// Benchmarks
+// =============================================================================
+
+func BenchmarkOpenRouterProvider_GetCapabilities(b *testing.B) {
+	provider := NewSimpleOpenRouterProvider("test-key")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.GetCapabilities()
+	}
+}
+
+func BenchmarkOpenRouterProvider_ValidateConfig(b *testing.B) {
+	provider := NewSimpleOpenRouterProvider("test-key")
+	config := map[string]interface{}{
+		"api_key": "test-key",
+		"model":   "openai/gpt-4",
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.ValidateConfig(config)
+	}
+}
+
+func BenchmarkOpenRouterProvider_NextDelay(b *testing.B) {
+	provider := NewSimpleOpenRouterProvider("test-key")
+	initialDelay := 1 * time.Second
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.nextDelay(initialDelay)
+	}
+}
+
+func BenchmarkOpenRouterProvider_NewProvider(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		NewSimpleOpenRouterProvider("test-key")
+	}
+}
+
+func BenchmarkOpenRouterProvider_IsRetryableStatus(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		isRetryableStatus(429)
+		isRetryableStatus(500)
+		isRetryableStatus(200)
+	}
+}
+
+func BenchmarkOpenRouterProvider_IsAuthRetryableStatus(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		isAuthRetryableStatus(401)
+		isAuthRetryableStatus(403)
+		isAuthRetryableStatus(200)
+	}
+}

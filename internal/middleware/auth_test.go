@@ -1019,3 +1019,86 @@ func TestAuthMiddleware_AuthenticateUser(t *testing.T) {
 		}
 	})
 }
+
+// --- Benchmarks ---
+
+func BenchmarkAuthMiddleware_GenerateToken(b *testing.B) {
+	config := AuthConfig{
+		SecretKey:   "benchmark-secret-key",
+		TokenExpiry: time.Hour,
+	}
+	middleware, err := NewAuthMiddleware(config, nil)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = middleware.GenerateToken("user123", "testuser", "user")
+	}
+}
+
+func BenchmarkAuthMiddleware_ValidateToken(b *testing.B) {
+	config := AuthConfig{
+		SecretKey:   "benchmark-secret-key",
+		TokenExpiry: time.Hour,
+	}
+	middleware, err := NewAuthMiddleware(config, nil)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	token, err := middleware.GenerateToken("user123", "testuser", "user")
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = middleware.validateToken(token)
+	}
+}
+
+func BenchmarkAuthMiddleware_ExtractTokenFromHeader(b *testing.B) {
+	config := AuthConfig{
+		SecretKey: "benchmark-secret-key",
+	}
+	middleware, err := NewAuthMiddleware(config, nil)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	headers := []string{
+		"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test.token",
+		"Basic dGVzdDp0ZXN0",
+		"",
+		"Bearer",
+		"Bearer valid.token.here",
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = middleware.ExtractTokenFromHeader(headers[i%len(headers)])
+	}
+}
+
+func BenchmarkAuthMiddleware_RefreshToken(b *testing.B) {
+	config := AuthConfig{
+		SecretKey:   "benchmark-secret-key",
+		TokenExpiry: time.Hour,
+	}
+	middleware, err := NewAuthMiddleware(config, nil)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	token, err := middleware.GenerateToken("user123", "testuser", "user")
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = middleware.RefreshToken(token)
+	}
+}

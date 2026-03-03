@@ -1515,3 +1515,48 @@ func TestGlobalHub_ConcurrentAccess(t *testing.T) {
 	// Cleanup
 	SetGlobalHub(nil)
 }
+
+// --- Benchmarks ---
+
+func BenchmarkMessageRouter_IsTaskQueue(b *testing.B) {
+	router := NewMessageRouter()
+	topics := []string{
+		"helixagent.tasks.process",
+		"helixagent.events.updates",
+		"tasks.background",
+		"events.system",
+		"random.topic.name",
+		"helixagent.stream.data",
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = router.IsTaskQueue(topics[i%len(topics)])
+	}
+}
+
+func BenchmarkMessageRouter_IsEventStream(b *testing.B) {
+	router := NewMessageRouter()
+	topics := []string{
+		"helixagent.events.updates",
+		"helixagent.stream.data",
+		"events.system",
+		"helixagent.tasks.process",
+		"tasks.background",
+		"random.topic.name",
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = router.IsEventStream(topics[i%len(topics)])
+	}
+}
+
+func BenchmarkNewMessagingHub(b *testing.B) {
+	config := DefaultHubConfig()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = NewMessagingHub(config)
+	}
+}

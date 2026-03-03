@@ -2,6 +2,7 @@ package knowledge
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -625,4 +626,90 @@ func TestStrategy_Structure(t *testing.T) {
 	assert.Equal(t, "strategy-1", strategy.ID)
 	assert.Len(t, strategy.RoleConfig, 1)
 	assert.Len(t, strategy.Phases, 1)
+}
+
+// =============================================================================
+// Benchmarks
+// =============================================================================
+
+func BenchmarkKnowledgeGraph_AddNode(b *testing.B) {
+	kg := NewKnowledgeGraph(100000)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		node := &KnowledgeNode{
+			ID:          fmt.Sprintf("node-%d", i),
+			Type:        NodeTypeConcept,
+			Label:       fmt.Sprintf("concept %d", i),
+			Weight:      0.8,
+			LastUpdated: time.Now(),
+		}
+		kg.mu.Lock()
+		kg.nodes[node.ID] = node
+		kg.mu.Unlock()
+	}
+}
+
+func BenchmarkKnowledgeGraph_GetNode(b *testing.B) {
+	kg := NewKnowledgeGraph(10000)
+	for i := 0; i < 1000; i++ {
+		node := &KnowledgeNode{
+			ID:          fmt.Sprintf("node-%d", i),
+			Type:        NodeTypeConcept,
+			Label:       fmt.Sprintf("concept %d", i),
+			Weight:      0.8,
+			LastUpdated: time.Now(),
+		}
+		kg.nodes[node.ID] = node
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		kg.GetNode(fmt.Sprintf("node-%d", i%1000))
+	}
+}
+
+func BenchmarkKnowledgeGraph_GetConnections(b *testing.B) {
+	kg := NewKnowledgeGraph(10000)
+	for i := 0; i < 100; i++ {
+		node := &KnowledgeNode{
+			ID:          fmt.Sprintf("node-%d", i),
+			Type:        NodeTypeConcept,
+			Label:       fmt.Sprintf("concept %d", i),
+			Weight:      0.8,
+			LastUpdated: time.Now(),
+		}
+		kg.nodes[node.ID] = node
+	}
+	// Add edges
+	for i := 0; i < 500; i++ {
+		edge := &KnowledgeEdge{
+			FromID:  fmt.Sprintf("node-%d", i%100),
+			ToID:    fmt.Sprintf("node-%d", (i+1)%100),
+			Type:    EdgeTypeRelatedTo,
+			Weight:  0.5,
+			Created: time.Now(),
+		}
+		kg.edges = append(kg.edges, edge)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		kg.GetConnections(fmt.Sprintf("node-%d", i%100))
+	}
+}
+
+func BenchmarkPatternAnalyzer_Analyze(b *testing.B) {
+	analyzer := NewPatternAnalyzer()
+	result := createTestDebateResult()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		analyzer.Analyze(result)
+	}
+}
+
+func BenchmarkStrategySynthesizer_Synthesize(b *testing.B) {
+	synthesizer := NewStrategySynthesizer()
+	result := createTestDebateResult()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		synthesizer.Synthesize(result)
+	}
 }

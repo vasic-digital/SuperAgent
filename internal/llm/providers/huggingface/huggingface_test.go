@@ -502,3 +502,105 @@ func TestMultipleModels(t *testing.T) {
 		})
 	}
 }
+
+// Benchmarks
+
+func BenchmarkProvider_ConvertChatRequest(b *testing.B) {
+	provider := NewProvider("test-key", "", "")
+	req := &models.LLMRequest{
+		ID:     "bench-request",
+		Prompt: "You are a helpful assistant.",
+		Messages: []models.Message{
+			{Role: "user", Content: "Hello"},
+			{Role: "assistant", Content: "Hi"},
+			{Role: "user", Content: "How are you?"},
+		},
+		ModelParams: models.ModelParameters{
+			MaxTokens:   100,
+			Temperature: 0.7,
+		},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertChatRequest(req)
+	}
+}
+
+func BenchmarkProvider_ConvertInferenceRequest(b *testing.B) {
+	provider := NewProvider("test-key", "", "")
+	provider.usePro = false
+	req := &models.LLMRequest{
+		ID:     "bench-request",
+		Prompt: "You are helpful.",
+		Messages: []models.Message{
+			{Role: "user", Content: "Hello"},
+			{Role: "assistant", Content: "Hi"},
+			{Role: "user", Content: "How are you?"},
+		},
+		ModelParams: models.ModelParameters{
+			MaxTokens:   100,
+			Temperature: 0.7,
+		},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertInferenceRequest(req)
+	}
+}
+
+func BenchmarkProvider_ConvertChatResponse(b *testing.B) {
+	provider := NewProvider("test-key", "", "")
+	req := &models.LLMRequest{ID: "bench-request"}
+	startTime := time.Now()
+	apiResp := &ChatResponse{
+		ID:    "resp-456",
+		Model: "meta-llama/Meta-Llama-3-8B-Instruct",
+		Choices: []Choice{
+			{
+				Index:        0,
+				Message:      Message{Role: "assistant", Content: "Benchmark response content"},
+				FinishReason: "stop",
+			},
+		},
+		Usage: Usage{
+			PromptTokens:     100,
+			CompletionTokens: 50,
+			TotalTokens:      150,
+		},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertChatResponse(req, apiResp, startTime)
+	}
+}
+
+func BenchmarkProvider_ConvertInferenceResponse(b *testing.B) {
+	provider := NewProvider("test-key", "", "test-model")
+	req := &models.LLMRequest{ID: "bench-request"}
+	startTime := time.Now()
+	responses := []InferenceResponse{
+		{GeneratedText: "Part 1 "},
+		{GeneratedText: "Part 2"},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertInferenceResponse(req, responses, startTime)
+	}
+}
+
+func BenchmarkProvider_CalculateConfidence(b *testing.B) {
+	provider := NewProvider("test-key", "", "")
+	content := strings.Repeat("Benchmark content ", 20)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.calculateConfidence(content, "stop")
+	}
+}
+
+func BenchmarkProvider_CalculateBackoff(b *testing.B) {
+	provider := NewProvider("test-key", "", "")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.calculateBackoff(3)
+	}
+}

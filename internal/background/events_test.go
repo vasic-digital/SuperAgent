@@ -422,3 +422,71 @@ func TestTopicConstants(t *testing.T) {
 	assert.Equal(t, "helixagent.events.tasks.retrying", TopicTaskRetrying)
 	assert.Equal(t, "helixagent.events.tasks.deadletter", TopicTaskDeadLetter)
 }
+
+// --- Benchmarks ---
+
+func BenchmarkTaskEventType_String(b *testing.B) {
+	eventTypes := []TaskEventType{
+		TaskEventTypeCreated,
+		TaskEventTypeStarted,
+		TaskEventTypeProgress,
+		TaskEventTypeCompleted,
+		TaskEventTypeFailed,
+		TaskEventTypeStuck,
+		TaskEventTypeCancelled,
+		TaskEventTypeRetrying,
+		TaskEventTypeDeadLetter,
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		et := eventTypes[i%len(eventTypes)]
+		_ = et.String()
+	}
+}
+
+func BenchmarkNewBackgroundTaskEvent(b *testing.B) {
+	task := &models.BackgroundTask{
+		ID:       "bench-task-1",
+		TaskType: "benchmark_type",
+		TaskName: "Bench Task",
+		Status:   models.TaskStatusRunning,
+		Progress: 50.0,
+	}
+	workerID := "worker-bench"
+	task.WorkerID = &workerID
+	progressMsg := "Processing..."
+	task.ProgressMessage = &progressMsg
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = NewBackgroundTaskEvent(TaskEventTypeProgress, task)
+	}
+}
+
+func BenchmarkGenerateEventID(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = generateEventID()
+	}
+}
+
+func BenchmarkBackgroundTaskEvent_ToMessagingEvent(b *testing.B) {
+	event := &BackgroundTaskEvent{
+		EventID:       "event-bench",
+		EventType:     TaskEventTypeCompleted,
+		TaskID:        "task-bench",
+		TaskType:      "bench_type",
+		TaskName:      "Bench Task",
+		Status:        models.TaskStatusCompleted,
+		Progress:      100,
+		Timestamp:     time.Now().UTC(),
+		CorrelationID: "corr-bench",
+		Metadata:      map[string]interface{}{"key": "value"},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = event.ToMessagingEvent()
+	}
+}

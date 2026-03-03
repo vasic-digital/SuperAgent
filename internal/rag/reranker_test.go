@@ -334,3 +334,48 @@ func TestComputeOverlap(t *testing.T) {
 		})
 	}
 }
+
+// --- Benchmarks ---
+
+func BenchmarkTokenizeToFrequencyMap(b *testing.B) {
+	text := "The quick brown fox jumps over the lazy dog. The fox was very quick and the dog was very lazy."
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = tokenizeToFrequencyMap(text)
+	}
+}
+
+func BenchmarkComputeOverlap(b *testing.B) {
+	query := tokenizeToFrequencyMap("quick brown fox jumps")
+	doc := tokenizeToFrequencyMap("The quick brown fox jumps over the lazy dog. The fox was very quick and the dog was very lazy.")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = computeOverlap(query, doc)
+	}
+}
+
+func BenchmarkCrossEncoderReranker_FallbackRerank(b *testing.B) {
+	reranker := NewCrossEncoderReranker(nil, nil)
+	results := make([]*SearchResult, 20)
+	for i := 0; i < 20; i++ {
+		results[i] = &SearchResult{
+			Document: &Document{
+				Content: "This is a test document about machine learning and natural language processing techniques.",
+			},
+			Score: float64(20-i) / 20.0,
+		}
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		// Make a copy to avoid mutation across iterations
+		resultsCopy := make([]*SearchResult, len(results))
+		for j, r := range results {
+			cp := *r
+			resultsCopy[j] = &cp
+		}
+		_, _ = reranker.fallbackRerank("machine learning NLP", resultsCopy, 5)
+	}
+}

@@ -569,3 +569,178 @@ func TestClampScore(t *testing.T) {
 		})
 	}
 }
+
+// =============================================================================
+// Benchmarks
+// =============================================================================
+
+func BenchmarkBenchmarkBridge_CalculateCustomMetrics(b *testing.B) {
+	bridge := NewBenchmarkBridge()
+	solution := `package auth
+
+import (
+	"crypto/rand"
+	"errors"
+	"fmt"
+	"strings"
+)
+
+// Authenticator handles user authentication.
+type Authenticator struct {
+	users map[string]string
+}
+
+// NewAuthenticator creates a new Authenticator.
+func NewAuthenticator() *Authenticator {
+	return &Authenticator{
+		users: make(map[string]string),
+	}
+}
+
+// Register registers a new user with validation.
+func (a *Authenticator) Register(username, password string) error {
+	if strings.TrimSpace(username) == "" {
+		return errors.New("username cannot be empty")
+	}
+	if len(password) < 8 {
+		return fmt.Errorf("password must be at least 8 characters, got %d", len(password))
+	}
+	if _, exists := a.users[username]; exists {
+		return fmt.Errorf("user %s already exists", username)
+	}
+	a.users[username] = password
+	return nil
+}
+
+// Authenticate validates credentials.
+func (a *Authenticator) Authenticate(username, password string) (bool, error) {
+	if username == "" || password == "" {
+		return false, errors.New("username and password required")
+	}
+	stored, exists := a.users[username]
+	if !exists {
+		return false, nil
+	}
+	return stored == password, nil
+}
+
+// GenerateToken creates a random token.
+func GenerateToken() (string, error) {
+	b := make([]byte, 32)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate token: %w", err)
+	}
+	return fmt.Sprintf("%x", b), nil
+}
+`
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = bridge.CalculateCustomMetrics(solution, "go")
+	}
+}
+
+func BenchmarkBenchmarkBridge_EvaluateDebateResult(b *testing.B) {
+	bridge := NewBenchmarkBridge()
+	result := &DebateResultForEval{
+		ID:            "debate-1",
+		Topic:         "Implement authentication service",
+		FinalSolution: "package auth\n\nfunc Authenticate(user, pass string) bool {\n\tif user == \"\" {\n\t\treturn false\n\t}\n\treturn true\n}\n",
+		Consensus:     0.85,
+		Language:      "go",
+	}
+	ctx := context.Background()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = bridge.EvaluateDebateResult(ctx, result, BenchmarkCustom)
+	}
+}
+
+func BenchmarkCalculateCorrectness(b *testing.B) {
+	solution := `package main
+
+import "fmt"
+
+func main() {
+	result, err := process()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(result)
+}
+
+func process() (string, error) {
+	return "done", nil
+}
+`
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		calculateCorrectness(solution, "go")
+	}
+}
+
+func BenchmarkCalculateMaintainability(b *testing.B) {
+	solution := `package main
+
+import "fmt"
+
+// Processor handles data processing.
+type Processor struct {
+	data []string
+}
+
+// NewProcessor creates a new Processor.
+func NewProcessor() *Processor {
+	return &Processor{
+		data: make([]string, 0),
+	}
+}
+
+// Process processes input data.
+func (p *Processor) Process(input string) string {
+	// Validate input
+	if input == "" {
+		return ""
+	}
+	// Transform and return
+	result := fmt.Sprintf("processed: %s", input)
+	p.data = append(p.data, result)
+	return result
+}
+`
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		calculateMaintainability(solution, "go")
+	}
+}
+
+func BenchmarkCalculateSecurity(b *testing.B) {
+	solution := `package main
+
+import (
+	"crypto/tls"
+	"database/sql"
+	"fmt"
+)
+
+func queryUser(db *sql.DB, id string) error {
+	if id == "" {
+		return fmt.Errorf("id required")
+	}
+	row := db.QueryRow("SELECT * FROM users WHERE id = ?", id)
+	_ = row
+	return nil
+}
+
+func getTLSConfig() *tls.Config {
+	return &tls.Config{
+		MinVersion: tls.VersionTLS12,
+	}
+}
+`
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		calculateSecurity(solution, "go")
+	}
+}

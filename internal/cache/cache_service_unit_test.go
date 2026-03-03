@@ -838,3 +838,117 @@ func min(a, b int) int {
 	}
 	return b
 }
+
+// --- Benchmarks ---
+
+func BenchmarkCacheService_HashString(b *testing.B) {
+	mr, err := miniredis.Run()
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer mr.Close()
+
+	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	service := &CacheService{
+		redisClient: &RedisClient{client: client},
+		enabled:     true,
+		defaultTTL:  30 * time.Minute,
+		userKeys:    make(map[string]map[string]struct{}),
+	}
+
+	inputs := []string{
+		"hello",
+		"Hello, World!",
+		"This is a longer string to test hashing performance",
+		`{"key": "value", "nested": {"a": 1}}`,
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = service.hashString(inputs[i%len(inputs)])
+	}
+}
+
+func BenchmarkCacheService_GenerateCacheKey(b *testing.B) {
+	mr, err := miniredis.Run()
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer mr.Close()
+
+	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	service := &CacheService{
+		redisClient: &RedisClient{client: client},
+		enabled:     true,
+		defaultTTL:  30 * time.Minute,
+		userKeys:    make(map[string]map[string]struct{}),
+	}
+
+	reqs := []*models.LLMRequest{
+		{
+			Prompt:      "Hello",
+			ModelParams: models.ModelParameters{Model: "gpt-4", Temperature: 0.7},
+		},
+		{
+			Messages:    []models.Message{{Role: "user", Content: "Hello"}},
+			ModelParams: models.ModelParameters{Model: "claude-3", MaxTokens: 1000},
+		},
+		{
+			Prompt:      "Generate code:",
+			ModelParams: models.ModelParameters{Model: "codex", StopSequences: []string{"\n\n", "```"}},
+		},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = service.generateCacheKey(reqs[i%len(reqs)])
+	}
+}
+
+func BenchmarkCacheService_TrackUserKey(b *testing.B) {
+	mr, err := miniredis.Run()
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer mr.Close()
+
+	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	service := &CacheService{
+		redisClient: &RedisClient{client: client},
+		enabled:     true,
+		defaultTTL:  30 * time.Minute,
+		userKeys:    make(map[string]map[string]struct{}),
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		key := fmt.Sprintf("key-%d", i)
+		service.trackUserKey("bench-user", key)
+	}
+}
+
+func BenchmarkCacheService_GetUserKeyCount(b *testing.B) {
+	mr, err := miniredis.Run()
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer mr.Close()
+
+	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	service := &CacheService{
+		redisClient: &RedisClient{client: client},
+		enabled:     true,
+		defaultTTL:  30 * time.Minute,
+		userKeys:    make(map[string]map[string]struct{}),
+	}
+
+	// Pre-populate
+	for i := 0; i < 100; i++ {
+		service.trackUserKey("bench-user", fmt.Sprintf("key-%d", i))
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = service.GetUserKeyCount("bench-user")
+	}
+}

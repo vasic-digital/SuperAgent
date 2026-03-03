@@ -365,3 +365,69 @@ func TestContextCancellation(t *testing.T) {
 	_, err := provider.Complete(ctx, req)
 	require.Error(t, err)
 }
+
+// Benchmarks
+
+func BenchmarkProvider_ConvertRequest(b *testing.B) {
+	provider := NewProvider("test-key", "", "")
+	req := &models.LLMRequest{
+		ID:     "bench-request",
+		Prompt: "You are a helpful assistant.",
+		Messages: []models.Message{
+			{Role: "user", Content: "Hello"},
+			{Role: "assistant", Content: "Hi"},
+			{Role: "user", Content: "How are you?"},
+		},
+		ModelParams: models.ModelParameters{
+			MaxTokens:     100,
+			Temperature:   0.7,
+			StopSequences: []string{"END", "STOP"},
+		},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertRequest(req)
+	}
+}
+
+func BenchmarkProvider_ExtractOutput(b *testing.B) {
+	provider := NewProvider("test-key", "", "")
+	output := []interface{}{"Hello", " from", " Replicate", "!"}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.extractOutput(output)
+	}
+}
+
+func BenchmarkProvider_CalculateConfidence(b *testing.B) {
+	provider := NewProvider("test-key", "", "")
+	content := strings.Repeat("Benchmark content ", 20)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.calculateConfidence(content, "succeeded")
+	}
+}
+
+func BenchmarkProvider_CalculateBackoff(b *testing.B) {
+	provider := NewProvider("test-key", "", "")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.calculateBackoff(3)
+	}
+}
+
+func BenchmarkProvider_ConvertResponse(b *testing.B) {
+	provider := NewProvider("test-key", "", "")
+	req := &models.LLMRequest{ID: "bench-request"}
+	startTime := time.Now()
+	resp := &PredictionResponse{
+		ID:     "pred_123",
+		Model:  "meta/llama-2-70b-chat",
+		Status: "succeeded",
+		Output: []interface{}{"Hello", " from", " Replicate"},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertResponse(req, resp, startTime)
+	}
+}

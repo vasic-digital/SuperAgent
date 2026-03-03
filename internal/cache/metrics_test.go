@@ -371,3 +371,78 @@ func TestCacheMetricsCollector_SummaryWithNilComponents(t *testing.T) {
 	assert.Equal(t, int64(0), summary.TotalHits)
 	assert.Equal(t, int64(0), summary.TotalMisses)
 }
+
+// --- Benchmarks ---
+
+func BenchmarkIncrementingMetrics_Hit(b *testing.B) {
+	m := NewIncrementingMetrics()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		m.Hit()
+	}
+}
+
+func BenchmarkIncrementingMetrics_Miss(b *testing.B) {
+	m := NewIncrementingMetrics()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		m.Miss()
+	}
+}
+
+func BenchmarkIncrementingMetrics_Set(b *testing.B) {
+	m := NewIncrementingMetrics()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		m.Set()
+	}
+}
+
+func BenchmarkIncrementingMetrics_HitRate(b *testing.B) {
+	m := NewIncrementingMetrics()
+	// Pre-populate with some hits and misses
+	for i := 0; i < 1000; i++ {
+		m.Hit()
+		if i%3 == 0 {
+			m.Miss()
+		}
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = m.HitRate()
+	}
+}
+
+func BenchmarkIncrementingMetrics_Reset(b *testing.B) {
+	m := NewIncrementingMetrics()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		m.Hit()
+		m.Miss()
+		m.Set()
+		m.Reset()
+	}
+}
+
+func BenchmarkCacheMetricsCollector_Collect(b *testing.B) {
+	collector := NewCacheMetricsCollector(nil, nil, nil, nil)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = collector.Collect()
+	}
+}
+
+func BenchmarkCacheMetricsCollector_Summary(b *testing.B) {
+	collector := NewCacheMetricsCollector(nil, nil, nil, nil)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = collector.Summary()
+	}
+}

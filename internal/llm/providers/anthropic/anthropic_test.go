@@ -519,3 +519,60 @@ func TestMultipleClaudeModels(t *testing.T) {
 		})
 	}
 }
+
+// Benchmarks
+
+func BenchmarkProvider_ConvertRequest(b *testing.B) {
+	provider := NewProvider("test-key", "https://api.anthropic.com/v1/messages", "claude-3-opus-20240229")
+	req := &models.LLMRequest{
+		ID:     "bench-request",
+		Prompt: "You are a helpful assistant.",
+		Messages: []models.Message{
+			{Role: "user", Content: "Hello, how are you?"},
+		},
+		ModelParams: models.ModelParameters{
+			MaxTokens:   100,
+			Temperature: 0.7,
+			TopP:        0.9,
+		},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertRequest(req)
+	}
+}
+
+func BenchmarkProvider_CalculateConfidence(b *testing.B) {
+	provider := NewProvider("test-key", "", "claude-3-opus-20240229")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.calculateConfidence("This is a detailed response with sufficient content to test confidence calculation.", "end_turn")
+	}
+}
+
+func BenchmarkProvider_ConvertResponse(b *testing.B) {
+	provider := NewProvider("test-key", "", "claude-3-opus-20240229")
+	req := &models.LLMRequest{
+		ID: "bench-request",
+	}
+	resp := &Response{
+		ID:    "msg-1",
+		Model: "claude-3-opus-20240229",
+		Content: []ContentBlock{
+			{Type: "text", Text: "This is a benchmark response with enough content for testing."},
+		},
+		Usage: Usage{
+			InputTokens:  50,
+			OutputTokens: 30,
+		},
+		StopReason: "end_turn",
+	}
+	startTime := time.Now()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertResponse(req, resp, startTime)
+	}
+}

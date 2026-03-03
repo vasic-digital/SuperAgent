@@ -2251,3 +2251,120 @@ func TestQwenProvider_CompleteStream_LongRunning(t *testing.T) {
 	assert.Equal(t, numChunks, chunkCount)
 	assert.Len(t, words, numChunks)
 }
+
+// =============================================================================
+// Benchmarks
+// =============================================================================
+
+func BenchmarkQwenProvider_ConvertToQwenRequest(b *testing.B) {
+	provider := NewQwenProvider("test-key", "", "")
+	req := &models.LLMRequest{
+		ID: "bench-request",
+		Messages: []models.Message{
+			{Role: "user", Content: "Hello"},
+			{Role: "assistant", Content: "Hi"},
+			{Role: "user", Content: "How are you?"},
+		},
+		ModelParams: models.ModelParameters{
+			MaxTokens:   100,
+			Temperature: 0.7,
+		},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertToQwenRequest(req)
+	}
+}
+
+func BenchmarkQwenProvider_GetCapabilities(b *testing.B) {
+	provider := NewQwenProvider("test-key", "", "")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.GetCapabilities()
+	}
+}
+
+func BenchmarkQwenProvider_ValidateConfig(b *testing.B) {
+	provider := NewQwenProvider("test-key", "", "")
+	config := map[string]interface{}{
+		"api_key": "test-key",
+		"model":   "qwen-turbo",
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.ValidateConfig(config)
+	}
+}
+
+func BenchmarkQwenProvider_ParseSSELine(b *testing.B) {
+	line := []byte(`data: {"id":"chatcmpl-123","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}`)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		parseSSELine(line)
+	}
+}
+
+func BenchmarkQwenProvider_GetAPIEndpoint(b *testing.B) {
+	provider := NewQwenProvider("test-key", "https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen-turbo")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.getAPIEndpoint()
+	}
+}
+
+func BenchmarkQwenProvider_ConvertFromQwenResponse(b *testing.B) {
+	provider := NewQwenProvider("test-key", "", "")
+	qwenResp := &QwenResponse{
+		ID:    "resp-456",
+		Model: "qwen-turbo",
+		Choices: []QwenChoice{
+			{
+				Index:        0,
+				Message:      QwenMessage{Role: "assistant", Content: "Benchmark response content"},
+				FinishReason: "stop",
+			},
+		},
+		Usage: QwenUsage{
+			PromptTokens:     100,
+			CompletionTokens: 50,
+			TotalTokens:      150,
+		},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertFromQwenResponse(qwenResp, "bench-request")
+	}
+}
+
+func BenchmarkQwenProvider_NextDelay(b *testing.B) {
+	provider := NewQwenProviderWithRetry("test-key", "", "", RetryConfig{
+		MaxRetries:   3,
+		InitialDelay: 100 * time.Millisecond,
+		MaxDelay:     1 * time.Second,
+		Multiplier:   2.0,
+	})
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.nextDelay(100 * time.Millisecond)
+	}
+}
+
+func BenchmarkQwenProvider_IsRetryableStatus(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		isRetryableStatus(429)
+		isRetryableStatus(500)
+		isRetryableStatus(200)
+	}
+}
+
+func BenchmarkQwenProvider_IsAuthRetryableStatus(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		isAuthRetryableStatus(401)
+		isAuthRetryableStatus(403)
+		isAuthRetryableStatus(200)
+	}
+}

@@ -508,3 +508,64 @@ func TestProvider_ContextCancellation(t *testing.T) {
 	_, err := p.Complete(ctx, req)
 	assert.Error(t, err)
 }
+
+// Benchmarks
+
+func BenchmarkProvider_ConvertRequest(b *testing.B) {
+	provider := NewProvider("test-key", "https://api.openai.com/v1/chat/completions", "gpt-4o")
+	req := &models.LLMRequest{
+		ID:     "bench-request",
+		Prompt: "You are a helpful assistant.",
+		Messages: []models.Message{
+			{Role: "user", Content: "Hello, how are you?"},
+		},
+		ModelParams: models.ModelParameters{
+			MaxTokens:   100,
+			Temperature: 0.7,
+			TopP:        0.9,
+		},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertRequest(req)
+	}
+}
+
+func BenchmarkProvider_CalculateConfidence(b *testing.B) {
+	provider := NewProvider("test-key", "", "gpt-4o")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.calculateConfidence("This is a detailed response with sufficient content to test confidence calculation.", "stop")
+	}
+}
+
+func BenchmarkProvider_ConvertResponse(b *testing.B) {
+	provider := NewProvider("test-key", "", "gpt-4o")
+	req := &models.LLMRequest{
+		ID: "bench-request",
+	}
+	resp := &Response{
+		ID:    "resp-1",
+		Model: "gpt-4o",
+		Choices: []Choice{
+			{
+				Index:        0,
+				Message:      Message{Role: "assistant", Content: "This is a benchmark response with enough content."},
+				FinishReason: "stop",
+			},
+		},
+		Usage: Usage{
+			PromptTokens:     50,
+			CompletionTokens: 30,
+			TotalTokens:      80,
+		},
+	}
+	startTime := time.Now()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertResponse(req, resp, startTime)
+	}
+}

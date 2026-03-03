@@ -1,6 +1,7 @@
 package comprehensive
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -195,4 +196,72 @@ func TestMemoryTypes(t *testing.T) {
 	assert.Equal(t, MemoryType("short_term"), MemoryTypeShortTerm)
 	assert.Equal(t, MemoryType("long_term"), MemoryTypeLongTerm)
 	assert.Equal(t, MemoryType("episodic"), MemoryTypeEpisodic)
+}
+
+// =============================================================================
+// Benchmarks
+// =============================================================================
+
+func BenchmarkMemoryEntry_RelevanceScore(b *testing.B) {
+	entry := NewMemoryEntry(MemoryTypeLongTerm, "agent-1", "Important lesson", 0.9)
+	entry.AccessCount = 3
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		entry.RelevanceScore()
+	}
+}
+
+func BenchmarkShortTermMemory_Add(b *testing.B) {
+	mem := NewShortTermMemory("agent-1", 100)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		mem.Add("test message content", nil)
+	}
+}
+
+func BenchmarkShortTermMemory_GetRecent(b *testing.B) {
+	mem := NewShortTermMemory("agent-1", 100)
+	for i := 0; i < 100; i++ {
+		mem.Add("message content", nil)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		mem.GetRecent(10)
+	}
+}
+
+func BenchmarkLongTermMemory_Store(b *testing.B) {
+	mem := NewLongTermMemory("agent-1", 1000)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		mem.Store(fmt.Sprintf("lesson-%d", i), 0.8, nil)
+	}
+}
+
+func BenchmarkLongTermMemory_Retrieve(b *testing.B) {
+	mem := NewLongTermMemory("agent-1", 1000)
+	for i := 0; i < 200; i++ {
+		mem.Store(fmt.Sprintf("auth pattern lesson %d", i), 0.5+float64(i%5)*0.1, nil)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		mem.Retrieve("auth", 5)
+	}
+}
+
+func BenchmarkMemoryManager_GetContext(b *testing.B) {
+	mgr := NewMemoryManager("agent-1")
+	for i := 0; i < 20; i++ {
+		mgr.AddToShortTerm(fmt.Sprintf("message %d about testing", i), nil)
+	}
+	for i := 0; i < 50; i++ {
+		mgr.StoreLesson(fmt.Sprintf("testing lesson %d", i), 0.8, nil)
+	}
+	for i := 0; i < 10; i++ {
+		mgr.AddReflection("reflection about testing", "test failure", nil)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		mgr.GetContext("testing")
+	}
 }

@@ -1050,3 +1050,134 @@ func TestVotingMethods_SameData_DifferentResults(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, unanimous.IsTie)
 }
+
+// =============================================================================
+// Benchmarks
+// =============================================================================
+
+func BenchmarkWeightedVotingSystem_Calculate(b *testing.B) {
+	config := DefaultVotingConfig()
+	config.MinimumVotes = 3
+	wvs := NewWeightedVotingSystem(config)
+
+	choices := []string{"A", "B", "C"}
+	roles := []string{"proposer", "critic", "reviewer", "optimizer", "moderator"}
+	specs := []string{"code", "reasoning", "general"}
+	for i := 0; i < 10; i++ {
+		_ = wvs.AddVote(&Vote{
+			AgentID:            fmt.Sprintf("agent-%d", i),
+			Choice:             choices[i%len(choices)],
+			Confidence:         0.5 + float64(i%5)*0.1,
+			Score:              7.0 + float64(i%4)*0.5,
+			Specialization:     specs[i%len(specs)],
+			Role:               roles[i%len(roles)],
+			HistoricalAccuracy: 0.7 + float64(i%3)*0.1,
+			Timestamp:          time.Now(),
+		})
+	}
+	ctx := context.Background()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = wvs.Calculate(ctx)
+	}
+}
+
+func BenchmarkWeightedVotingSystem_CalculateSimpleMajority(b *testing.B) {
+	config := DefaultVotingConfig()
+	config.MinimumVotes = 3
+	wvs := NewWeightedVotingSystem(config)
+
+	for i := 0; i < 10; i++ {
+		choice := "A"
+		if i%3 == 0 {
+			choice = "B"
+		}
+		_ = wvs.AddVote(&Vote{
+			AgentID:    fmt.Sprintf("agent-%d", i),
+			Choice:     choice,
+			Confidence: 0.7,
+			Score:      8.0,
+			Timestamp:  time.Now(),
+		})
+	}
+	ctx := context.Background()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = wvs.CalculateSimpleMajority(ctx)
+	}
+}
+
+func BenchmarkWeightedVotingSystem_CalculateBordaCount(b *testing.B) {
+	config := DefaultVotingConfig()
+	config.MinimumVotes = 3
+	wvs := NewWeightedVotingSystem(config)
+
+	rankings := map[string][]string{
+		"voter-1": {"A", "B", "C", "D"},
+		"voter-2": {"B", "A", "D", "C"},
+		"voter-3": {"A", "C", "B", "D"},
+		"voter-4": {"C", "B", "A", "D"},
+		"voter-5": {"A", "B", "C", "D"},
+	}
+	ctx := context.Background()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = wvs.CalculateBordaCount(ctx, rankings)
+	}
+}
+
+func BenchmarkWeightedVotingSystem_CalculateCondorcet(b *testing.B) {
+	config := DefaultVotingConfig()
+	config.MinimumVotes = 3
+	wvs := NewWeightedVotingSystem(config)
+
+	rankings := map[string][]string{
+		"voter-1": {"A", "B", "C"},
+		"voter-2": {"B", "C", "A"},
+		"voter-3": {"A", "C", "B"},
+		"voter-4": {"C", "A", "B"},
+		"voter-5": {"A", "B", "C"},
+	}
+	ctx := context.Background()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = wvs.CalculateCondorcet(ctx, rankings)
+	}
+}
+
+func BenchmarkWeightedVotingSystem_GetStatistics(b *testing.B) {
+	config := DefaultVotingConfig()
+	wvs := NewWeightedVotingSystem(config)
+
+	for i := 0; i < 20; i++ {
+		_ = wvs.AddVote(&Vote{
+			AgentID:        fmt.Sprintf("agent-%d", i),
+			Choice:         fmt.Sprintf("choice-%d", i%4),
+			Confidence:     0.5 + float64(i%5)*0.1,
+			Score:          7.0 + float64(i%3)*0.5,
+			Specialization: fmt.Sprintf("spec-%d", i%3),
+			Role:           fmt.Sprintf("role-%d", i%5),
+			Timestamp:      time.Now(),
+		})
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		wvs.GetStatistics()
+	}
+}
+
+func BenchmarkWeightedVotingSystem_AddVote(b *testing.B) {
+	config := DefaultVotingConfig()
+	wvs := NewWeightedVotingSystem(config)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = wvs.AddVote(&Vote{
+			AgentID:    fmt.Sprintf("agent-%d", i),
+			Choice:     "A",
+			Confidence: 0.8,
+			Score:      8.0,
+			Timestamp:  time.Now(),
+		})
+	}
+}

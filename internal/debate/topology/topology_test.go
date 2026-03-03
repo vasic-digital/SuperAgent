@@ -1251,3 +1251,132 @@ func TestTopology_FullDebateFlow(t *testing.T) {
 	err = gm.Close()
 	assert.NoError(t, err)
 }
+
+// =============================================================================
+// Benchmarks
+// =============================================================================
+
+func BenchmarkBaseTopology_AddAgent(b *testing.B) {
+	config := DefaultTopologyConfig(TopologyGraphMesh)
+	bt := NewBaseTopology(config)
+	agents := make([]*Agent, b.N)
+	for i := 0; i < b.N; i++ {
+		agents[i] = &Agent{
+			ID:             generateTestID(i % 1000),
+			Role:           RoleProposer,
+			Provider:       "test_provider",
+			Model:          "test_model",
+			Score:          8.0,
+			Confidence:     0.8,
+			Specialization: "code",
+			Metadata:       make(map[string]interface{}),
+		}
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		bt.AddAgent(agents[i])
+	}
+}
+
+func BenchmarkBaseTopology_GetAgent(b *testing.B) {
+	config := DefaultTopologyConfig(TopologyGraphMesh)
+	bt := NewBaseTopology(config)
+	agents := createTestAgents(50)
+	for _, a := range agents {
+		bt.AddAgent(a)
+	}
+	targetID := agents[25].ID
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		bt.GetAgent(targetID)
+	}
+}
+
+func BenchmarkBaseTopology_GetAgentsByRole(b *testing.B) {
+	config := DefaultTopologyConfig(TopologyGraphMesh)
+	bt := NewBaseTopology(config)
+	agents := createTestAgents(50)
+	for _, a := range agents {
+		bt.AddAgent(a)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		bt.GetAgentsByRole(RoleProposer)
+	}
+}
+
+func BenchmarkBaseTopology_GetNextPhase(b *testing.B) {
+	config := DefaultTopologyConfig(TopologyGraphMesh)
+	bt := NewBaseTopology(config)
+	phases := []DebatePhase{
+		PhaseDehallucination, PhaseSelfEvolvement,
+		PhaseProposal, PhaseCritique, PhaseReview,
+		PhaseOptimization, PhaseAdversarial, PhaseConvergence,
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		bt.GetNextPhase(phases[i%len(phases)])
+	}
+}
+
+func BenchmarkGraphMeshTopology_Initialize(b *testing.B) {
+	config := DefaultTopologyConfig(TopologyGraphMesh)
+	agents := createTestAgents(10)
+	ctx := context.Background()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		gm := NewGraphMeshTopology(config)
+		_ = gm.Initialize(ctx, agents)
+		_ = gm.Close()
+	}
+}
+
+func BenchmarkGraphMeshTopology_CanCommunicate(b *testing.B) {
+	config := DefaultTopologyConfig(TopologyGraphMesh)
+	gm := NewGraphMeshTopology(config)
+	agents := createTestAgents(10)
+	_ = gm.Initialize(context.Background(), agents)
+	fromID := agents[0].ID
+	toID := agents[5].ID
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		gm.CanCommunicate(fromID, toID)
+	}
+	_ = gm.Close()
+}
+
+func BenchmarkSelectTopologyType(b *testing.B) {
+	req := TopologyRequirements{
+		MaxParallelism:     8,
+		EnableDynamicRoles: true,
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		SelectTopologyType(10, req)
+	}
+}
+
+func BenchmarkAgent_UpdateActivity(b *testing.B) {
+	agent := &Agent{
+		ID:       "bench-agent",
+		Role:     RoleProposer,
+		Metadata: make(map[string]interface{}),
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		agent.UpdateActivity(50 * time.Millisecond)
+	}
+}
+
+func BenchmarkAgent_GetMetrics(b *testing.B) {
+	agent := &Agent{
+		ID:       "bench-agent",
+		Role:     RoleProposer,
+		Metadata: make(map[string]interface{}),
+	}
+	agent.UpdateActivity(50 * time.Millisecond)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		agent.GetMetrics()
+	}
+}

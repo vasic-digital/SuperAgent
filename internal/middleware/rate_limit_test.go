@@ -589,3 +589,60 @@ func TestNewRateLimiterWithConfig_NilKeyFunc(t *testing.T) {
 		t.Error("Expected KeyFunc to be set to default")
 	}
 }
+
+// --- Benchmarks ---
+
+func BenchmarkRateLimiter_GetConfig(b *testing.B) {
+	cfg := &config.Config{
+		Redis: config.RedisConfig{
+			Host: "localhost",
+			Port: "6379",
+		},
+	}
+
+	cacheService, _ := cache.NewCacheService(cfg)
+	limiter := NewRateLimiter(cacheService)
+
+	limiter.AddLimit("/api/v1/users", &RateLimitConfig{
+		Requests: 20,
+		Window:   time.Minute,
+		KeyFunc:  defaultKeyFunc,
+	})
+	limiter.AddLimit("/api/v1/chat", &RateLimitConfig{
+		Requests: 50,
+		Window:   time.Minute,
+		KeyFunc:  defaultKeyFunc,
+	})
+	limiter.AddLimit("/health", &RateLimitConfig{
+		Requests: 1000,
+		Window:   time.Minute,
+		KeyFunc:  defaultKeyFunc,
+	})
+
+	paths := []string{"/api/v1/users", "/api/v1/chat", "/health", "/unknown"}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = limiter.getConfig(paths[i%len(paths)])
+	}
+}
+
+func BenchmarkDefaultKeyFunc(b *testing.B) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+
+	var key string
+	router.GET("/bench", func(c *gin.Context) {
+		key = defaultKeyFunc(c)
+	})
+
+	req := httptest.NewRequest("GET", "/bench", nil)
+	req.RemoteAddr = "192.168.1.1:12345"
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+	}
+	_ = key
+}

@@ -211,3 +211,66 @@ func TestBaseAgent_UpdateScore(t *testing.T) {
 	base.UpdateScore(9.0)
 	assert.Equal(t, 9.0, agent.Score)
 }
+
+// =============================================================================
+// Benchmarks
+// =============================================================================
+
+func BenchmarkAgentPool_Add(b *testing.B) {
+	pool := NewAgentPool(nil)
+	agents := make([]*Agent, b.N)
+	for i := 0; i < b.N; i++ {
+		agents[i] = NewAgent(RoleGenerator, "openai", "gpt-4", 8.5)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		pool.Add(agents[i])
+	}
+}
+
+func BenchmarkAgentPool_Get(b *testing.B) {
+	pool := NewAgentPool(nil)
+	agents := make([]*Agent, 100)
+	for i := 0; i < 100; i++ {
+		agents[i] = NewAgent(RoleGenerator, "openai", "gpt-4", float64(i))
+		pool.Add(agents[i])
+	}
+	targetID := agents[50].ID
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		pool.Get(targetID)
+	}
+}
+
+func BenchmarkAgentPool_SelectBestForRole(b *testing.B) {
+	pool := NewAgentPool(nil)
+	roles := AllRoles()
+	for i := 0; i < 50; i++ {
+		role := roles[i%len(roles)]
+		agent := NewAgent(role, "provider", "model", float64(i)+5.0)
+		pool.Add(agent)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		pool.SelectBestForRole(RoleGenerator)
+	}
+}
+
+func BenchmarkAgentPool_SelectTopNForRole(b *testing.B) {
+	pool := NewAgentPool(nil)
+	for i := 0; i < 20; i++ {
+		agent := NewAgent(RoleGenerator, "openai", "gpt-4", float64(i)+5.0)
+		pool.Add(agent)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		pool.SelectTopNForRole(RoleGenerator, 5)
+	}
+}
+
+func BenchmarkNewAgent(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		NewAgent(RoleGenerator, "openai", "gpt-4", 8.5)
+	}
+}

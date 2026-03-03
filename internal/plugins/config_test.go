@@ -378,3 +378,46 @@ func TestConfigManager_LoadPluginConfig_ReadError(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to read config file")
 }
+
+// --- Benchmarks ---
+
+func BenchmarkConfigManager_ValidateConfig(b *testing.B) {
+	tmpDir := b.TempDir()
+	cm := NewConfigManager(tmpDir)
+
+	configs := []map[string]interface{}{
+		{"name": "plugin-a", "version": "1.0.0"},
+		{"name": "plugin-b", "version": "2.0.0", "api_key": "valid-api-key-here-long-enough"},
+		{"name": "plugin-c", "version": "1.5.0", "timeout": 30.0},
+		{
+			"name": "plugin-d", "version": "1.0.0",
+			"models": []interface{}{
+				map[string]interface{}{"id": "model-1"},
+				map[string]interface{}{"id": "model-2"},
+			},
+		},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = cm.ValidateConfig("test", configs[i%len(configs)])
+	}
+}
+
+func BenchmarkConfigManager_GetAllConfigs(b *testing.B) {
+	tmpDir := b.TempDir()
+	cm := NewConfigManager(tmpDir)
+
+	for i := 0; i < 50; i++ {
+		name := "plugin-" + string(rune('a'+i%26))
+		cm.configs[name] = map[string]interface{}{
+			"name":    name,
+			"version": "1.0.0",
+		}
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = cm.GetAllConfigs()
+	}
+}

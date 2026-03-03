@@ -609,3 +609,58 @@ func TestPostgresTaskQueue_GetStats(t *testing.T) {
 
 // Additional tests for InMemoryTaskQueue that complement background_test.go
 // (duplicate tests removed - they already exist in background_test.go)
+
+// --- Benchmarks ---
+
+func BenchmarkTaskEventType_Topic(b *testing.B) {
+	eventTypes := []TaskEventType{
+		TaskEventTypeCreated,
+		TaskEventTypeStarted,
+		TaskEventTypeProgress,
+		TaskEventTypeHeartbeat,
+		TaskEventTypeCompleted,
+		TaskEventTypeFailed,
+		TaskEventTypeStuck,
+		TaskEventTypeCancelled,
+		TaskEventTypeRetrying,
+		TaskEventTypeDeadLetter,
+		TaskEventTypeLog,
+		TaskEventTypeResource,
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		et := eventTypes[i%len(eventTypes)]
+		_ = et.Topic()
+	}
+}
+
+func BenchmarkWorkerState_String(b *testing.B) {
+	states := []workerState{
+		workerStateIdle,
+		workerStateBusy,
+		workerStateStopping,
+		workerStateStopped,
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		s := states[i%len(states)]
+		_ = s.String()
+	}
+}
+
+func BenchmarkIsTerminalStatus(b *testing.B) {
+	statuses := []models.TaskStatus{
+		models.TaskStatusPending,
+		models.TaskStatusRunning,
+		models.TaskStatusCompleted,
+		models.TaskStatusFailed,
+		models.TaskStatusCancelled,
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = isTerminalStatus(statuses[i%len(statuses)])
+	}
+}

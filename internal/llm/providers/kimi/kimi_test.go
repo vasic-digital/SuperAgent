@@ -205,3 +205,52 @@ func TestHealthCheckWithError(t *testing.T) {
 	err := provider.HealthCheck()
 	assert.Error(t, err)
 }
+
+// Benchmarks
+
+func BenchmarkKimiProvider_ConvertRequest(b *testing.B) {
+	provider := NewKimiProvider("test-key", "", "")
+	req := &models.LLMRequest{
+		ID:     "bench-request",
+		Prompt: "You are a helpful assistant.",
+		Messages: []models.Message{
+			{Role: "user", Content: "Hello"},
+			{Role: "assistant", Content: "Hi"},
+			{Role: "user", Content: "How are you?"},
+		},
+		ModelParams: models.ModelParameters{
+			MaxTokens:   100,
+			Temperature: 0.7,
+		},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertRequest(req)
+	}
+}
+
+func BenchmarkKimiProvider_ConvertResponse(b *testing.B) {
+	provider := NewKimiProvider("test-key", "", "")
+	req := &models.LLMRequest{ID: "bench-request"}
+	startTime := time.Now()
+	kResp := &KimiResponse{
+		ID:    "resp-456",
+		Model: "moonshot-v1-8k",
+		Choices: []KimiChoice{
+			{
+				Index:        0,
+				Message:      KimiMessage{Role: "assistant", Content: "Benchmark response content"},
+				FinishReason: "stop",
+			},
+		},
+		Usage: KimiUsage{
+			PromptTokens:     100,
+			CompletionTokens: 50,
+			TotalTokens:      150,
+		},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertResponse(req, kResp, startTime)
+	}
+}

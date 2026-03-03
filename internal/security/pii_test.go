@@ -327,3 +327,72 @@ func TestPIIGuardrail(t *testing.T) {
 		assert.NotContains(t, result.ModifiedContent, "test@example.com")
 	})
 }
+
+// --- Benchmarks ---
+
+func BenchmarkRegexPIIDetector_Detect(b *testing.B) {
+	detector := NewRegexPIIDetector()
+	text := "Contact john.doe@example.com or call 555-123-4567. SSN: 123-45-6789. Card: 4111111111111111. IP: 192.168.1.1"
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = detector.Detect(context.Background(), text)
+	}
+}
+
+func BenchmarkRegexPIIDetector_Mask(b *testing.B) {
+	detector := NewRegexPIIDetector()
+	text := "Please contact user@gmail.com for further details."
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _, _ = detector.Mask(context.Background(), text)
+	}
+}
+
+func BenchmarkMaskString(b *testing.B) {
+	inputs := []string{"john.doe@example.com", "555-123-4567", "4111111111111111", "sk_live_abcdefghijklmnop"}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		s := inputs[i%len(inputs)]
+		_ = maskString(s, 2)
+	}
+}
+
+func BenchmarkRegexPIIDetector_Redact(b *testing.B) {
+	detector := NewRegexPIIDetector()
+	text := "Contact john.doe@example.com or call 555-123-4567. SSN: 123-45-6789."
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _, _ = detector.Redact(context.Background(), text)
+	}
+}
+
+func BenchmarkValidateLuhn(b *testing.B) {
+	detector := NewRegexPIIDetector()
+	numbers := []string{"4111111111111111", "5500000000000004", "1234567890123456", "378282246310005"}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = detector.validateLuhn(numbers[i%len(numbers)])
+	}
+}
+
+func BenchmarkPIIGuardrail_Check(b *testing.B) {
+	detector := NewRegexPIIDetector()
+	guardrail := NewPIIGuardrail(detector, GuardrailActionWarn, nil)
+
+	inputs := []string{
+		"Hello world, no PII here",
+		"Email: test@example.com",
+		"Call me at 555-123-4567",
+		"SSN: 123-45-6789 and Card: 4111111111111111",
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = guardrail.Check(context.Background(), inputs[i%len(inputs)], nil)
+	}
+}

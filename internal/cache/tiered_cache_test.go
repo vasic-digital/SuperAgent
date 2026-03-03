@@ -732,3 +732,165 @@ func TestTieredCacheMetrics_Atomics(t *testing.T) {
 	assert.Equal(t, int64(50), atomic.LoadInt64(&metrics.L1Size))
 	assert.Equal(t, int64(2), atomic.LoadInt64(&metrics.L1Evictions))
 }
+
+// --- Benchmarks ---
+
+func BenchmarkTieredCache_L1Get(b *testing.B) {
+	config := &TieredCacheConfig{
+		L1MaxSize:         10000,
+		L1TTL:             5 * time.Minute,
+		L1CleanupInterval: time.Hour,
+		EnableL1:          true,
+		EnableL2:          false,
+	}
+
+	tc := NewTieredCache(nil, config)
+	defer func() { _ = tc.Close() }()
+
+	ctx := context.Background()
+	_ = tc.Set(ctx, "bench-key", "bench-value", time.Minute)
+
+	var result string
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = tc.Get(ctx, "bench-key", &result)
+	}
+}
+
+func BenchmarkTieredCache_L1Set(b *testing.B) {
+	config := &TieredCacheConfig{
+		L1MaxSize:         100000,
+		L1TTL:             5 * time.Minute,
+		L1CleanupInterval: time.Hour,
+		EnableL1:          true,
+		EnableL2:          false,
+	}
+
+	tc := NewTieredCache(nil, config)
+	defer func() { _ = tc.Close() }()
+
+	ctx := context.Background()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = tc.Set(ctx, "bench-key", "bench-value", time.Minute)
+	}
+}
+
+func BenchmarkTieredCache_L1Delete(b *testing.B) {
+	config := &TieredCacheConfig{
+		L1MaxSize:         100000,
+		L1TTL:             5 * time.Minute,
+		L1CleanupInterval: time.Hour,
+		EnableL1:          true,
+		EnableL2:          false,
+	}
+
+	tc := NewTieredCache(nil, config)
+	defer func() { _ = tc.Close() }()
+
+	ctx := context.Background()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = tc.Set(ctx, "bench-key", "bench-value", time.Minute)
+		_ = tc.Delete(ctx, "bench-key")
+	}
+}
+
+func BenchmarkTieredCache_Compress(b *testing.B) {
+	tc := &TieredCache{
+		config: &TieredCacheConfig{L2Compression: true},
+	}
+
+	data := []byte("This is a test string that should be compressed. " +
+		"We repeat it to make it larger and more compressible. " +
+		"The quick brown fox jumps over the lazy dog. " +
+		"Lorem ipsum dolor sit amet, consectetur adipiscing elit.")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = tc.compress(data)
+	}
+}
+
+func BenchmarkTieredCache_Decompress(b *testing.B) {
+	tc := &TieredCache{
+		config: &TieredCacheConfig{L2Compression: true},
+	}
+
+	data := []byte("This is a test string that should be compressed. " +
+		"We repeat it to make it larger and more compressible. " +
+		"The quick brown fox jumps over the lazy dog. " +
+		"Lorem ipsum dolor sit amet, consectetur adipiscing elit.")
+
+	compressed, _ := tc.compress(data)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = tc.decompress(compressed)
+	}
+}
+
+func BenchmarkTieredCache_HitRate(b *testing.B) {
+	config := &TieredCacheConfig{
+		L1MaxSize:         10000,
+		L1TTL:             5 * time.Minute,
+		L1CleanupInterval: time.Hour,
+		EnableL1:          true,
+		EnableL2:          false,
+	}
+
+	tc := NewTieredCache(nil, config)
+	defer func() { _ = tc.Close() }()
+
+	ctx := context.Background()
+	_ = tc.Set(ctx, "key1", "value1", time.Minute)
+	var result string
+	_, _ = tc.Get(ctx, "key1", &result)
+	_, _ = tc.Get(ctx, "missing", &result)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = tc.HitRate()
+	}
+}
+
+func BenchmarkTagIndex_Add(b *testing.B) {
+	ti := newTagIndex()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		key := "key-" + string(rune('a'+i%26))
+		ti.Add(key, "tag-a", "tag-b")
+	}
+}
+
+func BenchmarkTagIndex_GetKeys(b *testing.B) {
+	ti := newTagIndex()
+	for i := 0; i < 1000; i++ {
+		key := "key-" + string(rune('a'+i%26)) + string(rune('0'+i%10))
+		ti.Add(key, "tag-"+string(rune('a'+i%5)))
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		tag := "tag-" + string(rune('a'+i%5))
+		_ = ti.GetKeys(tag)
+	}
+}
+
+func BenchmarkTagIndex_Remove(b *testing.B) {
+	b.StopTimer()
+	ti := newTagIndex()
+	for i := 0; i < b.N; i++ {
+		key := "key-" + string(rune('a'+i%26))
+		ti.Add(key, "tag-a", "tag-b")
+	}
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		key := "key-" + string(rune('a'+i%26))
+		ti.Remove(key)
+	}
+}

@@ -395,3 +395,56 @@ func TestRegistry_ConcurrentUnregisterAndList(t *testing.T) {
 	list := registry.List()
 	assert.Len(t, list, 5)
 }
+
+// --- Benchmarks ---
+
+func BenchmarkRegistry_Register(b *testing.B) {
+	registry := NewRegistry()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		// Each iteration needs a unique name
+		plugin := new(MockLLMPlugin)
+		name := "bench-" + string(rune('A'+i%26)) + string(rune('a'+i/26%26)) + string(rune('0'+i/676%10))
+		plugin.On("Name").Return(name)
+		b.StartTimer()
+
+		_ = registry.Register(plugin)
+	}
+}
+
+func BenchmarkRegistry_Get(b *testing.B) {
+	registry := NewRegistry()
+
+	// Pre-register plugins
+	for i := 0; i < 100; i++ {
+		plugin := new(MockLLMPlugin)
+		name := "bench-get-" + string(rune('A'+i%26)) + string(rune('a'+i/26))
+		plugin.On("Name").Return(name)
+		_ = registry.Register(plugin)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		name := "bench-get-" + string(rune('A'+i%26)) + string(rune('a'+(i/26)%4))
+		_, _ = registry.Get(name)
+	}
+}
+
+func BenchmarkRegistry_List(b *testing.B) {
+	registry := NewRegistry()
+
+	// Pre-register plugins
+	for i := 0; i < 50; i++ {
+		plugin := new(MockLLMPlugin)
+		name := "bench-list-" + string(rune('A'+i%26)) + string(rune('a'+i/26))
+		plugin.On("Name").Return(name)
+		_ = registry.Register(plugin)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = registry.List()
+	}
+}

@@ -662,3 +662,76 @@ func TestDefaultValues(t *testing.T) {
 		})
 	}
 }
+
+// =============================================================================
+// Benchmarks
+// =============================================================================
+
+func BenchmarkCognitivePlanner_SetExpectation(b *testing.B) {
+	config := DefaultPlanningConfig()
+	planner := NewCognitivePlanner(config)
+	agents := createTestAgents(5)
+	ctx := context.Background()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		planner.SetExpectation(ctx, topology.PhaseProposal, i%10, agents)
+	}
+}
+
+func BenchmarkCognitivePlanner_Compare(b *testing.B) {
+	config := DefaultPlanningConfig()
+	planner := NewCognitivePlanner(config)
+	agents := createTestAgents(5)
+	ctx := context.Background()
+
+	// Set an initial expectation
+	planner.SetExpectation(ctx, topology.PhaseProposal, 1, agents)
+
+	goalsAchieved := []string{"Generate creative solutions"}
+	unexpectedOutcomes := []string{"Timeout on agent-c"}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		planner.Compare(ctx, topology.PhaseProposal, i%10,
+			0.75, 0.65, 4, 25*time.Second,
+			goalsAchieved, unexpectedOutcomes)
+	}
+}
+
+func BenchmarkCognitivePlanner_GetNextPhaseStrategy(b *testing.B) {
+	config := DefaultPlanningConfig()
+	planner := NewCognitivePlanner(config)
+	agents := createTestAgents(5)
+	ctx := context.Background()
+
+	// Simulate a few rounds of planning to build up baselines
+	phases := []topology.DebatePhase{
+		topology.PhaseProposal,
+		topology.PhaseCritique,
+		topology.PhaseReview,
+	}
+	for _, phase := range phases {
+		planner.SetExpectation(ctx, phase, 1, agents)
+		comparison := planner.Compare(ctx, phase, 1,
+			0.75, 0.65, 4, 20*time.Second,
+			[]string{"Goal achieved"}, nil)
+		planner.Refine(ctx, comparison, agents)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		planner.GetNextPhaseStrategy(phases[i%len(phases)])
+	}
+}
+
+func BenchmarkGetDefaultConfidence(b *testing.B) {
+	phases := []topology.DebatePhase{
+		topology.PhaseProposal,
+		topology.PhaseCritique,
+		topology.PhaseReview,
+		topology.PhaseOptimization,
+		topology.PhaseConvergence,
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		getDefaultConfidence(phases[i%len(phases)])
+	}
+}

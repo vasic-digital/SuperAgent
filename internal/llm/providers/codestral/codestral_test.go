@@ -205,3 +205,35 @@ func TestHealthCheckWithError(t *testing.T) {
 	err := provider.HealthCheck()
 	assert.Error(t, err)
 }
+
+// =============================================================================
+// Benchmarks
+// =============================================================================
+
+func BenchmarkCodestralProvider_ConvertRequest(b *testing.B) {
+	provider := NewCodestralProvider("test-key", "", "")
+	req := &models.LLMRequest{
+		ID: "bench-request",
+		Messages: []models.Message{
+			{Role: "user", Content: "Hello"},
+			{Role: "assistant", Content: "Hi"},
+			{Role: "user", Content: "How are you?"},
+		},
+		ModelParams: models.ModelParameters{
+			MaxTokens:   100,
+			Temperature: 0.7,
+		},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertRequest(req)
+	}
+}
+
+func BenchmarkCodestralProvider_GetCapabilities(b *testing.B) {
+	provider := NewCodestralProvider("test-key", "", "")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.GetCapabilities()
+	}
+}

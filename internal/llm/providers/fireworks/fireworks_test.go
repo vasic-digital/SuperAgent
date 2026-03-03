@@ -581,3 +581,64 @@ func TestMultipleModels(t *testing.T) {
 		})
 	}
 }
+
+// Benchmarks
+
+func BenchmarkProvider_ConvertRequest(b *testing.B) {
+	provider := NewProvider("test-key", "https://api.fireworks.ai/inference/v1/chat/completions", "accounts/fireworks/models/llama-v3p1-70b-instruct")
+	req := &models.LLMRequest{
+		ID:     "bench-request",
+		Prompt: "You are a helpful assistant.",
+		Messages: []models.Message{
+			{Role: "user", Content: "Hello, how are you?"},
+		},
+		ModelParams: models.ModelParameters{
+			MaxTokens:   100,
+			Temperature: 0.7,
+			TopP:        0.9,
+		},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertRequest(req)
+	}
+}
+
+func BenchmarkProvider_CalculateConfidence(b *testing.B) {
+	provider := NewProvider("test-key", "", "accounts/fireworks/models/llama-v3p1-70b-instruct")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.calculateConfidence("This is a detailed response with sufficient content to test confidence calculation.", "stop")
+	}
+}
+
+func BenchmarkProvider_ConvertResponse(b *testing.B) {
+	provider := NewProvider("test-key", "", "accounts/fireworks/models/llama-v3p1-70b-instruct")
+	req := &models.LLMRequest{
+		ID: "bench-request",
+	}
+	resp := &Response{
+		ID:    "resp-1",
+		Model: "accounts/fireworks/models/llama-v3p1-70b-instruct",
+		Choices: []Choice{
+			{
+				Index:        0,
+				Message:      Message{Role: "assistant", Content: "This is a benchmark response with enough content."},
+				FinishReason: "stop",
+			},
+		},
+		Usage: Usage{
+			PromptTokens:     50,
+			CompletionTokens: 30,
+			TotalTokens:      80,
+		},
+	}
+	startTime := time.Now()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertResponse(req, resp, startTime)
+	}
+}

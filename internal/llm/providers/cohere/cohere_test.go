@@ -602,3 +602,62 @@ func TestContextCancellation(t *testing.T) {
 	_, err := provider.Complete(ctx, req)
 	require.Error(t, err)
 }
+
+// Benchmarks
+
+func BenchmarkProvider_ConvertRequest(b *testing.B) {
+	provider := NewProvider("test-key", "https://api.cohere.com/v2/chat", "command-r-plus")
+	req := &models.LLMRequest{
+		ID:     "bench-request",
+		Prompt: "You are a helpful assistant.",
+		Messages: []models.Message{
+			{Role: "user", Content: "Hello, how are you?"},
+		},
+		ModelParams: models.ModelParameters{
+			MaxTokens:   100,
+			Temperature: 0.7,
+			TopP:        0.9,
+		},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertRequest(req)
+	}
+}
+
+func BenchmarkProvider_CalculateConfidence(b *testing.B) {
+	provider := NewProvider("test-key", "", "command-r-plus")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.calculateConfidence("This is a detailed response with sufficient content to test confidence calculation.", "stop")
+	}
+}
+
+func BenchmarkProvider_ConvertResponse(b *testing.B) {
+	provider := NewProvider("test-key", "", "command-r-plus")
+	req := &models.LLMRequest{
+		ID: "bench-request",
+	}
+	resp := &Response{
+		ID: "resp-1",
+		Message: MessageOutput{
+			Role: "assistant",
+			Content: []ContentPart{
+				{Type: "text", Text: "This is a benchmark response with enough content."},
+			},
+		},
+		FinishReason: "COMPLETE",
+		Usage: Usage{
+			BilledUnits: BilledUnits{InputTokens: 50, OutputTokens: 30},
+			Tokens:      TokenUsage{InputTokens: 50, OutputTokens: 30},
+		},
+	}
+	startTime := time.Now()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertResponse(req, resp, startTime)
+	}
+}

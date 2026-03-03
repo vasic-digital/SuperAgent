@@ -331,3 +331,55 @@ func TestVersionManager_ValidateVersionConstraints(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+// --- Benchmarks ---
+
+func BenchmarkParseVersion(b *testing.B) {
+	versions := []string{"1.2.3", "0.0.0", "100.200.300", "10.5.99", "3.14.159"}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = ParseVersion(versions[i%len(versions)])
+	}
+}
+
+func BenchmarkVersion_String(b *testing.B) {
+	v := &Version{Major: 10, Minor: 25, Patch: 99}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = v.String()
+	}
+}
+
+func BenchmarkVersion_Compare(b *testing.B) {
+	versions := []*Version{
+		{Major: 1, Minor: 2, Patch: 3},
+		{Major: 2, Minor: 0, Patch: 0},
+		{Major: 1, Minor: 3, Patch: 0},
+		{Major: 1, Minor: 2, Patch: 4},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		v1 := versions[i%len(versions)]
+		v2 := versions[(i+1)%len(versions)]
+		_ = v1.Compare(v2)
+	}
+}
+
+func BenchmarkVersion_Compatible(b *testing.B) {
+	versions := []*Version{
+		{Major: 1, Minor: 2, Patch: 3},
+		{Major: 1, Minor: 5, Patch: 0},
+		{Major: 2, Minor: 0, Patch: 0},
+		{Major: 0, Minor: 1, Patch: 0},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		v1 := versions[i%len(versions)]
+		v2 := versions[(i+1)%len(versions)]
+		_ = v1.Compatible(v2)
+	}
+}

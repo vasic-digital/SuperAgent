@@ -259,3 +259,43 @@ func TestContainsIgnoreCase(t *testing.T) {
 		})
 	}
 }
+
+// --- Benchmarks ---
+
+func BenchmarkTokenize(b *testing.B) {
+	input := "Create a Docker Compose file for Kubernetes deployment with Ansible playbook"
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = tokenize(input)
+	}
+}
+
+func BenchmarkSimilarity(b *testing.B) {
+	pairs := [][2]string{
+		{"docker-compose-creator", "docker compose creator"},
+		{"kubernetes-deployment", "kube deploy manager"},
+		{"ansible-playbook", "ansible playbook runner"},
+		{"security-scanner", "vulnerability detection"},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		pair := pairs[i%len(pairs)]
+		_ = similarity(pair[0], pair[1])
+	}
+}
+
+func BenchmarkNormalizeQuery(b *testing.B) {
+	inputs := []string{
+		"  Create a Docker Compose FILE  ",
+		"KUBERNETES deployment YAML",
+		"  ansible   playbook   runner  ",
+		"Security SCAN for vulnerabilities",
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = normalizeQuery(inputs[i%len(inputs)])
+	}
+}

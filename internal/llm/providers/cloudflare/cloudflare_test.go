@@ -294,3 +294,35 @@ func TestConvertResponse(t *testing.T) {
 	assert.Equal(t, "stop", resp.FinishReason)
 	assert.GreaterOrEqual(t, resp.Confidence, 0.8)
 }
+
+// =============================================================================
+// Benchmarks
+// =============================================================================
+
+func BenchmarkCloudflareProvider_ConvertRequest(b *testing.B) {
+	provider := NewCloudflareProvider("test-key", "test-account", "", "")
+	req := &models.LLMRequest{
+		ID: "bench-request",
+		Messages: []models.Message{
+			{Role: "user", Content: "Hello"},
+			{Role: "assistant", Content: "Hi"},
+			{Role: "user", Content: "How are you?"},
+		},
+		ModelParams: models.ModelParameters{
+			MaxTokens:   100,
+			Temperature: 0.7,
+		},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertRequest(req)
+	}
+}
+
+func BenchmarkCloudflareProvider_GetCapabilities(b *testing.B) {
+	provider := NewCloudflareProvider("test-key", "test-account", "", "")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.GetCapabilities()
+	}
+}

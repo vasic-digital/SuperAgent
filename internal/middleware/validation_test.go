@@ -848,3 +848,51 @@ func TestValidator_ValidateCompletionMiddleware_ToolRole(t *testing.T) {
 		t.Errorf("Expected status 200, got %d. Body: %s", w.Code, w.Body.String())
 	}
 }
+
+// --- Benchmarks ---
+
+func BenchmarkValidator_ValidateCompletionRequest(b *testing.B) {
+	v := NewDefaultValidator()
+	temp := 0.7
+	maxTokens := 2048
+	topP := 0.9
+	req := &CompletionValidationRequest{
+		Model:       "gpt-4",
+		Temperature: &temp,
+		MaxTokens:   &maxTokens,
+		TopP:        &topP,
+		Messages: []MessageValidation{
+			{Role: "system", Content: "You are a helpful assistant."},
+			{Role: "user", Content: "Hello, how are you?"},
+		},
+		Stop: []string{"\n"},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = v.validateCompletionRequest(req)
+	}
+}
+
+func BenchmarkValidationErrors_AddAndError(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		errs := &ValidationErrors{}
+		errs.Add("field1", "message1", "value1")
+		errs.Add("field2", "message2", 42)
+		errs.Add("field3", "message3", nil)
+		_ = errs.Error()
+		_ = errs.HasErrors()
+	}
+}
+
+func BenchmarkValidator_SanitizeJSON(b *testing.B) {
+	v := NewDefaultValidator()
+	// Input with control characters and null bytes
+	input := []byte(`{"prompt": "Hello world, how are you?", "model": "gpt-4"}`)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = v.sanitizeJSON(input)
+	}
+}

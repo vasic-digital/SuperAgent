@@ -516,3 +516,60 @@ func TestDecompressData_InvalidBrotli(t *testing.T) {
 	_, err := DecompressData(invalidData, "br")
 	assert.Error(t, err)
 }
+
+// --- Benchmarks ---
+
+func BenchmarkCompressData_Brotli(b *testing.B) {
+	data := bytes.Repeat([]byte("This is repetitive test data for Brotli compression. "), 100)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = CompressData(data, "br", 4)
+	}
+}
+
+func BenchmarkCompressData_Gzip(b *testing.B) {
+	data := bytes.Repeat([]byte("This is repetitive test data for Gzip compression. "), 100)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = CompressData(data, "gzip", 5)
+	}
+}
+
+func BenchmarkDecompressData_Brotli(b *testing.B) {
+	data := bytes.Repeat([]byte("This is repetitive test data for decompression. "), 100)
+	compressed, _ := CompressData(data, "br", 4)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = DecompressData(compressed, "br")
+	}
+}
+
+func BenchmarkDecompressData_Gzip(b *testing.B) {
+	data := bytes.Repeat([]byte("This is repetitive test data for decompression. "), 100)
+	compressed, _ := CompressData(data, "gzip", 5)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = DecompressData(compressed, "gzip")
+	}
+}
+
+func BenchmarkEstimateCompressionRatio(b *testing.B) {
+	contentTypes := []string{
+		"application/json",
+		"text/html",
+		"text/css",
+		"application/javascript",
+		"application/xml",
+		"text/plain",
+		"application/octet-stream",
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = EstimateCompressionRatio(contentTypes[i%len(contentTypes)])
+	}
+}

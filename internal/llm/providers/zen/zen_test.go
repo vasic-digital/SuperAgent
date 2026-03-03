@@ -1073,3 +1073,108 @@ func TestZenProvider_GetFreeModels_WithMockTransport(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+// =============================================================================
+// Benchmarks
+// =============================================================================
+
+func BenchmarkZenProvider_ConvertRequest(b *testing.B) {
+	provider := NewZenProvider("test-key", "", "")
+	req := &models.LLMRequest{
+		ID: "bench-request",
+		Messages: []models.Message{
+			{Role: "user", Content: "Hello"},
+			{Role: "assistant", Content: "Hi"},
+			{Role: "user", Content: "How are you?"},
+		},
+		ModelParams: models.ModelParameters{
+			MaxTokens:   100,
+			Temperature: 0.7,
+		},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertRequest(req)
+	}
+}
+
+func BenchmarkZenProvider_CalculateConfidence(b *testing.B) {
+	provider := NewZenProvider("test-key", "", "")
+	content := "This is a sample response from the Zen model for confidence scoring."
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.calculateConfidence(content, "stop")
+	}
+}
+
+func BenchmarkZenProvider_GetCapabilities(b *testing.B) {
+	provider := NewZenProvider("test-key", "", "")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.GetCapabilities()
+	}
+}
+
+func BenchmarkZenProvider_ConvertResponse(b *testing.B) {
+	provider := NewZenProvider("test-key", "", "")
+	req := &models.LLMRequest{ID: "bench-request"}
+	startTime := time.Now()
+	zenResp := &ZenResponse{
+		ID:    "resp-456",
+		Model: DefaultZenModel,
+		Choices: []ZenChoice{
+			{
+				Index:        0,
+				Message:      ZenMessage{Role: "assistant", Content: "Benchmark response content"},
+				FinishReason: "stop",
+			},
+		},
+		Usage: ZenUsage{
+			PromptTokens:     100,
+			CompletionTokens: 50,
+			TotalTokens:      150,
+		},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertResponse(req, zenResp, startTime)
+	}
+}
+
+func BenchmarkZenProvider_NormalizeModelID(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		normalizeModelID("opencode/some-model")
+	}
+}
+
+func BenchmarkZenProvider_NextDelay(b *testing.B) {
+	provider := NewZenProviderWithRetry("test-key", "", DefaultZenModel, RetryConfig{
+		MaxRetries:   3,
+		InitialDelay: 100 * time.Millisecond,
+		MaxDelay:     1 * time.Second,
+		Multiplier:   2.0,
+	})
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.nextDelay(100 * time.Millisecond)
+	}
+}
+
+func BenchmarkZenProvider_IsRetryableStatus(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		isRetryableStatus(429)
+		isRetryableStatus(500)
+		isRetryableStatus(200)
+	}
+}
+
+func BenchmarkZenProvider_IsAuthRetryableStatus(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		isAuthRetryableStatus(401)
+		isAuthRetryableStatus(403)
+		isAuthRetryableStatus(200)
+	}
+}

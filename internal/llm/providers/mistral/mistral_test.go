@@ -1085,3 +1085,64 @@ func TestMistralProvider_ConvertRequest_NoSystemPrompt(t *testing.T) {
 	assert.Len(t, mistralReq.Messages, 1)
 	assert.Equal(t, "user", mistralReq.Messages[0].Role)
 }
+
+// Benchmarks
+
+func BenchmarkMistralProvider_ConvertRequest(b *testing.B) {
+	provider := NewMistralProvider("test-key", "https://api.mistral.ai/v1/chat/completions", "mistral-large-latest")
+	req := &models.LLMRequest{
+		ID:     "bench-request",
+		Prompt: "You are a helpful assistant.",
+		Messages: []models.Message{
+			{Role: "user", Content: "Hello, how are you?"},
+		},
+		ModelParams: models.ModelParameters{
+			MaxTokens:   100,
+			Temperature: 0.7,
+			TopP:        0.9,
+		},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertRequest(req)
+	}
+}
+
+func BenchmarkMistralProvider_CalculateConfidence(b *testing.B) {
+	provider := NewMistralProvider("test-key", "", "mistral-large-latest")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.calculateConfidence("This is a detailed response with sufficient content to test confidence calculation.", "stop")
+	}
+}
+
+func BenchmarkMistralProvider_ConvertResponse(b *testing.B) {
+	provider := NewMistralProvider("test-key", "", "mistral-large-latest")
+	req := &models.LLMRequest{
+		ID: "bench-request",
+	}
+	resp := &MistralResponse{
+		ID:    "resp-1",
+		Model: "mistral-large-latest",
+		Choices: []MistralChoice{
+			{
+				Index:        0,
+				Message:      MistralMessage{Role: "assistant", Content: "This is a benchmark response with enough content."},
+				FinishReason: "stop",
+			},
+		},
+		Usage: MistralUsage{
+			PromptTokens:     50,
+			CompletionTokens: 30,
+			TotalTokens:      80,
+		},
+	}
+	startTime := time.Now()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertResponse(req, resp, startTime)
+	}
+}

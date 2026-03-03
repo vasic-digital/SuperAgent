@@ -205,3 +205,52 @@ func TestHealthCheckWithError(t *testing.T) {
 	err := provider.HealthCheck()
 	assert.Error(t, err)
 }
+
+// Benchmarks
+
+func BenchmarkSambaNovaProvider_ConvertRequest(b *testing.B) {
+	provider := NewSambaNovaProvider("test-key", "", "")
+	req := &models.LLMRequest{
+		ID:     "bench-request",
+		Prompt: "You are a helpful assistant.",
+		Messages: []models.Message{
+			{Role: "user", Content: "Hello"},
+			{Role: "assistant", Content: "Hi"},
+			{Role: "user", Content: "How are you?"},
+		},
+		ModelParams: models.ModelParameters{
+			MaxTokens:   100,
+			Temperature: 0.7,
+		},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertRequest(req)
+	}
+}
+
+func BenchmarkSambaNovaProvider_ConvertResponse(b *testing.B) {
+	provider := NewSambaNovaProvider("test-key", "", "")
+	req := &models.LLMRequest{ID: "bench-request"}
+	startTime := time.Now()
+	sResp := &SambaNovaResponse{
+		ID:    "resp-456",
+		Model: "Meta-Llama-3.1-8B-Instruct",
+		Choices: []SambaNovaChoice{
+			{
+				Index:        0,
+				Message:      SambaNovaMessage{Role: "assistant", Content: "Benchmark response content"},
+				FinishReason: "stop",
+			},
+		},
+		Usage: SambaNovaUsage{
+			PromptTokens:     100,
+			CompletionTokens: 50,
+			TotalTokens:      150,
+		},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertResponse(req, sResp, startTime)
+	}
+}

@@ -244,3 +244,35 @@ func TestPublicAIProvider_HealthCheck_InvalidAPIKey(t *testing.T) {
 	err := provider.HealthCheck()
 	assert.Error(t, err)
 }
+
+// =============================================================================
+// Benchmarks
+// =============================================================================
+
+func BenchmarkPublicAIProvider_ConvertRequest(b *testing.B) {
+	provider := NewPublicAIProvider("test-key", "", "")
+	req := &models.LLMRequest{
+		ID: "bench-request",
+		Messages: []models.Message{
+			{Role: "user", Content: "Hello"},
+			{Role: "assistant", Content: "Hi"},
+			{Role: "user", Content: "How are you?"},
+		},
+		ModelParams: models.ModelParameters{
+			MaxTokens:   100,
+			Temperature: 0.7,
+		},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertRequest(req)
+	}
+}
+
+func BenchmarkPublicAIProvider_GetCapabilities(b *testing.B) {
+	provider := NewPublicAIProvider("test-key", "", "")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.GetCapabilities()
+	}
+}

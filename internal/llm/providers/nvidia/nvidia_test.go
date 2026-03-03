@@ -205,3 +205,52 @@ func TestHealthCheckWithError(t *testing.T) {
 	// Just verify the method runs without panic
 	assert.True(t, err != nil || err == nil)
 }
+
+// Benchmarks
+
+func BenchmarkNvidiaProvider_ConvertRequest(b *testing.B) {
+	provider := NewNvidiaProvider("test-key", "", "")
+	req := &models.LLMRequest{
+		ID:     "bench-request",
+		Prompt: "You are a helpful assistant.",
+		Messages: []models.Message{
+			{Role: "user", Content: "Hello"},
+			{Role: "assistant", Content: "Hi"},
+			{Role: "user", Content: "How are you?"},
+		},
+		ModelParams: models.ModelParameters{
+			MaxTokens:   100,
+			Temperature: 0.7,
+		},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertRequest(req)
+	}
+}
+
+func BenchmarkNvidiaProvider_ConvertResponse(b *testing.B) {
+	provider := NewNvidiaProvider("test-key", "", "")
+	req := &models.LLMRequest{ID: "bench-request"}
+	startTime := time.Now()
+	nResp := &NvidiaResponse{
+		ID:    "resp-456",
+		Model: "meta/llama-3.1-8b-instruct",
+		Choices: []NvidiaChoice{
+			{
+				Index:        0,
+				Message:      NvidiaMessage{Role: "assistant", Content: "Benchmark response content"},
+				FinishReason: "stop",
+			},
+		},
+		Usage: NvidiaUsage{
+			PromptTokens:     100,
+			CompletionTokens: 50,
+			TotalTokens:      150,
+		},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertResponse(req, nResp, startTime)
+	}
+}

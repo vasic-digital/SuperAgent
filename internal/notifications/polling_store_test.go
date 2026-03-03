@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -672,5 +673,88 @@ func TestPollingStore_EventOrder(t *testing.T) {
 		order, ok := event.Data["order"].(int)
 		require.True(t, ok)
 		assert.Equal(t, i, order)
+	}
+}
+
+// --- Benchmarks ---
+
+func BenchmarkPollingStore_StoreEvent(b *testing.B) {
+	logger := logrus.New()
+	logger.SetLevel(logrus.ErrorLevel)
+	config := &PollingConfig{
+		MaxEventsPerTask: 1000,
+		MaxGlobalEvents:  10000,
+		EventTTL:         15 * time.Minute,
+		CleanupInterval:  10 * time.Minute,
+	}
+	store := NewPollingStore(config, logger)
+	defer func() { _ = store.Stop() }()
+
+	notification := &TaskNotification{
+		TaskID:    "bench-task-1",
+		EventType: "task.progress",
+		Timestamp: time.Now(),
+		Data:      map[string]interface{}{"progress": 50},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		store.StoreEvent(notification)
+	}
+}
+
+func BenchmarkPollingStore_GetTaskEvents(b *testing.B) {
+	logger := logrus.New()
+	logger.SetLevel(logrus.ErrorLevel)
+	config := &PollingConfig{
+		MaxEventsPerTask: 1000,
+		MaxGlobalEvents:  10000,
+		EventTTL:         15 * time.Minute,
+		CleanupInterval:  10 * time.Minute,
+	}
+	store := NewPollingStore(config, logger)
+	defer func() { _ = store.Stop() }()
+
+	// Pre-populate with 100 events
+	for i := 0; i < 100; i++ {
+		store.StoreEvent(&TaskNotification{
+			TaskID:    "bench-task-1",
+			EventType: "task.progress",
+			Timestamp: time.Now(),
+			Data:      map[string]interface{}{"progress": i},
+		})
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = store.GetTaskEvents("bench-task-1", nil, 10)
+	}
+}
+
+func BenchmarkPollingStore_GetLatestTaskEvent(b *testing.B) {
+	logger := logrus.New()
+	logger.SetLevel(logrus.ErrorLevel)
+	config := &PollingConfig{
+		MaxEventsPerTask: 1000,
+		MaxGlobalEvents:  10000,
+		EventTTL:         15 * time.Minute,
+		CleanupInterval:  10 * time.Minute,
+	}
+	store := NewPollingStore(config, logger)
+	defer func() { _ = store.Stop() }()
+
+	// Pre-populate
+	for i := 0; i < 50; i++ {
+		store.StoreEvent(&TaskNotification{
+			TaskID:    "bench-task-1",
+			EventType: "task.progress",
+			Timestamp: time.Now(),
+			Data:      map[string]interface{}{"progress": i},
+		})
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = store.GetLatestTaskEvent("bench-task-1")
 	}
 }

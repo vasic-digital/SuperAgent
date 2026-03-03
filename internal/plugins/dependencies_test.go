@@ -884,3 +884,61 @@ func TestDependencyResolver_GetPluginCapabilities_EmptyCaps(t *testing.T) {
 	caps := resolver.getPluginCapabilities("no-caps")
 	assert.NotNil(t, caps)
 }
+
+// --- Benchmarks ---
+
+func BenchmarkDependencyResolver_ResolveLoadOrder(b *testing.B) {
+	registry := NewRegistry()
+	resolver := NewDependencyResolver(registry)
+
+	// Set up a dependency graph: A->B->C, D->E, F->C
+	_ = resolver.AddDependency("plugin-a", []string{"plugin-b"})
+	_ = resolver.AddDependency("plugin-b", []string{"plugin-c"})
+	_ = resolver.AddDependency("plugin-d", []string{"plugin-e"})
+	_ = resolver.AddDependency("plugin-f", []string{"plugin-c"})
+
+	plugins := []string{"plugin-a", "plugin-b", "plugin-c", "plugin-d", "plugin-e", "plugin-f"}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = resolver.ResolveLoadOrder(plugins)
+	}
+}
+
+func BenchmarkDependencyResolver_CompareVersions(b *testing.B) {
+	registry := NewRegistry()
+	resolver := NewDependencyResolver(registry)
+
+	versions := [][2]string{
+		{"1.0.0", "2.0.0"},
+		{"1.2.3", "1.2.4"},
+		{"3.0.0", "3.0.0"},
+		{"0.9.1", "1.0.0"},
+		{"10.20.30", "10.20.31"},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		pair := versions[i%len(versions)]
+		_ = resolver.compareVersions(pair[0], pair[1])
+	}
+}
+
+func BenchmarkDependencyResolver_CheckVersionCompatibility(b *testing.B) {
+	registry := NewRegistry()
+	resolver := NewDependencyResolver(registry)
+
+	cases := [][2]string{
+		{"1.5.0", ">=1.0.0"},
+		{"2.3.1", "^2.0.0"},
+		{"1.2.5", "~1.2.3"},
+		{"3.0.0", "<=3.0.0"},
+		{"1.0.0", "1.0.0"},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		c := cases[i%len(cases)]
+		_ = resolver.checkVersionCompatibility(c[0], c[1])
+	}
+}

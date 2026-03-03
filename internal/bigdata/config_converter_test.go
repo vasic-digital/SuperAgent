@@ -483,3 +483,79 @@ func TestValidateConfig_ZeroLearningMinFrequency(t *testing.T) {
 	err := ValidateConfig(icfg)
 	assert.NoError(t, err)
 }
+
+// --- Benchmarks ---
+
+func BenchmarkConfigToIntegrationConfig(b *testing.B) {
+	cfg := &config.BigDataConfig{
+		EnableInfiniteContext:   true,
+		EnableDistributedMemory: true,
+		EnableKnowledgeGraph:    true,
+		EnableAnalytics:         true,
+		EnableCrossLearning:     true,
+		KafkaBootstrapServers:   "localhost:9092",
+		KafkaConsumerGroup:      "helixagent-group",
+		ClickHouseHost:          "localhost",
+		ClickHousePort:          9000,
+		ClickHouseDatabase:      "helixagent",
+		ClickHouseUser:          "default",
+		ClickHousePassword:      "password",
+		Neo4jURI:                "bolt://localhost:7687",
+		Neo4jUsername:            "neo4j",
+		Neo4jPassword:           "password",
+		Neo4jDatabase:           "neo4j",
+		ContextCacheSize:        1000,
+		ContextCacheTTL:         5 * time.Minute,
+		ContextCompressionType:  "lz4",
+		LearningMinConfidence:   0.7,
+		LearningMinFrequency:    3,
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = ConfigToIntegrationConfig(cfg)
+	}
+}
+
+func BenchmarkValidateConfig(b *testing.B) {
+	icfg := &IntegrationConfig{
+		LearningMinConfidence: 0.7,
+		LearningMinFrequency:  3,
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = ValidateConfig(icfg)
+	}
+}
+
+func BenchmarkIntegrationConfigToConfig(b *testing.B) {
+	icfg := &IntegrationConfig{
+		EnableInfiniteContext:   true,
+		EnableDistributedMemory: true,
+		EnableKnowledgeGraph:    true,
+		EnableAnalytics:         true,
+		EnableCrossLearning:     true,
+		KafkaBootstrapServers:   "localhost:9092",
+		KafkaConsumerGroup:      "helixagent-group",
+		ClickHouseHost:          "localhost",
+		ClickHousePort:          9000,
+		ClickHouseDatabase:      "helixagent",
+		ClickHouseUser:          "default",
+		ClickHousePassword:      "password",
+		Neo4jURI:                "bolt://localhost:7687",
+		Neo4jUsername:            "neo4j",
+		Neo4jPassword:           "password",
+		Neo4jDatabase:           "neo4j",
+		ContextCacheSize:        1000,
+		ContextCacheTTL:         5 * time.Minute,
+		ContextCompressionType:  "lz4",
+		LearningMinConfidence:   0.7,
+		LearningMinFrequency:    3,
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = IntegrationConfigToConfig(icfg)
+	}
+}

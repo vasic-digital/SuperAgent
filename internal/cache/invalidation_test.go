@@ -258,3 +258,39 @@ func TestTrimWildcard(t *testing.T) {
 	assert.Equal(t, "pre", trimWildcard("pre*fix"))
 	assert.Equal(t, "no_wildcard", trimWildcard("no_wildcard"))
 }
+
+// --- Benchmarks ---
+
+func BenchmarkTagBasedInvalidation_AddTag(b *testing.B) {
+	inv := NewTagBasedInvalidation()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		key := "key-" + time.Now().Format("150405.000000000")
+		inv.AddTag(key, "tag-a", "tag-b", "tag-c")
+	}
+}
+
+func BenchmarkTagBasedInvalidation_InvalidateByTag(b *testing.B) {
+	inv := NewTagBasedInvalidation()
+	// Pre-populate with 1000 keys across 10 tags
+	for i := 0; i < 1000; i++ {
+		tag := "tag-" + string(rune('a'+i%10))
+		inv.AddTag("key-"+string(rune(i)), tag)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		tag := "tag-" + string(rune('a'+i%10))
+		_ = inv.InvalidateByTag(tag)
+	}
+}
+
+func BenchmarkContainsWildcard(b *testing.B) {
+	inputs := []string{"prefix:*", "no_wildcard", "pre*fix", "*:suffix", "exact_match", "another*test"}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = containsWildcard(inputs[i%len(inputs)])
+	}
+}

@@ -205,3 +205,52 @@ func TestHealthCheckWithError(t *testing.T) {
 	err := provider.HealthCheck()
 	assert.Error(t, err)
 }
+
+// Benchmarks
+
+func BenchmarkNovitaProvider_ConvertRequest(b *testing.B) {
+	provider := NewNovitaProvider("test-key", "", "")
+	req := &models.LLMRequest{
+		ID:     "bench-request",
+		Prompt: "You are a helpful assistant.",
+		Messages: []models.Message{
+			{Role: "user", Content: "Hello"},
+			{Role: "assistant", Content: "Hi"},
+			{Role: "user", Content: "How are you?"},
+		},
+		ModelParams: models.ModelParameters{
+			MaxTokens:   100,
+			Temperature: 0.7,
+		},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertRequest(req)
+	}
+}
+
+func BenchmarkNovitaProvider_ConvertResponse(b *testing.B) {
+	provider := NewNovitaProvider("test-key", "", "")
+	req := &models.LLMRequest{ID: "bench-request"}
+	startTime := time.Now()
+	nResp := &NovitaResponse{
+		ID:    "resp-456",
+		Model: "meta-llama/llama-3-8b-instruct",
+		Choices: []NovitaChoice{
+			{
+				Index:        0,
+				Message:      NovitaMessage{Role: "assistant", Content: "Benchmark response content"},
+				FinishReason: "stop",
+			},
+		},
+		Usage: NovitaUsage{
+			PromptTokens:     100,
+			CompletionTokens: 50,
+			TotalTokens:      150,
+		},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertResponse(req, nResp, startTime)
+	}
+}
