@@ -10,8 +10,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// DatabaseTool executes SQL queries
-// Note: This is a stub implementation. In production, import the appropriate driver:
+// DatabaseTool executes SQL queries against a database connection.
+// The caller must import the appropriate database driver for their backend:
 // _ "github.com/lib/pq" for PostgreSQL
 // _ "github.com/go-sql-driver/mysql" for MySQL
 // _ "github.com/mattn/go-sqlite3" for SQLite

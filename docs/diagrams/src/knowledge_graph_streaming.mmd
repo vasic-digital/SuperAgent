@@ -37,20 +37,20 @@ flowchart LR
         GRAPH[(Knowledge Graph<br/>7474, 7687)]
 
         subgraph "Node Types"
-            NODE_ENTITY[(:Entity)<br/>id, name, type, properties]
-            NODE_CONV[(:Conversation)<br/>id, user_id, timestamp]
-            NODE_USER[(:User)<br/>id, preferences]
+            NODE_ENTITY["Entity Node<br/>id, name, type, properties"]
+            NODE_CONV["Conversation Node<br/>id, user_id, timestamp"]
+            NODE_USER["User Node<br/>id, preferences"]
         end
 
         subgraph "Relationship Types"
-            REL_RELATED[:RELATED_TO<br/>strength, count]
-            REL_MENTIONED[:MENTIONED_IN<br/>timestamp, context]
-            REL_COOCCUR[:CO_OCCURS_WITH<br/>frequency, confidence]
+            REL_RELATED["RELATED_TO<br/>strength, count"]
+            REL_MENTIONED["MENTIONED_IN<br/>timestamp, context"]
+            REL_COOCCUR["CO_OCCURS_WITH<br/>frequency, confidence"]
         end
 
         subgraph "Indexes & Constraints"
-            IDX[Indexes:<br/>- Entity(id)<br/>- Entity(type)<br/>- Entity(name)<br/>- Conversation(id)]
-            CONST[Constraints:<br/>- UNIQUE Entity.id<br/>- UNIQUE Conversation.id]
+            IDX["Indexes:<br/>Entity id, type, name<br/>Conversation id"]
+            CONST["Constraints:<br/>UNIQUE Entity.id<br/>UNIQUE Conversation.id"]
         end
     end
 

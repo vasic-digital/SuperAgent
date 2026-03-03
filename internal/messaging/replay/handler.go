@@ -189,15 +189,12 @@ func (h *Handler) executeReplay(ctx context.Context, req *ReplayRequest, progres
 	seenIDs := make(map[string]bool)
 	startTime := time.Now()
 
-	// In a real implementation, this would read from Kafka with time-based offset seeking
-	// For now, we simulate the replay operation
 	h.logger.Info("Executing replay",
 		zap.String("request_id", req.ID),
 		zap.String("source_topic", req.Topic),
 		zap.String("target_topic", targetTopic),
 		zap.Bool("dry_run", options.DryRun))
 
-	// Simulate processing messages
 	var batch []*messaging.Message
 	processed := int64(0)
 
@@ -209,8 +206,6 @@ func (h *Handler) executeReplay(ctx context.Context, req *ReplayRequest, progres
 		default:
 		}
 
-		// Simulate fetching a batch of messages
-		// In production, this would read from Kafka using the FromTime/ToTime range
 		batch = h.fetchMessageBatch(replayCtx, req, options.BatchSize)
 		if len(batch) == 0 {
 			break // No more messages
@@ -292,12 +287,61 @@ func (h *Handler) validateRequest(req *ReplayRequest) error {
 	return nil
 }
 
-// fetchMessageBatch fetches a batch of messages for replay
-// In production, this would read from Kafka
+// fetchMessageBatch fetches a batch of messages for replay by subscribing to the
+// source topic and collecting messages that fall within the requested time range.
+// It uses a short-lived subscription with a batch-sized buffer. Returns nil when
+// no more messages are available within the time range or context is cancelled.
 func (h *Handler) fetchMessageBatch(ctx context.Context, req *ReplayRequest, batchSize int) []*messaging.Message {
-	// Simulate fetching messages - in production this would read from Kafka
-	// using offset seeking based on timestamp
-	return nil
+	if h.broker == nil {
+		return nil
+	}
+
+	batch := make([]*messaging.Message, 0, batchSize)
+	collected := make(chan *messaging.Message, batchSize)
+
+	// Create a short-lived subscription to collect messages
+	subCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	handler := func(_ context.Context, msg *messaging.Message) error {
+		// Filter by time range
+		if msg.Timestamp.Before(req.FromTime) {
+			return nil // skip messages before range
+		}
+		if !req.ToTime.IsZero() && msg.Timestamp.After(req.ToTime) {
+			cancel() // past the end of range, stop collecting
+			return nil
+		}
+		select {
+		case collected <- msg:
+		default:
+			cancel() // buffer full
+		}
+		return nil
+	}
+
+	sub, err := h.broker.Subscribe(subCtx, req.Topic, handler)
+	if err != nil {
+		h.logger.Warn("Failed to subscribe for replay batch",
+			zap.String("topic", req.Topic),
+			zap.Error(err))
+		return nil
+	}
+	defer func() {
+		if sub != nil {
+			_ = sub.Unsubscribe()
+		}
+	}()
+
+	// Wait for context to finish (timeout or cancel)
+	<-subCtx.Done()
+	close(collected)
+
+	for msg := range collected {
+		batch = append(batch, msg)
+	}
+
+	return batch
 }
 
 // matchesFilter checks if a message matches the replay filter

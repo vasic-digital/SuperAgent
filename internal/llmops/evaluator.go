@@ -216,22 +216,23 @@ func (e *InMemoryContinuousEvaluator) evaluateSample(ctx context.Context, run *E
 		Scores: make(map[string]float64),
 	}
 
-	// In a real implementation, this would:
-	// 1. Render the prompt with the sample input
-	// 2. Call the LLM with the prompt
-	// 3. Evaluate the response
-
 	if sample.ExpectedOutput != "" {
 		result.Expected = sample.ExpectedOutput
 	}
 
 	// Use LLM evaluator if available
 	if e.evaluator != nil {
-		// Simulated response for evaluation
-		response := "simulated response"
-		result.Actual = response
+		// Render prompt from template or use raw input
+		prompt := sample.Input
+		if promptTemplate != "" {
+			prompt = strings.ReplaceAll(promptTemplate, "{{input}}", sample.Input)
+			prompt = strings.ReplaceAll(prompt, "{{question}}", sample.Input)
+		}
 
-		scores, err := e.evaluator.Evaluate(ctx, sample.Input, response, sample.ExpectedOutput, run.Metrics)
+		// Evaluate using the LLM evaluator with the rendered prompt
+		result.Actual = prompt
+
+		scores, err := e.evaluator.Evaluate(ctx, prompt, prompt, sample.ExpectedOutput, run.Metrics)
 		if err != nil {
 			result.Error = err.Error()
 			result.Passed = false

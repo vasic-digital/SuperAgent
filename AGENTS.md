@@ -209,10 +209,175 @@ Host runs mission-critical processes; exceeding limits has caused system crashes
 
 **NOTE:** Container orchestration is AUTOMATIC. Do NOT run manual container commands.
 
+## Extracted Modules (27 Submodules)
+
+HelixAgent's functionality is decomposed into **27 independent Go modules**, each with its own `go.mod`, tests, `CLAUDE.md`, `AGENTS.md`, `README.md`, and `docs/`. All modules are integrated as git submodules with `replace` directives in the root `go.mod` for local development.
+
+### Building and Testing Any Module
+
+```bash
+# Build a module
+cd <ModuleDir> && go build ./...
+
+# Test a module (resource-limited, with race detection)
+cd <ModuleDir> && GOMAXPROCS=2 go test ./... -count=1 -race
+
+# Test all modules
+for mod in EventBus Concurrency Observability Auth Storage Streaming \
+           Security VectorDB Embeddings Database Cache \
+           Messaging Formatters MCP_Module RAG Memory Optimization Plugins \
+           Agentic LLMOps SelfImprove Planning Benchmark HelixMemory \
+           HelixSpecifier Containers Challenges; do
+  echo "Testing $mod..."
+  (cd $mod && go test ./... -count=1 -race -short)
+done
+```
+
+### Phase 1: Foundation (Zero Dependencies)
+
+| Module | Go Module Path | Directory | Description |
+|--------|---------------|-----------|-------------|
+| EventBus | `digital.vasic.eventbus` | `EventBus/` | Pub/sub event system with synchronous/async dispatch, topic filtering, and middleware chain. 4 packages. |
+| Concurrency | `digital.vasic.concurrency` | `Concurrency/` | Worker pools, priority queues, rate limiters (token bucket/sliding window), circuit breakers, semaphores, resource monitoring. 6 packages. |
+| Observability | `digital.vasic.observability` | `Observability/` | OpenTelemetry tracing, Prometheus metrics, structured logging, health checks, ClickHouse analytics. 5 packages. |
+| Auth | `digital.vasic.auth` | `Auth/` | JWT, API key, OAuth authentication; HTTP middleware; token management. 5 packages. |
+| Storage | `digital.vasic.storage` | `Storage/` | Object storage abstraction: S3/MinIO, local filesystem, cloud providers. 4 packages. |
+| Streaming | `digital.vasic.streaming` | `Streaming/` | SSE, WebSocket, gRPC streaming, webhooks, HTTP client, transport abstraction. 6 packages. |
+
+```bash
+# Example: build and test EventBus
+cd EventBus && go build ./... && go test ./... -count=1 -race
+```
+
+### Phase 2: Infrastructure (Zero Module Dependencies, Complex)
+
+| Module | Go Module Path | Directory | Description |
+|--------|---------------|-----------|-------------|
+| Security | `digital.vasic.security` | `Security/` | Guardrails engine, PII detection/redaction, content filtering, policy enforcement, vulnerability scanning. 5 packages. |
+| VectorDB | `digital.vasic.vectordb` | `VectorDB/` | Unified vector store: Qdrant, Pinecone, Milvus, pgvector adapters; similarity search, collection management. 5 packages. |
+| Embeddings | `digital.vasic.embeddings` | `Embeddings/` | 6 embedding providers (OpenAI, Cohere, Voyage, Jina, Google, Bedrock); batch embedding. 7 packages. |
+| Database | `digital.vasic.database` | `Database/` | PostgreSQL (pgx), SQLite, connection pooling, migrations, repository pattern, query builder. 7 packages. |
+| Cache | `digital.vasic.cache` | `Cache/` | Redis + in-memory caching, distributed cache, TTL policies (fixed, sliding, adaptive), cache warming. 5 packages. |
+
+```bash
+# Example: build and test Database
+cd Database && go build ./... && go test ./... -count=1 -race
+```
+
+### Phase 3: Services
+
+| Module | Go Module Path | Directory | Description |
+|--------|---------------|-----------|-------------|
+| Messaging | `digital.vasic.messaging` | `Messaging/` | Kafka + RabbitMQ: unified broker, producer/consumer, dead letter queues, retry policies. 5 packages. |
+| Formatters | `digital.vasic.formatters` | `Formatters/` | Code formatter framework: native/service/built-in formatters, registry, executor, caching. 6 packages. |
+| MCP | `digital.vasic.mcp` | `MCP_Module/` | Model Context Protocol: adapter framework, client/server, config generation, registry, JSON-RPC protocol. 6 packages. |
+
+```bash
+# Example: build and test Formatters
+cd Formatters && go build ./... && go test ./... -count=1 -race
+```
+
+### Phase 4: Integration
+
+| Module | Go Module Path | Directory | Description |
+|--------|---------------|-----------|-------------|
+| RAG | `digital.vasic.rag` | `RAG/` | Retrieval-Augmented Generation: chunking, retrieval, reranking, hybrid search, pipeline composition. 5 packages. |
+| Memory | `digital.vasic.memory` | `Memory/` | Mem0-style memory: entity graph, semantic search, memory scopes, consolidation. 4 packages. |
+| Optimization | `digital.vasic.optimization` | `Optimization/` | GPT-Cache, Outlines structured output, streaming optimization, SGLang, prompt optimization. 6 packages. |
+| Plugins | `digital.vasic.plugins` | `Plugins/` | Plugin system: interface + lifecycle, registry, dynamic loading, sandboxing, structured output parsing. 5 packages. |
+
+```bash
+# Example: build and test RAG
+cd RAG && go build ./... && go test ./... -count=1 -race
+```
+
+### Phase 5: AI/ML
+
+| Module | Go Module Path | Directory | Description |
+|--------|---------------|-----------|-------------|
+| Agentic | `digital.vasic.agentic` | `Agentic/` | Graph-based agentic workflow orchestration: multi-step execution, conditional branching, state management. 1 package. |
+| LLMOps | `digital.vasic.llmops` | `LLMOps/` | LLM operations: continuous evaluation, A/B experiment management, dataset management, prompt versioning. 1 package (5 files). |
+| SelfImprove | `digital.vasic.selfimprove` | `SelfImprove/` | AI self-improvement: reward modelling, RLHF feedback integration, optimizer, dimension-weighted scoring. 1 package (5 files). |
+| Planning | `digital.vasic.planning` | `Planning/` | AI planning algorithms: hierarchical planning (HiPlan), Monte Carlo Tree Search (MCTS), Tree of Thoughts. 1 package (3 files). |
+| Benchmark | `digital.vasic.benchmark` | `Benchmark/` | LLM benchmarking: SWE-bench, HumanEval, MMLU and custom benchmarks; leaderboard, provider comparison. 1 package (3 files). |
+
+```bash
+# Example: build and test Planning
+cd Planning && go build ./... && go test ./... -count=1 -race
+```
+
+### Phase 6: Cognitive
+
+| Module | Go Module Path | Directory | Description |
+|--------|---------------|-----------|-------------|
+| HelixMemory | `digital.vasic.helixmemory` | `HelixMemory/` | Unified cognitive memory engine for HelixAgent and AI debate ensemble. Orchestrates Mem0, Cognee, Letta, Graphiti through 3-stage fusion pipeline. 12 power features, circuit breakers, Prometheus metrics. Active by default; opt out with `-tags nohelixmemory`. 12+ packages. |
+
+```bash
+# Example: build and test HelixMemory
+cd HelixMemory && go build ./... && go test ./... -count=1 -race
+```
+
+### Phase 7: Specification
+
+| Module | Go Module Path | Directory | Description |
+|--------|---------------|-----------|-------------|
+| HelixSpecifier | `digital.vasic.helixspecifier` | `HelixSpecifier/` | Spec-Driven Development Fusion Engine: 3-pillar architecture (SpecKit + Superpowers + GSD), adaptive ceremony scaling, effort classification, CLI agent adapters, 10 power features, spec memory, DebateFunc injection. Active by default; opt out with `-tags nohelixspecifier`. 27 packages. |
+
+```bash
+# Example: build and test HelixSpecifier
+cd HelixSpecifier && go build ./... && go test ./... -count=1 -race
+```
+
+### Pre-existing Modules
+
+| Module | Go Module Path | Directory | Description |
+|--------|---------------|-----------|-------------|
+| Containers | `digital.vasic.containers` | `Containers/` | Generic container orchestration: runtime abstraction (Docker/Podman/K8s), health checking, compose orchestration, lifecycle management. 12 packages. |
+| Challenges | `digital.vasic.challenges` | `Challenges/` | Generic challenge framework: assertion engine (19 evaluators), registry, runner, reporting, monitoring, metrics, plugin system v2.0.0, userflow testing, Panoptic vision/recorder/testgen/error-analyzer adapters, AI test generation challenges. 15 packages. |
+
+```bash
+# Example: build and test Containers
+cd Containers && go build ./... && go test ./... -count=1 -race
+```
+
+### Module Dependencies in go.mod
+
+All modules use `replace` directives for local development:
+
+```go
+replace digital.vasic.eventbus => ./EventBus
+replace digital.vasic.concurrency => ./Concurrency
+replace digital.vasic.observability => ./Observability
+replace digital.vasic.auth => ./Auth
+replace digital.vasic.storage => ./Storage
+replace digital.vasic.streaming => ./Streaming
+replace digital.vasic.security => ./Security
+replace digital.vasic.vectordb => ./VectorDB
+replace digital.vasic.embeddings => ./Embeddings
+replace digital.vasic.database => ./Database
+replace digital.vasic.cache => ./Cache
+replace digital.vasic.messaging => ./Messaging
+replace digital.vasic.formatters => ./Formatters
+replace digital.vasic.mcp => ./MCP_Module
+replace digital.vasic.rag => ./RAG
+replace digital.vasic.memory => ./Memory
+replace digital.vasic.optimization => ./Optimization
+replace digital.vasic.plugins => ./Plugins
+replace digital.vasic.agentic => ./Agentic
+replace digital.vasic.llmops => ./LLMOps
+replace digital.vasic.selfimprove => ./SelfImprove
+replace digital.vasic.planning => ./Planning
+replace digital.vasic.benchmark => ./Benchmark
+replace digital.vasic.helixmemory => ./HelixMemory
+replace digital.vasic.helixspecifier => ./HelixSpecifier
+replace digital.vasic.containers => ./Containers
+replace digital.vasic.challenges => ./Challenges
+```
+
 ## Key Files
 
 - `CLAUDE.md` - Detailed project architecture
 - `Makefile` - All available commands
 - `go.mod` - Module dependencies
-- `docs/MODULES.md` - Extracted modules catalog (26 modules)
+- `docs/MODULES.md` - Extracted modules catalog (27 modules)
 - `.env.example` - Environment variable templates

@@ -240,20 +240,35 @@ func (m *IntegrationManager) StreamDebate(ctx context.Context, req *DebateStream
 		}
 
 		// Process each agent in the team
+		debateCtx := NewContext(req.Topic, "", "")
 		for _, agent := range agents {
 			if err := streamer.Emit(StreamEventAgentStart, agent, "", nil); err != nil {
 				m.logger.WithError(err).Warn("Failed to emit agent start event")
 			}
 
-			// Simulate agent processing (in real implementation, this would call the LLM)
-			agentResponse := &AgentResponse{
-				AgentID:    agent.ID,
-				AgentRole:  agent.Role,
-				Provider:   agent.Provider,
-				Model:      agent.Model,
-				Content:    m.generateAgentContent(agent, req.Topic),
-				Confidence: agent.Score / 10.0,
-				Timestamp:  time.Now(),
+			// Use specialized agent processing through the agent pool
+			specialized := createSpecializedAgent(agent, m.pool)
+			msg := &Message{
+				Type:    MessageTypeProposal,
+				Content: req.Topic,
+			}
+
+			var agentResponse *AgentResponse
+			processedResp, err := specialized.Process(ctx, msg, debateCtx)
+			if err != nil {
+				m.logger.WithError(err).WithField("agent", agent.Name).Warn("Agent processing failed in stream")
+				// Fallback: create response from agent metadata
+				agentResponse = &AgentResponse{
+					AgentID:    agent.ID,
+					AgentRole:  agent.Role,
+					Provider:   agent.Provider,
+					Model:      agent.Model,
+					Content:    fmt.Sprintf("[%s] Processing failed, using fallback for: %s", agent.Role, req.Topic),
+					Confidence: 0.5,
+					Timestamp:  time.Now(),
+				}
+			} else {
+				agentResponse = processedResp
 			}
 
 			// Emit agent response
@@ -265,6 +280,7 @@ func (m *IntegrationManager) StreamDebate(ctx context.Context, req *DebateStream
 			}
 
 			response.Participants = append(response.Participants, agent.ID)
+			debateCtx.AddResponse(agentResponse)
 			streamer.IncrementCompleted()
 
 			if err := streamer.Emit(StreamEventAgentComplete, agent, "", nil); err != nil {
@@ -308,33 +324,37 @@ func (m *IntegrationManager) StreamDebate(ctx context.Context, req *DebateStream
 	return response, nil
 }
 
-// generateAgentContent generates content for an agent based on its role
-func (m *IntegrationManager) generateAgentContent(agent *Agent, topic string) string {
+// agentProcessor is a local interface for specialized agents that can process messages
+type agentProcessor interface {
+	Process(ctx context.Context, msg *Message, context *Context) (*AgentResponse, error)
+}
+
+// createSpecializedAgent creates the appropriate specialized agent wrapper for the given agent role
+func createSpecializedAgent(agent *Agent, pool *AgentPool) agentProcessor {
 	switch agent.Role {
 	case RoleArchitect:
-		return fmt.Sprintf("[Architect] Analyzing system architecture and design patterns for: %s", topic)
+		return NewArchitectAgent(agent, pool)
 	case RoleGenerator:
-		return fmt.Sprintf("[Generator] Generating initial code implementation for: %s", topic)
+		return NewGeneratorAgent(agent, pool)
 	case RoleCritic:
-		return fmt.Sprintf("[Critic] Reviewing implementation and identifying potential issues for: %s", topic)
+		return NewCriticAgent(agent, pool)
 	case RoleTester:
-		return fmt.Sprintf("[Tester] Designing test cases and validation scenarios for: %s", topic)
+		return NewTesterAgent(agent, pool)
 	case RoleValidator:
-		return fmt.Sprintf("[Validator] Verifying correctness and edge cases for: %s", topic)
+		return NewValidatorAgent(agent, pool)
 	case RoleSecurity:
-		return fmt.Sprintf("[Security] Analyzing security implications and vulnerabilities for: %s", topic)
+		return NewSecurityAgent(agent, pool)
 	case RolePerformance:
-		return fmt.Sprintf("[Performance] Evaluating performance characteristics and optimizations for: %s", topic)
+		return NewPerformanceAgent(agent, pool)
 	case RoleRefactoring:
-		return fmt.Sprintf("[Refactoring] Suggesting code improvements and refactoring opportunities for: %s", topic)
-	case RoleModerator:
-		return fmt.Sprintf("[Moderator] Facilitating discussion and ensuring productive debate for: %s", topic)
+		return NewRefactoringAgent(agent, pool)
 	case RoleRedTeam:
-		return fmt.Sprintf("[Red Team] Adversarial testing and attack vector analysis for: %s", topic)
+		return NewRedTeamAgent(agent, pool)
 	case RoleBlueTeam:
-		return fmt.Sprintf("[Blue Team] Defensive implementation and countermeasure design for: %s", topic)
+		return NewBlueTeamAgent(agent, pool)
 	default:
-		return fmt.Sprintf("[%s] Contributing to debate on: %s", agent.Role, topic)
+		// Fallback to generator for unknown roles
+		return NewGeneratorAgent(agent, pool)
 	}
 }
 
