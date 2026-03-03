@@ -22,12 +22,12 @@ import (
 // the MiniMax formula L* = argmax sum(ci * 1[ai = L]).
 func BenchmarkWeightedVoting(b *testing.B) {
 	config := voting.VotingConfig{
-		MinimumVotes:         3,
-		MinimumConfidence:    0.1,
-		EnableDiversityBonus: true,
-		DiversityWeight:      0.1,
-		EnableTieBreaking:    true,
-		TieBreakMethod:       voting.TieBreakByHighestConfidence,
+		MinimumVotes:           3,
+		MinimumConfidence:      0.1,
+		EnableDiversityBonus:   true,
+		DiversityWeight:        0.1,
+		EnableTieBreaking:      true,
+		TieBreakMethod:         voting.TieBreakByHighestConfidence,
 		EnableHistoricalWeight: true,
 	}
 

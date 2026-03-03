@@ -1,3 +1,4 @@
+//go:build e2e
 // +build e2e
 
 package messaging_e2e_test

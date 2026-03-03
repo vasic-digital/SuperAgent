@@ -1171,9 +1171,9 @@ func TestWorkflow_Execute_TimeoutBetweenNodes(t *testing.T) {
 
 func TestWorkflow_Execute_CheckpointsCreated(t *testing.T) {
 	cfg := &WorkflowConfig{
-		MaxIterations:     100,
-		Timeout:           10 * time.Second,
-		EnableCheckpoints: true,
+		MaxIterations:      100,
+		Timeout:            10 * time.Second,
+		EnableCheckpoints:  true,
 		CheckpointInterval: 1, // Checkpoint after every iteration.
 		MaxRetries:         0,
 		RetryDelay:         0,

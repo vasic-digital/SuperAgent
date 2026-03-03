@@ -8,13 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Benchmark test coverage for 29+ LLM providers, 7 debate packages, and 10 core packages
+- Benchmark test coverage for 40/40 LLM providers, 7 debate packages, and 17 core packages (556+ benchmarks)
+- Penetration testing expansion: SSRF prevention, API key leakage, rate limit bypass, provider security (37 test functions across 7 files)
+- Test type expansion for 23 extracted modules (integration, E2E, security, stress, benchmark)
+- Module-specific challenge scripts for all 23 extracted modules (EventBus, Auth, Cache, Concurrency, Embeddings, Formatters, Storage, Streaming, Observability, Optimization, Plugins, Database, Messaging, Security, VectorDB, Memory, RAG, MCP, Agentic, LLMOps, SelfImprove, Planning, Benchmark)
+- Architecture documentation (ARCHITECTURE.md) for Agentic, LLMOps, SelfImprove, Planning, Benchmark modules
 - LICENSE file (MIT)
 
 ### Fixed
 - Race conditions in plugins MetricsCollector and DependencyResolver
-- Context propagation in ensemble execution, auth middleware, and gRPC streaming
+- Context propagation in ensemble execution, auth middleware, gRPC streaming, model metadata refresh, and tool result processing
+- Response writer race in model_metadata.go RefreshModels goroutine
 - Crash bugs in comprehensive debate system (nil pointer, timeout, map mutation)
+
+### Security
+- gosec scan completed: all 122 G704 (SSRF) findings are expected for multi-provider LLM service, 5 G117 (exported struct secrets) are informational
 
 ### Removed
 - Dead services: ProtocolCacheManager, ProviderMetadataService, OptimizedRequestService

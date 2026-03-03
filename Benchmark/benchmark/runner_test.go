@@ -2021,8 +2021,8 @@ func (m *mockDebateServiceForBenchmark) RunDebate(_ context.Context, _ string) (
 }
 
 type mockVerifierServiceForBenchmark struct {
-	scores     map[string]float64
-	healthy    map[string]bool
+	scores       map[string]float64
+	healthy      map[string]bool
 	topProviders []string
 }
 
@@ -2625,7 +2625,7 @@ func TestBenchmarkSystem_GenerateLeaderboard_BestRunPerProvider(t *testing.T) {
 
 	lb, err := bs.GenerateLeaderboard(context.Background(), BenchmarkTypeMMLU)
 	require.NoError(t, err)
-	require.Len(t, lb.Entries, 1) // Only one entry per provider
+	require.Len(t, lb.Entries, 1)                // Only one entry per provider
 	assert.Equal(t, 0.9, lb.Entries[0].PassRate) // Best run
 }
 
