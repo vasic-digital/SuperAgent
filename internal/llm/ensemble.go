@@ -43,13 +43,14 @@ type EnsembleConfig struct {
 // IMPORTANT: Use services.ProviderRegistry.GetEnsembleService() for production code.
 // This standalone function requires pre-configured providers to be passed in.
 func RunEnsemble(req *models.LLMRequest) ([]*models.LLMResponse, *models.LLMResponse, error) {
-	return RunEnsembleWithProviders(req, nil)
+	return RunEnsembleWithProviders(context.Background(), req, nil)
 }
 
 // RunEnsembleWithProviders executes a parallel ensemble with the given providers.
 // If providers is nil or empty, returns an error requiring explicit provider configuration.
 // Concurrent provider calls are limited by a semaphore (see SetMaxConcurrentProviders).
-func RunEnsembleWithProviders(req *models.LLMRequest, providers []LLMProvider) ([]*models.LLMResponse, *models.LLMResponse, error) {
+// The provided context is propagated to all provider calls, enabling cancellation.
+func RunEnsembleWithProviders(ctx context.Context, req *models.LLMRequest, providers []LLMProvider) ([]*models.LLMResponse, *models.LLMResponse, error) {
 	if req == nil {
 		return nil, nil, fmt.Errorf("request cannot be nil")
 	}
@@ -73,7 +74,7 @@ func RunEnsembleWithProviders(req *models.LLMRequest, providers []LLMProvider) (
 			sem <- struct{}{}
 			defer func() { <-sem }()
 
-			r, err := pp.Complete(context.Background(), req)
+			r, err := pp.Complete(ctx, req)
 			if err == nil && r != nil {
 				respCh <- r
 			}

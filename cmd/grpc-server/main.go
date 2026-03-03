@@ -862,7 +862,7 @@ func (s *LLMProviderServer) CompleteStream(req *pb.CompletionRequest, stream grp
 	if s.registry != nil {
 		ensembleService := s.registry.GetEnsembleService()
 		if ensembleService != nil {
-			result, execErr := ensembleService.RunEnsemble(context.Background(), internal)
+			result, execErr := ensembleService.RunEnsemble(stream.Context(), internal)
 			if execErr != nil {
 				err = execErr
 			} else if result != nil {

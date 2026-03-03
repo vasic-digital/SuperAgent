@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 
 	"dev.helix.agent/internal/utils"
 )
@@ -12,6 +13,7 @@ import (
 // DependencyResolver handles plugin dependency resolution and conflict detection
 type DependencyResolver struct {
 	registry *Registry
+	mu       sync.RWMutex
 	deps     map[string][]string // plugin -> dependencies
 }
 
@@ -23,8 +25,11 @@ func NewDependencyResolver(registry *Registry) *DependencyResolver {
 }
 
 func (d *DependencyResolver) AddDependency(pluginName string, dependencies []string) error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
 	// Check for circular dependencies
-	if d.hasCircularDependency(pluginName, dependencies) {
+	if d.hasCircularDependencyLocked(pluginName, dependencies) {
 		return fmt.Errorf("circular dependency detected for plugin %s", pluginName)
 	}
 
@@ -39,6 +44,9 @@ func (d *DependencyResolver) AddDependency(pluginName string, dependencies []str
 }
 
 func (d *DependencyResolver) ResolveLoadOrder(plugins []string) ([]string, error) {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
 	// Topological sort for dependency resolution
 	visited := make(map[string]bool)
 	recStack := make(map[string]bool)
@@ -84,7 +92,8 @@ func (d *DependencyResolver) ResolveLoadOrder(plugins []string) ([]string, error
 	return order, nil
 }
 
-func (d *DependencyResolver) hasCircularDependency(plugin string, deps []string) bool {
+// hasCircularDependencyLocked checks for circular deps. Caller must hold d.mu.
+func (d *DependencyResolver) hasCircularDependencyLocked(plugin string, deps []string) bool {
 	visited := make(map[string]bool)
 	recStack := make(map[string]bool)
 
@@ -282,13 +291,21 @@ func parseInt(s string) int {
 }
 
 func (d *DependencyResolver) GetDependencies(plugin string) []string {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
 	if deps, exists := d.deps[plugin]; exists {
-		return deps
+		result := make([]string, len(deps))
+		copy(result, deps)
+		return result
 	}
 	return []string{}
 }
 
 func (d *DependencyResolver) GetDependents(plugin string) []string {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
 	var dependents []string
 	for p, deps := range d.deps {
 		for _, dep := range deps {

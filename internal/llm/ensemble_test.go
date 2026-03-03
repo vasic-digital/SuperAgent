@@ -96,7 +96,7 @@ func TestRunEnsemble(t *testing.T) {
 func TestRunEnsembleWithProviders(t *testing.T) {
 	t.Run("Returns error with nil request", func(t *testing.T) {
 		providers := []LLMProvider{&ensembleMockProvider{}}
-		responses, selected, err := RunEnsembleWithProviders(nil, providers)
+		responses, selected, err := RunEnsembleWithProviders(context.Background(), nil, providers)
 		assert.Error(t, err)
 		assert.Nil(t, responses)
 		assert.Nil(t, selected)
@@ -104,7 +104,7 @@ func TestRunEnsembleWithProviders(t *testing.T) {
 
 	t.Run("Returns error with empty providers", func(t *testing.T) {
 		req := &models.LLMRequest{Prompt: "test"}
-		responses, selected, err := RunEnsembleWithProviders(req, []LLMProvider{})
+		responses, selected, err := RunEnsembleWithProviders(context.Background(), req, []LLMProvider{})
 		assert.Error(t, err)
 		assert.Nil(t, responses)
 		assert.Nil(t, selected)
@@ -112,7 +112,7 @@ func TestRunEnsembleWithProviders(t *testing.T) {
 
 	t.Run("Returns error with nil providers slice", func(t *testing.T) {
 		req := &models.LLMRequest{Prompt: "test"}
-		responses, selected, err := RunEnsembleWithProviders(req, nil)
+		responses, selected, err := RunEnsembleWithProviders(context.Background(), req, nil)
 		assert.Error(t, err)
 		assert.Nil(t, responses)
 		assert.Nil(t, selected)
@@ -128,7 +128,7 @@ func TestRunEnsembleWithProviders(t *testing.T) {
 		}
 
 		req := &models.LLMRequest{Prompt: "test prompt"}
-		responses, selected, err := RunEnsembleWithProviders(req, []LLMProvider{provider})
+		responses, selected, err := RunEnsembleWithProviders(context.Background(), req, []LLMProvider{provider})
 
 		require.NoError(t, err)
 		assert.Len(t, responses, 1)
@@ -163,7 +163,7 @@ func TestRunEnsembleWithProviders(t *testing.T) {
 		}
 
 		req := &models.LLMRequest{Prompt: "test"}
-		responses, selected, err := RunEnsembleWithProviders(req, providers)
+		responses, selected, err := RunEnsembleWithProviders(context.Background(), req, providers)
 
 		require.NoError(t, err)
 		assert.Len(t, responses, 3)
@@ -193,7 +193,7 @@ func TestRunEnsembleWithProviders(t *testing.T) {
 		}
 
 		req := &models.LLMRequest{Prompt: "test"}
-		_, selected, err := RunEnsembleWithProviders(req, providers)
+		_, selected, err := RunEnsembleWithProviders(context.Background(), req, providers)
 
 		require.NoError(t, err)
 		assert.Equal(t, "High", selected.Content)
@@ -211,7 +211,7 @@ func TestRunEnsembleWithProviders(t *testing.T) {
 		}
 
 		req := &models.LLMRequest{Prompt: "test"}
-		responses, selected, err := RunEnsembleWithProviders(req, providers)
+		responses, selected, err := RunEnsembleWithProviders(context.Background(), req, providers)
 
 		require.NoError(t, err)
 		// Only one response (the successful one)
@@ -227,7 +227,7 @@ func TestRunEnsembleWithProviders(t *testing.T) {
 		}
 
 		req := &models.LLMRequest{Prompt: "test"}
-		responses, selected, err := RunEnsembleWithProviders(req, providers)
+		responses, selected, err := RunEnsembleWithProviders(context.Background(), req, providers)
 
 		// No error returned, but no responses
 		assert.NoError(t, err)
@@ -244,7 +244,7 @@ func TestRunEnsembleWithProviders(t *testing.T) {
 		}
 
 		req := &models.LLMRequest{Prompt: "test"}
-		responses, selected, err := RunEnsembleWithProviders(req, providers)
+		responses, selected, err := RunEnsembleWithProviders(context.Background(), req, providers)
 
 		require.NoError(t, err)
 		assert.Len(t, responses, 1)
@@ -266,7 +266,7 @@ func TestRunEnsembleWithProviders(t *testing.T) {
 
 		req := &models.LLMRequest{Prompt: "test"}
 		start := time.Now()
-		responses, _, err := RunEnsembleWithProviders(req, providers)
+		responses, _, err := RunEnsembleWithProviders(context.Background(), req, providers)
 		duration := time.Since(start)
 
 		require.NoError(t, err)
@@ -284,7 +284,7 @@ func TestRunEnsembleWithProviders(t *testing.T) {
 		}
 
 		req := &models.LLMRequest{Prompt: "test"}
-		responses, selected, err := RunEnsembleWithProviders(req, providers)
+		responses, selected, err := RunEnsembleWithProviders(context.Background(), req, providers)
 
 		require.NoError(t, err)
 		assert.Len(t, responses, 1)
@@ -303,7 +303,7 @@ func TestRunEnsembleWithProviders(t *testing.T) {
 		}
 
 		req := &models.LLMRequest{Prompt: "test"}
-		_, selected, err := RunEnsembleWithProviders(req, providers)
+		_, selected, err := RunEnsembleWithProviders(context.Background(), req, providers)
 
 		require.NoError(t, err)
 		// Should select the one with higher confidence
@@ -321,7 +321,7 @@ func TestRunEnsembleWithProviders(t *testing.T) {
 		}
 
 		req := &models.LLMRequest{Prompt: "test"}
-		_, selected, err := RunEnsembleWithProviders(req, providers)
+		_, selected, err := RunEnsembleWithProviders(context.Background(), req, providers)
 
 		require.NoError(t, err)
 		assert.NotNil(t, selected)
@@ -364,7 +364,7 @@ func TestEnsembleConcurrency(t *testing.T) {
 			go func() {
 				defer wg.Done()
 				req := &models.LLMRequest{Prompt: "concurrent test"}
-				_, _, err := RunEnsembleWithProviders(req, []LLMProvider{provider})
+				_, _, err := RunEnsembleWithProviders(context.Background(), req, []LLMProvider{provider})
 				assert.NoError(t, err)
 			}()
 		}

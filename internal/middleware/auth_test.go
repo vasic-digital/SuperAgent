@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -1009,7 +1010,7 @@ func TestAuthMiddleware_AuthenticateUser(t *testing.T) {
 	middleware, _ := NewAuthMiddleware(config, nil)
 
 	t.Run("NoUserServiceConfigured", func(t *testing.T) {
-		_, err := middleware.authenticateUser("testuser", "testpass")
+		_, err := middleware.authenticateUser(context.Background(), "testuser", "testpass")
 		if err == nil {
 			t.Error("Expected error when user service is not configured")
 		}

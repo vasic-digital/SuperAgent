@@ -353,7 +353,7 @@ func (a *AuthMiddleware) Login(c *gin.Context) {
 	}
 
 	// Authenticate user against database
-	user, err := a.authenticateUser(req.Username, req.Password)
+	user, err := a.authenticateUser(c.Request.Context(), req.Username, req.Password)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error":   "invalid_credentials",
@@ -398,7 +398,7 @@ func (a *AuthMiddleware) Register(c *gin.Context) {
 	}
 
 	// Register user
-	user, err := a.userService.Register(context.Background(), &req)
+	user, err := a.userService.Register(c.Request.Context(), &req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "registration_failed",
@@ -495,12 +495,12 @@ func (a *AuthMiddleware) GetAuthInfo(c *gin.Context) gin.H {
 }
 
 // authenticateUser validates user credentials against database
-func (a *AuthMiddleware) authenticateUser(username, password string) (*services.User, error) {
+func (a *AuthMiddleware) authenticateUser(ctx context.Context, username, password string) (*services.User, error) {
 	if a.userService == nil {
 		return nil, fmt.Errorf("user service not configured")
 	}
 
-	user, err := a.userService.Authenticate(context.Background(), username, password)
+	user, err := a.userService.Authenticate(ctx, username, password)
 	if err != nil {
 		return nil, err
 	}

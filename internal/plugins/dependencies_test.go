@@ -322,7 +322,7 @@ func TestDependencyResolver_HasCircularDependency(t *testing.T) {
 		registry := NewRegistry()
 		resolver := NewDependencyResolver(registry)
 
-		result := resolver.hasCircularDependency("plugin-a", []string{})
+		result := resolver.hasCircularDependencyLocked("plugin-a", []string{})
 
 		assert.False(t, result)
 	})
@@ -332,7 +332,7 @@ func TestDependencyResolver_HasCircularDependency(t *testing.T) {
 		resolver := NewDependencyResolver(registry)
 		resolver.deps["a"] = []string{"b"}
 
-		result := resolver.hasCircularDependency("a", []string{"b"})
+		result := resolver.hasCircularDependencyLocked("a", []string{"b"})
 
 		assert.False(t, result)
 	})
@@ -343,7 +343,7 @@ func TestDependencyResolver_HasCircularDependency(t *testing.T) {
 		resolver.deps["a"] = []string{"b"}
 		resolver.deps["b"] = []string{"a"}
 
-		result := resolver.hasCircularDependency("a", []string{"b"})
+		result := resolver.hasCircularDependencyLocked("a", []string{"b"})
 
 		assert.True(t, result)
 	})
@@ -355,7 +355,7 @@ func TestDependencyResolver_HasCircularDependency(t *testing.T) {
 		resolver.deps["b"] = []string{"c"}
 		resolver.deps["c"] = []string{"a"}
 
-		result := resolver.hasCircularDependency("a", []string{"b"})
+		result := resolver.hasCircularDependencyLocked("a", []string{"b"})
 
 		assert.True(t, result)
 	})
@@ -365,7 +365,7 @@ func TestDependencyResolver_HasCircularDependency(t *testing.T) {
 		resolver := NewDependencyResolver(registry)
 		resolver.deps["a"] = []string{"a"}
 
-		result := resolver.hasCircularDependency("a", []string{"a"})
+		result := resolver.hasCircularDependencyLocked("a", []string{"a"})
 
 		assert.True(t, result)
 	})
@@ -834,7 +834,7 @@ func TestDependencyResolver_HasCircularDependency_Deep(t *testing.T) {
 	resolver.deps["e"] = []string{"f"}
 
 	t.Run("no circular in deep chain", func(t *testing.T) {
-		result := resolver.hasCircularDependency("g", []string{"f"})
+		result := resolver.hasCircularDependencyLocked("g", []string{"f"})
 		assert.False(t, result)
 	})
 
@@ -842,7 +842,7 @@ func TestDependencyResolver_HasCircularDependency_Deep(t *testing.T) {
 	resolver.deps["f"] = []string{"a"}
 
 	t.Run("circular in deep chain", func(t *testing.T) {
-		result := resolver.hasCircularDependency("g", []string{"a"})
+		result := resolver.hasCircularDependencyLocked("g", []string{"a"})
 		assert.True(t, result)
 	})
 }

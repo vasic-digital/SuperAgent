@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	"sync"
 	"time"
 
 	"dev.helix.agent/internal/utils"
@@ -56,6 +57,7 @@ type MetricsCollector struct {
 	registry *Registry
 	health   *HealthMonitor
 	stopCh   chan struct{}
+	mu       sync.Mutex
 	running  bool
 }
 
@@ -69,10 +71,13 @@ func NewMetricsCollector(registry *Registry, health *HealthMonitor) *MetricsColl
 }
 
 func (m *MetricsCollector) StartCollection() {
+	m.mu.Lock()
 	if m.running {
+		m.mu.Unlock()
 		return
 	}
 	m.running = true
+	m.mu.Unlock()
 
 	// Update metrics periodically
 	go func() {
@@ -93,6 +98,9 @@ func (m *MetricsCollector) StartCollection() {
 
 // StopCollection stops the metrics collection goroutine
 func (m *MetricsCollector) StopCollection() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if !m.running {
 		return
 	}
