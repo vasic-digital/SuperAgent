@@ -303,6 +303,80 @@ func TestConversationEventTypes(t *testing.T) {
 	}
 }
 
+// Benchmarks
+
+func BenchmarkNewConversationEvent(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = NewConversationEvent(ConversationEventMessageAdded, "node-1", "conv-1", "user-1")
+	}
+}
+
+func BenchmarkConversationEventToJSON(b *testing.B) {
+	event := NewConversationEvent(ConversationEventMessageAdded, "node-1", "conv-1", "user-1")
+	event.Message = &MessageData{
+		MessageID: "msg-1",
+		Role:      "user",
+		Content:   "Hello world",
+		Tokens:    10,
+		CreatedAt: time.Now().UTC(),
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = event.ToJSON()
+	}
+}
+
+func BenchmarkConversationEventFromJSON(b *testing.B) {
+	event := NewConversationEvent(ConversationEventMessageAdded, "node-1", "conv-1", "user-1")
+	event.Message = &MessageData{
+		MessageID: "msg-1",
+		Role:      "user",
+		Content:   "Hello world",
+		Tokens:    10,
+		CreatedAt: time.Now().UTC(),
+	}
+	data, _ := event.ToJSON()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = ConversationEventFromJSON(data)
+	}
+}
+
+func BenchmarkConversationEventClone(b *testing.B) {
+	now := time.Now().UTC()
+	event := &ConversationEvent{
+		EventID:        "cevt-bench-001",
+		EventType:      ConversationEventDebateRound,
+		Timestamp:      now,
+		NodeID:         "node-bench",
+		SequenceNumber: 100,
+		ConversationID: "conv-bench",
+		SessionID:      "sess-bench",
+		UserID:         "user-bench",
+		Message: &MessageData{
+			MessageID: "msg-bench",
+			Role:      "assistant",
+			Content:   "Benchmark content for clone test",
+			Model:     "gpt-4",
+			Tokens:    50,
+			CreatedAt: now,
+		},
+		Entities: []EntityData{
+			{EntityID: "ent-1", Type: "person", Name: "Alice", Value: "engineer", Confidence: 0.9},
+			{EntityID: "ent-2", Type: "org", Name: "Acme", Value: "company", Confidence: 0.85},
+		},
+		Metadata: map[string]interface{}{
+			"source": "test",
+			"count":  float64(42),
+		},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = event.Clone()
+	}
+}
+
 func TestConversationEvent_ToJSON_AllFields(t *testing.T) {
 	now := time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC)
 	event := &ConversationEvent{

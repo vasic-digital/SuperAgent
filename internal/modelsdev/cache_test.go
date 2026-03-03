@@ -526,5 +526,81 @@ func TestRemoveString(t *testing.T) {
 	assert.Len(t, result, 3)
 }
 
+// Benchmarks
+
+func BenchmarkNewCache(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		c := NewCache(nil)
+		_ = c.Close()
+	}
+}
+
+func BenchmarkCacheSetModel(b *testing.B) {
+	cache := NewCache(&CacheConfig{
+		ModelTTL:        1 * time.Hour,
+		CleanupInterval: 1 * time.Hour,
+		MaxModels:       10000,
+	})
+	defer func() { _ = cache.Close() }()
+	ctx := context.Background()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		cache.SetModel(ctx, &Model{
+			ID:       fmt.Sprintf("model-%d", i),
+			Name:     fmt.Sprintf("Model %d", i),
+			Provider: "test-provider",
+		})
+	}
+}
+
+func BenchmarkCacheGetModel(b *testing.B) {
+	cache := NewCache(&CacheConfig{
+		ModelTTL:        1 * time.Hour,
+		CleanupInterval: 1 * time.Hour,
+		MaxModels:       10000,
+	})
+	defer func() { _ = cache.Close() }()
+	ctx := context.Background()
+	for i := 0; i < 100; i++ {
+		cache.SetModel(ctx, &Model{
+			ID:   fmt.Sprintf("model-%d", i),
+			Name: fmt.Sprintf("Model %d", i),
+		})
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = cache.GetModel(ctx, fmt.Sprintf("model-%d", i%100))
+	}
+}
+
+func BenchmarkCacheStats(b *testing.B) {
+	cache := NewCache(&CacheConfig{
+		ModelTTL:        1 * time.Hour,
+		CleanupInterval: 1 * time.Hour,
+		MaxModels:       100,
+	})
+	defer func() { _ = cache.Close() }()
+	ctx := context.Background()
+	for i := 0; i < 50; i++ {
+		cache.SetModel(ctx, &Model{
+			ID:   fmt.Sprintf("model-%d", i),
+			Name: fmt.Sprintf("Model %d", i),
+		})
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = cache.Stats()
+	}
+}
+
+func BenchmarkAppendIfMissing(b *testing.B) {
+	slice := []string{"a", "b", "c", "d", "e"}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = appendIfMissing(slice, "f")
+	}
+}
+
 // Suppress unused import warning
 var _ = fmt.Sprintf

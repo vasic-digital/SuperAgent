@@ -438,3 +438,54 @@ func TestBenchmarkTask_Types(t *testing.T) {
 		assert.Equal(t, bt, task.Type)
 	}
 }
+
+// Benchmarks
+
+func BenchmarkNewStandardBenchmarkRunner(b *testing.B) {
+	provider := NewMockLLMProviderForBenchmark()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = NewStandardBenchmarkRunner(provider, nil)
+	}
+}
+
+func BenchmarkListBenchmarks(b *testing.B) {
+	provider := NewMockLLMProviderForBenchmark()
+	runner := NewStandardBenchmarkRunner(provider, nil)
+	ctx := context.Background()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = runner.ListBenchmarks(ctx)
+	}
+}
+
+func BenchmarkGetTasks(b *testing.B) {
+	provider := NewMockLLMProviderForBenchmark()
+	runner := NewStandardBenchmarkRunner(provider, nil)
+	ctx := context.Background()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = runner.GetTasks(ctx, "swe-bench-lite", nil)
+	}
+}
+
+func BenchmarkGetTasksWithFilter(b *testing.B) {
+	provider := NewMockLLMProviderForBenchmark()
+	runner := NewStandardBenchmarkRunner(provider, nil)
+	ctx := context.Background()
+	config := &BenchmarkConfig{
+		Difficulties: []DifficultyLevel{DifficultyEasy},
+		MaxTasks:     5,
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = runner.GetTasks(ctx, "swe-bench-lite", config)
+	}
+}
+
+func BenchmarkDefaultBenchmarkConfig(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = DefaultBenchmarkConfig()
+	}
+}

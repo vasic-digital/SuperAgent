@@ -4,6 +4,7 @@ package knowledge
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
@@ -1590,4 +1591,76 @@ func TestGraphRAG_RetrieveWithRerankerEnabled(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.NotNil(t, result)
+}
+
+// Benchmarks
+
+func BenchmarkNewCodeGraph(b *testing.B) {
+	config := DefaultCodeGraphConfig()
+	embGen := &MockEmbeddingGenerator{}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = NewCodeGraph(config, embGen, logrus.New())
+	}
+}
+
+func BenchmarkCodeGraphAddNode(b *testing.B) {
+	config := DefaultCodeGraphConfig()
+	codeGraph := NewCodeGraph(config, &MockEmbeddingGenerator{}, logrus.New())
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = codeGraph.AddNode(&CodeNode{
+			ID:   fmt.Sprintf("node-%d", i),
+			Name: fmt.Sprintf("Function%d", i),
+			Type: NodeTypeFunction,
+			Path: "/test/file.go",
+		})
+	}
+}
+
+func BenchmarkCodeGraphGetNode(b *testing.B) {
+	config := DefaultCodeGraphConfig()
+	codeGraph := NewCodeGraph(config, &MockEmbeddingGenerator{}, logrus.New())
+	for i := 0; i < 100; i++ {
+		_ = codeGraph.AddNode(&CodeNode{
+			ID:   fmt.Sprintf("node-%d", i),
+			Name: fmt.Sprintf("Function%d", i),
+			Type: NodeTypeFunction,
+		})
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = codeGraph.GetNode(fmt.Sprintf("node-%d", i%100))
+	}
+}
+
+func BenchmarkCodeGraphAddEdge(b *testing.B) {
+	config := DefaultCodeGraphConfig()
+	codeGraph := NewCodeGraph(config, &MockEmbeddingGenerator{}, logrus.New())
+	for i := 0; i < 100; i++ {
+		_ = codeGraph.AddNode(&CodeNode{
+			ID:   fmt.Sprintf("node-%d", i),
+			Name: fmt.Sprintf("Function%d", i),
+			Type: NodeTypeFunction,
+		})
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = codeGraph.AddEdge(&CodeEdge{
+			ID:       fmt.Sprintf("edge-%d", i),
+			SourceID: fmt.Sprintf("node-%d", i%100),
+			TargetID: fmt.Sprintf("node-%d", (i+1)%100),
+			Type:     EdgeTypeCalls,
+			Weight:   1.0,
+		})
+	}
+}
+
+func BenchmarkCosineSimilarity(b *testing.B) {
+	a := []float64{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8}
+	c := []float64{0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = cosineSimilarity(a, c)
+	}
 }

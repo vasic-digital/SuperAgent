@@ -881,3 +881,100 @@ func TestProtocol_BuildDebateContext(t *testing.T) {
 	assert.Len(t, ctx.PreviousPhases, 1)
 	assert.Equal(t, "value", ctx.Metadata["key"])
 }
+
+// =============================================================================
+// Benchmarks
+// =============================================================================
+
+func BenchmarkDefaultDebateConfig(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = DefaultDebateConfig()
+	}
+}
+
+func BenchmarkProtocol_CalculateConsensus(b *testing.B) {
+	config := DefaultDebateConfig()
+	topo := topology.NewDefaultTopology()
+	invoker := NewMockAgentInvoker()
+	p := NewProtocol(config, topo, invoker)
+
+	responses := []*PhaseResponse{
+		{AgentID: "a1", Confidence: 0.9, Vote: "A", Content: "Option A is best for performance"},
+		{AgentID: "a2", Confidence: 0.85, Vote: "A", Content: "Option A provides best performance"},
+		{AgentID: "a3", Confidence: 0.95, Vote: "A", Content: "A offers superior performance"},
+		{AgentID: "a4", Confidence: 0.7, Vote: "B", Content: "Option B has better security"},
+		{AgentID: "a5", Confidence: 0.8, Vote: "A", Content: "A wins on performance metrics"},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = p.calculateConsensus(responses)
+	}
+}
+
+func BenchmarkProtocol_CalculateVoteAgreement(b *testing.B) {
+	config := DefaultDebateConfig()
+	topo := topology.NewDefaultTopology()
+	invoker := NewMockAgentInvoker()
+	p := NewProtocol(config, topo, invoker)
+
+	responses := []*PhaseResponse{
+		{Vote: "A"},
+		{Vote: "A"},
+		{Vote: "B"},
+		{Vote: "A"},
+		{Vote: "C"},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = p.calculateVoteAgreement(responses)
+	}
+}
+
+func BenchmarkProtocol_ExtractInsights(b *testing.B) {
+	config := DefaultDebateConfig()
+	topo := topology.NewDefaultTopology()
+	invoker := NewMockAgentInvoker()
+	p := NewProtocol(config, topo, invoker)
+
+	responses := []*PhaseResponse{
+		{
+			Arguments:   []string{"Insight 1", "Insight 2", "Insight 3"},
+			Suggestions: []string{"Suggestion A", "Suggestion B"},
+		},
+		{
+			Arguments:   []string{"Insight 1", "Insight 4"},
+			Suggestions: []string{"Suggestion C"},
+		},
+		{
+			Arguments:   []string{"Insight 5"},
+			Suggestions: []string{"Suggestion A", "Suggestion D"},
+		},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = p.extractInsights(responses)
+	}
+}
+
+func BenchmarkProtocol_BuildDebateContext(b *testing.B) {
+	config := DefaultDebateConfig()
+	config.Topic = "Benchmark topic"
+	config.Context = "Benchmark context"
+	topo := topology.NewDefaultTopology()
+	invoker := NewMockAgentInvoker()
+	p := NewProtocol(config, topo, invoker)
+	p.currentRound = 2
+	p.phaseResults = []*PhaseResult{
+		{Phase: topology.PhaseProposal, Round: 1},
+		{Phase: topology.PhaseCritique, Round: 1},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = p.buildDebateContext(topology.PhaseReview)
+	}
+}

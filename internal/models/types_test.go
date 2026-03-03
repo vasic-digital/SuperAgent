@@ -253,6 +253,89 @@ func TestUserSession_Creation(t *testing.T) {
 	AssertEqual(t, now, session.CreatedAt)
 }
 
+// Benchmarks
+
+func BenchmarkLLMRequestCreation(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = &LLMRequest{
+			ID:        "test-request-123",
+			SessionID: "test-session-456",
+			UserID:    "test-user-789",
+			Prompt:    "Write a simple Go function that adds two numbers",
+			Messages:  []Message{},
+			ModelParams: ModelParameters{
+				Model:            "test-model",
+				Temperature:      0.7,
+				MaxTokens:        1000,
+				TopP:             1.0,
+				StopSequences:    []string{},
+				ProviderSpecific: map[string]any{},
+			},
+			EnsembleConfig: &EnsembleConfig{
+				Strategy:            "confidence_weighted",
+				MinProviders:        2,
+				ConfidenceThreshold: 0.8,
+				FallbackToBest:      true,
+				Timeout:             30,
+				PreferredProviders:  []string{"test-provider"},
+			},
+			MemoryEnhanced: false,
+			Memory:         map[string]string{},
+			Status:         "pending",
+			CreatedAt:      time.Now(),
+			RequestType:    "code_generation",
+		}
+	}
+}
+
+func BenchmarkLLMResponseCreation(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = &LLMResponse{
+			ID:             "test-response-123",
+			RequestID:      "test-request-123",
+			ProviderID:     "test-provider",
+			ProviderName:   "Test Provider",
+			Content:        "func add(a, b int) int {\n    return a + b\n}",
+			Confidence:     0.95,
+			TokensUsed:     50,
+			ResponseTime:   500,
+			FinishReason:   "stop",
+			Metadata:       map[string]any{},
+			Selected:       true,
+			SelectionScore: 0.95,
+			CreatedAt:      time.Now(),
+		}
+	}
+}
+
+func BenchmarkMessageCreation(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = Message{
+			Role:      "user",
+			Content:   "Hello, world!",
+			Name:      nil,
+			ToolCalls: map[string]any{},
+		}
+	}
+}
+
+func BenchmarkModelParametersCreation(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = ModelParameters{
+			Model:            "default-model",
+			Temperature:      0.7,
+			MaxTokens:        1000,
+			TopP:             1.0,
+			StopSequences:    []string{"END", "STOP"},
+			ProviderSpecific: map[string]any{"key": "value"},
+		}
+	}
+}
+
 func TestProviderCapabilities_Creation(t *testing.T) {
 	// Test creating provider capabilities
 	capabilities := ProviderCapabilities{

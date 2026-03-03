@@ -384,3 +384,88 @@ func TestEpisodicMemoryBuffer_Clear(t *testing.T) {
 	assert.Empty(t, buf.GetByAgent("a"))
 	assert.Empty(t, buf.GetBySession("s"))
 }
+
+// =============================================================================
+// Benchmarks
+// =============================================================================
+
+func BenchmarkEpisodicMemoryBuffer_Store(b *testing.B) {
+	buf := NewEpisodicMemoryBuffer(100000)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		buf.Store(&Episode{ //nolint:errcheck
+			ID:              fmt.Sprintf("ep-%d", i),
+			AgentID:         "agent-a",
+			SessionID:       "session-1",
+			TaskDescription: "benchmark task",
+		})
+	}
+}
+
+func BenchmarkEpisodicMemoryBuffer_GetByAgent(b *testing.B) {
+	buf := NewEpisodicMemoryBuffer(10000)
+	for i := 0; i < 500; i++ {
+		agentID := fmt.Sprintf("agent-%d", i%5)
+		buf.Store(&Episode{ //nolint:errcheck
+			ID:      fmt.Sprintf("ep-%d", i),
+			AgentID: agentID,
+		})
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = buf.GetByAgent("agent-0")
+	}
+}
+
+func BenchmarkEpisodicMemoryBuffer_GetRecent(b *testing.B) {
+	buf := NewEpisodicMemoryBuffer(10000)
+	for i := 0; i < 500; i++ {
+		buf.Store(&Episode{ //nolint:errcheck
+			ID:      fmt.Sprintf("ep-%d", i),
+			AgentID: "a",
+		})
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = buf.GetRecent(10)
+	}
+}
+
+func BenchmarkEpisodicMemoryBuffer_GetRelevant(b *testing.B) {
+	buf := NewEpisodicMemoryBuffer(10000)
+	descriptions := []string{
+		"implement binary search algorithm",
+		"fix database connection pooling",
+		"optimize search performance",
+		"write unit tests for sorting",
+		"refactor authentication service",
+	}
+	for i := 0; i < 500; i++ {
+		buf.Store(&Episode{ //nolint:errcheck
+			ID:              fmt.Sprintf("ep-%d", i),
+			AgentID:         "a",
+			TaskDescription: descriptions[i%len(descriptions)],
+		})
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = buf.GetRelevant("search algorithm optimization", 5)
+	}
+}
+
+func BenchmarkEpisodicMemoryBuffer_MarshalJSON(b *testing.B) {
+	buf := NewEpisodicMemoryBuffer(1000)
+	for i := 0; i < 100; i++ {
+		buf.Store(&Episode{ //nolint:errcheck
+			ID:              fmt.Sprintf("ep-%d", i),
+			AgentID:         "agent-a",
+			SessionID:       "session-1",
+			TaskDescription: "benchmark task description",
+			Confidence:      0.85,
+		})
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		json.Marshal(buf) //nolint:errcheck
+	}
+}

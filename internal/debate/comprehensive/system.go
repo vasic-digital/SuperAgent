@@ -99,8 +99,10 @@ func DefaultConfig() *Config {
 
 // System is the main comprehensive debate system
 type System struct {
-	config *Config
-	logger *logrus.Logger
+	config       *Config
+	logger       *logrus.Logger
+	pool         *AgentPool
+	orchestrator *PhaseOrchestrator
 }
 
 // NewSystem creates a new comprehensive debate system
@@ -109,9 +111,14 @@ func NewSystem(config *Config) *System {
 		config = DefaultConfig()
 	}
 
+	pool := NewAgentPool(config.Logger)
+	orchestrator := NewPhaseOrchestrator(pool, config.Logger)
+
 	return &System{
-		config: config,
-		logger: config.Logger,
+		config:       config,
+		logger:       config.Logger,
+		pool:         pool,
+		orchestrator: orchestrator,
 	}
 }
 
@@ -284,56 +291,134 @@ func (s *System) ConductDebate(ctx context.Context, req *DebateRequest) (*Debate
 	return response, nil
 }
 
-// runPlanningPhase executes the planning phase
+// runPlanningPhase executes the planning phase using the PhaseOrchestrator
 func (s *System) runPlanningPhase(ctx context.Context, req *DebateRequest, resp *DebateResponse) error {
-	s.logger.Info("Phase 0: Planning")
-	// TODO: Implement architect agent planning
+	debateCtx := &Context{
+		Topic:     req.Topic,
+		Language:  req.Language,
+		Responses: make([]*AgentResponse, 0),
+		Artifacts: make(map[string]*Artifact),
+	}
+	phase, err := s.orchestrator.PlanningPhase(ctx, req, debateCtx)
+	if err != nil {
+		return err
+	}
+	resp.Phases = append(resp.Phases, phase)
 	return nil
 }
 
-// runGenerationPhase executes the generation phase
+// runGenerationPhase executes the generation phase using the PhaseOrchestrator
 func (s *System) runGenerationPhase(ctx context.Context, req *DebateRequest, resp *DebateResponse) error {
-	s.logger.Info("Phase 1: Initial Generation")
-	// TODO: Implement generator agent code generation
+	debateCtx := &Context{
+		Topic:     req.Topic,
+		Language:  req.Language,
+		Responses: make([]*AgentResponse, 0),
+		Artifacts: make(map[string]*Artifact),
+	}
+	phase, err := s.orchestrator.GenerationPhase(ctx, req, debateCtx)
+	if err != nil {
+		return err
+	}
+	resp.Phases = append(resp.Phases, phase)
 	return nil
 }
 
-// runDebateRound executes a debate round
+// runDebateRound executes a debate round using the PhaseOrchestrator
 func (s *System) runDebateRound(ctx context.Context, req *DebateRequest, resp *DebateResponse, round int) (*PhaseResult, error) {
-	phase := &PhaseResult{
-		Phase:     "debate",
-		Round:     round,
-		Responses: make([]AgentResponse, 0),
+	debateCtx := &Context{
+		Topic:     req.Topic,
+		Language:  req.Language,
+		Responses: make([]*AgentResponse, 0),
+		Artifacts: make(map[string]*Artifact),
+	}
+	// Ensure a code artifact exists for the debate phase
+	debateCtx.Artifacts["code-"+req.ID] = &Artifact{
+		ID:   "code-" + req.ID,
+		Type: ArtifactTypeCode,
+		Name: "implementation.go",
+	}
+	return s.orchestrator.DebatePhase(ctx, req, debateCtx, round)
+}
+
+// runValidationPhase executes the validation phase using the PhaseOrchestrator
+func (s *System) runValidationPhase(ctx context.Context, req *DebateRequest, resp *DebateResponse) error {
+	debateCtx := &Context{
+		Topic:     req.Topic,
+		Language:  req.Language,
+		Responses: make([]*AgentResponse, 0),
+		Artifacts: make(map[string]*Artifact),
+	}
+	phase, err := s.orchestrator.ValidationPhase(ctx, req, debateCtx)
+	if err != nil {
+		return err
+	}
+	resp.Phases = append(resp.Phases, phase)
+	return nil
+}
+
+// runRefactoringPhase executes the refactoring phase using the PhaseOrchestrator
+func (s *System) runRefactoringPhase(ctx context.Context, req *DebateRequest, resp *DebateResponse) error {
+	debateCtx := &Context{
+		Topic:     req.Topic,
+		Language:  req.Language,
+		Responses: make([]*AgentResponse, 0),
+		Artifacts: make(map[string]*Artifact),
+	}
+	phase, err := s.orchestrator.RefactoringPhase(ctx, req, debateCtx)
+	if err != nil {
+		return err
+	}
+	resp.Phases = append(resp.Phases, phase)
+	return nil
+}
+
+// runIntegrationPhase executes the integration phase using the PhaseOrchestrator
+func (s *System) runIntegrationPhase(ctx context.Context, req *DebateRequest, resp *DebateResponse) error {
+	debateCtx := &Context{
+		Topic:     req.Topic,
+		Language:  req.Language,
+		Responses: make([]*AgentResponse, 0),
+		Artifacts: make(map[string]*Artifact),
+	}
+	phase, err := s.orchestrator.IntegrationPhase(ctx, req, debateCtx)
+	if err != nil {
+		return err
+	}
+	resp.Phases = append(resp.Phases, phase)
+	return nil
+}
+
+// checkConvergence checks if the debate has converged based on quality and consensus
+func (s *System) checkConvergence(resp *DebateResponse) bool {
+	if len(resp.Phases) == 0 {
+		return false
 	}
 
-	// TODO: Implement adversarial debate between agents
+	// Check if quality threshold is met
+	if resp.QualityScore >= s.config.QualityThreshold {
+		return true
+	}
 
-	return phase, nil
-}
+	// Check if consensus level in recent phases exceeds minimum
+	lastPhase := resp.Phases[len(resp.Phases)-1]
+	if lastPhase.ConsensusLevel >= s.config.MinConsensus {
+		return true
+	}
 
-// runValidationPhase executes the validation phase
-func (s *System) runValidationPhase(ctx context.Context, req *DebateRequest, resp *DebateResponse) error {
-	s.logger.Info("Phase 4: Validation")
-	// TODO: Implement tester and validator agents
-	return nil
-}
+	// Check early stopping: if last N rounds show no improvement
+	if resp.RoundsConducted >= s.config.EarlyStopRounds && len(resp.Phases) >= s.config.EarlyStopRounds {
+		noImprovement := true
+		for i := len(resp.Phases) - s.config.EarlyStopRounds; i < len(resp.Phases)-1; i++ {
+			if resp.Phases[i+1].ConsensusLevel > resp.Phases[i].ConsensusLevel {
+				noImprovement = false
+				break
+			}
+		}
+		if noImprovement {
+			s.logger.Info("Early stopping: no improvement in recent rounds")
+			return true
+		}
+	}
 
-// runRefactoringPhase executes the refactoring phase
-func (s *System) runRefactoringPhase(ctx context.Context, req *DebateRequest, resp *DebateResponse) error {
-	s.logger.Info("Phase 5: Refactoring")
-	// TODO: Implement refactoring and performance agents
-	return nil
-}
-
-// runIntegrationPhase executes the integration phase
-func (s *System) runIntegrationPhase(ctx context.Context, req *DebateRequest, resp *DebateResponse) error {
-	s.logger.Info("Phase 6: Integration")
-	// TODO: Implement cross-file consistency checking
-	return nil
-}
-
-// checkConvergence checks if the debate has converged
-func (s *System) checkConvergence(resp *DebateResponse) bool {
-	// TODO: Implement convergence criteria
 	return false
 }

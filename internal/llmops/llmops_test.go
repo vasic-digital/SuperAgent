@@ -2,6 +2,7 @@ package llmops
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -375,6 +376,66 @@ func TestEvaluationRun_Status(t *testing.T) {
 
 	run.Status = EvaluationStatusCompleted
 	assert.Equal(t, EvaluationStatusCompleted, run.Status)
+}
+
+// Benchmarks
+
+func BenchmarkNewInMemoryPromptRegistry(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = NewInMemoryPromptRegistry(nil)
+	}
+}
+
+func BenchmarkPromptRegistryCreate(b *testing.B) {
+	registry := NewInMemoryPromptRegistry(nil)
+	ctx := context.Background()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		prompt := &PromptVersion{
+			Name:    fmt.Sprintf("prompt-%d", i),
+			Version: "1.0.0",
+			Content: "Hello, {{name}}!",
+			Variables: []PromptVariable{
+				{Name: "name", Type: "string", Required: true},
+			},
+		}
+		_ = registry.Create(ctx, prompt)
+	}
+}
+
+func BenchmarkPromptRegistryRender(b *testing.B) {
+	registry := NewInMemoryPromptRegistry(nil)
+	ctx := context.Background()
+	prompt := &PromptVersion{
+		Name:    "bench-prompt",
+		Version: "1.0.0",
+		Content: "Hello, {{name}}! You are {{age}} years old.",
+		Variables: []PromptVariable{
+			{Name: "name", Type: "string", Required: true},
+			{Name: "age", Type: "int", Required: false, Default: 25},
+		},
+	}
+	_ = registry.Create(ctx, prompt)
+	vars := map[string]interface{}{"name": "John", "age": 30}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = registry.Render(ctx, "bench-prompt", "1.0.0", vars)
+	}
+}
+
+func BenchmarkNewInMemoryExperimentManager(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = NewInMemoryExperimentManager(nil)
+	}
+}
+
+func BenchmarkNewInMemoryContinuousEvaluator(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = NewInMemoryContinuousEvaluator(nil, nil, nil, nil)
+	}
 }
 
 func TestExperimentStatus_Transitions(t *testing.T) {

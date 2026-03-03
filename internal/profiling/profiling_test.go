@@ -397,3 +397,59 @@ func contains(slice []string, item string) bool {
 	}
 	return false
 }
+
+// =============================================================================
+// Benchmarks
+// =============================================================================
+
+func BenchmarkLazyLoader_Get_Cached(b *testing.B) {
+	loader := NewLazyLoader()
+	loader.Register("bench", func() (interface{}, error) {
+		return "value", nil
+	})
+	// Prime the cache
+	loader.Get("bench") //nolint:errcheck
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		loader.Get("bench") //nolint:errcheck
+	}
+}
+
+func BenchmarkLazyLoader_IsLoaded(b *testing.B) {
+	loader := NewLazyLoader()
+	loader.Register("bench", func() (interface{}, error) {
+		return "value", nil
+	})
+	loader.Get("bench") //nolint:errcheck
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = loader.IsLoaded("bench")
+	}
+}
+
+func BenchmarkMemoryLeakDetector_GetSnapshot(b *testing.B) {
+	detector := NewMemoryLeakDetector(DefaultMemoryThresholds())
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = detector.GetSnapshot()
+	}
+}
+
+func BenchmarkDeadlockDetector_RecordLockAcquire(b *testing.B) {
+	detector := NewDeadlockDetector(30 * time.Second)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		release := detector.RecordLockAcquire("bench-lock")
+		release()
+	}
+}
+
+func BenchmarkDeadlockDetector_GetGoroutineCount(b *testing.B) {
+	detector := NewDeadlockDetector(30 * time.Second)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = detector.GetGoroutineCount()
+	}
+}

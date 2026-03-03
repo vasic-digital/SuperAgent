@@ -318,3 +318,54 @@ func TestChallengeInfo_Fields(t *testing.T) {
 	assert.Equal(t, "Test Description", info.Description)
 	assert.Equal(t, "test", info.Category)
 }
+
+// Benchmarks
+
+func BenchmarkNewOrchestrator(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = NewOrchestrator(OrchestratorConfig{})
+	}
+}
+
+func BenchmarkDetectCategory(b *testing.B) {
+	filenames := []string{
+		"provider_comprehensive_challenge.sh",
+		"security_scanning_challenge.sh",
+		"debate_team_challenge.sh",
+		"cli_agent_config_challenge.sh",
+		"unknown_challenge.sh",
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = detectCategory(filenames[i%len(filenames)])
+	}
+}
+
+func BenchmarkOrchestratorList(b *testing.B) {
+	o := NewOrchestrator(OrchestratorConfig{})
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = o.List()
+	}
+}
+
+func BenchmarkRegisterShellChallengesEnhanced(b *testing.B) {
+	dir := b.TempDir()
+	scripts := []string{
+		"provider_test_challenge.sh",
+		"security_test_challenge.sh",
+		"debate_test_challenge.sh",
+	}
+	for _, s := range scripts {
+		_ = os.WriteFile(
+			filepath.Join(dir, s),
+			[]byte("#!/bin/bash\necho ok\n"), 0755,
+		)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		reg := registry.NewRegistry()
+		_ = RegisterShellChallengesEnhanced(reg, dir, "")
+	}
+}

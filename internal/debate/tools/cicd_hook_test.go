@@ -449,3 +449,51 @@ func TestDefaultActionExecutor_CancelledContext(t *testing.T) {
 	require.NotNil(t, result)
 	assert.False(t, result.Passed)
 }
+
+// =============================================================================
+// Benchmarks
+// =============================================================================
+
+func BenchmarkDefaultHookConfig(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = DefaultHookConfig()
+	}
+}
+
+func BenchmarkNewCICDHook(b *testing.B) {
+	cfg := DefaultHookConfig()
+	executor := NewDefaultActionExecutor()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = NewCICDHook(cfg, executor)
+	}
+}
+
+func BenchmarkCICDHook_GetConfiguredHooks(b *testing.B) {
+	hook := NewCICDHook(DefaultHookConfig(), NewDefaultActionExecutor())
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = hook.GetConfiguredHooks()
+	}
+}
+
+func BenchmarkDefaultActionExecutor_Execute_RunTests(b *testing.B) {
+	executor := NewDefaultActionExecutor()
+	ctx := context.Background()
+	code := "func TestSomething(t *testing.T) {\n\tassert.Equal(t, 1, 1)\n}"
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		executor.Execute(ctx, ActionRunTests, code, "go") //nolint:errcheck
+	}
+}
+
+func BenchmarkDefaultActionExecutor_Execute_SecurityScan(b *testing.B) {
+	executor := NewDefaultActionExecutor()
+	ctx := context.Background()
+	code := "func hello() string {\n\treturn \"hi\"\n}"
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		executor.Execute(ctx, ActionSecurityScan, code, "go") //nolint:errcheck
+	}
+}

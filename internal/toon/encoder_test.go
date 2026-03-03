@@ -388,3 +388,71 @@ func TestDefaultKeyMapping(t *testing.T) {
 	assert.Equal(t, "sc", mapping["score"])
 	assert.Equal(t, "pi", mapping["provider_id"])
 }
+
+// =============================================================================
+// Benchmarks
+// =============================================================================
+
+func BenchmarkEncoder_Encode_NoCompression(b *testing.B) {
+	enc := NewEncoder(&EncoderOptions{Compression: CompressionNone})
+	data := map[string]interface{}{
+		"id":     "123",
+		"name":   "test",
+		"status": "healthy",
+		"score":  8.5,
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		enc.Encode(data) //nolint:errcheck
+	}
+}
+
+func BenchmarkEncoder_Encode_Standard(b *testing.B) {
+	enc := NewEncoder(&EncoderOptions{Compression: CompressionStandard})
+	data := map[string]interface{}{
+		"id":         "123",
+		"name":       "test",
+		"status":     "healthy",
+		"score":      8.5,
+		"created_at": "2024-01-01",
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		enc.Encode(data) //nolint:errcheck
+	}
+}
+
+func BenchmarkDecoder_Decode(b *testing.B) {
+	dec := NewDecoder(nil)
+	data := []byte(`{"i":"123","n":"test","s":"H","sc":8.5}`)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		var result map[string]interface{}
+		dec.Decode(data, &result) //nolint:errcheck
+	}
+}
+
+func BenchmarkEncoder_Decoder_RoundTrip(b *testing.B) {
+	enc := NewEncoder(&EncoderOptions{Compression: CompressionStandard})
+	dec := NewDecoder(nil)
+	original := map[string]interface{}{
+		"id":     "123",
+		"name":   "test",
+		"status": "healthy",
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		encoded, _ := enc.Encode(original)
+		var decoded map[string]interface{}
+		dec.Decode(encoded, &decoded) //nolint:errcheck
+	}
+}
+
+func BenchmarkEncoder_TokenCount(b *testing.B) {
+	enc := NewEncoder(nil)
+	data := []byte("this is a test string with some content for token counting purposes")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = enc.TokenCount(data)
+	}
+}

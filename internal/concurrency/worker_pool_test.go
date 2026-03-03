@@ -506,6 +506,60 @@ func TestMap_WithError(t *testing.T) {
 	assert.Error(t, err)
 }
 
+// Benchmarks
+
+func BenchmarkNewWorkerPool(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		pool := NewWorkerPool(&PoolConfig{Workers: 4, QueueSize: 100})
+		pool.Stop()
+	}
+}
+
+func BenchmarkWorkerPoolSubmit(b *testing.B) {
+	pool := NewWorkerPool(&PoolConfig{Workers: 4, QueueSize: 10000})
+	defer pool.Stop()
+	task := NewTaskFunc("bench-task", func(ctx context.Context) (interface{}, error) {
+		return nil, nil
+	})
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = pool.Submit(task)
+	}
+}
+
+func BenchmarkSemaphoreAcquireRelease(b *testing.B) {
+	sem := NewSemaphore(100)
+	ctx := context.Background()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = sem.Acquire(ctx)
+		sem.Release()
+	}
+}
+
+func BenchmarkSemaphoreTryAcquire(b *testing.B) {
+	sem := NewSemaphore(100)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if sem.TryAcquire() {
+			sem.Release()
+		}
+	}
+}
+
+func BenchmarkParallelExecute(b *testing.B) {
+	fns := []func(ctx context.Context) (interface{}, error){
+		func(ctx context.Context) (interface{}, error) { return 1, nil },
+		func(ctx context.Context) (interface{}, error) { return 2, nil },
+		func(ctx context.Context) (interface{}, error) { return 3, nil },
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = ParallelExecute(context.Background(), fns)
+	}
+}
+
 // Concurrent access tests
 func TestWorkerPool_ConcurrentSubmit(t *testing.T) {
 	pool := NewWorkerPool(&PoolConfig{Workers: 4, QueueSize: 100})

@@ -303,3 +303,56 @@ func TestFeatureValidationError(t *testing.T) {
 	assert.Contains(t, err.Error(), "multipass")
 	assert.Contains(t, err.Error(), "requires feature: debate")
 }
+
+// Benchmarks
+
+func BenchmarkGetRegistry(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = GetRegistry()
+	}
+}
+
+func BenchmarkRegistryGetFeature(b *testing.B) {
+	registry := GetRegistry()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = registry.GetFeature(FeatureGraphQL)
+	}
+}
+
+func BenchmarkRegistryGetFeaturesByCategory(b *testing.B) {
+	registry := GetRegistry()
+	categories := []FeatureCategory{
+		CategoryTransport, CategoryCompression, CategoryProtocol,
+		CategoryAPI, CategoryAdvanced,
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = registry.GetFeaturesByCategory(categories[i%len(categories)])
+	}
+}
+
+func BenchmarkParseFeature(b *testing.B) {
+	inputs := []string{"graphql", "GRAPHQL", "toon", "http3", "websocket"}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = ParseFeature(inputs[i%len(inputs)])
+	}
+}
+
+func BenchmarkValidateFeatureCombination(b *testing.B) {
+	registry := GetRegistry()
+	features := map[Feature]bool{
+		FeatureHTTP2:     true,
+		FeatureHTTP3:     true,
+		FeatureSSE:       true,
+		FeatureGzip:      true,
+		FeatureMultiPass: true,
+		FeatureDebate:    true,
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = registry.ValidateFeatureCombination(features)
+	}
+}

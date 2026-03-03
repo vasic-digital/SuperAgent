@@ -534,3 +534,55 @@ func TestLLMThoughtEvaluator_IsTerminal(t *testing.T) {
 	isTerminal3, _ := evaluator.IsTerminal(context.Background(), thought3)
 	assert.False(t, isTerminal3)
 }
+
+// =============================================================================
+// Benchmarks
+// =============================================================================
+
+func BenchmarkMCTSNode_AverageReward(b *testing.B) {
+	node := &MCTSNode{
+		Visits:      1000,
+		TotalReward: 750.0,
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = node.AverageReward()
+	}
+}
+
+func BenchmarkMCTSNode_AddReward(b *testing.B) {
+	node := &MCTSNode{}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		node.AddReward(0.75)
+	}
+}
+
+func BenchmarkSplitLines(b *testing.B) {
+	input := "1. First line\n2. Second line\n3. Third line\n4. Fourth line\n5. Fifth line"
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = splitLines(input)
+	}
+}
+
+func BenchmarkContainsIgnoreCase(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = containsIgnoreCase("Hello World this is a test string", "test")
+	}
+}
+
+func BenchmarkDefaultMCTSConfig(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = DefaultMCTSConfig()
+	}
+}
+
+func BenchmarkDefaultHiPlanConfig(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = DefaultHiPlanConfig()
+	}
+}

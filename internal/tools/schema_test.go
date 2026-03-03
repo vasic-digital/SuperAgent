@@ -392,3 +392,47 @@ func TestToolEnumParameters(t *testing.T) {
 		}
 	}
 }
+
+// =============================================================================
+// Benchmarks
+// =============================================================================
+
+func BenchmarkGetToolSchema(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		GetToolSchema("Bash") //nolint:errcheck
+	}
+}
+
+func BenchmarkGetToolSchema_Alias(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		GetToolSchema("shell") //nolint:errcheck
+	}
+}
+
+func BenchmarkValidateToolArgs(b *testing.B) {
+	args := map[string]interface{}{
+		"command":     "go test -v ./...",
+		"description": "Run tests",
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		ValidateToolArgs("Bash", args) //nolint:errcheck
+	}
+}
+
+func BenchmarkGetAllToolNames(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = GetAllToolNames()
+	}
+}
+
+func BenchmarkGenerateOpenAIToolDefinition(b *testing.B) {
+	schema, _ := GetToolSchema("Bash")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = GenerateOpenAIToolDefinition(schema)
+	}
+}

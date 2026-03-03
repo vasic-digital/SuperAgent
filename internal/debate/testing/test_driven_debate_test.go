@@ -191,3 +191,83 @@ func TestDebateTestIntegration_TestDrivenDebateRound(t *testing.T) {
 	assert.Equal(t, 1, result.Round)
 	assert.NotEmpty(t, result.Solutions)
 }
+
+// =============================================================================
+// Benchmarks
+// =============================================================================
+
+func BenchmarkBasicTestCaseValidator_Validate(b *testing.B) {
+	validator := NewBasicTestCaseValidator()
+	tc := &TestCase{
+		ID:          "test-bench",
+		Code:        "assert(add(1, 2) == 3)",
+		Language:    "go",
+		Description: "Benchmark test case validation",
+	}
+	ctx := context.Background()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		validator.Validate(ctx, tc) //nolint:errcheck
+	}
+}
+
+func BenchmarkNewSandboxedTestExecutor(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = NewSandboxedTestExecutor(
+			WithTimeout(5*time.Second),
+			WithMemoryLimit(256*1024*1024),
+		)
+	}
+}
+
+func BenchmarkGetDefaultEnvironment(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = GetDefaultEnvironment("go")
+	}
+}
+
+func BenchmarkDifferentialContrastiveAnalyzer_Analyze(b *testing.B) {
+	analyzer := NewDifferentialContrastiveAnalyzer(nil)
+	tc := &TestCase{
+		ID:       "test-bench",
+		Language: "go",
+	}
+	results := map[string]*TestExecutionResult{
+		"solution1": {
+			TestID:     "test-bench",
+			SolutionID: "solution1",
+			Passed:     true,
+			Duration:   100 * time.Millisecond,
+		},
+		"solution2": {
+			TestID:     "test-bench",
+			SolutionID: "solution2",
+			Passed:     false,
+			Duration:   200 * time.Millisecond,
+		},
+	}
+	ctx := context.Background()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		analyzer.Analyze(ctx, tc, results) //nolint:errcheck
+	}
+}
+
+func BenchmarkLLMTestCaseGenerator_GenerateTestCase(b *testing.B) {
+	validator := NewBasicTestCaseValidator()
+	generator := NewLLMTestCaseGenerator(nil, validator)
+	req := &GenerateRequest{
+		AgentID:        "agent1",
+		TargetSolution: "func add(a, b int) int { return a + b }",
+		Language:       "go",
+		Context:        "Benchmark test generation",
+		Difficulty:     DifficultyBasic,
+	}
+	ctx := context.Background()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		generator.GenerateTestCase(ctx, req) //nolint:errcheck
+	}
+}

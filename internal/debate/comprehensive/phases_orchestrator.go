@@ -42,15 +42,15 @@ func (o *PhaseOrchestrator) PlanningPhase(ctx context.Context, req *DebateReques
 
 	// Have architects propose designs
 	for _, architect := range architects {
-		// TODO: Call actual agent.Process
-		response := &AgentResponse{
-			AgentID:    architect.ID,
-			AgentRole:  architect.Role,
-			Provider:   architect.Provider,
-			Model:      architect.Model,
-			Content:    fmt.Sprintf("Architectural design by %s", architect.Name),
-			Confidence: 0.9,
-			Score:      architect.Score,
+		specialized := NewArchitectAgent(architect, o.pool)
+		msg := &Message{
+			Type:    MessageTypeProposal,
+			Content: req.Topic,
+		}
+		response, err := specialized.Process(ctx, msg, context)
+		if err != nil {
+			o.logger.WithError(err).WithField("agent", architect.Name).Warn("Architect processing failed")
+			continue
 		}
 
 		phase.Responses = append(phase.Responses, *response)
@@ -91,15 +91,15 @@ func (o *PhaseOrchestrator) GenerationPhase(ctx context.Context, req *DebateRequ
 
 	// Have generators produce code
 	for _, generator := range generators {
-		// TODO: Call actual agent.Process
-		response := &AgentResponse{
-			AgentID:    generator.ID,
-			AgentRole:  generator.Role,
-			Provider:   generator.Provider,
-			Model:      generator.Model,
-			Content:    fmt.Sprintf("Generated code by %s", generator.Name),
-			Confidence: 0.85,
-			Score:      generator.Score,
+		specialized := NewGeneratorAgent(generator, o.pool)
+		msg := &Message{
+			Type:    MessageTypeProposal,
+			Content: req.Topic,
+		}
+		response, err := specialized.Process(ctx, msg, context)
+		if err != nil {
+			o.logger.WithError(err).WithField("agent", generator.Name).Warn("Generator processing failed")
+			continue
 		}
 
 		phase.Responses = append(phase.Responses, *response)
@@ -141,15 +141,15 @@ func (o *PhaseOrchestrator) DebatePhase(ctx context.Context, req *DebateRequest,
 	// Critic agents critique the code
 	critics := o.pool.GetByRole(RoleCritic)
 	for _, critic := range critics {
-		// TODO: Call actual agent.Process
-		response := &AgentResponse{
-			AgentID:    critic.ID,
-			AgentRole:  critic.Role,
-			Provider:   critic.Provider,
-			Model:      critic.Model,
-			Content:    fmt.Sprintf("Critique by %s: Review code for issues", critic.Name),
-			Confidence: 0.8,
-			Score:      critic.Score,
+		specialized := NewCriticAgent(critic, o.pool)
+		msg := &Message{
+			Type:    MessageTypeCritique,
+			Content: req.Topic,
+		}
+		response, err := specialized.Process(ctx, msg, context)
+		if err != nil {
+			o.logger.WithError(err).WithField("agent", critic.Name).Warn("Critic processing failed")
+			continue
 		}
 
 		phase.Responses = append(phase.Responses, *response)
@@ -159,14 +159,15 @@ func (o *PhaseOrchestrator) DebatePhase(ctx context.Context, req *DebateRequest,
 	// Generator agents defend or revise
 	generators := o.pool.GetByRole(RoleGenerator)
 	for _, generator := range generators {
-		response := &AgentResponse{
-			AgentID:    generator.ID,
-			AgentRole:  generator.Role,
-			Provider:   generator.Provider,
-			Model:      generator.Model,
-			Content:    fmt.Sprintf("Defense by %s: Addressing critiques", generator.Name),
-			Confidence: 0.82,
-			Score:      generator.Score,
+		specialized := NewGeneratorAgent(generator, o.pool)
+		msg := &Message{
+			Type:    MessageTypeDefense,
+			Content: req.Topic,
+		}
+		response, err := specialized.Process(ctx, msg, context)
+		if err != nil {
+			o.logger.WithError(err).WithField("agent", generator.Name).Warn("Generator defense failed")
+			continue
 		}
 
 		phase.Responses = append(phase.Responses, *response)
@@ -193,14 +194,12 @@ func (o *PhaseOrchestrator) ValidationPhase(ctx context.Context, req *DebateRequ
 	// Tester agents create tests
 	testers := o.pool.GetByRole(RoleTester)
 	for _, tester := range testers {
-		response := &AgentResponse{
-			AgentID:    tester.ID,
-			AgentRole:  tester.Role,
-			Provider:   tester.Provider,
-			Model:      tester.Model,
-			Content:    fmt.Sprintf("Tests by %s", tester.Name),
-			Confidence: 0.9,
-			Score:      tester.Score,
+		specialized := NewTesterAgent(tester, o.pool)
+		msg := &Message{Type: MessageTypeProposal, Content: req.Topic}
+		response, err := specialized.Process(ctx, msg, context)
+		if err != nil {
+			o.logger.WithError(err).WithField("agent", tester.Name).Warn("Tester processing failed")
+			continue
 		}
 
 		phase.Responses = append(phase.Responses, *response)
@@ -210,14 +209,12 @@ func (o *PhaseOrchestrator) ValidationPhase(ctx context.Context, req *DebateRequ
 	// Validator agents verify correctness
 	validators := o.pool.GetByRole(RoleValidator)
 	for _, validator := range validators {
-		response := &AgentResponse{
-			AgentID:    validator.ID,
-			AgentRole:  validator.Role,
-			Provider:   validator.Provider,
-			Model:      validator.Model,
-			Content:    fmt.Sprintf("Validation by %s", validator.Name),
-			Confidence: 0.95,
-			Score:      validator.Score,
+		specialized := NewValidatorAgent(validator, o.pool)
+		msg := &Message{Type: MessageTypeProposal, Content: req.Topic}
+		response, err := specialized.Process(ctx, msg, context)
+		if err != nil {
+			o.logger.WithError(err).WithField("agent", validator.Name).Warn("Validator processing failed")
+			continue
 		}
 
 		phase.Responses = append(phase.Responses, *response)
@@ -253,14 +250,12 @@ func (o *PhaseOrchestrator) RefactoringPhase(ctx context.Context, req *DebateReq
 	// Refactoring agents improve code
 	refactorers := o.pool.GetByRole(RoleRefactoring)
 	for _, refactorer := range refactorers {
-		response := &AgentResponse{
-			AgentID:    refactorer.ID,
-			AgentRole:  refactorer.Role,
-			Provider:   refactorer.Provider,
-			Model:      refactorer.Model,
-			Content:    fmt.Sprintf("Refactoring by %s", refactorer.Name),
-			Confidence: 0.88,
-			Score:      refactorer.Score,
+		specialized := NewRefactoringAgent(refactorer, o.pool)
+		msg := &Message{Type: MessageTypeProposal, Content: req.Topic}
+		response, err := specialized.Process(ctx, msg, context)
+		if err != nil {
+			o.logger.WithError(err).WithField("agent", refactorer.Name).Warn("Refactoring agent processing failed")
+			continue
 		}
 
 		phase.Responses = append(phase.Responses, *response)
@@ -270,14 +265,12 @@ func (o *PhaseOrchestrator) RefactoringPhase(ctx context.Context, req *DebateReq
 	// Performance agents optimize
 	performers := o.pool.GetByRole(RolePerformance)
 	for _, performer := range performers {
-		response := &AgentResponse{
-			AgentID:    performer.ID,
-			AgentRole:  performer.Role,
-			Provider:   performer.Provider,
-			Model:      performer.Model,
-			Content:    fmt.Sprintf("Optimization by %s", performer.Name),
-			Confidence: 0.9,
-			Score:      performer.Score,
+		specialized := NewPerformanceAgent(performer, o.pool)
+		msg := &Message{Type: MessageTypeProposal, Content: req.Topic}
+		response, err := specialized.Process(ctx, msg, context)
+		if err != nil {
+			o.logger.WithError(err).WithField("agent", performer.Name).Warn("Performance agent processing failed")
+			continue
 		}
 
 		phase.Responses = append(phase.Responses, *response)
@@ -300,14 +293,12 @@ func (o *PhaseOrchestrator) IntegrationPhase(ctx context.Context, req *DebateReq
 	// Security review
 	securityAgents := o.pool.GetByRole(RoleSecurity)
 	for _, sec := range securityAgents {
-		response := &AgentResponse{
-			AgentID:    sec.ID,
-			AgentRole:  sec.Role,
-			Provider:   sec.Provider,
-			Model:      sec.Model,
-			Content:    fmt.Sprintf("Security review by %s", sec.Name),
-			Confidence: 0.85,
-			Score:      sec.Score,
+		specialized := NewSecurityAgent(sec, o.pool)
+		msg := &Message{Type: MessageTypeCritique, Content: req.Topic}
+		response, err := specialized.Process(ctx, msg, context)
+		if err != nil {
+			o.logger.WithError(err).WithField("agent", sec.Name).Warn("Security agent processing failed")
+			continue
 		}
 
 		phase.Responses = append(phase.Responses, *response)
@@ -317,14 +308,12 @@ func (o *PhaseOrchestrator) IntegrationPhase(ctx context.Context, req *DebateReq
 	// Final validation
 	validators := o.pool.GetByRole(RoleValidator)
 	for _, validator := range validators {
-		response := &AgentResponse{
-			AgentID:    validator.ID,
-			AgentRole:  validator.Role,
-			Provider:   validator.Provider,
-			Model:      validator.Model,
-			Content:    fmt.Sprintf("Final validation by %s", validator.Name),
-			Confidence: 0.95,
-			Score:      validator.Score,
+		specialized := NewValidatorAgent(validator, o.pool)
+		msg := &Message{Type: MessageTypeProposal, Content: req.Topic}
+		response, err := specialized.Process(ctx, msg, context)
+		if err != nil {
+			o.logger.WithError(err).WithField("agent", validator.Name).Warn("Validator processing failed")
+			continue
 		}
 
 		phase.Responses = append(phase.Responses, *response)

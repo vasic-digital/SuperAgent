@@ -297,3 +297,87 @@ func TestPreferencePair(t *testing.T) {
 	assert.Greater(t, pair.ChosenScore, pair.RejectedScore)
 	assert.InDelta(t, pair.Margin, pair.ChosenScore-pair.RejectedScore, 0.001)
 }
+
+// =============================================================================
+// Benchmarks
+// =============================================================================
+
+func BenchmarkDefaultSelfImprovementConfig(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = DefaultSelfImprovementConfig()
+	}
+}
+
+func BenchmarkInMemoryFeedbackCollector_Collect(b *testing.B) {
+	collector := NewInMemoryFeedbackCollector(nil, 100000)
+	ctx := context.Background()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		feedback := &Feedback{
+			SessionID:    "session-1",
+			PromptID:     "prompt-1",
+			Type:         FeedbackTypePositive,
+			Source:       FeedbackSourceHuman,
+			Score:        0.9,
+			ProviderName: "claude",
+		}
+		collector.Collect(ctx, feedback) //nolint:errcheck
+	}
+}
+
+func BenchmarkInMemoryFeedbackCollector_GetBySession(b *testing.B) {
+	collector := NewInMemoryFeedbackCollector(nil, 10000)
+	ctx := context.Background()
+
+	// Populate with test data
+	for i := 0; i < 100; i++ {
+		feedback := &Feedback{
+			SessionID:    "session-1",
+			Type:         FeedbackTypePositive,
+			Source:       FeedbackSourceAI,
+			Score:        0.8,
+			ProviderName: "claude",
+		}
+		collector.Collect(ctx, feedback) //nolint:errcheck
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		collector.GetBySession(ctx, "session-1") //nolint:errcheck
+	}
+}
+
+func BenchmarkInMemoryFeedbackCollector_GetAggregated(b *testing.B) {
+	collector := NewInMemoryFeedbackCollector(nil, 10000)
+	ctx := context.Background()
+
+	// Populate with test data
+	for i := 0; i < 50; i++ {
+		feedback := &Feedback{
+			SessionID:    "session-1",
+			Type:         FeedbackTypePositive,
+			Source:       FeedbackSourceAI,
+			Score:        0.7 + float64(i)*0.005,
+			ProviderName: "claude",
+			Dimensions: map[DimensionType]float64{
+				DimensionHelpfulness: 0.8,
+				DimensionAccuracy:    0.9,
+			},
+		}
+		collector.Collect(ctx, feedback) //nolint:errcheck
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		collector.GetAggregated(ctx, nil) //nolint:errcheck
+	}
+}
+
+func BenchmarkNewInMemoryFeedbackCollector(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = NewInMemoryFeedbackCollector(nil, 10000)
+	}
+}

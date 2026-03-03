@@ -800,6 +800,61 @@ func TestSemanticConventions(t *testing.T) {
 	assert.Equal(t, "helix.provider.score", AttrHelixProviderScore)
 }
 
+// Benchmarks
+
+func BenchmarkNewLLMTracer(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = NewLLMTracer(nil)
+	}
+}
+
+func BenchmarkNewLLMMetrics(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = NewLLMMetrics("bench-service")
+	}
+}
+
+func BenchmarkLLMMetricsRecordRequest(b *testing.B) {
+	metrics, _ := NewLLMMetrics("bench-service")
+	ctx := context.Background()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		metrics.RecordRequest(ctx, "openai", "gpt-4", 100*time.Millisecond, 100, 200, 0.01, nil)
+	}
+}
+
+func BenchmarkLLMTracerStartEndRequest(b *testing.B) {
+	tracer, _ := NewLLMTracer(nil)
+	ctx := context.Background()
+	params := &LLMRequestParams{
+		Provider:  "openai",
+		Model:     "gpt-4",
+		RequestID: "req-bench",
+	}
+	respParams := &LLMResponseParams{
+		InputTokens:  100,
+		OutputTokens: 200,
+		FinishReason: "stop",
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		startTime := time.Now()
+		newCtx, span := tracer.StartLLMRequest(ctx, params)
+		tracer.EndLLMRequest(newCtx, span, respParams, startTime)
+	}
+}
+
+func BenchmarkLLMMetricsRecordDebateRound(b *testing.B) {
+	metrics, _ := NewLLMMetrics("bench-service")
+	ctx := context.Background()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		metrics.RecordDebateRound(ctx, 5, 0.85)
+	}
+}
+
 // Test LLMMetrics struct fields
 
 func TestLLMMetricsFields(t *testing.T) {

@@ -512,3 +512,65 @@ func TestConcurrentPoolAccess(t *testing.T) {
 		<-done
 	}
 }
+
+// =============================================================================
+// Benchmarks
+// =============================================================================
+
+func BenchmarkNewAgentFactory(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = NewAgentFactory()
+	}
+}
+
+func BenchmarkAgentFactory_CreateFromTemplate(b *testing.B) {
+	factory := NewAgentFactory()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		factory.CreateFromTemplate("code-specialist", "claude", "claude-3") //nolint:errcheck
+	}
+}
+
+func BenchmarkAgentPool_Add(b *testing.B) {
+	factory := NewAgentFactory()
+	pool := NewAgentPool(factory)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		agent := NewSpecializedAgent("Agent", "test", "model", DomainCode)
+		pool.Add(agent)
+	}
+}
+
+func BenchmarkAgentPool_SelectBestForRole(b *testing.B) {
+	factory := NewAgentFactory()
+	pool := NewAgentPool(factory)
+
+	// Pre-populate pool with agents
+	for i := 0; i < 20; i++ {
+		agent := NewSpecializedAgent("Agent", "test", "model", DomainCode)
+		agent.Score = float64(i)
+		pool.Add(agent)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = pool.SelectBestForRole(topology.RoleProposer, DomainCode)
+	}
+}
+
+func BenchmarkAgentPool_GetByDomain(b *testing.B) {
+	factory := NewAgentFactory()
+	pool := NewAgentPool(factory)
+
+	domains := []Domain{DomainCode, DomainSecurity, DomainArchitecture}
+	for i := 0; i < 30; i++ {
+		agent := NewSpecializedAgent("Agent", "test", "model", domains[i%3])
+		pool.Add(agent)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = pool.GetByDomain(DomainCode)
+	}
+}
