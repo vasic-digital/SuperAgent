@@ -10,7 +10,6 @@ import (
 
 // AgentPool manages a pool of agents
 type AgentPool struct {
-	agents map[string]*Agent
 	byRole map[Role][]*Agent
 	byID   map[string]*Agent
 	mu     sync.RWMutex
@@ -24,7 +23,6 @@ func NewAgentPool(logger *logrus.Logger) *AgentPool {
 	}
 
 	return &AgentPool{
-		agents: make(map[string]*Agent),
 		byRole: make(map[Role][]*Agent),
 		byID:   make(map[string]*Agent),
 		logger: logger,
@@ -36,7 +34,6 @@ func (p *AgentPool) Add(agent *Agent) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	p.agents[agent.ID] = agent
 	p.byID[agent.ID] = agent
 	p.byRole[agent.Role] = append(p.byRole[agent.Role], agent)
 
@@ -72,8 +69,8 @@ func (p *AgentPool) GetAll() []*Agent {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
-	result := make([]*Agent, 0, len(p.agents))
-	for _, agent := range p.agents {
+	result := make([]*Agent, 0, len(p.byID))
+	for _, agent := range p.byID {
 		result = append(result, agent)
 	}
 	return result
@@ -85,7 +82,7 @@ func (p *AgentPool) GetActive() []*Agent {
 	defer p.mu.RUnlock()
 
 	var result []*Agent
-	for _, agent := range p.agents {
+	for _, agent := range p.byID {
 		if agent.IsActive {
 			result = append(result, agent)
 		}
@@ -112,7 +109,7 @@ func (p *AgentPool) Size() int {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
-	return len(p.agents)
+	return len(p.byID)
 }
 
 // SizeByRole returns the number of agents with a specific role
@@ -133,7 +130,6 @@ func (p *AgentPool) Remove(id string) bool {
 		return false
 	}
 
-	delete(p.agents, id)
 	delete(p.byID, id)
 
 	// Remove from role index
@@ -219,7 +215,6 @@ func (p *AgentPool) Clear() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	p.agents = make(map[string]*Agent)
 	p.byRole = make(map[Role][]*Agent)
 	p.byID = make(map[string]*Agent)
 

@@ -179,7 +179,7 @@ func TestToolRegistry_MultipleTools(t *testing.T) {
 
 	// Register multiple tools
 	registry.Register(NewCodeTool(".", nil))
-	registry.Register(NewCommandTool(".", 30, nil))
+	registry.Register(NewCommandTool(".", 30*time.Second, nil))
 	registry.Register(NewTestTool(".", nil))
 	registry.Register(NewBuildTool(".", nil))
 	registry.Register(NewStaticAnalysisTool(nil))

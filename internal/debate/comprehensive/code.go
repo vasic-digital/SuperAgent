@@ -139,11 +139,10 @@ func (r *ToolRegistry) Execute(ctx context.Context, toolName string, inputs map[
 	// Execute tool
 	start := time.Now()
 	result, err := tool.Execute(ctx, inputs)
-	result.Duration = time.Since(start)
-
 	if err != nil {
 		return NewToolError(err.Error()), nil
 	}
+	result.Duration = time.Since(start)
 
 	return result, nil
 }

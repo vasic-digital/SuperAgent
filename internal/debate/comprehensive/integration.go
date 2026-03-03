@@ -82,7 +82,7 @@ func (m *IntegrationManager) registerTools() error {
 	m.registry.Register(searchTool)
 
 	// Command tools
-	cmdTool := NewCommandTool(".", 30, m.logger)
+	cmdTool := NewCommandTool(".", 30*time.Second, m.logger)
 	m.registry.Register(cmdTool)
 
 	testTool := NewTestTool(".", m.logger)
@@ -206,10 +206,6 @@ func (m *IntegrationManager) StreamDebate(ctx context.Context, req *DebateStream
 	if err := streamer.Emit(StreamEventDebateStart, nil, "Starting comprehensive multi-agent debate", nil); err != nil {
 		m.logger.WithError(err).Warn("Failed to emit debate start event")
 	}
-
-	// Create system for debate execution
-	system := NewSystem(m.config)
-	system.logger = m.logger
 
 	// Execute debate with streaming through all teams
 	response := &DebateResponse{

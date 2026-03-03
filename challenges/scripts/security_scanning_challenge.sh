@@ -65,7 +65,7 @@ run_test "gosec binary is available" \
     "command -v gosec >/dev/null 2>&1 || [[ -f '\$HOME/go/bin/gosec' ]] || [[ -f '$PROJECT_ROOT/bin/gosec' ]]"
 
 run_test "go vet is available" \
-    "go vet --help 2>&1 | grep -q 'usage: go vet'"
+    "go help vet 2>&1 | grep -qi 'vet'"
 
 run_test "go tool includes security-relevant features" \
     "go version >/dev/null 2>&1"
@@ -326,17 +326,13 @@ run_test "gosec binary found in PATH or GOPATH" \
     "command -v gosec >/dev/null 2>&1 || [[ -f \"\$HOME/go/bin/gosec\" ]] || [[ -f '$PROJECT_ROOT/bin/gosec' ]]"
 
 # Run gosec with limited scope to avoid timeout, exclude G115 (known gosec bug)
-GOSEC_CMD="gosec"
-if ! command -v gosec >/dev/null 2>&1 && [[ -f "\$HOME/go/bin/gosec" ]]; then
-    GOSEC_CMD="\$HOME/go/bin/gosec"
-fi
-GOSEC_BIN=$(command -v gosec 2>/dev/null || echo "\$HOME/go/bin/gosec")
+GOSEC_BIN=$(command -v gosec 2>/dev/null || echo "$HOME/go/bin/gosec")
 
 run_test "gosec: no HIGH severity findings in security package" \
-    "GOMAXPROCS=2 nice -n 19 \${GOSEC_BIN} -exclude=G115 -severity high -confidence high -no-fail ./internal/security/... 2>/dev/null | grep -c 'HIGH' | xargs test 0 -eq"
+    "GOMAXPROCS=2 nice -n 19 $GOSEC_BIN -exclude=G115 -severity high -confidence high ./internal/security/... 2>&1 | grep -c 'HIGH' | xargs test 0 -eq"
 
 run_test "gosec: no HIGH severity findings in middleware" \
-    "GOMAXPROCS=2 nice -n 19 \${GOSEC_BIN} -exclude=G115 -severity high -confidence high -no-fail ./internal/middleware/... 2>/dev/null | grep -c 'HIGH' | xargs test 0 -eq"
+    "GOMAXPROCS=2 nice -n 19 $GOSEC_BIN -exclude=G115 -severity high -confidence high ./internal/middleware/... 2>&1 | grep -c 'HIGH' | xargs test 0 -eq"
 
 run_test "gosec: MD5 not used as cryptographic primitive (only FNV/SHA for cache keys)" \
     "! grep -rn --include='*.go' 'crypto/md5' '$PROJECT_ROOT/internal/' | grep -v nosec | grep -v test | grep -q ."

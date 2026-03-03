@@ -3,6 +3,7 @@ package comprehensive
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -45,7 +46,7 @@ func TestToolRegistry_GetAll(t *testing.T) {
 
 	// Register multiple tools
 	registry.Register(NewCodeTool(".", nil))
-	registry.Register(NewCommandTool(".", 30, nil))
+	registry.Register(NewCommandTool(".", 30*time.Second, nil))
 	registry.Register(NewTestTool(".", nil))
 
 	all := registry.GetAll()
@@ -58,7 +59,7 @@ func TestToolRegistry_GetByType(t *testing.T) {
 	// Register tools of different types
 	registry.Register(NewCodeTool(".", nil))
 	registry.Register(NewSearchTool(".", nil))
-	registry.Register(NewCommandTool(".", 30, nil))
+	registry.Register(NewCommandTool(".", 30*time.Second, nil))
 
 	// Get code tools
 	codeTools := registry.GetByType(ToolTypeCode)
@@ -131,12 +132,12 @@ func TestCodeTool_Validate_MissingContent(t *testing.T) {
 }
 
 func TestCommandTool_GetName(t *testing.T) {
-	tool := NewCommandTool(".", 30, nil)
+	tool := NewCommandTool(".", 30*time.Second, nil)
 	assert.Equal(t, "execute_command", tool.GetName())
 }
 
 func TestCommandTool_Validate_MissingCommand(t *testing.T) {
-	tool := NewCommandTool(".", 30, nil)
+	tool := NewCommandTool(".", 30*time.Second, nil)
 
 	inputs := map[string]interface{}{}
 
@@ -146,7 +147,7 @@ func TestCommandTool_Validate_MissingCommand(t *testing.T) {
 }
 
 func TestCommandTool_Validate_DangerousCommand(t *testing.T) {
-	tool := NewCommandTool(".", 30, nil)
+	tool := NewCommandTool(".", 30*time.Second, nil)
 
 	inputs := map[string]interface{}{
 		"command": "rm -rf /",
@@ -158,7 +159,7 @@ func TestCommandTool_Validate_DangerousCommand(t *testing.T) {
 }
 
 func TestCommandTool_Validate_NotAllowed(t *testing.T) {
-	tool := NewCommandTool(".", 30, nil)
+	tool := NewCommandTool(".", 30*time.Second, nil)
 
 	inputs := map[string]interface{}{
 		"command": "malicious_command",

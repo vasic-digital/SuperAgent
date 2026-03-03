@@ -101,7 +101,11 @@ func NewShortTermMemory(agentID string, maxSize int) *ShortTermMemory {
 func (s *ShortTermMemory) Add(content string, context map[string]interface{}) *MemoryEntry {
 	entry := NewMemoryEntry(MemoryTypeShortTerm, s.agentID, content, 1.0)
 	if context != nil {
-		entry.Context = context
+		// Copy context map to avoid mutating the caller's map
+		entry.Context = make(map[string]interface{}, len(context))
+		for k, v := range context {
+			entry.Context[k] = v
+		}
 	}
 
 	s.entries = append(s.entries, entry)
@@ -276,7 +280,11 @@ func (e *EpisodicMemory) AddReflection(reflection string, failure string, contex
 	entry := NewMemoryEntry(MemoryTypeEpisodic, e.agentID, content, 0.9)
 
 	if context != nil {
-		entry.Context = context
+		// Copy context map to avoid mutating the caller's map
+		entry.Context = make(map[string]interface{}, len(context)+2)
+		for k, v := range context {
+			entry.Context[k] = v
+		}
 		entry.Context["reflection"] = reflection
 		entry.Context["failure"] = failure
 	}
