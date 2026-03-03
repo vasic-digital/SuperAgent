@@ -164,6 +164,7 @@ func (a *QdrantAdapter) CreateCollection(ctx context.Context, name string, vecto
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		//nolint:errcheck // error reading response body for error message
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("failed to create collection: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
@@ -233,6 +234,7 @@ func (a *QdrantAdapter) UpsertPoints(ctx context.Context, collectionName string,
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
+		//nolint:errcheck // error reading response body for error message
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("failed to upsert points: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
@@ -278,6 +280,7 @@ func (a *QdrantAdapter) Search(ctx context.Context, collectionName string, vecto
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
+		//nolint:errcheck // error reading response body for error message
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("failed to search: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
@@ -320,6 +323,7 @@ func (a *QdrantAdapter) SearchBatch(ctx context.Context, collectionName string, 
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
+		//nolint:errcheck // error reading response body for error message
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("failed to search batch: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
@@ -349,6 +353,7 @@ func (a *QdrantAdapter) GetPoints(ctx context.Context, collectionName string, id
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
+		//nolint:errcheck // error reading response body for error message
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("failed to get points: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
@@ -408,6 +413,7 @@ func (a *QdrantAdapter) Scroll(ctx context.Context, collectionName string, offse
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
+		//nolint:errcheck // error reading response body for error message
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return nil, nil, fmt.Errorf("failed to scroll: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}

@@ -361,13 +361,6 @@ func (p *QwenACPProvider) sendRequest(ctx context.Context, method string, params
 	}
 }
 
-// initialize sends the initialize request
-func (p *QwenACPProvider) initialize() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	return p.initializeWithContext(ctx)
-}
-
 // initializeWithContext sends the initialize request with provided context
 func (p *QwenACPProvider) initializeWithContext(ctx context.Context) error {
 	// Try with empty params first (some ACP versions don't expect params)
@@ -395,13 +388,6 @@ func (p *QwenACPProvider) initializeWithContext(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-// createSession creates a new ACP session
-func (p *QwenACPProvider) createSession() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	return p.createSessionWithContext(ctx)
 }
 
 // createSessionWithContext creates a new ACP session with provided context

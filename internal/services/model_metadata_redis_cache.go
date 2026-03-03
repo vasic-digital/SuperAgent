@@ -179,6 +179,7 @@ func (c *ModelMetadataRedisCache) GetBulk(ctx context.Context, modelIDs []string
 		}
 
 		var metadata database.ModelMetadata
+		//nolint:errcheck // redis GET returns string, type assertion safe
 		if err := json.Unmarshal([]byte(result.(string)), &metadata); err != nil {
 			c.log.WithError(err).WithField("model_id", modelIDs[i]).Warn("Failed to unmarshal cached model")
 			continue

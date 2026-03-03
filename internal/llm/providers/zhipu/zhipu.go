@@ -13,10 +13,7 @@ import (
 
 	"dev.helix.agent/internal/llm/discovery"
 	"dev.helix.agent/internal/models"
-	"github.com/sirupsen/logrus"
 )
-
-var log = logrus.New()
 
 const (
 	ZhipuAPIURL     = "https://open.bigmodel.cn/api/paas/v4/chat/completions"

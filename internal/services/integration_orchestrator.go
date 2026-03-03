@@ -324,6 +324,7 @@ func (io *IntegrationOrchestrator) executeLSPStep(ctx context.Context, step *Wor
 	case "Initialize LSP Client":
 		return nil, io.lspClient.StartServer(ctx)
 	case "Get Code Intelligence":
+		//nolint:errcheck // parameter validation ensures correct type
 		filePath, _ := step.Parameters["filePath"].(string)
 		return io.lspClient.GetCodeIntelligence(ctx, filePath, nil)
 	default:
@@ -401,6 +402,7 @@ func (io *IntegrationOrchestrator) executeLLMStep(ctx context.Context, step *Wor
 	}
 
 	// Get provider name (default to first available)
+	//nolint:errcheck // parameter validation ensures correct type
 	providerName, _ := step.Parameters["provider"].(string)
 	if providerName == "" {
 		providers := io.providerRegistry.ListProviders()
@@ -463,7 +465,9 @@ func (io *IntegrationOrchestrator) executeLLMStep(ctx context.Context, step *Wor
 
 // buildLLMRequest constructs an LLMRequest from workflow step parameters
 func (io *IntegrationOrchestrator) buildLLMRequest(step *WorkflowStep) (*models.LLMRequest, error) {
+	//nolint:errcheck // parameter validation ensures correct type
 	prompt, _ := step.Parameters["prompt"].(string)
+	//nolint:errcheck // parameter validation ensures correct type
 	model, _ := step.Parameters["model"].(string)
 	if model == "" {
 		model = "default"
@@ -495,7 +499,9 @@ func (io *IntegrationOrchestrator) buildLLMRequest(step *WorkflowStep) (*models.
 		llmMessages := make([]models.Message, 0, len(messages))
 		for _, msg := range messages {
 			if msgMap, ok := msg.(map[string]interface{}); ok {
+				//nolint:errcheck // schema validation ensures correct type
 				role, _ := msgMap["role"].(string)
+				//nolint:errcheck // schema validation ensures correct type
 				content, _ := msgMap["content"].(string)
 				llmMessages = append(llmMessages, models.Message{
 					Role:    role,

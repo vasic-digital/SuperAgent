@@ -392,7 +392,7 @@ func (a *MongoDBAdapter) listDatabases(ctx context.Context) (*ToolResult, error)
 }
 
 func (a *MongoDBAdapter) listCollections(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	database, _ := args["database"].(string)
+	database, _ := args["database"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	collections, err := a.client.ListCollections(ctx, database)
 	if err != nil {
@@ -411,9 +411,9 @@ func (a *MongoDBAdapter) listCollections(ctx context.Context, args map[string]in
 }
 
 func (a *MongoDBAdapter) find(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	database, _ := args["database"].(string)
-	collection, _ := args["collection"].(string)
-	filter, _ := args["filter"].(map[string]interface{})
+	database, _ := args["database"].(string)             //nolint:errcheck // schema validation ensures correct type
+	collection, _ := args["collection"].(string)         //nolint:errcheck // schema validation ensures correct type
+	filter, _ := args["filter"].(map[string]interface{}) //nolint:errcheck // schema validation ensures correct type
 	if filter == nil {
 		filter = map[string]interface{}{}
 	}
@@ -438,9 +438,9 @@ func (a *MongoDBAdapter) find(ctx context.Context, args map[string]interface{}) 
 }
 
 func (a *MongoDBAdapter) findOne(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	database, _ := args["database"].(string)
-	collection, _ := args["collection"].(string)
-	filter, _ := args["filter"].(map[string]interface{})
+	database, _ := args["database"].(string)             //nolint:errcheck // schema validation ensures correct type
+	collection, _ := args["collection"].(string)         //nolint:errcheck // schema validation ensures correct type
+	filter, _ := args["filter"].(map[string]interface{}) //nolint:errcheck // schema validation ensures correct type
 
 	doc, err := a.client.FindOne(ctx, database, collection, filter)
 	if err != nil {
@@ -454,9 +454,9 @@ func (a *MongoDBAdapter) findOne(ctx context.Context, args map[string]interface{
 }
 
 func (a *MongoDBAdapter) insertOne(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	database, _ := args["database"].(string)
-	collection, _ := args["collection"].(string)
-	document, _ := args["document"].(map[string]interface{})
+	database, _ := args["database"].(string)                 //nolint:errcheck // schema validation ensures correct type
+	collection, _ := args["collection"].(string)             //nolint:errcheck // schema validation ensures correct type
+	document, _ := args["document"].(map[string]interface{}) //nolint:errcheck // schema validation ensures correct type
 
 	id, err := a.client.InsertOne(ctx, database, collection, document)
 	if err != nil {
@@ -469,9 +469,9 @@ func (a *MongoDBAdapter) insertOne(ctx context.Context, args map[string]interfac
 }
 
 func (a *MongoDBAdapter) insertMany(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	database, _ := args["database"].(string)
-	collection, _ := args["collection"].(string)
-	docsRaw, _ := args["documents"].([]interface{})
+	database, _ := args["database"].(string)        //nolint:errcheck // schema validation ensures correct type
+	collection, _ := args["collection"].(string)    //nolint:errcheck // schema validation ensures correct type
+	docsRaw, _ := args["documents"].([]interface{}) //nolint:errcheck // schema validation ensures correct type
 
 	var documents []map[string]interface{}
 	for _, d := range docsRaw {
@@ -491,10 +491,10 @@ func (a *MongoDBAdapter) insertMany(ctx context.Context, args map[string]interfa
 }
 
 func (a *MongoDBAdapter) updateOne(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	database, _ := args["database"].(string)
-	collection, _ := args["collection"].(string)
-	filter, _ := args["filter"].(map[string]interface{})
-	update, _ := args["update"].(map[string]interface{})
+	database, _ := args["database"].(string)             //nolint:errcheck // schema validation ensures correct type
+	collection, _ := args["collection"].(string)         //nolint:errcheck // schema validation ensures correct type
+	filter, _ := args["filter"].(map[string]interface{}) //nolint:errcheck // schema validation ensures correct type
+	update, _ := args["update"].(map[string]interface{}) //nolint:errcheck // schema validation ensures correct type
 
 	matched, err := a.client.UpdateOne(ctx, database, collection, filter, update)
 	if err != nil {
@@ -507,9 +507,9 @@ func (a *MongoDBAdapter) updateOne(ctx context.Context, args map[string]interfac
 }
 
 func (a *MongoDBAdapter) deleteOne(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	database, _ := args["database"].(string)
-	collection, _ := args["collection"].(string)
-	filter, _ := args["filter"].(map[string]interface{})
+	database, _ := args["database"].(string)             //nolint:errcheck // schema validation ensures correct type
+	collection, _ := args["collection"].(string)         //nolint:errcheck // schema validation ensures correct type
+	filter, _ := args["filter"].(map[string]interface{}) //nolint:errcheck // schema validation ensures correct type
 
 	deleted, err := a.client.DeleteOne(ctx, database, collection, filter)
 	if err != nil {
@@ -522,9 +522,9 @@ func (a *MongoDBAdapter) deleteOne(ctx context.Context, args map[string]interfac
 }
 
 func (a *MongoDBAdapter) aggregate(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	database, _ := args["database"].(string)
-	collection, _ := args["collection"].(string)
-	pipelineRaw, _ := args["pipeline"].([]interface{})
+	database, _ := args["database"].(string)           //nolint:errcheck // schema validation ensures correct type
+	collection, _ := args["collection"].(string)       //nolint:errcheck // schema validation ensures correct type
+	pipelineRaw, _ := args["pipeline"].([]interface{}) //nolint:errcheck // schema validation ensures correct type
 
 	var pipeline []map[string]interface{}
 	for _, p := range pipelineRaw {
@@ -545,9 +545,9 @@ func (a *MongoDBAdapter) aggregate(ctx context.Context, args map[string]interfac
 }
 
 func (a *MongoDBAdapter) count(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	database, _ := args["database"].(string)
-	collection, _ := args["collection"].(string)
-	filter, _ := args["filter"].(map[string]interface{})
+	database, _ := args["database"].(string)             //nolint:errcheck // schema validation ensures correct type
+	collection, _ := args["collection"].(string)         //nolint:errcheck // schema validation ensures correct type
+	filter, _ := args["filter"].(map[string]interface{}) //nolint:errcheck // schema validation ensures correct type
 	if filter == nil {
 		filter = map[string]interface{}{}
 	}
@@ -563,10 +563,10 @@ func (a *MongoDBAdapter) count(ctx context.Context, args map[string]interface{})
 }
 
 func (a *MongoDBAdapter) createIndex(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	database, _ := args["database"].(string)
-	collection, _ := args["collection"].(string)
-	keys, _ := args["keys"].(map[string]interface{})
-	unique, _ := args["unique"].(bool)
+	database, _ := args["database"].(string)         //nolint:errcheck // schema validation ensures correct type
+	collection, _ := args["collection"].(string)     //nolint:errcheck // schema validation ensures correct type
+	keys, _ := args["keys"].(map[string]interface{}) //nolint:errcheck // schema validation ensures correct type
+	unique, _ := args["unique"].(bool)               //nolint:errcheck // schema validation ensures correct type
 
 	options := IndexOptions{
 		Unique: unique,

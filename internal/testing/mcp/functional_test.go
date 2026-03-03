@@ -342,12 +342,3 @@ func BenchmarkMCPToolCall(b *testing.B) {
 		}
 	}
 }
-
-func isPortOpen(addr string) bool {
-	conn, err := net.DialTimeout("tcp", addr, 2*time.Second)
-	if err != nil {
-		return false
-	}
-	_ = conn.Close()
-	return true
-}

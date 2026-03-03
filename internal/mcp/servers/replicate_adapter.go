@@ -140,6 +140,7 @@ func (a *ReplicateAdapter) Connect(ctx context.Context) error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
+		//nolint:errcheck // error reading response body for error message
 		body, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("failed to authenticate: %s", string(body))
 	}
@@ -212,6 +213,7 @@ func (a *ReplicateAdapter) GetModel(ctx context.Context, owner, name string) (*R
 	}
 
 	if resp.StatusCode != http.StatusOK {
+		//nolint:errcheck // error reading response body for error message
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("failed to get model: %s", string(body))
 	}
@@ -246,6 +248,7 @@ func (a *ReplicateAdapter) GetModelVersion(ctx context.Context, owner, name, ver
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
+		//nolint:errcheck // error reading response body for error message
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("failed to get model version: %s", string(body))
 	}
@@ -283,6 +286,7 @@ func (a *ReplicateAdapter) ListModels(ctx context.Context, cursor string) ([]Rep
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
+		//nolint:errcheck // error reading response body for error message
 		body, _ := io.ReadAll(resp.Body)
 		return nil, "", fmt.Errorf("failed to list models: %s", string(body))
 	}
@@ -335,6 +339,7 @@ func (a *ReplicateAdapter) CreatePrediction(ctx context.Context, version string,
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
+		//nolint:errcheck // error reading response body for error message
 		respBody, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("failed to create prediction: %s", string(respBody))
 	}
@@ -373,6 +378,7 @@ func (a *ReplicateAdapter) GetPrediction(ctx context.Context, predictionID strin
 	}
 
 	if resp.StatusCode != http.StatusOK {
+		//nolint:errcheck // error reading response body for error message
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("failed to get prediction: %s", string(body))
 	}
@@ -407,6 +413,7 @@ func (a *ReplicateAdapter) CancelPrediction(ctx context.Context, predictionID st
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
+		//nolint:errcheck // error reading response body for error message
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("failed to cancel prediction: %s", string(body))
 	}
@@ -444,6 +451,7 @@ func (a *ReplicateAdapter) ListPredictions(ctx context.Context, cursor string) (
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
+		//nolint:errcheck // error reading response body for error message
 		body, _ := io.ReadAll(resp.Body)
 		return nil, "", fmt.Errorf("failed to list predictions: %s", string(body))
 	}
@@ -553,6 +561,7 @@ func (a *ReplicateAdapter) GetCollection(ctx context.Context, slug string) (*Rep
 	}
 
 	if resp.StatusCode != http.StatusOK {
+		//nolint:errcheck // error reading response body for error message
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("failed to get collection: %s", string(body))
 	}
@@ -590,6 +599,7 @@ func (a *ReplicateAdapter) ListCollections(ctx context.Context, cursor string) (
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
+		//nolint:errcheck // error reading response body for error message
 		body, _ := io.ReadAll(resp.Body)
 		return nil, "", fmt.Errorf("failed to list collections: %s", string(body))
 	}

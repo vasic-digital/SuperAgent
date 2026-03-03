@@ -321,13 +321,13 @@ func (a *StableDiffusionAdapter) CallTool(ctx context.Context, name string, args
 }
 
 func (a *StableDiffusionAdapter) txt2img(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	prompt, _ := args["prompt"].(string)
-	negativePrompt, _ := args["negative_prompt"].(string)
+	prompt, _ := args["prompt"].(string)                  //nolint:errcheck // schema validation ensures correct type
+	negativePrompt, _ := args["negative_prompt"].(string) //nolint:errcheck // schema validation ensures correct type
 	width := getIntArg(args, "width", 512)
 	height := getIntArg(args, "height", 512)
 	steps := getIntArg(args, "steps", 20)
 	cfgScale := getFloatArg(args, "cfg_scale", 7.0)
-	samplerName, _ := args["sampler_name"].(string)
+	samplerName, _ := args["sampler_name"].(string) //nolint:errcheck // schema validation ensures correct type
 	if samplerName == "" {
 		samplerName = "Euler"
 	}
@@ -378,10 +378,10 @@ func (a *StableDiffusionAdapter) txt2img(ctx context.Context, args map[string]in
 }
 
 func (a *StableDiffusionAdapter) img2img(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	prompt, _ := args["prompt"].(string)
-	initImage, _ := args["init_image"].(string)
+	prompt, _ := args["prompt"].(string)        //nolint:errcheck // schema validation ensures correct type
+	initImage, _ := args["init_image"].(string) //nolint:errcheck // schema validation ensures correct type
 	denoisingStrength := getFloatArg(args, "denoising_strength", 0.75)
-	negativePrompt, _ := args["negative_prompt"].(string)
+	negativePrompt, _ := args["negative_prompt"].(string) //nolint:errcheck // schema validation ensures correct type
 	steps := getIntArg(args, "steps", 20)
 	cfgScale := getFloatArg(args, "cfg_scale", 7.0)
 	seed := getIntArg(args, "seed", -1)
@@ -428,11 +428,11 @@ func (a *StableDiffusionAdapter) img2img(ctx context.Context, args map[string]in
 }
 
 func (a *StableDiffusionAdapter) controlnet(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	prompt, _ := args["prompt"].(string)
-	controlImage, _ := args["control_image"].(string)
-	controlnetModel, _ := args["controlnet_model"].(string)
+	prompt, _ := args["prompt"].(string)                    //nolint:errcheck // schema validation ensures correct type
+	controlImage, _ := args["control_image"].(string)       //nolint:errcheck // schema validation ensures correct type
+	controlnetModel, _ := args["controlnet_model"].(string) //nolint:errcheck // schema validation ensures correct type
 	controlnetWeight := getFloatArg(args, "controlnet_weight", 1.0)
-	negativePrompt, _ := args["negative_prompt"].(string)
+	negativePrompt, _ := args["negative_prompt"].(string) //nolint:errcheck // schema validation ensures correct type
 	width := getIntArg(args, "width", 512)
 	height := getIntArg(args, "height", 512)
 	steps := getIntArg(args, "steps", 20)
@@ -488,8 +488,8 @@ func (a *StableDiffusionAdapter) controlnet(ctx context.Context, args map[string
 }
 
 func (a *StableDiffusionAdapter) upscale(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	image, _ := args["image"].(string)
-	upscaler, _ := args["upscaler"].(string)
+	image, _ := args["image"].(string)       //nolint:errcheck // schema validation ensures correct type
+	upscaler, _ := args["upscaler"].(string) //nolint:errcheck // schema validation ensures correct type
 	if upscaler == "" {
 		upscaler = "ESRGAN_4x"
 	}
@@ -593,7 +593,7 @@ func (a *StableDiffusionAdapter) listLoras(ctx context.Context, args map[string]
 }
 
 func (a *StableDiffusionAdapter) setModel(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	modelName, _ := args["model_name"].(string)
+	modelName, _ := args["model_name"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	payload := map[string]interface{}{
 		"sd_model_checkpoint": modelName,

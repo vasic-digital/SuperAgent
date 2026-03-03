@@ -185,6 +185,7 @@ func DetectContainerRuntime() (ContainerRuntime, string, error) {
 	if err != nil {
 		return RuntimeNone, "", err
 	}
+	//nolint:errcheck // path not required, empty string is acceptable
 	path, _ := exec.LookPath(name)
 	return ContainerRuntime(name), path, nil
 }
@@ -3348,7 +3349,10 @@ func handleGenerateCrush(appCfg *AppConfig) error {
 	}
 
 	baseURL := fmt.Sprintf("http://%s:%s/v1", host, port)
-	crushPortInt, _ := strconv.Atoi(port)
+	crushPortInt, err := strconv.Atoi(port)
+	if err != nil {
+		crushPortInt = 7061 // default port
+	}
 
 	// Build the Crush configuration
 	// Crush uses a different structure than OpenCode - providers with models array

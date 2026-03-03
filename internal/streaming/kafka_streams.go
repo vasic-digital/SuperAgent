@@ -18,7 +18,6 @@ type ConversationStreamProcessor struct {
 	logger      *zap.Logger
 	kafkaBroker *kafka.Broker
 	stateStore  StateStore
-	topology    *StreamTopology
 	running     bool
 	mu          sync.RWMutex
 	stopChan    chan struct{}

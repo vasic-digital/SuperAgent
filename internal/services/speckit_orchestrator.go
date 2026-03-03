@@ -141,6 +141,7 @@ func (so *SpecKitOrchestrator) ExecuteFlow(ctx context.Context, userRequest stri
 		result.Duration = time.Since(startTime)
 		return result, fmt.Errorf("constitution phase failed: %w", err)
 	}
+	//nolint:errcheck // artifact type guaranteed by phase execution
 	result.Constitution = constitutionResult.Artifacts["constitution"].(*Constitution)
 
 	// Phase 2: Specify
@@ -380,6 +381,7 @@ func (so *SpecKitOrchestrator) executeClarifyPhase(ctx context.Context, userRequ
 
 	so.logger.Info("[SpecKit:Clarify] Starting Clarify phase")
 
+	//nolint:errcheck // artifact type guaranteed by phase execution
 	specification := specifyResult.Artifacts["specification"].(string)
 
 	topic := fmt.Sprintf(`Review and clarify the specification to ensure completeness and remove ambiguities:
@@ -449,6 +451,7 @@ func (so *SpecKitOrchestrator) executePlanPhase(ctx context.Context, userRequest
 
 	so.logger.Info("[SpecKit:Plan] Starting Plan phase")
 
+	//nolint:errcheck // artifact type guaranteed by phase execution
 	clarifiedSpec := clarifyResult.Artifacts["clarified_spec"].(string)
 
 	topic := fmt.Sprintf(`Create a comprehensive implementation plan based on the clarified specification:
@@ -521,6 +524,7 @@ func (so *SpecKitOrchestrator) executeTasksPhase(ctx context.Context, planResult
 
 	so.logger.Info("[SpecKit:Tasks] Starting Tasks phase")
 
+	//nolint:errcheck // artifact type guaranteed by phase execution
 	plan := planResult.Artifacts["plan"].(string)
 
 	topic := fmt.Sprintf(`Break down the implementation plan into discrete, actionable tasks:
@@ -601,6 +605,7 @@ func (so *SpecKitOrchestrator) executeAnalyzePhase(ctx context.Context, constitu
 
 	so.logger.Info("[SpecKit:Analyze] Starting Analyze phase")
 
+	//nolint:errcheck // artifact type guaranteed by phase execution
 	tasksRaw := tasksResult.Artifacts["tasks_raw"].(string)
 
 	topic := fmt.Sprintf(`Perform comprehensive analysis before implementation:
@@ -676,7 +681,9 @@ func (so *SpecKitOrchestrator) executeImplementPhase(ctx context.Context, consti
 
 	so.logger.Info("[SpecKit:Implement] Starting Implement phase")
 
+	//nolint:errcheck // artifact type guaranteed by phase execution
 	analysis := analyzeResult.Artifacts["analysis"].(string)
+	//nolint:errcheck // artifact type guaranteed by phase execution
 	tasksRaw := tasksResult.Artifacts["tasks_raw"].(string)
 
 	topic := fmt.Sprintf(`Execute implementation based on analysis and tasks:

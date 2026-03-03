@@ -124,11 +124,6 @@ type messageResponse struct {
 	CreatedAt string `json:"createdAt"`
 }
 
-type errorResponse struct {
-	Error   string `json:"error"`
-	Message string `json:"message"`
-}
-
 // IsServerRunning checks if the OpenCode server is running
 func (p *ZenHTTPProvider) IsServerRunning() bool {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

@@ -123,7 +123,7 @@ func (h *MCPHandler) MCPToolsCall(c *gin.Context) {
 		return
 	}
 
-	arguments, _ := req["arguments"].(map[string]interface{})
+	arguments, _ := req["arguments"].(map[string]interface{}) //nolint:errcheck // schema validation ensures correct type
 
 	// Handle unified namespace if enabled
 	if h.config.UnifiedToolNamespace {

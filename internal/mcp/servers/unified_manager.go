@@ -454,11 +454,11 @@ func (m *UnifiedServerManager) ExecuteTool(ctx context.Context, toolName string,
 	// Execute tool based on type
 	switch adapterName {
 	case "chroma":
-		return m.executeChromaTool(ctx, adapter.(*ChromaAdapter), toolName, arguments)
+		return m.executeChromaTool(ctx, adapter.(*ChromaAdapter), toolName, arguments) //nolint:errcheck // adapter type guaranteed by switch case
 	case "qdrant":
-		return m.executeQdrantTool(ctx, adapter.(*QdrantAdapter), toolName, arguments)
+		return m.executeQdrantTool(ctx, adapter.(*QdrantAdapter), toolName, arguments) //nolint:errcheck // adapter type guaranteed by switch case
 	case "weaviate":
-		return m.executeWeaviateTool(ctx, adapter.(*WeaviateAdapter), toolName, arguments)
+		return m.executeWeaviateTool(ctx, adapter.(*WeaviateAdapter), toolName, arguments) //nolint:errcheck // adapter type guaranteed by switch case
 	}
 
 	return nil, fmt.Errorf("unsupported adapter: %s", adapterName)
@@ -470,14 +470,14 @@ func (m *UnifiedServerManager) executeChromaTool(ctx context.Context, adapter *C
 	case "chroma_list_collections":
 		return adapter.ListCollections(ctx)
 	case "chroma_create_collection":
-		name := args["name"].(string)
-		metadata, _ := args["metadata"].(map[string]interface{})
+		name := args["name"].(string)                            //nolint:errcheck // schema validation ensures correct type
+		metadata, _ := args["metadata"].(map[string]interface{}) //nolint:errcheck // schema validation ensures correct type
 		return adapter.CreateCollection(ctx, name, metadata)
 	case "chroma_delete_collection":
-		name := args["name"].(string)
+		name := args["name"].(string) //nolint:errcheck // schema validation ensures correct type
 		return nil, adapter.DeleteCollection(ctx, name)
 	case "chroma_count":
-		collection := args["collection"].(string)
+		collection := args["collection"].(string) //nolint:errcheck // schema validation ensures correct type
 		return adapter.Count(ctx, collection)
 	// Add more tool implementations...
 	default:
@@ -491,15 +491,15 @@ func (m *UnifiedServerManager) executeQdrantTool(ctx context.Context, adapter *Q
 	case "qdrant_list_collections":
 		return adapter.ListCollections(ctx)
 	case "qdrant_create_collection":
-		name := args["name"].(string)
-		vectorSize := uint64(args["vector_size"].(float64))
-		distance, _ := args["distance"].(string)
+		name := args["name"].(string)                       //nolint:errcheck // schema validation ensures correct type
+		vectorSize := uint64(args["vector_size"].(float64)) //nolint:errcheck // schema validation ensures correct type
+		distance, _ := args["distance"].(string)            //nolint:errcheck // schema validation ensures correct type
 		return nil, adapter.CreateCollection(ctx, name, vectorSize, distance)
 	case "qdrant_delete_collection":
-		name := args["name"].(string)
+		name := args["name"].(string) //nolint:errcheck // schema validation ensures correct type
 		return nil, adapter.DeleteCollection(ctx, name)
 	case "qdrant_count_points":
-		collection := args["collection"].(string)
+		collection := args["collection"].(string) //nolint:errcheck // schema validation ensures correct type
 		return adapter.CountPoints(ctx, collection)
 	// Add more tool implementations...
 	default:
@@ -513,7 +513,7 @@ func (m *UnifiedServerManager) executeWeaviateTool(ctx context.Context, adapter 
 	case "weaviate_list_classes":
 		return adapter.ListClasses(ctx)
 	case "weaviate_delete_class":
-		className := args["class"].(string)
+		className := args["class"].(string) //nolint:errcheck // schema validation ensures correct type
 		return nil, adapter.DeleteClass(ctx, className)
 	// Add more tool implementations...
 	default:

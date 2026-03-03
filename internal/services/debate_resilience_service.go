@@ -344,14 +344,19 @@ func (drs *DebateResilienceService) GetStats() map[string]interface{} {
 	for _, state := range drs.activeDebates {
 		switch state.Status {
 		case "active":
+			//nolint:errcheck // map initialized with int values
 			stats["active"] = stats["active"].(int) + 1
 		case "completed":
+			//nolint:errcheck // map initialized with int values
 			stats["completed"] = stats["completed"].(int) + 1
 		case "failed":
+			//nolint:errcheck // map initialized with int values
 			stats["failed"] = stats["failed"].(int) + 1
 		case "recovered":
+			//nolint:errcheck // map initialized with int values
 			stats["recovered"] = stats["recovered"].(int) + 1
 		case "recovering":
+			//nolint:errcheck // map initialized with int values
 			stats["recovering"] = stats["recovering"].(int) + 1
 		}
 		totalFailures += state.FailureCount

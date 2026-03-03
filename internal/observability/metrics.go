@@ -13,7 +13,6 @@ import (
 // LLMMetrics provides comprehensive metrics for LLM operations
 type LLMMetrics struct {
 	meter metric.Meter
-	mu    sync.RWMutex
 
 	// Request metrics
 	RequestsTotal    metric.Int64Counter

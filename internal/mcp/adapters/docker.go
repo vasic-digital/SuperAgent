@@ -458,7 +458,8 @@ func (a *DockerAdapter) CallTool(ctx context.Context, name string, args map[stri
 }
 
 func (a *DockerAdapter) listContainers(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	all, _ := args["all"].(bool)
+	//nolint:errcheck // schema validation ensures correct type
+	all, _ := args["all"].(bool) //nolint:errcheck // schema validation ensures correct type
 
 	containers, err := a.client.ListContainers(ctx, all)
 	if err != nil {
@@ -487,7 +488,8 @@ func (a *DockerAdapter) listContainers(ctx context.Context, args map[string]inte
 }
 
 func (a *DockerAdapter) getContainer(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	id, _ := args["id"].(string)
+	//nolint:errcheck // schema validation ensures correct type
+	id, _ := args["id"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	container, err := a.client.GetContainer(ctx, id)
 	if err != nil {
@@ -507,9 +509,12 @@ func (a *DockerAdapter) getContainer(ctx context.Context, args map[string]interf
 }
 
 func (a *DockerAdapter) createContainer(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	image, _ := args["image"].(string)
-	cmdRaw, _ := args["cmd"].([]interface{})
-	envRaw, _ := args["env"].([]interface{})
+	//nolint:errcheck // schema validation ensures correct type
+	image, _ := args["image"].(string) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct type
+	cmdRaw, _ := args["cmd"].([]interface{}) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct type
+	envRaw, _ := args["env"].([]interface{}) //nolint:errcheck // schema validation ensures correct type
 
 	var cmd []string
 	for _, c := range cmdRaw {
@@ -542,7 +547,8 @@ func (a *DockerAdapter) createContainer(ctx context.Context, args map[string]int
 }
 
 func (a *DockerAdapter) startContainer(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	id, _ := args["id"].(string)
+	//nolint:errcheck // schema validation ensures correct type
+	id, _ := args["id"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	err := a.client.StartContainer(ctx, id)
 	if err != nil {
@@ -555,7 +561,8 @@ func (a *DockerAdapter) startContainer(ctx context.Context, args map[string]inte
 }
 
 func (a *DockerAdapter) stopContainer(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	id, _ := args["id"].(string)
+	//nolint:errcheck // schema validation ensures correct type
+	id, _ := args["id"].(string) //nolint:errcheck // schema validation ensures correct type
 	timeout := getIntArg(args, "timeout", 10)
 
 	err := a.client.StopContainer(ctx, id, timeout)
@@ -569,7 +576,8 @@ func (a *DockerAdapter) stopContainer(ctx context.Context, args map[string]inter
 }
 
 func (a *DockerAdapter) restartContainer(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	id, _ := args["id"].(string)
+	//nolint:errcheck // schema validation ensures correct type
+	id, _ := args["id"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	err := a.client.RestartContainer(ctx, id, 10)
 	if err != nil {
@@ -582,8 +590,10 @@ func (a *DockerAdapter) restartContainer(ctx context.Context, args map[string]in
 }
 
 func (a *DockerAdapter) removeContainer(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	id, _ := args["id"].(string)
-	force, _ := args["force"].(bool)
+	//nolint:errcheck // schema validation ensures correct type
+	id, _ := args["id"].(string) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct type
+	force, _ := args["force"].(bool) //nolint:errcheck // schema validation ensures correct type
 
 	err := a.client.RemoveContainer(ctx, id, force)
 	if err != nil {
@@ -596,7 +606,8 @@ func (a *DockerAdapter) removeContainer(ctx context.Context, args map[string]int
 }
 
 func (a *DockerAdapter) containerLogs(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	id, _ := args["id"].(string)
+	//nolint:errcheck // schema validation ensures correct type
+	id, _ := args["id"].(string) //nolint:errcheck // schema validation ensures correct type
 	tail := getIntArg(args, "tail", 100)
 
 	reader, err := a.client.ContainerLogs(ctx, id, tail)
@@ -616,8 +627,10 @@ func (a *DockerAdapter) containerLogs(ctx context.Context, args map[string]inter
 }
 
 func (a *DockerAdapter) execInContainer(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	id, _ := args["id"].(string)
-	cmdRaw, _ := args["cmd"].([]interface{})
+	//nolint:errcheck // schema validation ensures correct type
+	id, _ := args["id"].(string) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct type
+	cmdRaw, _ := args["cmd"].([]interface{}) //nolint:errcheck // schema validation ensures correct type
 
 	var cmd []string
 	for _, c := range cmdRaw {
@@ -660,7 +673,8 @@ func (a *DockerAdapter) listImages(ctx context.Context) (*ToolResult, error) {
 }
 
 func (a *DockerAdapter) pullImage(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	image, _ := args["image"].(string)
+	//nolint:errcheck // schema validation ensures correct type
+	image, _ := args["image"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	err := a.client.PullImage(ctx, image)
 	if err != nil {
@@ -673,8 +687,10 @@ func (a *DockerAdapter) pullImage(ctx context.Context, args map[string]interface
 }
 
 func (a *DockerAdapter) removeImage(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	id, _ := args["id"].(string)
-	force, _ := args["force"].(bool)
+	//nolint:errcheck // schema validation ensures correct type
+	id, _ := args["id"].(string) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct type
+	force, _ := args["force"].(bool) //nolint:errcheck // schema validation ensures correct type
 
 	err := a.client.RemoveImage(ctx, id, force)
 	if err != nil {

@@ -117,7 +117,9 @@ func NewSecurityIntegration(config *SecurityIntegrationConfig, logger *logrus.Lo
 	if config.EnableGuardrails {
 		si.guardrails = CreateDefaultPipeline(logger)
 		if si.auditLogger != nil {
-			si.guardrails.(*StandardGuardrailPipeline).SetAuditLogger(si.auditLogger)
+			if pipeline, ok := si.guardrails.(*StandardGuardrailPipeline); ok {
+				pipeline.SetAuditLogger(si.auditLogger)
+			}
 		}
 	}
 

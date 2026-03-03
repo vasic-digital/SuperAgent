@@ -527,7 +527,7 @@ func (a *LinearAdapter) CallTool(ctx context.Context, name string, args map[stri
 }
 
 func (a *LinearAdapter) getIssue(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	id, _ := args["id"].(string)
+	id, _ := args["id"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	issue, err := a.client.GetIssue(ctx, id)
 	if err != nil {
@@ -589,7 +589,7 @@ func (a *LinearAdapter) createIssue(ctx context.Context, args map[string]interfa
 }
 
 func (a *LinearAdapter) updateIssue(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	id, _ := args["id"].(string)
+	id, _ := args["id"].(string) //nolint:errcheck // schema validation ensures correct type
 	input := UpdateIssueInput{}
 
 	if title, ok := args["title"].(string); ok {

@@ -288,7 +288,7 @@ func (h *ProtocolSSEHandler) handleSSEConnection(
 	// This is required for OpenCode/Crush/HelixCode which have strict timeout (120ms)
 	endpointEvent := fmt.Sprintf("event: endpoint\ndata: /v1/%s\n\n", protocol)
 	_, _ = c.Writer.Write([]byte(endpointEvent)) //nolint:errcheck
-	flusher.Flush() //nolint:errcheck
+	flusher.Flush()                              //nolint:errcheck
 
 	// Create client channel and ID AFTER the initial response
 	clientChan := make(chan []byte, 100)
@@ -331,14 +331,14 @@ func (h *ProtocolSSEHandler) handleSSEConnection(
 			}
 			// Send SSE message
 			_, _ = c.Writer.Write([]byte("event: message\n")) //nolint:errcheck
-			_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
-			_, _ = c.Writer.Write(msg) //nolint:errcheck
-			_, _ = c.Writer.Write([]byte("\n\n")) //nolint:errcheck
-			flusher.Flush() //nolint:errcheck
+			_, _ = c.Writer.Write([]byte("data: "))           //nolint:errcheck
+			_, _ = c.Writer.Write(msg)                        //nolint:errcheck
+			_, _ = c.Writer.Write([]byte("\n\n"))             //nolint:errcheck
+			flusher.Flush()                                   //nolint:errcheck
 		case <-heartbeat.C:
 			// Send heartbeat as comment
 			_, _ = c.Writer.Write([]byte(": heartbeat\n\n")) //nolint:errcheck
-			flusher.Flush() //nolint:errcheck
+			flusher.Flush()                                  //nolint:errcheck
 		}
 	}
 }
@@ -934,8 +934,8 @@ func (h *ProtocolSSEHandler) executeACPTool(name string, args map[string]interfa
 	case "acp_list_agents":
 		return `[{"id": "default", "name": "Default Agent", "status": "active"}]`, nil
 	case "acp_send_message":
-		agentID, _ := args["agent_id"].(string)
-		message, _ := args["message"].(string)
+		agentID, _ := args["agent_id"].(string) //nolint:errcheck // schema validation ensures correct type
+		message, _ := args["message"].(string)  //nolint:errcheck // schema validation ensures correct type
 		return fmt.Sprintf("Message sent to agent %s: %s", agentID, message), nil
 	default:
 		return "", fmt.Errorf("unknown ACP tool: %s", name)
@@ -966,8 +966,8 @@ func (h *ProtocolSSEHandler) executeACPToolViaHandler(name string, args map[stri
 		return string(data), nil
 
 	case "acp_send_message":
-		agentID, _ := args["agent_id"].(string)
-		message, _ := args["message"].(string)
+		agentID, _ := args["agent_id"].(string) //nolint:errcheck // schema validation ensures correct type
+		message, _ := args["message"].(string)  //nolint:errcheck // schema validation ensures correct type
 
 		// Call ACP handler's agent/execute method
 		// We need to call executeAgentTask directly
@@ -1005,7 +1005,7 @@ func (h *ProtocolSSEHandler) executeLSPTool(name string, args map[string]interfa
 	case "lsp_list_servers":
 		return `[{"name": "gopls", "language": "go", "status": "available"}]`, nil
 	case "lsp_get_diagnostics":
-		filePath, _ := args["file_path"].(string)
+		filePath, _ := args["file_path"].(string) //nolint:errcheck // schema validation ensures correct type
 		return fmt.Sprintf("Diagnostics for %s: No issues found", filePath), nil
 	default:
 		return "", fmt.Errorf("unknown LSP tool: %s", name)
@@ -1015,10 +1015,10 @@ func (h *ProtocolSSEHandler) executeLSPTool(name string, args map[string]interfa
 func (h *ProtocolSSEHandler) executeEmbeddingsTool(name string, args map[string]interface{}) (string, error) {
 	switch name {
 	case "embeddings_generate":
-		text, _ := args["text"].(string)
+		text, _ := args["text"].(string) //nolint:errcheck // schema validation ensures correct type
 		return fmt.Sprintf("Generated embedding for text of length %d", len(text)), nil
 	case "embeddings_search":
-		query, _ := args["query"].(string)
+		query, _ := args["query"].(string) //nolint:errcheck // schema validation ensures correct type
 		return fmt.Sprintf("Search results for query: %s", query), nil
 	default:
 		return "", fmt.Errorf("unknown embeddings tool: %s", name)
@@ -1028,10 +1028,10 @@ func (h *ProtocolSSEHandler) executeEmbeddingsTool(name string, args map[string]
 func (h *ProtocolSSEHandler) executeVisionTool(name string, args map[string]interface{}) (string, error) {
 	switch name {
 	case "vision_analyze_image":
-		imageURL, _ := args["image_url"].(string)
+		imageURL, _ := args["image_url"].(string) //nolint:errcheck // schema validation ensures correct type
 		return fmt.Sprintf("Analysis of image: %s", imageURL), nil
 	case "vision_ocr":
-		imageURL, _ := args["image_url"].(string)
+		imageURL, _ := args["image_url"].(string) //nolint:errcheck // schema validation ensures correct type
 		return fmt.Sprintf("OCR result for image: %s", imageURL), nil
 	default:
 		return "", fmt.Errorf("unknown vision tool: %s", name)
@@ -1041,10 +1041,10 @@ func (h *ProtocolSSEHandler) executeVisionTool(name string, args map[string]inte
 func (h *ProtocolSSEHandler) executeCogneeTool(name string, args map[string]interface{}) (string, error) {
 	switch name {
 	case "cognee_add":
-		content, _ := args["content"].(string)
+		content, _ := args["content"].(string) //nolint:errcheck // schema validation ensures correct type
 		return fmt.Sprintf("Added content of length %d to knowledge graph", len(content)), nil
 	case "cognee_search":
-		query, _ := args["query"].(string)
+		query, _ := args["query"].(string) //nolint:errcheck // schema validation ensures correct type
 		return fmt.Sprintf("Search results for: %s", query), nil
 	case "cognee_visualize":
 		return "Knowledge graph visualization generated", nil
@@ -1134,13 +1134,13 @@ func (h *ProtocolSSEHandler) executeRAGTool(name string, args map[string]interfa
 	}
 	switch name {
 	case "rag_search":
-		query, _ := args["query"].(string)
+		query, _ := args["query"].(string) //nolint:errcheck // schema validation ensures correct type
 		return fmt.Sprintf(`{"status":"ok","query":"%s","results":[]}`, query), nil
 	case "rag_ingest":
-		content, _ := args["content"].(string)
+		content, _ := args["content"].(string) //nolint:errcheck // schema validation ensures correct type
 		return fmt.Sprintf(`{"status":"ok","ingested_length":%d}`, len(content)), nil
 	case "rag_hybrid_search":
-		query, _ := args["query"].(string)
+		query, _ := args["query"].(string) //nolint:errcheck // schema validation ensures correct type
 		return fmt.Sprintf(`{"status":"ok","query":"%s","method":"hybrid","results":[]}`, query), nil
 	case "rag_health":
 		return `{"status":"healthy","pipeline":"available"}`, nil
@@ -1223,12 +1223,12 @@ func (h *ProtocolSSEHandler) executeFormattersTool(name string, args map[string]
 	}
 	switch name {
 	case "format_code":
-		language, _ := args["language"].(string)
+		language, _ := args["language"].(string) //nolint:errcheck // schema validation ensures correct type
 		return fmt.Sprintf(`{"status":"ok","language":"%s","formatted":true}`, language), nil
 	case "list_formatters":
 		return `{"status":"ok","formatters":["gofmt","prettier","black","rustfmt","clang-format"]}`, nil
 	case "detect_formatter":
-		language, _ := args["language"].(string)
+		language, _ := args["language"].(string) //nolint:errcheck // schema validation ensures correct type
 		return fmt.Sprintf(`{"status":"ok","language":"%s","detected":"auto"}`, language), nil
 	case "formatter_health":
 		return `{"status":"healthy","formatters_available":true}`, nil

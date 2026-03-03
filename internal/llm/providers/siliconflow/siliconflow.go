@@ -13,10 +13,7 @@ import (
 
 	"dev.helix.agent/internal/llm/discovery"
 	"dev.helix.agent/internal/models"
-	"github.com/sirupsen/logrus"
 )
-
-var log = logrus.New()
 
 const (
 	SiliconFlowAPIURL     = "https://api.siliconflow.cn/v1/chat/completions"

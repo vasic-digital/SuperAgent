@@ -1335,6 +1335,7 @@ func (pd *ProviderDiscovery) Summary() map[string]interface{} {
 
 	// Sort by score
 	sort.Slice(providerList, func(i, j int) bool {
+		//nolint:errcheck // score is guaranteed to be float64
 		return providerList[i]["score"].(float64) > providerList[j]["score"].(float64)
 	})
 

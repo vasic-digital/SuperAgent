@@ -299,6 +299,7 @@ func (dpo *DebatePerformanceOptimizer) calculateConsensus(responses map[DebateTe
 func (dpo *DebatePerformanceOptimizer) getCachedResponse(prompt, model string) *CachedResponse {
 	cacheKey := dpo.generateCacheKey(prompt, model)
 	if cached, ok := dpo.cache.Load(cacheKey); ok {
+		//nolint:errcheck // type assertion safe after Load check
 		cachedResp := cached.(*CachedResponse)
 		if time.Since(cachedResp.Timestamp) < dpo.config.CacheTTL {
 			return cachedResp

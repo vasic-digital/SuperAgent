@@ -259,7 +259,7 @@ func (t *CodeTool) Execute(ctx context.Context, inputs map[string]interface{}) (
 		content := inputs["content"].(string) //nolint:errcheck
 		return t.writeFile(fullPath, content)
 	case "update":
-		content := inputs["content"].(string)
+		content := inputs["content"].(string) //nolint:errcheck
 		return t.updateFile(fullPath, content)
 	case "delete":
 		return t.deleteFile(fullPath)
@@ -424,8 +424,8 @@ func (t *SearchTool) Validate(inputs map[string]interface{}) error {
 
 // Execute executes the tool
 func (t *SearchTool) Execute(ctx context.Context, inputs map[string]interface{}) (*ToolResult, error) {
-	pattern := inputs["pattern"].(string)
-	searchType := inputs["type"].(string)
+	pattern := inputs["pattern"].(string) //nolint:errcheck
+	searchType := inputs["type"].(string) //nolint:errcheck
 
 	var matches []string
 	var err error

@@ -1,0 +1,3486 @@
+{
+	"Golang errors": {},
+	"Issues": [
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion rune -\u003e uint32",
+			"file": "/app/internal/services/debate_performance_optimizer.go",
+			"code": "352: \tfor _, c := range s {\n353: \t\th ^= uint32(c)\n354: \t\th *= 16777619\n",
+			"line": "353",
+			"column": "14",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int64 -\u003e rune",
+			"file": "/app/internal/optimization/context/window.go",
+			"code": "476: \tidCounter++\n477: \treturn strings.ReplaceAll(time.Now().Format(\"20060102150405\"), \".\", \"\") + \"_\" + string(rune(idCounter))\n478: }\n",
+			"line": "477",
+			"column": "93",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int -\u003e uint64",
+			"file": "/app/internal/profiling/memory_leak_detector.go",
+			"code": "168: \t\t\tTimestamp:  snapshot.Timestamp,\n169: \t\t\tCurrent:    uint64(snapshot.NumGoroutine),\n170: \t\t\tThreshold:  uint64(d.thresholds.MaxGoroutines),\n",
+			"line": "169",
+			"column": "22",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int -\u003e rune",
+			"file": "/app/internal/verifier/enhanced_scoring.go",
+			"code": "721: \t\t\t\t\t\t\t\t\t\t\t\t\"X.XX\",\n722: \t\t\t\t\t\t\t\t\t\t\t\t\"X\", string(rune('0'+int(score))), 1),\n723: \t\t\t\t\t\t\t\t\t\t\t\".\", \".\", 1),\n",
+			"line": "722",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int -\u003e rune",
+			"file": "/app/internal/skills/integration.go",
+			"code": "228: func generateDebateRequestID(debateID, roundNum int) string {\n229: \treturn \"debate-\" + string(rune(debateID)) + \"-round-\" + string(rune(roundNum))\n230: }\n",
+			"line": "229",
+			"column": "32",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int -\u003e rune",
+			"file": "/app/internal/skills/integration.go",
+			"code": "228: func generateDebateRequestID(debateID, roundNum int) string {\n229: \treturn \"debate-\" + string(rune(debateID)) + \"-round-\" + string(rune(roundNum))\n230: }\n",
+			"line": "229",
+			"column": "69",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int -\u003e rune",
+			"file": "/app/internal/notifications/cli/types.go",
+			"code": "423: \tcase \"fallback.chain\":\n424: \t\tresult += \"Fallback chain summary: \" + string(rune('0'+content.AttemptNumber)) + \" attempts\"\n425: \t}\n",
+			"line": "424",
+			"column": "53",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int -\u003e rune",
+			"file": "/app/internal/notifications/cli/types.go",
+			"code": "414: \t\tresult += \"Fallback succeeded: \" + content.FallbackProvider + \"/\" + content.FallbackModel\n415: \t\tresult += \" (attempt \" + string(rune('0'+content.AttemptNumber)) + \")\"\n416: \tcase \"fallback.failed\":\n",
+			"line": "415",
+			"column": "39",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int -\u003e rune",
+			"file": "/app/internal/messaging/broker.go",
+			"code": "382: \t}\n383: \treturn scheme + \"://\" + c.Host + \":\" + string(rune(c.Port)) + c.VirtualHost\n384: }\n",
+			"line": "383",
+			"column": "52",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int -\u003e rune",
+			"file": "/app/internal/messaging/broker.go",
+			"code": "380: \tif c.Username != \"\" {\n381: \t\treturn scheme + \"://\" + c.Username + \":\" + c.Password + \"@\" + c.Host + \":\" + string(rune(c.Port)) + c.VirtualHost\n382: \t}\n",
+			"line": "381",
+			"column": "91",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int -\u003e byte",
+			"file": "/app/internal/services/discovery/discoverer.go",
+			"code": "484: \t\t}\n485: \t\tbuf = append(buf, byte(len(label)))\n486: \t\tbuf = append(buf, []byte(label)...)\n",
+			"line": "485",
+			"column": "25",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/streaming/kafka_writer.go",
+			"code": "329: \tfor i := range b {\n330: \t\tb[i] = letters[rand.IntN(len(letters))]\n331: \t}\n",
+			"line": "330",
+			"column": "18",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/zhipu/zhipu.go",
+			"code": "395: \t\t\t\tlastErr = fmt.Errorf(\"HTTP %d: retryable error\", resp.StatusCode)\n396: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n397: \t\t\t\tselect {\n",
+			"line": "396",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/zhipu/zhipu.go",
+			"code": "376: \t\t\tif attempt \u003c p.retryConfig.MaxRetries {\n377: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n378: \t\t\t\tselect {\n",
+			"line": "377",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/vulavula/vulavula.go",
+			"code": "391: \t\t\t\tlastErr = fmt.Errorf(\"HTTP %d: retryable error\", resp.StatusCode)\n392: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n393: \t\t\t\tselect {\n",
+			"line": "392",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/vulavula/vulavula.go",
+			"code": "372: \t\t\tif attempt \u003c p.retryConfig.MaxRetries {\n373: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n374: \t\t\t\tselect {\n",
+			"line": "373",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/upstage/upstage.go",
+			"code": "392: \t\t\t\tlastErr = fmt.Errorf(\"HTTP %d: retryable error\", resp.StatusCode)\n393: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n394: \t\t\t\tselect {\n",
+			"line": "393",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/upstage/upstage.go",
+			"code": "373: \t\t\tif attempt \u003c p.retryConfig.MaxRetries {\n374: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n375: \t\t\t\tselect {\n",
+			"line": "374",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/siliconflow/siliconflow.go",
+			"code": "393: \t\t\t\tlastErr = fmt.Errorf(\"HTTP %d: retryable error\", resp.StatusCode)\n394: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n395: \t\t\t\tselect {\n",
+			"line": "394",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/siliconflow/siliconflow.go",
+			"code": "374: \t\t\tif attempt \u003c p.retryConfig.MaxRetries {\n375: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n376: \t\t\t\tselect {\n",
+			"line": "375",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/sarvam/sarvam.go",
+			"code": "395: \t\t\t\tlastErr = fmt.Errorf(\"HTTP %d: retryable error\", resp.StatusCode)\n396: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n397: \t\t\t\tselect {\n",
+			"line": "396",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/sarvam/sarvam.go",
+			"code": "376: \t\t\tif attempt \u003c p.retryConfig.MaxRetries {\n377: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n378: \t\t\t\tselect {\n",
+			"line": "377",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/sambanova/sambanova.go",
+			"code": "393: \t\t\t\tlastErr = fmt.Errorf(\"HTTP %d: retryable error\", resp.StatusCode)\n394: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n395: \t\t\t\tselect {\n",
+			"line": "394",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/sambanova/sambanova.go",
+			"code": "374: \t\t\tif attempt \u003c p.retryConfig.MaxRetries {\n375: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n376: \t\t\t\tselect {\n",
+			"line": "375",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/publicai/publicai.go",
+			"code": "569: func (p *PublicAIProvider) waitWithJitter(ctx context.Context, delay time.Duration) {\n570: \tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n571: \tselect {\n",
+			"line": "570",
+			"column": "26",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/nvidia/nvidia.go",
+			"code": "390: \t\t\t\tlastErr = fmt.Errorf(\"HTTP %d: retryable error\", resp.StatusCode)\n391: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n392: \t\t\t\tselect {\n",
+			"line": "391",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/nvidia/nvidia.go",
+			"code": "371: \t\t\tif attempt \u003c p.retryConfig.MaxRetries {\n372: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n373: \t\t\t\tselect {\n",
+			"line": "372",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/novita/novita.go",
+			"code": "389: \t\t\t\tlastErr = fmt.Errorf(\"HTTP %d: retryable error\", resp.StatusCode)\n390: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n391: \t\t\t\tselect {\n",
+			"line": "390",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/novita/novita.go",
+			"code": "370: \t\t\tif attempt \u003c p.retryConfig.MaxRetries {\n371: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n372: \t\t\t\tselect {\n",
+			"line": "371",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/nlpcloud/nlpcloud.go",
+			"code": "400: \t\t\t\tlastErr = fmt.Errorf(\"HTTP %d: retryable error\", resp.StatusCode)\n401: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n402: \t\t\t\tselect {\n",
+			"line": "401",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/nlpcloud/nlpcloud.go",
+			"code": "381: \t\t\tif attempt \u003c p.retryConfig.MaxRetries {\n382: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n383: \t\t\t\tselect {\n",
+			"line": "382",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/nia/nia.go",
+			"code": "388: \t\t\t\tlastErr = fmt.Errorf(\"HTTP %d: retryable error\", resp.StatusCode)\n389: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n390: \t\t\t\tselect {\n",
+			"line": "389",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/nia/nia.go",
+			"code": "369: \t\t\tif attempt \u003c p.retryConfig.MaxRetries {\n370: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n371: \t\t\t\tselect {\n",
+			"line": "370",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/modal/modal.go",
+			"code": "392: \t\t\t\tlastErr = fmt.Errorf(\"HTTP %d: retryable error\", resp.StatusCode)\n393: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n394: \t\t\t\tselect {\n",
+			"line": "393",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/modal/modal.go",
+			"code": "373: \t\t\tif attempt \u003c p.retryConfig.MaxRetries {\n374: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n375: \t\t\t\tselect {\n",
+			"line": "374",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/kimi/kimi.go",
+			"code": "392: \t\t\t\tlastErr = fmt.Errorf(\"HTTP %d: retryable error\", resp.StatusCode)\n393: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n394: \t\t\t\tselect {\n",
+			"line": "393",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/kimi/kimi.go",
+			"code": "373: \t\t\tif attempt \u003c p.retryConfig.MaxRetries {\n374: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n375: \t\t\t\tselect {\n",
+			"line": "374",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/kilo/kilo.go",
+			"code": "388: \t\t\t\tlastErr = fmt.Errorf(\"HTTP %d: retryable error\", resp.StatusCode)\n389: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n390: \t\t\t\tselect {\n",
+			"line": "389",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/kilo/kilo.go",
+			"code": "369: \t\t\tif attempt \u003c p.retryConfig.MaxRetries {\n370: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n371: \t\t\t\tselect {\n",
+			"line": "370",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/hyperbolic/hyperbolic.go",
+			"code": "389: \t\t\t\tlastErr = fmt.Errorf(\"HTTP %d: retryable error\", resp.StatusCode)\n390: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n391: \t\t\t\tselect {\n",
+			"line": "390",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/hyperbolic/hyperbolic.go",
+			"code": "370: \t\t\tif attempt \u003c p.retryConfig.MaxRetries {\n371: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n372: \t\t\t\tselect {\n",
+			"line": "371",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/codestral/codestral.go",
+			"code": "445: func (p *CodestralProvider) waitWithJitter(ctx context.Context, delay time.Duration) {\n446: \tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n447: \tselect {\n",
+			"line": "446",
+			"column": "26",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/cloudflare/cloudflare.go",
+			"code": "382: \t\t\t\tlastErr = fmt.Errorf(\"HTTP %d: retryable error\", resp.StatusCode)\n383: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n384: \t\t\t\tselect {\n",
+			"line": "383",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/app/internal/llm/providers/cloudflare/cloudflare.go",
+			"code": "363: \t\t\tif attempt \u003c p.retryConfig.MaxRetries {\n364: \t\t\t\tjitter := time.Duration(rand.Float64() * 0.1 * float64(delay))\n365: \t\t\t\tselect {\n",
+			"line": "364",
+			"column": "29",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "HIGH",
+			"cwe": null,
+			"rule_id": "G704",
+			"details": "SSRF via taint analysis",
+			"file": "/app/internal/verifier/startup.go",
+			"code": "495: \n496: \tresp, err := client.Get(tagsURL)\n497: \tif err != nil {\n",
+			"line": "496",
+			"column": "25",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "HIGH",
+			"cwe": null,
+			"rule_id": "G704",
+			"details": "SSRF via taint analysis",
+			"file": "/app/internal/llm/retry.go",
+			"code": "212: \t\tclonedReq := req.Clone(ctx)\n213: \t\treturn c.client.Do(clonedReq)\n214: \t})\n",
+			"line": "213",
+			"column": "21",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "HIGH",
+			"cwe": null,
+			"rule_id": "G704",
+			"details": "SSRF via taint analysis",
+			"file": "/app/internal/http/quic_client.go",
+			"code": "287: \t\t// Fallback to HTTP/2 or HTTP/1.1\n288: \t\treturn t.fallback.Do(req)\n289: \t}\n",
+			"line": "288",
+			"column": "23",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "HIGH",
+			"cwe": null,
+			"rule_id": "G704",
+			"details": "SSRF via taint analysis",
+			"file": "/app/internal/http/quic_client.go",
+			"code": "152: \tif c.config.EnableH2Fallback \u0026\u0026 c.h2Client != nil {\n153: \t\tresp, err = c.h2Client.Do(req)\n154: \t\tif err == nil {\n",
+			"line": "153",
+			"column": "28",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "HIGH",
+			"cwe": null,
+			"rule_id": "G704",
+			"details": "SSRF via taint analysis",
+			"file": "/app/internal/http/pool.go",
+			"code": "209: \n210: \t\tresp, err = client.Do(reqCopy)\n211: \n",
+			"line": "210",
+			"column": "24",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/verifier/startup.go",
+			"code": "408: \t\tif err == nil \u0026\u0026 creds != nil {\n409: \t\t\tproviders = append(providers, \u0026ProviderDiscoveryResult{\n410: \t\t\t\tID:          \"qwen\",\n411: \t\t\t\tType:        \"qwen\",\n412: \t\t\t\tAuthType:    AuthTypeOAuth,\n413: \t\t\t\tDiscovered:  true,\n414: \t\t\t\tSource:      \"oauth\",\n415: \t\t\t\tCredentials: \"OAuth (Qwen Code)\",\n416: \t\t\t\tBaseURL:     \"https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions\",\n417: \t\t\t\tModels:      []string{\"qwen-max\", \"qwen-plus\", \"qwen-turbo\"},\n418: \t\t\t})\n419: \t\t}\n",
+			"line": "409-418",
+			"column": "35",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/verifier/startup.go",
+			"code": "391: \t\tif err == nil \u0026\u0026 creds != nil \u0026\u0026 creds.ClaudeAiOauth != nil {\n392: \t\t\tproviders = append(providers, \u0026ProviderDiscoveryResult{\n393: \t\t\t\tID:          \"claude\",\n394: \t\t\t\tType:        \"claude\",\n395: \t\t\t\tAuthType:    AuthTypeOAuth,\n396: \t\t\t\tDiscovered:  true,\n397: \t\t\t\tSource:      \"oauth\",\n398: \t\t\t\tCredentials: \"OAuth (Claude Code)\",\n399: \t\t\t\tBaseURL:     \"https://api.anthropic.com/v1/messages\",\n400: \t\t\t\tModels:      []string{\"claude-opus-4-6\", \"claude-sonnet-4-6\", \"claude-opus-4-5-20251101\", \"claude-sonnet-4-5-20250929\", \"claude-haiku-4-5-20251001\"},\n401: \t\t\t})\n402: \t\t}\n",
+			"line": "392-401",
+			"column": "35",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/verifier/rate_limit_headers.go",
+			"code": "29: \t},\n30: \t\"claude\": {\n31: \t\tRequestsLimit:     \"anthropic-ratelimit-requests-limit\",\n32: \t\tRequestsRemaining: \"anthropic-ratelimit-requests-remaining\",\n33: \t\tRequestsReset:     \"anthropic-ratelimit-requests-reset\",\n34: \t\tTokensLimit:       \"anthropic-ratelimit-tokens-limit\",\n35: \t\tTokensRemaining:   \"anthropic-ratelimit-tokens-remaining\",\n36: \t\tTokensReset:       \"anthropic-ratelimit-tokens-reset\",\n37: \t},\n38: \t\"openrouter\": {\n",
+			"line": "30-37",
+			"column": "12",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/verifier/rate_limit_headers.go",
+			"code": "21: \t},\n22: \t\"groq\": {\n23: \t\tRequestsLimit:     \"x-ratelimit-limit-requests\",\n24: \t\tRequestsRemaining: \"x-ratelimit-remaining-requests\",\n25: \t\tRequestsReset:     \"x-ratelimit-reset-requests\",\n26: \t\tTokensLimit:       \"x-ratelimit-limit-tokens\",\n27: \t\tTokensRemaining:   \"x-ratelimit-remaining-tokens\",\n28: \t\tTokensReset:       \"x-ratelimit-reset-tokens\",\n29: \t},\n30: \t\"claude\": {\n",
+			"line": "22-29",
+			"column": "10",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/verifier/rate_limit_headers.go",
+			"code": "13: var RateLimitHeaderMap = map[string]*RateLimitHeaderNames{\n14: \t\"openai\": {\n15: \t\tRequestsLimit:     \"x-ratelimit-limit-requests\",\n16: \t\tRequestsRemaining: \"x-ratelimit-remaining-requests\",\n17: \t\tRequestsReset:     \"x-ratelimit-reset-requests\",\n18: \t\tTokensLimit:       \"x-ratelimit-limit-tokens\",\n19: \t\tTokensRemaining:   \"x-ratelimit-remaining-tokens\",\n20: \t\tTokensReset:       \"x-ratelimit-reset-tokens\",\n21: \t},\n22: \t\"groq\": {\n",
+			"line": "14-21",
+			"column": "12",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/verifier/provider_access.go",
+			"code": "121: \t\tAvailableTiers:      []SubscriptionType{SubTypeFree, SubTypePayAsYouGo, SubTypeEnterprise},\n122: \t\tRateLimitHeaders: \u0026RateLimitHeaderNames{\n123: \t\t\tRequestsLimit:     \"x-ratelimit-limit-requests\",\n124: \t\t\tRequestsRemaining: \"x-ratelimit-remaining-requests\",\n125: \t\t\tRequestsReset:     \"x-ratelimit-reset-requests\",\n126: \t\t\tTokensLimit:       \"x-ratelimit-limit-tokens\",\n127: \t\t\tTokensRemaining:   \"x-ratelimit-remaining-tokens\",\n128: \t\t\tTokensReset:       \"x-ratelimit-reset-tokens\",\n129: \t\t},\n130: \t},\n",
+			"line": "122-129",
+			"column": "22",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/verifier/provider_access.go",
+			"code": "56: \t\tAvailableTiers:      []SubscriptionType{SubTypePayAsYouGo, SubTypeEnterprise},\n57: \t\tRateLimitHeaders: \u0026RateLimitHeaderNames{\n58: \t\t\tRequestsLimit:     \"anthropic-ratelimit-requests-limit\",\n59: \t\t\tRequestsRemaining: \"anthropic-ratelimit-requests-remaining\",\n60: \t\t\tRequestsReset:     \"anthropic-ratelimit-requests-reset\",\n61: \t\t\tTokensLimit:       \"anthropic-ratelimit-tokens-limit\",\n62: \t\t\tTokensRemaining:   \"anthropic-ratelimit-tokens-remaining\",\n63: \t\t\tTokensReset:       \"anthropic-ratelimit-tokens-reset\",\n64: \t\t},\n65: \t},\n",
+			"line": "57-64",
+			"column": "22",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/verifier/provider_access.go",
+			"code": "22: \t\tAvailableTiers:       []SubscriptionType{SubTypeFreeCredits, SubTypePayAsYouGo, SubTypeEnterprise},\n23: \t\tRateLimitHeaders: \u0026RateLimitHeaderNames{\n24: \t\t\tRequestsLimit:     \"x-ratelimit-limit-requests\",\n25: \t\t\tRequestsRemaining: \"x-ratelimit-remaining-requests\",\n26: \t\t\tRequestsReset:     \"x-ratelimit-reset-requests\",\n27: \t\t\tTokensLimit:       \"x-ratelimit-limit-tokens\",\n28: \t\t\tTokensRemaining:   \"x-ratelimit-remaining-tokens\",\n29: \t\t\tTokensReset:       \"x-ratelimit-reset-tokens\",\n30: \t\t},\n31: \t},\n",
+			"line": "23-30",
+			"column": "22",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/services/provider_discovery.go",
+			"code": "553: \t\tif provider != nil {\n554: \t\t\tdp := \u0026DiscoveredProvider{\n555: \t\t\t\tName:         \"zen\",\n556: \t\t\t\tType:         \"zen\",\n557: \t\t\t\tAPIKeyEnvVar: \"OPENCODE_API_KEY (optional - anonymous mode for free models)\",\n558: \t\t\t\tAPIKey:       apiKey,\n559: \t\t\t\tBaseURL:      \"https://opencode.ai/zen/v1/chat/completions\",\n560: \t\t\t\tDefaultModel: \"big-pickle\",\n561: \t\t\t\tProvider:     provider,\n562: \t\t\t\tStatus:       ProviderStatusUnknown,\n563: \t\t\t\tScore:        7.5, // Good base score for free models\n564: \t\t\t\tVerified:     false,\n565: \t\t\t}\n566: \n",
+			"line": "554-565",
+			"column": "11",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/services/provider_discovery.go",
+			"code": "470: \t\t\t\t} else {\n471: \t\t\t\t\tdp := \u0026DiscoveredProvider{\n472: \t\t\t\t\t\tName:         \"qwen-oauth\",\n473: \t\t\t\t\t\tType:         \"qwen\",\n474: \t\t\t\t\t\tAPIKeyEnvVar: \"CLI:~/.qwen/oauth_creds.json\",\n475: \t\t\t\t\t\tAPIKey:       \"qwen-cli\", // Marker for CLI-based auth\n476: \t\t\t\t\t\tBaseURL:      \"qwen-cli://local\",\n477: \t\t\t\t\t\tDefaultModel: \"qwen-plus\",\n478: \t\t\t\t\t\tProvider:     cliProvider,\n479: \t\t\t\t\t\tStatus:       ProviderStatusUnknown,\n480: \t\t\t\t\t\tScore:        0,\n481: \t\t\t\t\t\tVerified:     false,\n482: \t\t\t\t\t}\n483: \n",
+			"line": "471-482",
+			"column": "13",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/services/provider_discovery.go",
+			"code": "410: \t\t\t\t} else {\n411: \t\t\t\t\tdp := \u0026DiscoveredProvider{\n412: \t\t\t\t\t\tName:         \"claude-oauth\",\n413: \t\t\t\t\t\tType:         \"claude\",\n414: \t\t\t\t\t\tAPIKeyEnvVar: \"CLI:~/.claude/.credentials.json\",\n415: \t\t\t\t\t\tAPIKey:       \"via-claude-cli\", // Not an actual key, indicates CLI usage\n416: \t\t\t\t\t\tBaseURL:      \"claude-cli\",     // Indicates CLI-based access\n417: \t\t\t\t\t\tDefaultModel: \"claude-sonnet-4-20250514\",\n418: \t\t\t\t\t\tProvider:     cliProvider,\n419: \t\t\t\t\t\tStatus:       ProviderStatusUnknown,\n420: \t\t\t\t\t\tScore:        0,\n421: \t\t\t\t\t\tVerified:     false,\n422: \t\t\t\t\t}\n423: \n",
+			"line": "411-422",
+			"column": "13",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/mcp/config/generator_full.go",
+			"code": "625: \t\tCommand: []string{\"npx\", \"-y\", \"mcp-server-zendesk\"},\n626: \t\tEnvironment: map[string]string{\n627: \t\t\t\"ZENDESK_SUBDOMAIN\": \"{env:ZENDESK_SUBDOMAIN}\",\n628: \t\t\t\"ZENDESK_EMAIL\":     \"{env:ZENDESK_EMAIL}\",\n629: \t\t\t\"ZENDESK_TOKEN\":     \"{env:ZENDESK_TOKEN}\",\n630: \t\t},\n631: \t\tEnabled: g.hasAllEnvVars(\"ZENDESK_SUBDOMAIN\", \"ZENDESK_EMAIL\", \"ZENDESK_TOKEN\"),\n",
+			"line": "626-630",
+			"column": "16",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/mcp/config/generator_full.go",
+			"code": "617: \t\tCommand: []string{\"npx\", \"-y\", \"mcp-server-hubspot\"},\n618: \t\tEnvironment: map[string]string{\n619: \t\t\t\"HUBSPOT_ACCESS_TOKEN\": \"{env:HUBSPOT_ACCESS_TOKEN}\",\n620: \t\t},\n621: \t\tEnabled: g.hasEnvVar(\"HUBSPOT_ACCESS_TOKEN\"),\n",
+			"line": "618-620",
+			"column": "16",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/mcp/config/generator_full.go",
+			"code": "588: \t\tCommand: []string{\"npx\", \"-y\", \"mcp-server-grafana\"},\n589: \t\tEnvironment: map[string]string{\n590: \t\t\t\"GRAFANA_URL\":   \"{env:GRAFANA_URL}\",\n591: \t\t\t\"GRAFANA_TOKEN\": \"{env:GRAFANA_TOKEN}\",\n592: \t\t},\n593: \t\tEnabled: g.hasAllEnvVars(\"GRAFANA_URL\", \"GRAFANA_TOKEN\"),\n",
+			"line": "589-592",
+			"column": "16",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/mcp/config/generator_full.go",
+			"code": "566: \t\tCommand: []string{\"npx\", \"-y\", \"mcp-server-gmail\"},\n567: \t\tEnvironment: map[string]string{\n568: \t\t\t\"GOOGLE_CLIENT_ID\":     \"{env:GOOGLE_CLIENT_ID}\",\n569: \t\t\t\"GOOGLE_CLIENT_SECRET\": \"{env:GOOGLE_CLIENT_SECRET}\",\n570: \t\t},\n571: \t\tEnabled: g.hasAllEnvVars(\"GOOGLE_CLIENT_ID\", \"GOOGLE_CLIENT_SECRET\"),\n",
+			"line": "567-570",
+			"column": "16",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/mcp/config/generator_full.go",
+			"code": "541: \t\tCommand: []string{\"npx\", \"-y\", \"mcp-server-google-calendar\"},\n542: \t\tEnvironment: map[string]string{\n543: \t\t\t\"GOOGLE_CLIENT_ID\":     \"{env:GOOGLE_CLIENT_ID}\",\n544: \t\t\t\"GOOGLE_CLIENT_SECRET\": \"{env:GOOGLE_CLIENT_SECRET}\",\n545: \t\t},\n546: \t\tEnabled: g.hasAllEnvVars(\"GOOGLE_CLIENT_ID\", \"GOOGLE_CLIENT_SECRET\"),\n",
+			"line": "542-545",
+			"column": "16",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/mcp/config/generator_full.go",
+			"code": "532: \t\tCommand: []string{\"npx\", \"-y\", \"mcp-server-gdrive\"},\n533: \t\tEnvironment: map[string]string{\n534: \t\t\t\"GOOGLE_CLIENT_ID\":     \"{env:GOOGLE_CLIENT_ID}\",\n535: \t\t\t\"GOOGLE_CLIENT_SECRET\": \"{env:GOOGLE_CLIENT_SECRET}\",\n536: \t\t},\n537: \t\tEnabled: g.hasAllEnvVars(\"GOOGLE_CLIENT_ID\", \"GOOGLE_CLIENT_SECRET\"),\n",
+			"line": "533-536",
+			"column": "16",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/mcp/config/generator_full.go",
+			"code": "511: \t\tCommand: []string{\"npx\", \"-y\", \"mcp-server-gcp\"},\n512: \t\tEnvironment: map[string]string{\n513: \t\t\t\"GOOGLE_APPLICATION_CREDENTIALS\": \"{env:GOOGLE_APPLICATION_CREDENTIALS}\",\n514: \t\t},\n515: \t\tEnabled: g.hasEnvVar(\"GOOGLE_APPLICATION_CREDENTIALS\"),\n",
+			"line": "512-514",
+			"column": "16",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/mcp/config/generator_full.go",
+			"code": "501: \t\tCommand: []string{\"npx\", \"-y\", \"mcp-server-aws\"},\n502: \t\tEnvironment: map[string]string{\n503: \t\t\t\"AWS_ACCESS_KEY_ID\":     \"{env:AWS_ACCESS_KEY_ID}\",\n504: \t\t\t\"AWS_SECRET_ACCESS_KEY\": \"{env:AWS_SECRET_ACCESS_KEY}\",\n505: \t\t\t\"AWS_REGION\":            g.getEnvOrDefault(\"AWS_REGION\", \"us-east-1\"),\n506: \t\t},\n507: \t\tEnabled: g.hasAllEnvVars(\"AWS_ACCESS_KEY_ID\", \"AWS_SECRET_ACCESS_KEY\"),\n",
+			"line": "502-506",
+			"column": "16",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/mcp/config/generator_full.go",
+			"code": "485: \t\tCommand: []string{\"npx\", \"-y\", \"mcp-server-vercel\"},\n486: \t\tEnvironment: map[string]string{\n487: \t\t\t\"VERCEL_TOKEN\": \"{env:VERCEL_TOKEN}\",\n488: \t\t},\n489: \t\tEnabled: g.hasEnvVar(\"VERCEL_TOKEN\"),\n",
+			"line": "486-488",
+			"column": "16",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/mcp/config/generator_full.go",
+			"code": "477: \t\tCommand: []string{\"npx\", \"-y\", \"@cloudflare/mcp-server-cloudflare\"},\n478: \t\tEnvironment: map[string]string{\n479: \t\t\t\"CLOUDFLARE_API_TOKEN\": \"{env:CLOUDFLARE_API_TOKEN}\",\n480: \t\t},\n481: \t\tEnabled: g.hasEnvVar(\"CLOUDFLARE_API_TOKEN\"),\n",
+			"line": "478-480",
+			"column": "16",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/mcp/config/generator_full.go",
+			"code": "421: \t\tCommand: []string{\"npx\", \"-y\", \"mcp-server-monday\"},\n422: \t\tEnvironment: map[string]string{\n423: \t\t\t\"MONDAY_API_TOKEN\": \"{env:MONDAY_API_TOKEN}\",\n424: \t\t},\n425: \t\tEnabled: g.hasEnvVar(\"MONDAY_API_TOKEN\"),\n",
+			"line": "422-424",
+			"column": "16",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/mcp/config/generator_full.go",
+			"code": "413: \t\tCommand: []string{\"npx\", \"-y\", \"@modelcontextprotocol/server-todoist\"},\n414: \t\tEnvironment: map[string]string{\n415: \t\t\t\"TODOIST_API_TOKEN\": \"{env:TODOIST_API_TOKEN}\",\n416: \t\t},\n417: \t\tEnabled: g.hasEnvVar(\"TODOIST_API_TOKEN\"),\n",
+			"line": "414-416",
+			"column": "16",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/mcp/config/generator_full.go",
+			"code": "404: \t\tCommand: []string{\"npx\", \"-y\", \"mcp-server-trello\"},\n405: \t\tEnvironment: map[string]string{\n406: \t\t\t\"TRELLO_API_KEY\":   \"{env:TRELLO_API_KEY}\",\n407: \t\t\t\"TRELLO_API_TOKEN\": \"{env:TRELLO_API_TOKEN}\",\n408: \t\t},\n409: \t\tEnabled: g.hasAllEnvVars(\"TRELLO_API_KEY\", \"TRELLO_API_TOKEN\"),\n",
+			"line": "405-408",
+			"column": "16",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/mcp/config/generator_full.go",
+			"code": "396: \t\tCommand: []string{\"npx\", \"-y\", \"mcp-server-asana\"},\n397: \t\tEnvironment: map[string]string{\n398: \t\t\t\"ASANA_ACCESS_TOKEN\": \"{env:ASANA_ACCESS_TOKEN}\",\n399: \t\t},\n400: \t\tEnabled: g.hasEnvVar(\"ASANA_ACCESS_TOKEN\"),\n",
+			"line": "397-399",
+			"column": "16",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/mcp/config/generator_full.go",
+			"code": "386: \t\tCommand: []string{\"npx\", \"-y\", \"mcp-server-jira\"},\n387: \t\tEnvironment: map[string]string{\n388: \t\t\t\"JIRA_URL\":       \"{env:JIRA_URL}\",\n389: \t\t\t\"JIRA_EMAIL\":     \"{env:JIRA_EMAIL}\",\n390: \t\t\t\"JIRA_API_TOKEN\": \"{env:JIRA_API_TOKEN}\",\n391: \t\t},\n392: \t\tEnabled: g.hasAllEnvVars(\"JIRA_URL\", \"JIRA_EMAIL\", \"JIRA_API_TOKEN\"),\n",
+			"line": "387-391",
+			"column": "16",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/mcp/config/generator_full.go",
+			"code": "358: \t\tCommand: []string{\"npx\", \"-y\", \"mcp-server-telegram\"},\n359: \t\tEnvironment: map[string]string{\n360: \t\t\t\"TELEGRAM_BOT_TOKEN\": \"{env:TELEGRAM_BOT_TOKEN}\",\n361: \t\t},\n362: \t\tEnabled: g.hasEnvVar(\"TELEGRAM_BOT_TOKEN\"),\n",
+			"line": "359-361",
+			"column": "16",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/mcp/config/generator_full.go",
+			"code": "350: \t\tCommand: []string{\"npx\", \"-y\", \"mcp-server-discord\"},\n351: \t\tEnvironment: map[string]string{\n352: \t\t\t\"DISCORD_TOKEN\": \"{env:DISCORD_TOKEN}\",\n353: \t\t},\n354: \t\tEnabled: g.hasEnvVar(\"DISCORD_TOKEN\"),\n",
+			"line": "351-353",
+			"column": "16",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/mcp/config/generator_full.go",
+			"code": "341: \t\tCommand: []string{\"npx\", \"-y\", \"@modelcontextprotocol/server-slack\"},\n342: \t\tEnvironment: map[string]string{\n343: \t\t\t\"SLACK_BOT_TOKEN\": \"{env:SLACK_BOT_TOKEN}\",\n344: \t\t\t\"SLACK_TEAM_ID\":   \"{env:SLACK_TEAM_ID}\",\n345: \t\t},\n346: \t\tEnabled: g.hasAllEnvVars(\"SLACK_BOT_TOKEN\", \"SLACK_TEAM_ID\"),\n",
+			"line": "342-345",
+			"column": "16",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/mcp/config/generator_full.go",
+			"code": "323: \t\tCommand: []string{\"npx\", \"-y\", \"@modelcontextprotocol/server-sentry\"},\n324: \t\tEnvironment: map[string]string{\n325: \t\t\t\"SENTRY_AUTH_TOKEN\": \"{env:SENTRY_AUTH_TOKEN}\",\n326: \t\t\t\"SENTRY_ORG\":        \"{env:SENTRY_ORG}\",\n327: \t\t},\n328: \t\tEnabled: g.hasAllEnvVars(\"SENTRY_AUTH_TOKEN\", \"SENTRY_ORG\"),\n",
+			"line": "324-327",
+			"column": "16",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/mcp/config/generator_full.go",
+			"code": "315: \t\tCommand: []string{\"npx\", \"-y\", \"@modelcontextprotocol/server-gitlab\"},\n316: \t\tEnvironment: map[string]string{\n317: \t\t\t\"GITLAB_PERSONAL_ACCESS_TOKEN\": \"{env:GITLAB_TOKEN}\",\n318: \t\t},\n319: \t\tEnabled: g.hasEnvVar(\"GITLAB_TOKEN\"),\n",
+			"line": "316-318",
+			"column": "16",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/mcp/config/generator_full.go",
+			"code": "307: \t\tCommand: []string{\"npx\", \"-y\", \"@modelcontextprotocol/server-github\"},\n308: \t\tEnvironment: map[string]string{\n309: \t\t\t\"GITHUB_PERSONAL_ACCESS_TOKEN\": \"{env:GITHUB_TOKEN}\",\n310: \t\t},\n311: \t\tEnabled: g.hasEnvVar(\"GITHUB_TOKEN\"),\n",
+			"line": "308-310",
+			"column": "16",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/mcp/config/generator.go",
+			"code": "383: \t\t\tCommand: []string{\"npx\", \"-y\", \"mcp-server-discord\"},\n384: \t\t\tEnvironment: map[string]string{\n385: \t\t\t\t\"DISCORD_TOKEN\": \"{env:DISCORD_TOKEN}\",\n386: \t\t\t},\n387: \t\t\tEnabled: true,\n",
+			"line": "384-386",
+			"column": "17",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/mcp/config/generator.go",
+			"code": "371: \t\t\tCommand: []string{\"npx\", \"-y\", \"@cloudflare/mcp-server-cloudflare\"},\n372: \t\t\tEnvironment: map[string]string{\n373: \t\t\t\t\"CLOUDFLARE_API_TOKEN\": \"{env:CLOUDFLARE_API_TOKEN}\",\n374: \t\t\t},\n375: \t\t\tEnabled: true,\n",
+			"line": "372-374",
+			"column": "17",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/mcp/config/generator.go",
+			"code": "358: \t\t\tCommand: []string{\"npx\", \"-y\", \"@modelcontextprotocol/server-sentry\"},\n359: \t\t\tEnvironment: map[string]string{\n360: \t\t\t\t\"SENTRY_AUTH_TOKEN\": \"{env:SENTRY_AUTH_TOKEN}\",\n361: \t\t\t\t\"SENTRY_ORG\":        \"{env:SENTRY_ORG}\",\n362: \t\t\t},\n363: \t\t\tEnabled: true,\n",
+			"line": "359-362",
+			"column": "17",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/mcp/config/generator.go",
+			"code": "321: \t\t\tCommand: []string{\"npx\", \"-y\", \"@modelcontextprotocol/server-slack\"},\n322: \t\t\tEnvironment: map[string]string{\n323: \t\t\t\t\"SLACK_BOT_TOKEN\": \"{env:SLACK_BOT_TOKEN}\",\n324: \t\t\t\t\"SLACK_TEAM_ID\":   \"{env:SLACK_TEAM_ID}\",\n325: \t\t\t},\n326: \t\t\tEnabled: true,\n",
+			"line": "322-325",
+			"column": "17",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/mcp/config/generator.go",
+			"code": "297: \t\t\tCommand: []string{\"npx\", \"-y\", \"@modelcontextprotocol/server-gitlab\"},\n298: \t\t\tEnvironment: map[string]string{\n299: \t\t\t\t\"GITLAB_PERSONAL_ACCESS_TOKEN\": \"{env:GITLAB_TOKEN}\",\n300: \t\t\t},\n301: \t\t\tEnabled: true,\n",
+			"line": "298-300",
+			"column": "17",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/mcp/config/generator.go",
+			"code": "285: \t\t\tCommand: []string{\"npx\", \"-y\", \"@modelcontextprotocol/server-github\"},\n286: \t\t\tEnvironment: map[string]string{\n287: \t\t\t\t\"GITHUB_PERSONAL_ACCESS_TOKEN\": \"{env:GITHUB_TOKEN}\",\n288: \t\t\t},\n289: \t\t\tEnabled: true,\n",
+			"line": "286-288",
+			"column": "17",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/llm/providers/kimicode/kimicode_cli.go",
+			"code": "24: \tKimiCodeAPIURL         = \"https://api.kimi.com/coding/v1\"\n25: \tKimiCodeCredentialPath = \".kimi/credentials/kimi-code.json\"\n26: )\n",
+			"line": "25",
+			"column": "2",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/config/ai_debate_loader.go",
+			"code": "448: \t\t\t\t\t},\n449: \t\t\t\t\t{\n450: \t\t\t\t\t\tName:        \"Fallback LLM\",\n451: \t\t\t\t\t\tProvider:    \"zai\",\n452: \t\t\t\t\t\tModel:       \"zai-large\",\n453: \t\t\t\t\t\tEnabled:     true,\n454: \t\t\t\t\t\tAPIKey:      \"${ZAI_API_KEY}\",\n455: \t\t\t\t\t\tTimeout:     30000, // 30 seconds in milliseconds\n456: \t\t\t\t\t\tMaxRetries:  3,\n457: \t\t\t\t\t\tTemperature: 0.7,\n458: \t\t\t\t\t\tMaxTokens:   1800,\n459: \t\t\t\t\t\tWeight:      0.8,\n460: \t\t\t\t\t},\n461: \t\t\t\t},\n",
+			"line": "449-460",
+			"column": "6",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/config/ai_debate_loader.go",
+			"code": "436: \t\t\t\tLLMs: []LLMConfiguration{\n437: \t\t\t\t\t{\n438: \t\t\t\t\t\tName:        \"Primary LLM\",\n439: \t\t\t\t\t\tProvider:    \"openrouter\",\n440: \t\t\t\t\t\tModel:       \"x-ai/grok-4\",\n441: \t\t\t\t\t\tEnabled:     true,\n442: \t\t\t\t\t\tAPIKey:      \"${OPENROUTER_API_KEY}\",\n443: \t\t\t\t\t\tTimeout:     35000, // 35 seconds in milliseconds\n444: \t\t\t\t\t\tMaxRetries:  3,\n445: \t\t\t\t\t\tTemperature: 0.7,\n446: \t\t\t\t\t\tMaxTokens:   1800,\n447: \t\t\t\t\t\tWeight:      1.0,\n448: \t\t\t\t\t},\n449: \t\t\t\t\t{\n",
+			"line": "437-448",
+			"column": "6",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/config/ai_debate_loader.go",
+			"code": "393: \t\t\t\tLLMs: []LLMConfiguration{\n394: \t\t\t\t\t{\n395: \t\t\t\t\t\tName:        \"Primary LLM\",\n396: \t\t\t\t\t\tProvider:    \"qwen\",\n397: \t\t\t\t\t\tModel:       \"qwen-turbo\",\n398: \t\t\t\t\t\tEnabled:     true,\n399: \t\t\t\t\t\tAPIKey:      \"${QWEN_API_KEY}\",\n400: \t\t\t\t\t\tTimeout:     25000, // 25 seconds in milliseconds\n401: \t\t\t\t\t\tMaxRetries:  3,\n402: \t\t\t\t\t\tTemperature: 0.3,\n403: \t\t\t\t\t\tMaxTokens:   1500,\n404: \t\t\t\t\t\tWeight:      1.0,\n405: \t\t\t\t\t},\n406: \t\t\t\t\t{\n",
+			"line": "394-405",
+			"column": "6",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/config/ai_debate_loader.go",
+			"code": "361: \t\t\t\t\t},\n362: \t\t\t\t\t{\n363: \t\t\t\t\t\tName:        \"Fallback LLM 2\",\n364: \t\t\t\t\t\tProvider:    \"gemini\",\n365: \t\t\t\t\t\tModel:       \"gemini-2.0-flash-exp\",\n366: \t\t\t\t\t\tEnabled:     true,\n367: \t\t\t\t\t\tAPIKey:      \"${GEMINI_API_KEY}\",\n368: \t\t\t\t\t\tTimeout:     35000, // 35 seconds in milliseconds\n369: \t\t\t\t\t\tMaxRetries:  3,\n370: \t\t\t\t\t\tTemperature: 0.1,\n371: \t\t\t\t\t\tMaxTokens:   2000,\n372: \t\t\t\t\t\tWeight:      0.8,\n373: \t\t\t\t\t},\n374: \t\t\t\t},\n",
+			"line": "362-373",
+			"column": "6",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/config/ai_debate_loader.go",
+			"code": "349: \t\t\t\t\t},\n350: \t\t\t\t\t{\n351: \t\t\t\t\t\tName:        \"Fallback LLM 1\",\n352: \t\t\t\t\t\tProvider:    \"deepseek\",\n353: \t\t\t\t\t\tModel:       \"deepseek-coder\",\n354: \t\t\t\t\t\tEnabled:     true,\n355: \t\t\t\t\t\tAPIKey:      \"${DEEPSEEK_API_KEY}\",\n356: \t\t\t\t\t\tTimeout:     25000, // 25 seconds in milliseconds\n357: \t\t\t\t\t\tMaxRetries:  3,\n358: \t\t\t\t\t\tTemperature: 0.1,\n359: \t\t\t\t\t\tMaxTokens:   2000,\n360: \t\t\t\t\t\tWeight:      0.9,\n361: \t\t\t\t\t},\n362: \t\t\t\t\t{\n",
+			"line": "350-361",
+			"column": "6",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/app/internal/config/ai_debate_loader.go",
+			"code": "337: \t\t\t\tLLMs: []LLMConfiguration{\n338: \t\t\t\t\t{\n339: \t\t\t\t\t\tName:        \"Primary LLM\",\n340: \t\t\t\t\t\tProvider:    \"claude\",\n341: \t\t\t\t\t\tModel:       \"claude-3-5-sonnet-20241022\",\n342: \t\t\t\t\t\tEnabled:     true,\n343: \t\t\t\t\t\tAPIKey:      \"${CLAUDE_API_KEY}\",\n344: \t\t\t\t\t\tTimeout:     30000, // 30 seconds in milliseconds\n345: \t\t\t\t\t\tMaxRetries:  3,\n346: \t\t\t\t\t\tTemperature: 0.1,\n347: \t\t\t\t\t\tMaxTokens:   2000,\n348: \t\t\t\t\t\tWeight:      1.0,\n349: \t\t\t\t\t},\n350: \t\t\t\t\t{\n",
+			"line": "338-349",
+			"column": "6",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "HIGH",
+			"cwe": null,
+			"rule_id": "G703",
+			"details": "Path traversal via taint analysis",
+			"file": "/app/internal/services/documentation_sync.go",
+			"code": "171: \t// #nosec G306 -- documentation files (AGENTS.md, CLAUDE.md) are intentionally world-readable\n172: \tif err := os.WriteFile(filePath, []byte(updatedContent), 0644); err != nil {\n173: \t\treturn fmt.Errorf(\"failed to write file: %w\", err)\n",
+			"line": "172",
+			"column": "24",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "HIGH",
+			"cwe": null,
+			"rule_id": "G703",
+			"details": "Path traversal via taint analysis",
+			"file": "/app/internal/handlers/openai_compatible.go",
+			"code": "6376: \t// #nosec G306 - user workspace files use standard 0644 permissions for usability\n6377: \tif err := os.WriteFile(filePath, []byte(newContent), 0644); err != nil {\n6378: \t\treturn \"\", fmt.Errorf(\"failed to write file %s: %w\", filePath, err)\n",
+			"line": "6377",
+			"column": "24",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "HIGH",
+			"cwe": null,
+			"rule_id": "G703",
+			"details": "Path traversal via taint analysis",
+			"file": "/app/internal/debate/comprehensive/code.go",
+			"code": "323: \t\t// Restore backup on failure\n324: \t\tif err2 := os.WriteFile(path, data, 0644); err2 != nil {\n325: \t\t\tt.logger.Errorf(\"failed to restore backup after update failure: %v\", err2)\n",
+			"line": "324",
+			"column": "26",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "HIGH",
+			"cwe": null,
+			"rule_id": "G703",
+			"details": "Path traversal via taint analysis",
+			"file": "/app/internal/debate/comprehensive/code.go",
+			"code": "316: \n317: \tif err := os.WriteFile(backupPath, data, 0644); err != nil {\n318: \t\treturn NewToolError(fmt.Sprintf(\"failed to create backup: %v\", err)), nil\n",
+			"line": "317",
+			"column": "24",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "400",
+				"url": "https://cwe.mitre.org/data/definitions/400.html"
+			},
+			"rule_id": "G118",
+			"details": "Goroutine uses context.Background/TODO while request-scoped context is available",
+			"file": "/app/internal/services/protocol_federation.go",
+			"code": "151: \t// Start periodic discovery\n152: \tgo d.periodicDiscovery()\n153: \n",
+			"line": "152",
+			"column": "2",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "400",
+				"url": "https://cwe.mitre.org/data/definitions/400.html"
+			},
+			"rule_id": "G118",
+			"details": "Goroutine uses context.Background/TODO while request-scoped context is available",
+			"file": "/app/internal/services/model_metadata_service.go",
+			"code": "393: \n394: \t\tgo func(modelID string, metadata *database.ModelMetadata) {\n395: \t\t\tctx := context.Background()\n",
+			"line": "394",
+			"column": "3",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "400",
+				"url": "https://cwe.mitre.org/data/definitions/400.html"
+			},
+			"rule_id": "G118",
+			"details": "Goroutine uses context.Background/TODO while request-scoped context is available",
+			"file": "/app/internal/services/model_metadata_service.go",
+			"code": "166: \t// Store in cache (async to not block the request)\n167: \tgo func(models []*database.ModelMetadata) {\n168: \t\tctx := context.Background()\n",
+			"line": "167",
+			"column": "2",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "400",
+				"url": "https://cwe.mitre.org/data/definitions/400.html"
+			},
+			"rule_id": "G118",
+			"details": "Goroutine uses context.Background/TODO while request-scoped context is available",
+			"file": "/app/internal/services/model_metadata_service.go",
+			"code": "139: \t// Store in cache (async to not block the request)\n140: \tgo func(models []*database.ModelMetadata) {\n141: \t\tctx := context.Background()\n",
+			"line": "140",
+			"column": "2",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "400",
+				"url": "https://cwe.mitre.org/data/definitions/400.html"
+			},
+			"rule_id": "G118",
+			"details": "Goroutine uses context.Background/TODO while request-scoped context is available",
+			"file": "/app/internal/services/model_metadata_service.go",
+			"code": "117: \t// Store in cache (async to not block the request)\n118: \tgo func() {\n119: \t\tctx := context.Background()\n",
+			"line": "118",
+			"column": "2",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "400",
+				"url": "https://cwe.mitre.org/data/definitions/400.html"
+			},
+			"rule_id": "G118",
+			"details": "Goroutine uses context.Background/TODO while request-scoped context is available",
+			"file": "/app/internal/services/model_metadata_redis_cache.go",
+			"code": "464: \t// Set in Redis cache (background)\n465: \tgo func() {\n466: \t\tctx := context.Background()\n",
+			"line": "465",
+			"column": "2",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "400",
+				"url": "https://cwe.mitre.org/data/definitions/400.html"
+			},
+			"rule_id": "G118",
+			"details": "Goroutine uses context.Background/TODO while request-scoped context is available",
+			"file": "/app/internal/services/model_metadata_redis_cache.go",
+			"code": "367: \t// Set in Redis cache (background)\n368: \tgo func() {\n369: \t\tctx := context.Background()\n",
+			"line": "368",
+			"column": "2",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "400",
+				"url": "https://cwe.mitre.org/data/definitions/400.html"
+			},
+			"rule_id": "G118",
+			"details": "Goroutine uses context.Background/TODO while request-scoped context is available",
+			"file": "/app/internal/services/debate_service.go",
+			"code": "2043: \t// Store debate analysis result in HelixMemory for future reference\n2044: \tgo func() {\n2045: \t\tstoreCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)\n",
+			"line": "2044",
+			"column": "2",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "400",
+				"url": "https://cwe.mitre.org/data/definitions/400.html"
+			},
+			"rule_id": "G118",
+			"details": "Goroutine uses context.Background/TODO while request-scoped context is available",
+			"file": "/app/internal/services/cognee_service.go",
+			"code": "1062: \tif s.config.AutoCognify {\n1063: \t\tgo func() {\n1064: \t\t\tbgCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)\n",
+			"line": "1063",
+			"column": "3",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "400",
+				"url": "https://cwe.mitre.org/data/definitions/400.html"
+			},
+			"rule_id": "G118",
+			"details": "Goroutine uses context.Background/TODO while request-scoped context is available",
+			"file": "/app/internal/services/cognee_service.go",
+			"code": "626: \t// Phase 2: Best-effort enrichment via memify (non-blocking)\n627: \tgo func() {\n628: \t\tenrichCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)\n",
+			"line": "627",
+			"column": "2",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "400",
+				"url": "https://cwe.mitre.org/data/definitions/400.html"
+			},
+			"rule_id": "G118",
+			"details": "Goroutine uses context.Background/TODO while request-scoped context is available",
+			"file": "/app/internal/services/cognee_service.go",
+			"code": "426: \t\t\t// Try to get auth token in background\n427: \t\t\tgo func() {\n428: \t\t\t\tif err := s.authenticate(context.Background()); err != nil {\n",
+			"line": "427",
+			"column": "4",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "400",
+				"url": "https://cwe.mitre.org/data/definitions/400.html"
+			},
+			"rule_id": "G118",
+			"details": "Goroutine uses context.Background/TODO while request-scoped context is available",
+			"file": "/app/internal/services/cognee_enhanced_provider.go",
+			"code": "163: \tif p.config.StoreAfterResponse \u0026\u0026 p.cogneeService != nil \u0026\u0026 p.cogneeService.IsReady() {\n164: \t\tgo func() {\n165: \t\t\tstoreCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)\n",
+			"line": "164",
+			"column": "3",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "400",
+				"url": "https://cwe.mitre.org/data/definitions/400.html"
+			},
+			"rule_id": "G118",
+			"details": "Goroutine uses context.Background/TODO while request-scoped context is available",
+			"file": "/app/internal/plugins/lifecycle.go",
+			"code": "47: \t// Start plugin monitoring in background\n48: \tgo l.monitorPlugin(pluginCtx, plugin)\n49: \n",
+			"line": "48",
+			"column": "2",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "400",
+				"url": "https://cwe.mitre.org/data/definitions/400.html"
+			},
+			"rule_id": "G118",
+			"details": "Goroutine uses context.Background/TODO while request-scoped context is available",
+			"file": "/app/internal/modelsdev/service.go",
+			"code": "105: \tif s.config.AutoRefresh {\n106: \t\tgo s.backgroundRefreshLoop()\n107: \t}\n",
+			"line": "106",
+			"column": "3",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "400",
+				"url": "https://cwe.mitre.org/data/definitions/400.html"
+			},
+			"rule_id": "G118",
+			"details": "Goroutine uses context.Background/TODO while request-scoped context is available",
+			"file": "/app/internal/messaging/hub.go",
+			"code": "161: \t// Start health check goroutine\n162: \tgo h.healthCheckLoop()\n163: \n",
+			"line": "162",
+			"column": "2",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "400",
+				"url": "https://cwe.mitre.org/data/definitions/400.html"
+			},
+			"rule_id": "G118",
+			"details": "Goroutine uses context.Background/TODO while request-scoped context is available",
+			"file": "/app/internal/mcp/servers/unified_manager.go",
+			"code": "150: \t// Start health check goroutine\n151: \tgo m.healthCheckLoop()\n152: \n",
+			"line": "151",
+			"column": "2",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "400",
+				"url": "https://cwe.mitre.org/data/definitions/400.html"
+			},
+			"rule_id": "G118",
+			"details": "Goroutine uses context.Background/TODO while request-scoped context is available",
+			"file": "/app/internal/llmops/evaluator.go",
+			"code": "560: \t// Start scheduler (simplified - in production use proper cron library)\n561: \tgo e.runScheduler(run.ID)\n562: \n",
+			"line": "561",
+			"column": "2",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "400",
+				"url": "https://cwe.mitre.org/data/definitions/400.html"
+			},
+			"rule_id": "G118",
+			"details": "Goroutine uses context.Background/TODO while request-scoped context is available",
+			"file": "/app/internal/bigdata/debate_wrapper.go",
+			"code": "83: \tif dsw.enableBigData {\n84: \t\tgo dsw.publishDebateCompletion(context.Background(), config, result, duration)\n85: \t}\n",
+			"line": "84",
+			"column": "3",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "367",
+				"url": "https://cwe.mitre.org/data/definitions/367.html"
+			},
+			"rule_id": "G122",
+			"details": "Filesystem operation in filepath.Walk/WalkDir callback uses race-prone path; consider root-scoped APIs (e.g. os.Root) to prevent symlink TOCTOU traversal",
+			"file": "/app/internal/handlers/openai_compatible.go",
+			"code": "6493: \t\t// #nosec G304 - path is constrained to searchPath tree via filepath.WalkDir\n6494: \t\tcontent, err := os.ReadFile(path)\n6495: \t\tif err != nil {\n",
+			"line": "6494",
+			"column": "30",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "367",
+				"url": "https://cwe.mitre.org/data/definitions/367.html"
+			},
+			"rule_id": "G122",
+			"details": "Filesystem operation in filepath.Walk/WalkDir callback uses race-prone path; consider root-scoped APIs (e.g. os.Root) to prevent symlink TOCTOU traversal",
+			"file": "/app/internal/debate/comprehensive/code.go",
+			"code": "495: \n496: \t\tdata, err := os.ReadFile(path)\n497: \t\tif err != nil {\n",
+			"line": "496",
+			"column": "27",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "400",
+				"url": "https://cwe.mitre.org/data/definitions/400.html"
+			},
+			"rule_id": "G118",
+			"details": "context cancellation function returned by WithCancel/WithTimeout/WithDeadline is not called",
+			"file": "/app/internal/services/debate_monitoring_service.go",
+			"code": "99: \t// Create cancellable context for this monitoring session\n100: \tmonitoringCtx, cancelFunc := context.WithCancel(ctx)\n101: \n",
+			"line": "100",
+			"column": "49",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "400",
+				"url": "https://cwe.mitre.org/data/definitions/400.html"
+			},
+			"rule_id": "G118",
+			"details": "context cancellation function returned by WithCancel/WithTimeout/WithDeadline is not called",
+			"file": "/app/internal/plugins/lifecycle.go",
+			"code": "43: \t// Create context for the plugin\n44: \tpluginCtx, cancel := context.WithCancel(ctx)\n45: \tl.running[name] = cancel\n",
+			"line": "44",
+			"column": "41",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "400",
+				"url": "https://cwe.mitre.org/data/definitions/400.html"
+			},
+			"rule_id": "G118",
+			"details": "context cancellation function returned by WithCancel/WithTimeout/WithDeadline is not called",
+			"file": "/app/internal/performance/lazy/loader.go",
+			"code": "63: \n64: \tctx, cancel := context.WithCancel(context.Background())\n65: \n",
+			"line": "64",
+			"column": "35",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "400",
+				"url": "https://cwe.mitre.org/data/definitions/400.html"
+			},
+			"rule_id": "G118",
+			"details": "context cancellation function returned by WithCancel/WithTimeout/WithDeadline is not called",
+			"file": "/app/internal/background/worker_pool.go",
+			"code": "359: \tworkerID := uuid.New().String()[:8]\n360: \tworkerCtx, workerCancel := context.WithCancel(wp.ctx)\n361: \n",
+			"line": "360",
+			"column": "47",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "400",
+				"url": "https://cwe.mitre.org/data/definitions/400.html"
+			},
+			"rule_id": "G118",
+			"details": "context cancellation function returned by WithCancel/WithTimeout/WithDeadline is not called",
+			"file": "/app/internal/background/worker_pool.go",
+			"code": "185: \n186: \tctx, cancel := context.WithCancel(context.Background())\n187: \n",
+			"line": "186",
+			"column": "35",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": null,
+			"rule_id": "G705",
+			"details": "XSS via taint analysis",
+			"file": "/app/internal/mcp/bridge/sse_bridge.go",
+			"code": "825: \tmessageEndpoint := fmt.Sprintf(\"http://%s/message\", r.Host)\n826: \t_, _ = fmt.Fprintf(w, \"event: endpoint\\ndata: %s\\n\\n\", messageEndpoint)\n827: \tflusher.Flush()\n",
+			"line": "826",
+			"column": "20",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with variable",
+			"file": "/app/internal/services/mcp_client.go",
+			"code": "293: func (c *MCPClient) createStdioTransport(command string, args []string) (MCPTransport, error) {\n294: \tcmd := exec.Command(command, args...)\n295: \n",
+			"line": "294",
+			"column": "9",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with variable",
+			"file": "/app/internal/services/acp_client.go",
+			"code": "827: func (c *LSPClient) createStdioTransport(command string, args []string) (LSPTransport, error) {\n828: \tcmd := exec.Command(command, args...)\n829: \n",
+			"line": "828",
+			"column": "9",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with variable",
+			"file": "/app/internal/mcp/bridge/bridge.go",
+			"code": "88: \t// Start the MCP server process\n89: \tb.cmd = exec.CommandContext(ctx, cmdName, cmdArgs...)\n90: \tb.cmd.Env = os.Environ()\n",
+			"line": "89",
+			"column": "10",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with variable",
+			"file": "/app/internal/llm/providers/zen/zen_http.go",
+			"code": "176: \targs := []string{\"serve\", \"--port\", \"4096\"}\n177: \tp.serverCmd = exec.Command(opencodePath, args...)\n178: \n",
+			"line": "177",
+			"column": "16",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with variable",
+			"file": "/app/internal/llm/providers/zen/zen_cli.go",
+			"code": "723: \t// Try the models command\n724: \tcmd := exec.CommandContext(ctx, path, \"models\")\n725: \toutput, err := cmd.CombinedOutput()\n",
+			"line": "724",
+			"column": "9",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with variable",
+			"file": "/app/internal/llm/providers/zen/zen_cli.go",
+			"code": "128: \n129: \t\tcmd := exec.CommandContext(ctx, path, \"--version\")\n130: \t\toutput, err := cmd.CombinedOutput()\n",
+			"line": "129",
+			"column": "10",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with variable",
+			"file": "/app/internal/llm/providers/zen/zen.go",
+			"code": "198: \n199: \tcmd := exec.CommandContext(ctx, path, \"models\")\n200: \toutput, err := cmd.CombinedOutput()\n",
+			"line": "199",
+			"column": "9",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with variable",
+			"file": "/app/internal/llm/providers/qwen/qwen_acp.go",
+			"code": "668: \t// Try to start qwen --acp and see if it responds\n669: \tcmd := exec.CommandContext(ctx, qwenPath, \"--acp\")\n670: \n",
+			"line": "669",
+			"column": "9",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with variable",
+			"file": "/app/internal/llm/providers/qwen/qwen_acp.go",
+			"code": "203: \t// Start qwen in ACP mode\n204: \tp.cmd = exec.Command(qwenPath, \"--acp\")\n205: \tp.cmd.Dir = p.cwd\n",
+			"line": "204",
+			"column": "10",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with variable",
+			"file": "/app/internal/llm/providers/kimicode/kimicode_cli.go",
+			"code": "120: \n121: \t\tcmd := exec.CommandContext(ctx, path, \"--version\")\n122: \t\toutput, err := cmd.CombinedOutput()\n",
+			"line": "121",
+			"column": "10",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with variable",
+			"file": "/app/internal/debate/tools/git_tool.go",
+			"code": "424: ) (string, error) {\n425: \tcmd := exec.CommandContext(ctx, \"git\", args...)\n426: \tcmd.Dir = dir\n",
+			"line": "425",
+			"column": "9",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with variable",
+			"file": "/app/internal/debate/comprehensive/command.go",
+			"code": "142: \t// Execute command\n143: \tcmd := exec.CommandContext(ctx, \"sh\", \"-c\", command)\n144: \tcmd.Dir = workDir\n",
+			"line": "143",
+			"column": "9",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with variable",
+			"file": "/app/internal/bigdata/spark_processor.go",
+			"code": "241: \t// Execute spark-submit\n242: \tcmd := exec.CommandContext(ctx, \"spark-submit\", args...)\n243: \n",
+			"line": "242",
+			"column": "9",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with a potential tainted input or cmd arguments",
+			"file": "/app/internal/testing/framework.go",
+			"code": "157: \n158: \tcmd := exec.CommandContext(ctx, testCase.Command, testCase.Args...)\n159: \n",
+			"line": "158",
+			"column": "9",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with a potential tainted input or cmd arguments",
+			"file": "/app/internal/mcp/servers/git_adapter.go",
+			"code": "167: \n168: \tcmd := exec.CommandContext(ctx, g.config.GitPath, args...)\n169: \tcmd.Dir = dir\n",
+			"line": "168",
+			"column": "9",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with a potential tainted input or cmd arguments",
+			"file": "/app/internal/mcp/servers/git_adapter.go",
+			"code": "113: \t// Quick version check\n114: \tcmd := exec.CommandContext(ctx, g.config.GitPath, \"--version\")\n115: \tif err := cmd.Run(); err != nil {\n",
+			"line": "114",
+			"column": "9",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with a potential tainted input or cmd arguments",
+			"file": "/app/internal/mcp/servers/git_adapter.go",
+			"code": "90: \t// Check git is available\n91: \tcmd := exec.CommandContext(ctx, g.config.GitPath, \"--version\")\n92: \toutput, err := cmd.Output()\n",
+			"line": "91",
+			"column": "9",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with a potential tainted input or cmd arguments",
+			"file": "/app/internal/mcp/preinstaller.go",
+			"code": "296: \t// Run npm install\n297: \tcmd := exec.CommandContext(installCtx, p.npmPath, \"install\", \"--save\", \"--prefer-offline\", pkg.NPM)\n298: \tcmd.Dir = pkgDir\n",
+			"line": "297",
+			"column": "9",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with a potential tainted input or cmd arguments",
+			"file": "/app/internal/mcp/connection_pool.go",
+			"code": "283: \t// Create the command\n284: \tcmd := exec.CommandContext(ctx, conn.Config.Command[0], conn.Config.Command[1:]...)\n285: \n",
+			"line": "284",
+			"column": "9",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with a potential tainted input or cmd arguments",
+			"file": "/app/internal/mcp/bridge/sse_bridge.go",
+			"code": "398: \t// Create command\n399: \tb.cmd = exec.Command(b.config.Command[0], b.config.Command[1:]...)\n400: \n",
+			"line": "399",
+			"column": "10",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with a potential tainted input or cmd arguments",
+			"file": "/app/internal/llm/providers/zen/zen_cli.go",
+			"code": "591: \tfor _, args := range commands {\n592: \t\tcmd := exec.CommandContext(ctx, p.cliPath, args...)\n593: \t\toutput, err := cmd.CombinedOutput()\n",
+			"line": "592",
+			"column": "10",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with a potential tainted input or cmd arguments",
+			"file": "/app/internal/llm/providers/zen/zen_cli.go",
+			"code": "461: \n462: \tcmd := exec.CommandContext(ctx, p.cliPath, \"--version\")\n463: \tif err := cmd.Run(); err != nil {\n",
+			"line": "462",
+			"column": "9",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with a potential tainted input or cmd arguments",
+			"file": "/app/internal/llm/providers/zen/zen_cli.go",
+			"code": "388: \t\t// Execute opencode command\n389: \t\tcmd := exec.CommandContext(cmdCtx, p.cliPath, args...)\n390: \n",
+			"line": "389",
+			"column": "10",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with a potential tainted input or cmd arguments",
+			"file": "/app/internal/llm/providers/zen/zen_cli.go",
+			"code": "229: \t// Execute opencode command\n230: \tcmd := exec.CommandContext(cmdCtx, p.cliPath, args...)\n231: \n",
+			"line": "230",
+			"column": "9",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with a potential tainted input or cmd arguments",
+			"file": "/app/internal/llm/providers/kimicode/kimicode_cli.go",
+			"code": "359: \n360: \tcmd := exec.CommandContext(cmdCtx, p.cliPath, args...)\n361: \n",
+			"line": "360",
+			"column": "9",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with a potential tainted input or cmd arguments",
+			"file": "/app/internal/llm/providers/kimicode/kimicode_cli.go",
+			"code": "201: \n202: \tcmd := exec.CommandContext(cmdCtx, p.cliPath, args...)\n203: \n",
+			"line": "202",
+			"column": "9",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with a potential tainted input or cmd arguments",
+			"file": "/app/internal/formatters/providers/native/base.go",
+			"code": "116: \t// Check if binary exists\n117: \tcmd := exec.CommandContext(ctx, n.binaryPath, \"--version\")\n118: \tif err := cmd.Run(); err != nil {\n",
+			"line": "117",
+			"column": "9",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with a potential tainted input or cmd arguments",
+			"file": "/app/internal/formatters/providers/native/base.go",
+			"code": "46: \tcmdArgs := n.buildArgs(req)\n47: \tcmd := exec.CommandContext(ctx, n.binaryPath, cmdArgs...)\n48: \n",
+			"line": "47",
+			"column": "9",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with a potential tainted input or cmd arguments",
+			"file": "/app/internal/debate/testing/test_executor.go",
+			"code": "437: \n438: \tcmd := exec.CommandContext(ctx, s.runtime, \"rm\", \"-f\", name)\n439: \tcmd.Run() //nolint:errcheck\n",
+			"line": "438",
+			"column": "9",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with a potential tainted input or cmd arguments",
+			"file": "/app/internal/debate/testing/test_executor.go",
+			"code": "307: \targs := s.buildRunArgs(containerName, req)\n308: \tcmd := exec.CommandContext(ctx, s.runtime, args...)\n309: \n",
+			"line": "308",
+			"column": "9",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "78",
+				"url": "https://cwe.mitre.org/data/definitions/78.html"
+			},
+			"rule_id": "G204",
+			"details": "Subprocess launched with a potential tainted input or cmd arguments",
+			"file": "/app/internal/auth/oauth_credentials/cli_refresh.go",
+			"code": "263: \t// Build command: qwen \"exit\" -o json --max-session-turns 1\n264: \tcmd := exec.CommandContext(execCtx, cr.qwenCLIPath,\n265: \t\tcr.config.Prompt,\n266: \t\t\"-o\", \"json\",\n267: \t\t\"--max-session-turns\", \"1\",\n268: \t)\n269: \n",
+			"line": "264-268",
+			"column": "9",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/streaming/flink/client.go",
+			"code": "446: func (c *Client) UploadJar(ctx context.Context, jarPath string) (*UploadJarResponse, error) {\n447: \tfile, err := os.Open(jarPath)\n448: \tif err != nil {\n",
+			"line": "447",
+			"column": "15",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/skills/parser.go",
+			"code": "29: func (p *Parser) ParseFile(filePath string) (*Skill, error) {\n30: \tcontent, err := os.ReadFile(filePath)\n31: \tif err != nil {\n",
+			"line": "30",
+			"column": "18",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/services/speckit_orchestrator.go",
+			"code": "1197: func readFile(path string) ([]byte, error) {\n1198: \treturn os.ReadFile(path)\n1199: }\n",
+			"line": "1198",
+			"column": "9",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/services/protocol_plugin_system.go",
+			"code": "335: \t\t// Check if file is readable (try to open it)\n336: \t\tfile, err := os.Open(pluginPath)\n337: \t\tif err != nil {\n",
+			"line": "336",
+			"column": "16",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/services/documentation_sync.go",
+			"code": "219: func (ds *DocumentationSync) extractSectionFromFile(filePath, sectionName string) (string, error) {\n220: \tcontent, err := os.ReadFile(filePath)\n221: \tif err != nil {\n",
+			"line": "220",
+			"column": "18",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/services/documentation_sync.go",
+			"code": "139: \t// Read existing file\n140: \texistingContent, err := os.ReadFile(filePath)\n141: \tif err != nil {\n",
+			"line": "140",
+			"column": "26",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/services/constitution_manager.go",
+			"code": "74: func (cm *ConstitutionManager) LoadConstitution(path string) (*Constitution, error) {\n75: \tdata, err := os.ReadFile(path)\n76: \tif err != nil {\n",
+			"line": "75",
+			"column": "15",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/security/secure_fix_agent.go",
+			"code": "472: \t// Read file content\n473: \tcontent, err := os.ReadFile(path)\n474: \tif err != nil {\n",
+			"line": "473",
+			"column": "18",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/security/audit.go",
+			"code": "198: func NewFileAuditLogger(filename string, logger *logrus.Logger) (*FileAuditLogger, error) {\n199: \tfile, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)\n200: \tif err != nil {\n",
+			"line": "199",
+			"column": "15",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/mcp/servers/memory_adapter.go",
+			"code": "146: \n147: \tdata, err := os.ReadFile(graphFile)\n148: \tif err != nil {\n",
+			"line": "147",
+			"column": "15",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/mcp/server_registry.go",
+			"code": "164: func (r *ServerRegistry) loadServerConfig(path string) (*ServerConfig, error) {\n165: \tdata, err := os.ReadFile(path)\n166: \tif err != nil {\n",
+			"line": "165",
+			"column": "15",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/mcp/config/generator_full.go",
+			"code": "63: \tfor _, file := range envFiles {\n64: \t\tif data, err := os.ReadFile(file); err == nil {\n65: \t\t\tlines := strings.Split(string(data), \"\\n\")\n",
+			"line": "64",
+			"column": "19",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/mcp/config/generator_container.go",
+			"code": "181: \tfor _, file := range envFiles {\n182: \t\tif data, err := os.ReadFile(file); err == nil {\n183: \t\t\tlines := strings.Split(string(data), \"\\n\")\n",
+			"line": "182",
+			"column": "19",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/llm/providers/kimicode/kimicode_cli.go",
+			"code": "574: \tcredPath := filepath.Join(homeDir, KimiCodeCredentialPath)\n575: \tdata, err := os.ReadFile(credPath)\n576: \tif err != nil {\n",
+			"line": "575",
+			"column": "15",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/llm/providers/kimicode/kimicode_cli.go",
+			"code": "543: \tcredPath := filepath.Join(homeDir, KimiCodeCredentialPath)\n544: \tdata, err := os.ReadFile(credPath)\n545: \tif err != nil {\n",
+			"line": "544",
+			"column": "15",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/llm/providers/claude/claude_cli.go",
+			"code": "596: \t// Read and parse credentials to check if they're valid\n597: \tdata, err := os.ReadFile(credPath)\n598: \tif err != nil {\n",
+			"line": "597",
+			"column": "15",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/formatters/versions.go",
+			"code": "26: func LoadVersionsManifest(path string) (*VersionsManifest, error) {\n27: \tdata, err := os.ReadFile(path)\n28: \tif err != nil {\n",
+			"line": "27",
+			"column": "15",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/formatters/config.go",
+			"code": "155: \t// Read file\n156: \tdata, err := os.ReadFile(path)\n157: \tif err != nil {\n",
+			"line": "156",
+			"column": "15",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/debate/comprehensive/code.go",
+			"code": "495: \n496: \t\tdata, err := os.ReadFile(path)\n497: \t\tif err != nil {\n",
+			"line": "496",
+			"column": "16",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/debate/comprehensive/code.go",
+			"code": "311: \tbackupPath := path + \".backup\"\n312: \tdata, err := os.ReadFile(path)\n313: \tif err != nil {\n",
+			"line": "312",
+			"column": "15",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/debate/comprehensive/code.go",
+			"code": "272: func (t *CodeTool) readFile(path string) (*ToolResult, error) {\n273: \tdata, err := os.ReadFile(path)\n274: \tif err != nil {\n",
+			"line": "273",
+			"column": "15",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/config/multi_provider.go",
+			"code": "132: func LoadMultiProviderConfig(configPath string) (*MultiProviderConfig, error) {\n133: \tdata, err := os.ReadFile(configPath)\n134: \tif err != nil {\n",
+			"line": "133",
+			"column": "15",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/config/config.go",
+			"code": "785: \tfor _, path := range envPaths {\n786: \t\tdata, err := os.ReadFile(path)\n787: \t\tif err != nil {\n",
+			"line": "786",
+			"column": "16",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/challenges/env_loader.go",
+			"code": "12: func LoadEnvFile(path string) (map[string]string, error) {\n13: \tf, err := os.Open(path)\n14: \tif err != nil {\n",
+			"line": "13",
+			"column": "12",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/auth/oauth_credentials/token_refresh.go",
+			"code": "250: \t// Read existing file\n251: \tdata, err := os.ReadFile(credPath)\n252: \tif err != nil {\n",
+			"line": "251",
+			"column": "15",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/auth/oauth_credentials/token_refresh.go",
+			"code": "207: \t// Read existing file\n208: \tdata, err := os.ReadFile(credPath)\n209: \tif err != nil {\n",
+			"line": "208",
+			"column": "15",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/auth/oauth_credentials/oauth_credentials.go",
+			"code": "164: \n165: \tdata, err := os.ReadFile(credPath)\n166: \tif err != nil {\n",
+			"line": "165",
+			"column": "15",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/auth/oauth_credentials/oauth_credentials.go",
+			"code": "96: \n97: \tdata, err := os.ReadFile(credPath)\n98: \tif err != nil {\n",
+			"line": "97",
+			"column": "15",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/auth/oauth_credentials/cli_refresh.go",
+			"code": "474: \tcredPath := GetQwenCredentialsPath()\n475: \tif data, err := os.ReadFile(credPath); err == nil {\n476: \t\tvar creds QwenOAuthCredentials\n",
+			"line": "475",
+			"column": "18",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/auth/oauth_credentials/cli_refresh.go",
+			"code": "391: \tcredPath := GetQwenCredentialsPath()\n392: \tdata, err := os.ReadFile(credPath)\n393: \tif err != nil {\n",
+			"line": "392",
+			"column": "15",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/auth/oauth_credentials/cli_refresh.go",
+			"code": "350: \n351: \tdata, err := os.ReadFile(credPath)\n352: \tif err != nil {\n",
+			"line": "351",
+			"column": "15",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/app/internal/adapters/containers/adapter.go",
+			"code": "633: func (a *Adapter) extractBuildContexts(composePath string) ([]string, error) {\n634: \tdata, err := os.ReadFile(composePath)\n635: \tif err != nil {\n",
+			"line": "634",
+			"column": "15",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "499",
+				"url": "https://cwe.mitre.org/data/definitions/499.html"
+			},
+			"rule_id": "G117",
+			"details": "Marshaled struct field \"AccessToken\" (JSON key \"access_token\") matches secret pattern",
+			"file": "/app/internal/auth/oauth_credentials/token_refresh.go",
+			"code": "272: \t// Write back to file\n273: \tupdatedData, err := json.MarshalIndent(creds, \"\", \"  \")\n274: \tif err != nil {\n",
+			"line": "273",
+			"column": "22",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "276",
+				"url": "https://cwe.mitre.org/data/definitions/276.html"
+			},
+			"rule_id": "G302",
+			"details": "Expect file permissions to be 0600 or less",
+			"file": "/app/internal/mcp/servers/filesystem_adapter.go",
+			"code": "286: \t// #nosec G304 - path is validated by isPathAllowed with utils.ValidatePath, allowed paths whitelist, and denied paths blacklist\n287: \tf, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)\n288: \tif err != nil {\n",
+			"line": "287",
+			"column": "12",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "276",
+				"url": "https://cwe.mitre.org/data/definitions/276.html"
+			},
+			"rule_id": "G301",
+			"details": "Expect directory permissions to be 0750 or less",
+			"file": "/app/internal/testing/helpers.go",
+			"code": "539: \n540: \tif err := os.MkdirAll(path, 0755); err != nil {\n541: \t\tf.t.Fatalf(\"Failed to create subdirectory: %v\", err)\n",
+			"line": "540",
+			"column": "12",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "276",
+				"url": "https://cwe.mitre.org/data/definitions/276.html"
+			},
+			"rule_id": "G301",
+			"details": "Expect directory permissions to be 0750 or less",
+			"file": "/app/internal/testing/helpers.go",
+			"code": "513: \tdir := filepath.Dir(path)\n514: \tif err := os.MkdirAll(dir, 0755); err != nil {\n515: \t\tf.t.Fatalf(\"Failed to create directories: %v\", err)\n",
+			"line": "514",
+			"column": "12",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "276",
+				"url": "https://cwe.mitre.org/data/definitions/276.html"
+			},
+			"rule_id": "G301",
+			"details": "Expect directory permissions to be 0750 or less",
+			"file": "/app/internal/services/verification_report.go",
+			"code": "292: \tdir := filepath.Dir(g.reportPath)\n293: \tif err := os.MkdirAll(dir, 0755); err != nil {\n294: \t\treturn fmt.Errorf(\"failed to create report directory: %w\", err)\n",
+			"line": "293",
+			"column": "12",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "276",
+				"url": "https://cwe.mitre.org/data/definitions/276.html"
+			},
+			"rule_id": "G301",
+			"details": "Expect directory permissions to be 0750 or less",
+			"file": "/app/internal/debate/tools/git_tool.go",
+			"code": "175: \tfileDir := filepath.Dir(filePath)\n176: \tif err := os.MkdirAll(fileDir, 0o755); err != nil {\n177: \t\treturn nil, fmt.Errorf(\n",
+			"line": "176",
+			"column": "12",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "276",
+				"url": "https://cwe.mitre.org/data/definitions/276.html"
+			},
+			"rule_id": "G301",
+			"details": "Expect directory permissions to be 0750 or less",
+			"file": "/app/internal/debate/tools/git_tool.go",
+			"code": "93: \t// Create the worktree base directory if it does not exist.\n94: \tif err := os.MkdirAll(worktreeDir, 0o755); err != nil {\n95: \t\treturn nil, fmt.Errorf(\"failed to create worktree dir: %w\", err)\n",
+			"line": "94",
+			"column": "12",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "276",
+				"url": "https://cwe.mitre.org/data/definitions/276.html"
+			},
+			"rule_id": "G301",
+			"details": "Expect directory permissions to be 0750 or less",
+			"file": "/app/internal/debate/comprehensive/code.go",
+			"code": "345: \ttrashDir := filepath.Join(t.basePath, \".trash\")\n346: \tif err := os.MkdirAll(trashDir, 0755); err != nil {\n347: \t\tt.logger.Errorf(\"failed to create trash directory: %v\", err)\n",
+			"line": "346",
+			"column": "12",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "276",
+				"url": "https://cwe.mitre.org/data/definitions/276.html"
+			},
+			"rule_id": "G301",
+			"details": "Expect directory permissions to be 0750 or less",
+			"file": "/app/internal/debate/comprehensive/code.go",
+			"code": "287: \tdir := filepath.Dir(path)\n288: \tif err := os.MkdirAll(dir, 0755); err != nil {\n289: \t\treturn NewToolError(fmt.Sprintf(\"failed to create directory: %v\", err)), nil\n",
+			"line": "288",
+			"column": "12",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "276",
+				"url": "https://cwe.mitre.org/data/definitions/276.html"
+			},
+			"rule_id": "G301",
+			"details": "Expect directory permissions to be 0750 or less",
+			"file": "/app/internal/challenges/reporter.go",
+			"code": "36: \t)\n37: \tif err := os.MkdirAll(dir, 0755); err != nil {\n38: \t\treturn fmt.Errorf(\"create results dir: %w\", err)\n",
+			"line": "37",
+			"column": "12",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "276",
+				"url": "https://cwe.mitre.org/data/definitions/276.html"
+			},
+			"rule_id": "G306",
+			"details": "Expect WriteFile permissions to be 0600 or less",
+			"file": "/app/internal/testing/helpers.go",
+			"code": "528: \n529: \tif err := os.WriteFile(path, []byte(content), 0755); err != nil {\n530: \t\tf.t.Fatalf(\"Failed to create executable file: %v\", err)\n",
+			"line": "529",
+			"column": "12",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "276",
+				"url": "https://cwe.mitre.org/data/definitions/276.html"
+			},
+			"rule_id": "G306",
+			"details": "Expect WriteFile permissions to be 0600 or less",
+			"file": "/app/internal/testing/helpers.go",
+			"code": "517: \n518: \tif err := os.WriteFile(path, []byte(content), 0644); err != nil {\n519: \t\tf.t.Fatalf(\"Failed to create temp file: %v\", err)\n",
+			"line": "518",
+			"column": "12",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "276",
+				"url": "https://cwe.mitre.org/data/definitions/276.html"
+			},
+			"rule_id": "G306",
+			"details": "Expect WriteFile permissions to be 0600 or less",
+			"file": "/app/internal/services/verification_report.go",
+			"code": "296: \n297: \tif err := os.WriteFile(g.reportPath, []byte(content), 0644); err != nil {\n298: \t\treturn fmt.Errorf(\"failed to write report file: %w\", err)\n",
+			"line": "297",
+			"column": "12",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "276",
+				"url": "https://cwe.mitre.org/data/definitions/276.html"
+			},
+			"rule_id": "G306",
+			"details": "Expect WriteFile permissions to be 0600 or less",
+			"file": "/app/internal/debate/tools/git_tool.go",
+			"code": "182: \t// Write the code to the file.\n183: \tif err := os.WriteFile(filePath, []byte(code), 0o644); err != nil {\n184: \t\treturn nil, fmt.Errorf(\"failed to write file %s: %w\", filename, err)\n",
+			"line": "183",
+			"column": "12",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "276",
+				"url": "https://cwe.mitre.org/data/definitions/276.html"
+			},
+			"rule_id": "G306",
+			"details": "Expect WriteFile permissions to be 0600 or less",
+			"file": "/app/internal/debate/comprehensive/code.go",
+			"code": "323: \t\t// Restore backup on failure\n324: \t\tif err2 := os.WriteFile(path, data, 0644); err2 != nil {\n325: \t\t\tt.logger.Errorf(\"failed to restore backup after update failure: %v\", err2)\n",
+			"line": "324",
+			"column": "14",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "276",
+				"url": "https://cwe.mitre.org/data/definitions/276.html"
+			},
+			"rule_id": "G306",
+			"details": "Expect WriteFile permissions to be 0600 or less",
+			"file": "/app/internal/debate/comprehensive/code.go",
+			"code": "321: \t// Write new content\n322: \tif err := os.WriteFile(path, []byte(content), 0644); err != nil {\n323: \t\t// Restore backup on failure\n",
+			"line": "322",
+			"column": "12",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "276",
+				"url": "https://cwe.mitre.org/data/definitions/276.html"
+			},
+			"rule_id": "G306",
+			"details": "Expect WriteFile permissions to be 0600 or less",
+			"file": "/app/internal/debate/comprehensive/code.go",
+			"code": "316: \n317: \tif err := os.WriteFile(backupPath, data, 0644); err != nil {\n318: \t\treturn NewToolError(fmt.Sprintf(\"failed to create backup: %v\", err)), nil\n",
+			"line": "317",
+			"column": "12",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "276",
+				"url": "https://cwe.mitre.org/data/definitions/276.html"
+			},
+			"rule_id": "G306",
+			"details": "Expect WriteFile permissions to be 0600 or less",
+			"file": "/app/internal/debate/comprehensive/code.go",
+			"code": "292: \t// Write file\n293: \tif err := os.WriteFile(path, []byte(content), 0644); err != nil {\n294: \t\treturn NewToolError(fmt.Sprintf(\"failed to write file: %v\", err)), nil\n",
+			"line": "293",
+			"column": "12",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "276",
+				"url": "https://cwe.mitre.org/data/definitions/276.html"
+			},
+			"rule_id": "G306",
+			"details": "Expect WriteFile permissions to be 0600 or less",
+			"file": "/app/internal/challenges/reporter.go",
+			"code": "63: \t\t}\n64: \t\t_ = os.WriteFile(resultPath, resultData, 0644) //nolint:errcheck\n65: \t}\n",
+			"line": "64",
+			"column": "7",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "276",
+				"url": "https://cwe.mitre.org/data/definitions/276.html"
+			},
+			"rule_id": "G306",
+			"details": "Expect WriteFile permissions to be 0600 or less",
+			"file": "/app/internal/challenges/reporter.go",
+			"code": "47: \tsummaryPath := filepath.Join(dir, \"summary.json\")\n48: \tif err := os.WriteFile(summaryPath, data, 0644); err != nil {\n49: \t\treturn fmt.Errorf(\"write summary: %w\", err)\n",
+			"line": "48",
+			"column": "12",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "703",
+				"url": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled",
+			"file": "/app/internal/profiling/deadlock_detector.go",
+			"code": "187: \tid := 0\n188: \tfmt.Sscanf(string(buf[:n]), \"goroutine %d \", \u0026id) //nolint:errcheck\n189: \treturn id\n",
+			"line": "188",
+			"column": "2",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "703",
+				"url": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled",
+			"file": "/app/internal/llmops/experiments.go",
+			"code": "398: \th := fnv.New32a()\n399: \th.Write([]byte(exp.ID + userID))\n400: \thashValue := float64(h.Sum32()) / float64(^uint32(0))\n",
+			"line": "399",
+			"column": "2",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "703",
+				"url": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled",
+			"file": "/app/internal/debate/testing/test_executor.go",
+			"code": "438: \tcmd := exec.CommandContext(ctx, s.runtime, \"rm\", \"-f\", name)\n439: \tcmd.Run() //nolint:errcheck\n440: }\n",
+			"line": "439",
+			"column": "2",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "703",
+				"url": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled",
+			"file": "/app/demo.go",
+			"code": "243: \t\tstart := time.Now()\n244: \t\td.manager.ExecuteRequest(ctx, req)\n245: \t\tduration := time.Since(start)\n",
+			"line": "244",
+			"column": "3",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "703",
+				"url": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled",
+			"file": "/app/demo.go",
+			"code": "243: \t\tstart := time.Now()\n244: \t\td.manager.ExecuteRequest(ctx, req)\n245: \t\tduration := time.Since(start)\n",
+			"line": "244",
+			"column": "3",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "703",
+				"url": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled",
+			"file": "/app/demo.go",
+			"code": "243: \t\tstart := time.Now()\n244: \t\td.manager.ExecuteRequest(ctx, req)\n245: \t\tduration := time.Since(start)\n",
+			"line": "244",
+			"column": "3",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "703",
+				"url": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled",
+			"file": "/app/demo.go",
+			"code": "243: \t\tstart := time.Now()\n244: \t\td.manager.ExecuteRequest(ctx, req)\n245: \t\tduration := time.Since(start)\n",
+			"line": "244",
+			"column": "3",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "703",
+				"url": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled",
+			"file": "/app/demo.go",
+			"code": "243: \t\tstart := time.Now()\n244: \t\td.manager.ExecuteRequest(ctx, req)\n245: \t\tduration := time.Since(start)\n",
+			"line": "244",
+			"column": "3",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "703",
+				"url": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled",
+			"file": "/app/demo.go",
+			"code": "243: \t\tstart := time.Now()\n244: \t\td.manager.ExecuteRequest(ctx, req)\n245: \t\tduration := time.Since(start)\n",
+			"line": "244",
+			"column": "3",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "703",
+				"url": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled",
+			"file": "/app/demo.go",
+			"code": "243: \t\tstart := time.Now()\n244: \t\td.manager.ExecuteRequest(ctx, req)\n245: \t\tduration := time.Since(start)\n",
+			"line": "244",
+			"column": "3",
+			"nosec": false,
+			"suppressions": null
+		}
+	],
+	"Stats": {
+		"files": 674,
+		"lines": 317778,
+		"nosec": 188,
+		"found": 217
+	},
+	"GosecVersion": "dev"
+}

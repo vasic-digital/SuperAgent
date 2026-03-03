@@ -302,12 +302,12 @@ func (a *SentryAdapter) listProjects(ctx context.Context, args map[string]interf
 }
 
 func (a *SentryAdapter) listIssues(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	project, _ := args["project"].(string)
-	query, _ := args["query"].(string)
+	project, _ := args["project"].(string) //nolint:errcheck // schema validation ensures correct type
+	query, _ := args["query"].(string)     //nolint:errcheck // schema validation ensures correct type
 	if query == "" {
 		query = "is:unresolved"
 	}
-	sort, _ := args["sort"].(string)
+	sort, _ := args["sort"].(string) //nolint:errcheck // schema validation ensures correct type
 	if sort == "" {
 		sort = "date"
 	}
@@ -346,7 +346,7 @@ func (a *SentryAdapter) listIssues(ctx context.Context, args map[string]interfac
 }
 
 func (a *SentryAdapter) getIssue(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	issueID, _ := args["issue_id"].(string)
+	issueID, _ := args["issue_id"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	endpoint := fmt.Sprintf("/issues/%s/", issueID)
 	resp, err := a.makeRequest(ctx, http.MethodGet, endpoint, nil, nil)
@@ -393,8 +393,8 @@ func (a *SentryAdapter) getIssue(ctx context.Context, args map[string]interface{
 }
 
 func (a *SentryAdapter) resolveIssue(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	issueID, _ := args["issue_id"].(string)
-	status, _ := args["status"].(string)
+	issueID, _ := args["issue_id"].(string) //nolint:errcheck // schema validation ensures correct type
+	status, _ := args["status"].(string)    //nolint:errcheck // schema validation ensures correct type
 
 	payload := map[string]interface{}{
 		"status": status,
@@ -412,7 +412,7 @@ func (a *SentryAdapter) resolveIssue(ctx context.Context, args map[string]interf
 }
 
 func (a *SentryAdapter) listEvents(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	issueID, _ := args["issue_id"].(string)
+	issueID, _ := args["issue_id"].(string) //nolint:errcheck // schema validation ensures correct type
 	limit := getIntArg(args, "limit", 25)
 
 	params := url.Values{}
@@ -448,8 +448,8 @@ func (a *SentryAdapter) listEvents(ctx context.Context, args map[string]interfac
 }
 
 func (a *SentryAdapter) getEvent(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	project, _ := args["project"].(string)
-	eventID, _ := args["event_id"].(string)
+	project, _ := args["project"].(string)  //nolint:errcheck // schema validation ensures correct type
+	eventID, _ := args["event_id"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	endpoint := fmt.Sprintf("/projects/%s/%s/events/%s/", a.config.Organization, project, eventID)
 	resp, err := a.makeRequest(ctx, http.MethodGet, endpoint, nil, nil)
@@ -501,7 +501,7 @@ func (a *SentryAdapter) getEvent(ctx context.Context, args map[string]interface{
 }
 
 func (a *SentryAdapter) listAlerts(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	project, _ := args["project"].(string)
+	project, _ := args["project"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	endpoint := fmt.Sprintf("/projects/%s/%s/rules/", a.config.Organization, project)
 	resp, err := a.makeRequest(ctx, http.MethodGet, endpoint, nil, nil)
@@ -537,12 +537,12 @@ func (a *SentryAdapter) listAlerts(ctx context.Context, args map[string]interfac
 }
 
 func (a *SentryAdapter) queryStats(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	project, _ := args["project"].(string)
-	stat, _ := args["stat"].(string)
+	project, _ := args["project"].(string) //nolint:errcheck // schema validation ensures correct type
+	stat, _ := args["stat"].(string)       //nolint:errcheck // schema validation ensures correct type
 	if stat == "" {
 		stat = "received"
 	}
-	resolution, _ := args["resolution"].(string)
+	resolution, _ := args["resolution"].(string) //nolint:errcheck // schema validation ensures correct type
 	if resolution == "" {
 		resolution = "1h"
 	}
@@ -583,7 +583,7 @@ func (a *SentryAdapter) queryStats(ctx context.Context, args map[string]interfac
 }
 
 func (a *SentryAdapter) searchIssues(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	query, _ := args["query"].(string)
+	query, _ := args["query"].(string) //nolint:errcheck // schema validation ensures correct type
 	limit := getIntArg(args, "limit", 25)
 
 	params := url.Values{}

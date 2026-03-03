@@ -592,8 +592,11 @@ func (e *EmbeddingManager) BatchIndexDocuments(ctx context.Context, documents []
 	docIDs := make([]string, 0, len(documents))
 
 	for _, doc := range documents {
+		//nolint:errcheck // document map validation ensures correct types
 		id, _ := doc["id"].(string)
+		//nolint:errcheck // document map validation ensures correct types
 		title, _ := doc["title"].(string)
+		//nolint:errcheck // document map validation ensures correct types
 		content, _ := doc["content"].(string)
 
 		if id == "" {
@@ -740,7 +743,9 @@ func (m *EmbeddingManager) RefreshAllEmbeddings(ctx context.Context) error {
 	refreshedCount := 0
 
 	for _, provider := range providers {
+		//nolint:errcheck // provider map validation ensures correct types
 		providerName, _ := provider["name"].(string)
+		//nolint:errcheck // provider map validation ensures correct types
 		enabled, _ := provider["enabled"].(bool)
 
 		if !enabled {

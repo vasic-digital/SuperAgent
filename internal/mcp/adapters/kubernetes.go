@@ -498,7 +498,7 @@ func (a *KubernetesAdapter) CallTool(ctx context.Context, name string, args map[
 }
 
 func (a *KubernetesAdapter) getNamespace(args map[string]interface{}) string {
-	ns, _ := args["namespace"].(string)
+	ns, _ := args["namespace"].(string) //nolint:errcheck // schema validation ensures correct type
 	if ns == "" {
 		return a.config.Namespace
 	}
@@ -507,7 +507,7 @@ func (a *KubernetesAdapter) getNamespace(args map[string]interface{}) string {
 
 func (a *KubernetesAdapter) listPods(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
 	namespace := a.getNamespace(args)
-	labelSelector, _ := args["label_selector"].(string)
+	labelSelector, _ := args["label_selector"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	pods, err := a.client.ListPods(ctx, namespace, labelSelector)
 	if err != nil {
@@ -532,7 +532,7 @@ func (a *KubernetesAdapter) listPods(ctx context.Context, args map[string]interf
 }
 
 func (a *KubernetesAdapter) getPod(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	name, _ := args["name"].(string)
+	name, _ := args["name"].(string) //nolint:errcheck // schema validation ensures correct type
 	namespace := a.getNamespace(args)
 
 	pod, err := a.client.GetPod(ctx, namespace, name)
@@ -561,7 +561,7 @@ func (a *KubernetesAdapter) getPod(ctx context.Context, args map[string]interfac
 }
 
 func (a *KubernetesAdapter) deletePod(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	name, _ := args["name"].(string)
+	name, _ := args["name"].(string) //nolint:errcheck // schema validation ensures correct type
 	namespace := a.getNamespace(args)
 
 	err := a.client.DeletePod(ctx, namespace, name)
@@ -575,9 +575,9 @@ func (a *KubernetesAdapter) deletePod(ctx context.Context, args map[string]inter
 }
 
 func (a *KubernetesAdapter) getPodLogs(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	name, _ := args["name"].(string)
+	name, _ := args["name"].(string) //nolint:errcheck // schema validation ensures correct type
 	namespace := a.getNamespace(args)
-	container, _ := args["container"].(string)
+	container, _ := args["container"].(string) //nolint:errcheck // schema validation ensures correct type
 	tailLines := getIntArg(args, "tail_lines", 100)
 
 	logs, err := a.client.GetPodLogs(ctx, namespace, name, container, tailLines)
@@ -591,10 +591,10 @@ func (a *KubernetesAdapter) getPodLogs(ctx context.Context, args map[string]inte
 }
 
 func (a *KubernetesAdapter) execInPod(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	name, _ := args["name"].(string)
+	name, _ := args["name"].(string) //nolint:errcheck // schema validation ensures correct type
 	namespace := a.getNamespace(args)
-	container, _ := args["container"].(string)
-	cmdRaw, _ := args["command"].([]interface{})
+	container, _ := args["container"].(string)   //nolint:errcheck // schema validation ensures correct type
+	cmdRaw, _ := args["command"].([]interface{}) //nolint:errcheck // schema validation ensures correct type
 
 	var cmd []string
 	for _, c := range cmdRaw {
@@ -635,7 +635,7 @@ func (a *KubernetesAdapter) listDeployments(ctx context.Context, args map[string
 }
 
 func (a *KubernetesAdapter) scaleDeployment(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	name, _ := args["name"].(string)
+	name, _ := args["name"].(string) //nolint:errcheck // schema validation ensures correct type
 	namespace := a.getNamespace(args)
 	replicas := getIntArg(args, "replicas", 1)
 
@@ -650,7 +650,7 @@ func (a *KubernetesAdapter) scaleDeployment(ctx context.Context, args map[string
 }
 
 func (a *KubernetesAdapter) restartDeployment(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	name, _ := args["name"].(string)
+	name, _ := args["name"].(string) //nolint:errcheck // schema validation ensures correct type
 	namespace := a.getNamespace(args)
 
 	err := a.client.RestartDeployment(ctx, namespace, name)
@@ -727,7 +727,7 @@ func (a *KubernetesAdapter) listNodes(ctx context.Context) (*ToolResult, error) 
 
 func (a *KubernetesAdapter) getEvents(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
 	namespace := a.getNamespace(args)
-	fieldSelector, _ := args["field_selector"].(string)
+	fieldSelector, _ := args["field_selector"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	events, err := a.client.GetEvents(ctx, namespace, fieldSelector)
 	if err != nil {
@@ -752,7 +752,7 @@ func (a *KubernetesAdapter) getEvents(ctx context.Context, args map[string]inter
 }
 
 func (a *KubernetesAdapter) apply(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	yaml, _ := args["yaml"].(string)
+	yaml, _ := args["yaml"].(string) //nolint:errcheck // schema validation ensures correct type
 	namespace := a.getNamespace(args)
 
 	err := a.client.Apply(ctx, yaml, namespace)
@@ -766,8 +766,8 @@ func (a *KubernetesAdapter) apply(ctx context.Context, args map[string]interface
 }
 
 func (a *KubernetesAdapter) deleteResource(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	kind, _ := args["kind"].(string)
-	name, _ := args["name"].(string)
+	kind, _ := args["kind"].(string) //nolint:errcheck // schema validation ensures correct type
+	name, _ := args["name"].(string) //nolint:errcheck // schema validation ensures correct type
 	namespace := a.getNamespace(args)
 
 	err := a.client.Delete(ctx, kind, namespace, name)

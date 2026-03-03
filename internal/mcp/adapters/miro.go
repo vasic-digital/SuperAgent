@@ -487,8 +487,8 @@ func (a *MiroAdapter) listBoards(ctx context.Context, args map[string]interface{
 }
 
 func (a *MiroAdapter) createBoard(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	name, _ := args["name"].(string)
-	description, _ := args["description"].(string)
+	name, _ := args["name"].(string)               //nolint:errcheck // schema validation ensures correct type
+	description, _ := args["description"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	payload := map[string]interface{}{
 		"name": name,
@@ -516,7 +516,7 @@ func (a *MiroAdapter) createBoard(ctx context.Context, args map[string]interface
 }
 
 func (a *MiroAdapter) getBoard(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	boardID, _ := args["board_id"].(string)
+	boardID, _ := args["board_id"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	endpoint := fmt.Sprintf("/boards/%s", boardID)
 	resp, err := a.makeRequest(ctx, http.MethodGet, endpoint, nil, nil)
@@ -546,11 +546,11 @@ func (a *MiroAdapter) getBoard(ctx context.Context, args map[string]interface{})
 }
 
 func (a *MiroAdapter) createStickyNote(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	boardID, _ := args["board_id"].(string)
-	content, _ := args["content"].(string)
+	boardID, _ := args["board_id"].(string) //nolint:errcheck // schema validation ensures correct type
+	content, _ := args["content"].(string)  //nolint:errcheck // schema validation ensures correct type
 	x := getFloatArg(args, "x", 0)
 	y := getFloatArg(args, "y", 0)
-	color, _ := args["color"].(string)
+	color, _ := args["color"].(string) //nolint:errcheck // schema validation ensures correct type
 	if color == "" {
 		color = "light_yellow"
 	}
@@ -590,18 +590,18 @@ func (a *MiroAdapter) createStickyNote(ctx context.Context, args map[string]inte
 }
 
 func (a *MiroAdapter) createShape(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	boardID, _ := args["board_id"].(string)
-	shape, _ := args["shape"].(string)
-	content, _ := args["content"].(string)
+	boardID, _ := args["board_id"].(string) //nolint:errcheck // schema validation ensures correct type
+	shape, _ := args["shape"].(string)      //nolint:errcheck // schema validation ensures correct type
+	content, _ := args["content"].(string)  //nolint:errcheck // schema validation ensures correct type
 	x := getFloatArg(args, "x", 0)
 	y := getFloatArg(args, "y", 0)
 	width := getFloatArg(args, "width", 200)
 	height := getFloatArg(args, "height", 200)
-	fillColor, _ := args["fill_color"].(string)
+	fillColor, _ := args["fill_color"].(string) //nolint:errcheck // schema validation ensures correct type
 	if fillColor == "" {
 		fillColor = "#ffffff"
 	}
-	borderColor, _ := args["border_color"].(string)
+	borderColor, _ := args["border_color"].(string) //nolint:errcheck // schema validation ensures correct type
 	if borderColor == "" {
 		borderColor = "#000000"
 	}
@@ -642,8 +642,8 @@ func (a *MiroAdapter) createShape(ctx context.Context, args map[string]interface
 }
 
 func (a *MiroAdapter) createText(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	boardID, _ := args["board_id"].(string)
-	content, _ := args["content"].(string)
+	boardID, _ := args["board_id"].(string) //nolint:errcheck // schema validation ensures correct type
+	content, _ := args["content"].(string)  //nolint:errcheck // schema validation ensures correct type
 	x := getFloatArg(args, "x", 0)
 	y := getFloatArg(args, "y", 0)
 	width := getFloatArg(args, "width", 200)
@@ -682,18 +682,18 @@ func (a *MiroAdapter) createText(ctx context.Context, args map[string]interface{
 }
 
 func (a *MiroAdapter) createConnector(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	boardID, _ := args["board_id"].(string)
-	startItemID, _ := args["start_item_id"].(string)
-	endItemID, _ := args["end_item_id"].(string)
-	style, _ := args["style"].(string)
+	boardID, _ := args["board_id"].(string)          //nolint:errcheck // schema validation ensures correct type
+	startItemID, _ := args["start_item_id"].(string) //nolint:errcheck // schema validation ensures correct type
+	endItemID, _ := args["end_item_id"].(string)     //nolint:errcheck // schema validation ensures correct type
+	style, _ := args["style"].(string)               //nolint:errcheck // schema validation ensures correct type
 	if style == "" {
 		style = "elbowed"
 	}
-	startCap, _ := args["start_cap"].(string)
+	startCap, _ := args["start_cap"].(string) //nolint:errcheck // schema validation ensures correct type
 	if startCap == "" {
 		startCap = "none"
 	}
-	endCap, _ := args["end_cap"].(string)
+	endCap, _ := args["end_cap"].(string) //nolint:errcheck // schema validation ensures correct type
 	if endCap == "" {
 		endCap = "stealth"
 	}
@@ -729,7 +729,7 @@ func (a *MiroAdapter) createConnector(ctx context.Context, args map[string]inter
 }
 
 func (a *MiroAdapter) listItems(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	boardID, _ := args["board_id"].(string)
+	boardID, _ := args["board_id"].(string) //nolint:errcheck // schema validation ensures correct type
 	limit := getIntArg(args, "limit", 50)
 
 	params := url.Values{}
@@ -766,8 +766,8 @@ func (a *MiroAdapter) listItems(ctx context.Context, args map[string]interface{}
 }
 
 func (a *MiroAdapter) getItem(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	boardID, _ := args["board_id"].(string)
-	itemID, _ := args["item_id"].(string)
+	boardID, _ := args["board_id"].(string) //nolint:errcheck // schema validation ensures correct type
+	itemID, _ := args["item_id"].(string)   //nolint:errcheck // schema validation ensures correct type
 
 	endpoint := fmt.Sprintf("/boards/%s/items/%s", boardID, itemID)
 	resp, err := a.makeRequest(ctx, http.MethodGet, endpoint, nil, nil)
@@ -795,8 +795,8 @@ func (a *MiroAdapter) getItem(ctx context.Context, args map[string]interface{}) 
 }
 
 func (a *MiroAdapter) deleteItem(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	boardID, _ := args["board_id"].(string)
-	itemID, _ := args["item_id"].(string)
+	boardID, _ := args["board_id"].(string) //nolint:errcheck // schema validation ensures correct type
+	itemID, _ := args["item_id"].(string)   //nolint:errcheck // schema validation ensures correct type
 
 	endpoint := fmt.Sprintf("/boards/%s/items/%s", boardID, itemID)
 	_, err := a.makeRequest(ctx, http.MethodDelete, endpoint, nil, nil)
@@ -810,8 +810,8 @@ func (a *MiroAdapter) deleteItem(ctx context.Context, args map[string]interface{
 }
 
 func (a *MiroAdapter) createFrame(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	boardID, _ := args["board_id"].(string)
-	title, _ := args["title"].(string)
+	boardID, _ := args["board_id"].(string) //nolint:errcheck // schema validation ensures correct type
+	title, _ := args["title"].(string)      //nolint:errcheck // schema validation ensures correct type
 	x := getFloatArg(args, "x", 0)
 	y := getFloatArg(args, "y", 0)
 	width := getFloatArg(args, "width", 800)
@@ -849,8 +849,8 @@ func (a *MiroAdapter) createFrame(ctx context.Context, args map[string]interface
 }
 
 func (a *MiroAdapter) exportBoard(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	boardID, _ := args["board_id"].(string)
-	format, _ := args["format"].(string)
+	boardID, _ := args["board_id"].(string) //nolint:errcheck // schema validation ensures correct type
+	format, _ := args["format"].(string)    //nolint:errcheck // schema validation ensures correct type
 	if format == "" {
 		format = "png"
 	}

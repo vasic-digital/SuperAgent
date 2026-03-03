@@ -161,6 +161,7 @@ func (a *WeaviateAdapter) CreateClass(ctx context.Context, class *WeaviateClass)
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		//nolint:errcheck // error reading response body for error message
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("failed to create class: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
@@ -216,6 +217,7 @@ func (a *WeaviateAdapter) CreateObject(ctx context.Context, obj *WeaviateObject)
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		//nolint:errcheck // error reading response body for error message
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("failed to create object: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
@@ -241,6 +243,7 @@ func (a *WeaviateAdapter) BatchCreateObjects(ctx context.Context, objects []Weav
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
+		//nolint:errcheck // error reading response body for error message
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("failed to batch create objects: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
@@ -296,6 +299,7 @@ func (a *WeaviateAdapter) UpdateObject(ctx context.Context, obj *WeaviateObject)
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
+		//nolint:errcheck // error reading response body for error message
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("failed to update object: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
@@ -343,6 +347,7 @@ func (a *WeaviateAdapter) VectorSearch(ctx context.Context, className string, ve
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
+		//nolint:errcheck // error reading response body for error message
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("failed to search: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
@@ -430,6 +435,7 @@ func (a *WeaviateAdapter) HybridSearch(ctx context.Context, className, query str
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
+		//nolint:errcheck // error reading response body for error message
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("failed to hybrid search: status %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}

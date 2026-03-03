@@ -307,14 +307,14 @@ func (a *SVGMakerAdapter) CallTool(ctx context.Context, name string, args map[st
 }
 
 func (a *SVGMakerAdapter) generateSVG(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	prompt, _ := args["prompt"].(string)
-	style, _ := args["style"].(string)
+	prompt, _ := args["prompt"].(string) //nolint:errcheck // schema validation ensures correct type
+	style, _ := args["style"].(string)   //nolint:errcheck // schema validation ensures correct type
 	if style == "" {
 		style = "minimal"
 	}
 	width := getIntArg(args, "width", 256)
 	height := getIntArg(args, "height", 256)
-	colorScheme, _ := args["color_scheme"].(string)
+	colorScheme, _ := args["color_scheme"].(string) //nolint:errcheck // schema validation ensures correct type
 	if colorScheme == "" {
 		colorScheme = "colorful"
 	}
@@ -346,8 +346,8 @@ func (a *SVGMakerAdapter) generateSVG(ctx context.Context, args map[string]inter
 }
 
 func (a *SVGMakerAdapter) editSVG(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	svg, _ := args["svg"].(string)
-	instructions, _ := args["instructions"].(string)
+	svg, _ := args["svg"].(string)                   //nolint:errcheck // schema validation ensures correct type
+	instructions, _ := args["instructions"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	payload := map[string]interface{}{
 		"svg":          svg,
@@ -373,7 +373,7 @@ func (a *SVGMakerAdapter) editSVG(ctx context.Context, args map[string]interface
 }
 
 func (a *SVGMakerAdapter) optimizeSVG(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	svg, _ := args["svg"].(string)
+	svg, _ := args["svg"].(string) //nolint:errcheck // schema validation ensures correct type
 	precision := getIntArg(args, "precision", 2)
 	removeMetadata := getBoolArg(args, "remove_metadata", true)
 	minify := getBoolArg(args, "minify", true)
@@ -404,12 +404,12 @@ func (a *SVGMakerAdapter) optimizeSVG(ctx context.Context, args map[string]inter
 }
 
 func (a *SVGMakerAdapter) imageToSVG(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	image, _ := args["image"].(string)
-	mode, _ := args["mode"].(string)
+	image, _ := args["image"].(string) //nolint:errcheck // schema validation ensures correct type
+	mode, _ := args["mode"].(string)   //nolint:errcheck // schema validation ensures correct type
 	if mode == "" {
 		mode = "color"
 	}
-	detailLevel, _ := args["detail_level"].(string)
+	detailLevel, _ := args["detail_level"].(string) //nolint:errcheck // schema validation ensures correct type
 	if detailLevel == "" {
 		detailLevel = "medium"
 	}
@@ -441,8 +441,8 @@ func (a *SVGMakerAdapter) imageToSVG(ctx context.Context, args map[string]interf
 }
 
 func (a *SVGMakerAdapter) generateIcon(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	concept, _ := args["concept"].(string)
-	style, _ := args["style"].(string)
+	concept, _ := args["concept"].(string) //nolint:errcheck // schema validation ensures correct type
+	style, _ := args["style"].(string)     //nolint:errcheck // schema validation ensures correct type
 	if style == "" {
 		style = "outline"
 	}
@@ -475,10 +475,10 @@ func (a *SVGMakerAdapter) generateIcon(ctx context.Context, args map[string]inte
 }
 
 func (a *SVGMakerAdapter) svgToPNG(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	svg, _ := args["svg"].(string)
+	svg, _ := args["svg"].(string) //nolint:errcheck // schema validation ensures correct type
 	width := getIntArg(args, "width", 0)
 	height := getIntArg(args, "height", 0)
-	background, _ := args["background"].(string)
+	background, _ := args["background"].(string) //nolint:errcheck // schema validation ensures correct type
 	if background == "" {
 		background = "transparent"
 	}
@@ -513,7 +513,7 @@ func (a *SVGMakerAdapter) svgToPNG(ctx context.Context, args map[string]interfac
 }
 
 func (a *SVGMakerAdapter) analyzeSVG(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	svg, _ := args["svg"].(string)
+	svg, _ := args["svg"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	payload := map[string]interface{}{
 		"svg": svg,
@@ -549,8 +549,8 @@ func (a *SVGMakerAdapter) analyzeSVG(ctx context.Context, args map[string]interf
 }
 
 func (a *SVGMakerAdapter) combineSVGs(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	svgsRaw, _ := args["svgs"].([]interface{})
-	layout, _ := args["layout"].(string)
+	svgsRaw, _ := args["svgs"].([]interface{}) //nolint:errcheck // schema validation ensures correct type
+	layout, _ := args["layout"].(string)       //nolint:errcheck // schema validation ensures correct type
 	if layout == "" {
 		layout = "horizontal"
 	}

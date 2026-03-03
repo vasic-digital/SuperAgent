@@ -11,7 +11,6 @@ import (
 
 type MCPMetrics struct {
 	meter metric.Meter
-	mu    sync.RWMutex
 
 	ToolCallsTotal    metric.Int64Counter
 	ToolDuration      metric.Float64Histogram
@@ -106,7 +105,6 @@ type EndToolCallFunc func(ctx context.Context, resultSize int64, err error)
 
 type EmbeddingMetrics struct {
 	meter metric.Meter
-	mu    sync.RWMutex
 
 	RequestsTotal    metric.Int64Counter
 	LatencySeconds   metric.Float64Histogram
@@ -194,7 +192,6 @@ func (m *EmbeddingMetrics) RecordEmbedding(ctx context.Context, provider string,
 
 type VectorDBMetrics struct {
 	meter metric.Meter
-	mu    sync.RWMutex
 
 	OperationsTotal    metric.Int64Counter
 	LatencySeconds     metric.Float64Histogram
@@ -293,7 +290,6 @@ func (m *VectorDBMetrics) RecordCollectionStats(ctx context.Context, provider, c
 
 type MemoryMetrics struct {
 	meter metric.Meter
-	mu    sync.RWMutex
 
 	OperationsTotal    metric.Int64Counter
 	SearchLatency      metric.Float64Histogram
@@ -392,7 +388,6 @@ func (m *MemoryMetrics) RecordCacheMiss(ctx context.Context) {
 
 type StreamingMetrics struct {
 	meter metric.Meter
-	mu    sync.RWMutex
 
 	ChunksTotal     metric.Int64Counter
 	ErrorsTotal     metric.Int64Counter
@@ -492,7 +487,6 @@ func (m *StreamingMetrics) EndStream(ctx context.Context, provider string) {
 
 type ProtocolMetrics struct {
 	meter metric.Meter
-	mu    sync.RWMutex
 
 	RequestsTotal    metric.Int64Counter
 	ErrorsTotal      metric.Int64Counter

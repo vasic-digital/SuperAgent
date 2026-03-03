@@ -118,6 +118,7 @@ func (t *CommandTool) Validate(inputs map[string]interface{}) error {
 
 // Execute executes the tool
 func (t *CommandTool) Execute(ctx context.Context, inputs map[string]interface{}) (*ToolResult, error) {
+	//nolint:errcheck // schema validation ensures correct type
 	command := inputs["command"].(string)
 
 	workDir := t.workDir

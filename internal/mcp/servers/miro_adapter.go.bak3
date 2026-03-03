@@ -522,7 +522,6 @@ func (a *MiroAdapter) CreateBoard(ctx context.Context, name, description string,
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		//nolint:errcheck // error reading response body for error message
 		respBody, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("failed to create board: %s", string(respBody))
 	}
@@ -569,7 +568,6 @@ func (a *MiroAdapter) UpdateBoard(ctx context.Context, boardID, name, descriptio
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		//nolint:errcheck // error reading response body for error message
 		respBody, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("failed to update board: %s", string(respBody))
 	}
@@ -601,7 +599,6 @@ func (a *MiroAdapter) DeleteBoard(ctx context.Context, boardID string) error {
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
-		//nolint:errcheck // error reading response body for error message
 		body, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("failed to delete board: %s", string(body))
 	}
@@ -645,7 +642,6 @@ func (a *MiroAdapter) GetBoardItems(ctx context.Context, boardID string, itemTyp
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		//nolint:errcheck // error reading response body for error message
 		body, _ := io.ReadAll(resp.Body)
 		return nil, "", fmt.Errorf("failed to get items: %s", string(body))
 	}
@@ -687,7 +683,6 @@ func (a *MiroAdapter) GetItem(ctx context.Context, boardID, itemID string) (*Mir
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		//nolint:errcheck // error reading response body for error message
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("failed to get item: %s", string(body))
 	}
@@ -741,7 +736,6 @@ func (a *MiroAdapter) CreateStickyNote(ctx context.Context, boardID string, cont
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		//nolint:errcheck // error reading response body for error message
 		respBody, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("failed to create sticky note: %s", string(respBody))
 	}
@@ -802,7 +796,6 @@ func (a *MiroAdapter) CreateShape(ctx context.Context, boardID string, shapeType
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		//nolint:errcheck // error reading response body for error message
 		respBody, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("failed to create shape: %s", string(respBody))
 	}
@@ -855,7 +848,6 @@ func (a *MiroAdapter) CreateConnector(ctx context.Context, boardID string, start
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		//nolint:errcheck // error reading response body for error message
 		respBody, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("failed to create connector: %s", string(respBody))
 	}
@@ -912,7 +904,6 @@ func (a *MiroAdapter) CreateFrame(ctx context.Context, boardID string, title str
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		//nolint:errcheck // error reading response body for error message
 		respBody, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("failed to create frame: %s", string(respBody))
 	}
@@ -965,7 +956,6 @@ func (a *MiroAdapter) CreateText(ctx context.Context, boardID string, content st
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		//nolint:errcheck // error reading response body for error message
 		respBody, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("failed to create text: %s", string(respBody))
 	}
@@ -999,7 +989,6 @@ func (a *MiroAdapter) DeleteItem(ctx context.Context, boardID, itemID string) er
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
-		//nolint:errcheck // error reading response body for error message
 		body, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("failed to delete item: %s", string(body))
 	}

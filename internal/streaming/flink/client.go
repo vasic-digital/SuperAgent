@@ -618,7 +618,10 @@ func (c *Client) CancelJob(ctx context.Context, jobID string) error {
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("unexpected status code %d (failed to read body: %v)", resp.StatusCode, err)
+		}
 		return fmt.Errorf("unexpected status code %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -662,7 +665,10 @@ func (c *Client) StopJobWithSavepoint(ctx context.Context, jobID string, savepoi
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return "", fmt.Errorf("unexpected status code %d (failed to read body: %v)", resp.StatusCode, err)
+		}
 		return "", fmt.Errorf("unexpected status code %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
@@ -705,7 +711,10 @@ func (c *Client) TriggerSavepoint(ctx context.Context, jobID string, savepointDi
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return "", fmt.Errorf("unexpected status code %d (failed to read body: %v)", resp.StatusCode, err)
+		}
 		return "", fmt.Errorf("unexpected status code %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 

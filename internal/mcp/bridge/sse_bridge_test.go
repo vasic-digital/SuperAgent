@@ -96,33 +96,6 @@ done
 	return scriptPath
 }
 
-// createSlowMCPServer creates a mock MCP server that responds slowly
-func createSlowMCPServer(t *testing.T, dir string, delay time.Duration) string {
-	script := fmt.Sprintf(`#!/bin/bash
-extract_id() {
-    echo "$1" | grep -oP '"id"\s*:\s*\K[0-9]+' || echo "null"
-}
-while IFS= read -r line; do
-    if echo "$line" | grep -q '"method"[[:space:]]*:[[:space:]]*"initialize"'; then
-        echo '{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2024-11-05","capabilities":{},"serverInfo":{"name":"slow-mcp","version":"1.0.0"}}}'
-    elif echo "$line" | grep -q '"method"[[:space:]]*:[[:space:]]*"notifications/initialized"'; then
-        :
-    elif echo "$line" | grep -q '"method"'; then
-        sleep %f
-        id=$(extract_id "$line")
-        if [ "$id" != "null" ]; then
-            echo "{\"jsonrpc\":\"2.0\",\"id\":$id,\"result\":{\"slow\":true}}"
-        fi
-    fi
-done
-`, delay.Seconds())
-
-	scriptPath := filepath.Join(dir, "slow_mcp.sh")
-	err := os.WriteFile(scriptPath, []byte(script), 0755)
-	require.NoError(t, err)
-	return scriptPath
-}
-
 // createFailingMCPServer creates a mock MCP server that exits immediately
 func createFailingMCPServer(t *testing.T, dir string) string {
 	script := `#!/bin/bash

@@ -212,57 +212,6 @@ func (cr *CRDTResolver) memoryFromEvent(memoryID string, event *MemoryEvent) *Me
 	return memory
 }
 
-// mergeTags merges two tag lists, removing duplicates
-func (cr *CRDTResolver) mergeTags(local, remote []string) []string {
-	tagSet := make(map[string]bool)
-
-	for _, tag := range local {
-		tagSet[tag] = true
-	}
-
-	for _, tag := range remote {
-		tagSet[tag] = true
-	}
-
-	merged := make([]string, 0, len(tagSet))
-	for tag := range tagSet {
-		merged = append(merged, tag)
-	}
-
-	return merged
-}
-
-// mergeEntities merges entity lists from metadata
-func (cr *CRDTResolver) mergeEntities(local []MemoryEntity, remote []MemoryEntity) []MemoryEntity {
-	// Create map of local entities by ID
-	localMap := make(map[string]MemoryEntity)
-	for _, e := range local {
-		localMap[e.ID] = e
-	}
-
-	// Merge remote entities
-	for _, re := range remote {
-		if le, exists := localMap[re.ID]; exists {
-			// Entity exists, merge
-			if re.Confidence > le.Confidence {
-				// Use remote (higher confidence)
-				localMap[re.ID] = re
-			}
-		} else {
-			// New entity, add it
-			localMap[re.ID] = re
-		}
-	}
-
-	// Convert back to slice
-	merged := make([]MemoryEntity, 0, len(localMap))
-	for _, e := range localMap {
-		merged = append(merged, e)
-	}
-
-	return merged
-}
-
 // DetectConflict checks if there's a conflict between local and remote
 func (cr *CRDTResolver) DetectConflict(local *Memory, remote *MemoryEvent) (bool, string) {
 	conflicts := make([]string, 0)

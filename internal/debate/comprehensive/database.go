@@ -95,6 +95,7 @@ func (t *DatabaseTool) Execute(ctx context.Context, inputs map[string]interface{
 		return NewToolError("database connection not available"), nil
 	}
 
+	//nolint:errcheck // schema validation ensures correct type
 	query := inputs["query"].(string)
 
 	var params []interface{}

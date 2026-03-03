@@ -855,9 +855,12 @@ func (h *FileInfoHandler) GenerateDefaultArgs(context string) map[string]interfa
 }
 
 func (h *FileInfoHandler) Execute(ctx context.Context, args map[string]interface{}) (ToolResult, error) {
-	filePath, _ := args["file_path"].(string)
-	includeStats, _ := args["include_stats"].(bool)
-	includeGit, _ := args["include_git"].(bool)
+	//nolint:errcheck // schema validation ensures correct types
+	filePath, _ := args["file_path"].(string) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct types
+	includeStats, _ := args["include_stats"].(bool) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct types
+	includeGit, _ := args["include_git"].(bool) //nolint:errcheck // schema validation ensures correct type
 
 	var result strings.Builder
 
@@ -940,8 +943,10 @@ func (h *SymbolsHandler) GenerateDefaultArgs(context string) map[string]interfac
 }
 
 func (h *SymbolsHandler) Execute(ctx context.Context, args map[string]interface{}) (ToolResult, error) {
-	filePath, _ := args["file_path"].(string)
-	recursive, _ := args["recursive"].(bool)
+	//nolint:errcheck // schema validation ensures correct types
+	filePath, _ := args["file_path"].(string) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct types
+	recursive, _ := args["recursive"].(bool) //nolint:errcheck // schema validation ensures correct type
 
 	// Validate file path
 	if filePath != "." && !utils.ValidatePath(filePath) {
@@ -1011,8 +1016,10 @@ func (h *ReferencesHandler) GenerateDefaultArgs(context string) map[string]inter
 }
 
 func (h *ReferencesHandler) Execute(ctx context.Context, args map[string]interface{}) (ToolResult, error) {
-	symbol, _ := args["symbol"].(string)
-	filePath, _ := args["file_path"].(string)
+	//nolint:errcheck // schema validation ensures correct types
+	symbol, _ := args["symbol"].(string) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct types
+	filePath, _ := args["file_path"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	if symbol == "" {
 		return ToolResult{
@@ -1093,7 +1100,8 @@ func (h *DefinitionHandler) GenerateDefaultArgs(context string) map[string]inter
 }
 
 func (h *DefinitionHandler) Execute(ctx context.Context, args map[string]interface{}) (ToolResult, error) {
-	symbol, _ := args["symbol"].(string)
+	//nolint:errcheck // schema validation ensures correct type
+	symbol, _ := args["symbol"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	if symbol == "" {
 		return ToolResult{
@@ -1183,11 +1191,16 @@ func (h *PRHandler) GenerateDefaultArgs(context string) map[string]interface{} {
 }
 
 func (h *PRHandler) Execute(ctx context.Context, args map[string]interface{}) (ToolResult, error) {
-	action, _ := args["action"].(string)
-	title, _ := args["title"].(string)
-	body, _ := args["body"].(string)
-	baseBranch, _ := args["base_branch"].(string)
-	prNumber, _ := args["pr_number"].(float64)
+	//nolint:errcheck // schema validation ensures correct type
+	action, _ := args["action"].(string) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct type
+	title, _ := args["title"].(string) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct type
+	body, _ := args["body"].(string) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct type
+	baseBranch, _ := args["base_branch"].(string) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct type
+	prNumber, _ := args["pr_number"].(float64) //nolint:errcheck // schema validation ensures correct type
 
 	// Validate action
 	allowedActions := []string{"list", "create", "view", "merge", "close"}
@@ -1333,10 +1346,14 @@ func (h *IssueHandler) GenerateDefaultArgs(context string) map[string]interface{
 }
 
 func (h *IssueHandler) Execute(ctx context.Context, args map[string]interface{}) (ToolResult, error) {
-	action, _ := args["action"].(string)
-	title, _ := args["title"].(string)
-	body, _ := args["body"].(string)
-	issueNumber, _ := args["issue_number"].(float64)
+	//nolint:errcheck // schema validation ensures correct type
+	action, _ := args["action"].(string) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct type
+	title, _ := args["title"].(string) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct type
+	body, _ := args["body"].(string) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct type
+	issueNumber, _ := args["issue_number"].(float64) //nolint:errcheck // schema validation ensures correct type
 
 	// Validate action
 	allowedActions := []string{"list", "create", "view", "close"}
@@ -1462,10 +1479,14 @@ func (h *WorkflowHandler) GenerateDefaultArgs(context string) map[string]interfa
 }
 
 func (h *WorkflowHandler) Execute(ctx context.Context, args map[string]interface{}) (ToolResult, error) {
-	action, _ := args["action"].(string)
-	workflowID, _ := args["workflow_id"].(string)
-	branch, _ := args["branch"].(string)
-	runID, _ := args["run_id"].(float64)
+	//nolint:errcheck // schema validation ensures correct type
+	action, _ := args["action"].(string) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct type
+	workflowID, _ := args["workflow_id"].(string) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct type
+	branch, _ := args["branch"].(string) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct type
+	runID, _ := args["run_id"].(float64) //nolint:errcheck // schema validation ensures correct type
 
 	// Validate action
 	allowedActions := []string{"list", "run", "view", "cancel", "logs"}

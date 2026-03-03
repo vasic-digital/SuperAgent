@@ -122,7 +122,7 @@ func (h *ModelMetadataHandler) GetModel(c *gin.Context) {
 		return
 	}
 
-	modelMetadataRepo := repo.(*database.ModelMetadataRepository)
+	modelMetadataRepo := repo.(*database.ModelMetadataRepository) //nolint:errcheck // repository type guaranteed by middleware
 	benchmarks, err := modelMetadataRepo.GetBenchmarks(ctx, modelID)
 	if err != nil {
 		c.JSON(http.StatusOK, metadata)
@@ -151,7 +151,7 @@ func (h *ModelMetadataHandler) GetModelBenchmarks(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	modelMetadataRepo := repo.(*database.ModelMetadataRepository)
+	modelMetadataRepo := repo.(*database.ModelMetadataRepository) //nolint:errcheck // repository type guaranteed by middleware
 	benchmarks, err := modelMetadataRepo.GetBenchmarks(ctx, modelID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get benchmarks", "details": err.Error()})

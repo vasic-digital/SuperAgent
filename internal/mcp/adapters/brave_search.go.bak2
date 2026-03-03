@@ -271,11 +271,9 @@ func (a *BraveSearchAdapter) localSearch(ctx context.Context, args map[string]in
 }
 
 func (a *BraveSearchAdapter) imageSearch(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	//nolint:errcheck // schema validation ensures correct type
-	query, _ := args["query"].(string) //nolint:errcheck // schema validation ensures correct type
+	query, _ := args["query"].(string)
 	count := getIntArg(args, "count", 10)
-	//nolint:errcheck // schema validation ensures correct type
-	size, _ := args["size"].(string) //nolint:errcheck // schema validation ensures correct type
+	size, _ := args["size"].(string)
 
 	params := url.Values{}
 	params.Set("q", query)
@@ -311,11 +309,9 @@ func (a *BraveSearchAdapter) imageSearch(ctx context.Context, args map[string]in
 }
 
 func (a *BraveSearchAdapter) newsSearch(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	//nolint:errcheck // schema validation ensures correct type
-	query, _ := args["query"].(string) //nolint:errcheck // schema validation ensures correct type
+	query, _ := args["query"].(string)
 	count := getIntArg(args, "count", 10)
-	//nolint:errcheck // schema validation ensures correct type
-	freshness, _ := args["freshness"].(string) //nolint:errcheck // schema validation ensures correct type
+	freshness, _ := args["freshness"].(string)
 
 	params := url.Values{}
 	params.Set("q", query)

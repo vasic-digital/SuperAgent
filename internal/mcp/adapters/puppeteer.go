@@ -395,7 +395,7 @@ func (a *PuppeteerAdapter) CallTool(ctx context.Context, name string, args map[s
 }
 
 func (a *PuppeteerAdapter) navigate(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	url, _ := args["url"].(string)
+	url, _ := args["url"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	err := a.browser.Navigate(ctx, url)
 	if err != nil {
@@ -409,8 +409,8 @@ func (a *PuppeteerAdapter) navigate(ctx context.Context, args map[string]interfa
 }
 
 func (a *PuppeteerAdapter) screenshot(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	fullPage, _ := args["full_page"].(bool)
-	imgType, _ := args["type"].(string)
+	fullPage, _ := args["full_page"].(bool) //nolint:errcheck // schema validation ensures correct type
+	imgType, _ := args["type"].(string)     //nolint:errcheck // schema validation ensures correct type
 	if imgType == "" {
 		imgType = "png"
 	}
@@ -441,12 +441,12 @@ func (a *PuppeteerAdapter) screenshot(ctx context.Context, args map[string]inter
 }
 
 func (a *PuppeteerAdapter) pdf(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	format, _ := args["format"].(string)
+	format, _ := args["format"].(string) //nolint:errcheck // schema validation ensures correct type
 	if format == "" {
 		format = "A4"
 	}
-	landscape, _ := args["landscape"].(bool)
-	printBackground, _ := args["print_background"].(bool)
+	landscape, _ := args["landscape"].(bool)              //nolint:errcheck // schema validation ensures correct type
+	printBackground, _ := args["print_background"].(bool) //nolint:errcheck // schema validation ensures correct type
 	if _, ok := args["print_background"]; !ok {
 		printBackground = true
 	}
@@ -472,7 +472,7 @@ func (a *PuppeteerAdapter) pdf(ctx context.Context, args map[string]interface{})
 }
 
 func (a *PuppeteerAdapter) click(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	selector, _ := args["selector"].(string)
+	selector, _ := args["selector"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	err := a.browser.Click(ctx, selector)
 	if err != nil {
@@ -485,8 +485,8 @@ func (a *PuppeteerAdapter) click(ctx context.Context, args map[string]interface{
 }
 
 func (a *PuppeteerAdapter) typeText(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	selector, _ := args["selector"].(string)
-	text, _ := args["text"].(string)
+	selector, _ := args["selector"].(string) //nolint:errcheck // schema validation ensures correct type
+	text, _ := args["text"].(string)         //nolint:errcheck // schema validation ensures correct type
 
 	err := a.browser.Type(ctx, selector, text)
 	if err != nil {
@@ -499,8 +499,8 @@ func (a *PuppeteerAdapter) typeText(ctx context.Context, args map[string]interfa
 }
 
 func (a *PuppeteerAdapter) selectOption(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	selector, _ := args["selector"].(string)
-	valuesRaw, _ := args["values"].([]interface{})
+	selector, _ := args["selector"].(string)       //nolint:errcheck // schema validation ensures correct type
+	valuesRaw, _ := args["values"].([]interface{}) //nolint:errcheck // schema validation ensures correct type
 
 	var values []string
 	for _, v := range valuesRaw {
@@ -520,7 +520,7 @@ func (a *PuppeteerAdapter) selectOption(ctx context.Context, args map[string]int
 }
 
 func (a *PuppeteerAdapter) evaluate(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	script, _ := args["script"].(string)
+	script, _ := args["script"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	result, err := a.browser.Evaluate(ctx, script)
 	if err != nil {
@@ -533,7 +533,7 @@ func (a *PuppeteerAdapter) evaluate(ctx context.Context, args map[string]interfa
 }
 
 func (a *PuppeteerAdapter) waitForSelector(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	selector, _ := args["selector"].(string)
+	selector, _ := args["selector"].(string) //nolint:errcheck // schema validation ensures correct type
 	timeout := time.Duration(getIntArg(args, "timeout", 30000)) * time.Millisecond
 
 	err := a.browser.WaitForSelector(ctx, selector, timeout)
@@ -588,7 +588,7 @@ func (a *PuppeteerAdapter) scroll(ctx context.Context, args map[string]interface
 }
 
 func (a *PuppeteerAdapter) hover(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	selector, _ := args["selector"].(string)
+	selector, _ := args["selector"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	err := a.browser.Hover(ctx, selector)
 	if err != nil {
@@ -601,9 +601,9 @@ func (a *PuppeteerAdapter) hover(ctx context.Context, args map[string]interface{
 }
 
 func (a *PuppeteerAdapter) setCookie(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	name, _ := args["name"].(string)
-	value, _ := args["value"].(string)
-	domain, _ := args["domain"].(string)
+	name, _ := args["name"].(string)     //nolint:errcheck // schema validation ensures correct type
+	value, _ := args["value"].(string)   //nolint:errcheck // schema validation ensures correct type
+	domain, _ := args["domain"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	cookie := Cookie{
 		Name:   name,

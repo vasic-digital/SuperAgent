@@ -39,13 +39,6 @@ type DeadlockAlert struct {
 	Stack     []byte
 }
 
-type mutexWrapper struct {
-	mu       sync.Mutex
-	detector *DeadlockDetector
-	name     string
-	id       uintptr
-}
-
 func NewDeadlockDetector(timeout time.Duration) *DeadlockDetector {
 	return &DeadlockDetector{
 		locks:   make(map[uintptr]*LockInfo),

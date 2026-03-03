@@ -255,7 +255,6 @@ func (c *QUICClient) Close() error {
 type HTTP3ProviderTransport struct {
 	quicClient *QUICClient
 	fallback   *http.Client
-	mu         sync.RWMutex
 }
 
 // NewHTTP3ProviderTransport creates a new HTTP/3 provider transport

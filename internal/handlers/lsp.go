@@ -67,10 +67,10 @@ func (h *LSPHandler) ExecuteLSPRequest(c *gin.Context) {
 	switch req.ToolName {
 	case "completion":
 		// Extract parameters for completion
-		uri, _ := req.Arguments["uri"].(string)
-		line, _ := req.Arguments["line"].(float64)
-		character, _ := req.Arguments["character"].(float64)
-		text, _ := req.Arguments["text"].(string)
+		uri, _ := req.Arguments["uri"].(string)              //nolint:errcheck // schema validation ensures correct type
+		line, _ := req.Arguments["line"].(float64)           //nolint:errcheck // schema validation ensures correct type
+		character, _ := req.Arguments["character"].(float64) //nolint:errcheck // schema validation ensures correct type
+		text, _ := req.Arguments["text"].(string)            //nolint:errcheck // schema validation ensures correct type
 
 		if uri == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "uri is required for completion"})
@@ -87,9 +87,9 @@ func (h *LSPHandler) ExecuteLSPRequest(c *gin.Context) {
 
 	case "hover":
 		// Extract parameters for hover
-		uri, _ := req.Arguments["uri"].(string)
-		line, _ := req.Arguments["line"].(float64)
-		character, _ := req.Arguments["character"].(float64)
+		uri, _ := req.Arguments["uri"].(string)              //nolint:errcheck // schema validation ensures correct type
+		line, _ := req.Arguments["line"].(float64)           //nolint:errcheck // schema validation ensures correct type
+		character, _ := req.Arguments["character"].(float64) //nolint:errcheck // schema validation ensures correct type
 
 		if uri == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "uri is required for hover"})
@@ -104,9 +104,9 @@ func (h *LSPHandler) ExecuteLSPRequest(c *gin.Context) {
 
 	case "definition":
 		// Extract parameters for definition
-		uri, _ := req.Arguments["uri"].(string)
-		line, _ := req.Arguments["line"].(float64)
-		character, _ := req.Arguments["character"].(float64)
+		uri, _ := req.Arguments["uri"].(string)              //nolint:errcheck // schema validation ensures correct type
+		line, _ := req.Arguments["line"].(float64)           //nolint:errcheck // schema validation ensures correct type
+		character, _ := req.Arguments["character"].(float64) //nolint:errcheck // schema validation ensures correct type
 
 		if uri == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "uri is required for definition"})
@@ -121,9 +121,9 @@ func (h *LSPHandler) ExecuteLSPRequest(c *gin.Context) {
 
 	case "references":
 		// Extract parameters for references
-		uri, _ := req.Arguments["uri"].(string)
-		line, _ := req.Arguments["line"].(float64)
-		character, _ := req.Arguments["character"].(float64)
+		uri, _ := req.Arguments["uri"].(string)              //nolint:errcheck // schema validation ensures correct type
+		line, _ := req.Arguments["line"].(float64)           //nolint:errcheck // schema validation ensures correct type
+		character, _ := req.Arguments["character"].(float64) //nolint:errcheck // schema validation ensures correct type
 
 		if uri == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "uri is required for references"})
@@ -138,7 +138,7 @@ func (h *LSPHandler) ExecuteLSPRequest(c *gin.Context) {
 
 	case "diagnostics":
 		// Get diagnostics for a file
-		uri, _ := req.Arguments["uri"].(string)
+		uri, _ := req.Arguments["uri"].(string) //nolint:errcheck // schema validation ensures correct type
 
 		if uri == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "uri is required for diagnostics"})

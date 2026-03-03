@@ -262,7 +262,8 @@ func (a *FigmaAdapter) CallTool(ctx context.Context, name string, args map[strin
 }
 
 func (a *FigmaAdapter) getFile(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	fileKey, _ := args["file_key"].(string)
+	//nolint:errcheck // schema validation ensures correct type
+	fileKey, _ := args["file_key"].(string) //nolint:errcheck // schema validation ensures correct type
 	depth := getIntArg(args, "depth", 2)
 
 	endpoint := fmt.Sprintf("/files/%s?depth=%d", fileKey, depth)
@@ -302,8 +303,10 @@ func (a *FigmaAdapter) formatNode(sb *strings.Builder, node *FigmaNode, indent i
 }
 
 func (a *FigmaAdapter) getFileNodes(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	fileKey, _ := args["file_key"].(string)
-	nodeIDsRaw, _ := args["node_ids"].([]interface{})
+	//nolint:errcheck // schema validation ensures correct type
+	fileKey, _ := args["file_key"].(string) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct type
+	nodeIDsRaw, _ := args["node_ids"].([]interface{}) //nolint:errcheck // schema validation ensures correct type
 
 	var nodeIDs []string
 	for _, id := range nodeIDsRaw {
@@ -341,9 +344,12 @@ func (a *FigmaAdapter) getFileNodes(ctx context.Context, args map[string]interfa
 }
 
 func (a *FigmaAdapter) getImages(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	fileKey, _ := args["file_key"].(string)
-	nodeIDsRaw, _ := args["node_ids"].([]interface{})
-	format, _ := args["format"].(string)
+	//nolint:errcheck // schema validation ensures correct type
+	fileKey, _ := args["file_key"].(string) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct type
+	nodeIDsRaw, _ := args["node_ids"].([]interface{}) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct type
+	format, _ := args["format"].(string) //nolint:errcheck // schema validation ensures correct type
 	if format == "" {
 		format = "png"
 	}
@@ -380,7 +386,8 @@ func (a *FigmaAdapter) getImages(ctx context.Context, args map[string]interface{
 }
 
 func (a *FigmaAdapter) getComponents(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	fileKey, _ := args["file_key"].(string)
+	//nolint:errcheck // schema validation ensures correct type
+	fileKey, _ := args["file_key"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	endpoint := fmt.Sprintf("/files/%s?depth=1", fileKey)
 	resp, err := a.makeRequest(ctx, http.MethodGet, endpoint, nil)
@@ -413,7 +420,8 @@ func (a *FigmaAdapter) getComponents(ctx context.Context, args map[string]interf
 }
 
 func (a *FigmaAdapter) getStyles(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	fileKey, _ := args["file_key"].(string)
+	//nolint:errcheck // schema validation ensures correct type
+	fileKey, _ := args["file_key"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	endpoint := fmt.Sprintf("/files/%s/styles", fileKey)
 	resp, err := a.makeRequest(ctx, http.MethodGet, endpoint, nil)
@@ -446,7 +454,8 @@ func (a *FigmaAdapter) getStyles(ctx context.Context, args map[string]interface{
 }
 
 func (a *FigmaAdapter) getComments(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	fileKey, _ := args["file_key"].(string)
+	//nolint:errcheck // schema validation ensures correct type
+	fileKey, _ := args["file_key"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	endpoint := fmt.Sprintf("/files/%s/comments", fileKey)
 	resp, err := a.makeRequest(ctx, http.MethodGet, endpoint, nil)
@@ -477,9 +486,12 @@ func (a *FigmaAdapter) getComments(ctx context.Context, args map[string]interfac
 }
 
 func (a *FigmaAdapter) postComment(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	fileKey, _ := args["file_key"].(string)
-	message, _ := args["message"].(string)
-	nodeID, _ := args["node_id"].(string)
+	//nolint:errcheck // schema validation ensures correct type
+	fileKey, _ := args["file_key"].(string) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct type
+	message, _ := args["message"].(string) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct type
+	nodeID, _ := args["node_id"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	body := map[string]interface{}{
 		"message": message,
@@ -511,7 +523,8 @@ func (a *FigmaAdapter) postComment(ctx context.Context, args map[string]interfac
 }
 
 func (a *FigmaAdapter) getTeamProjects(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	teamID, _ := args["team_id"].(string)
+	//nolint:errcheck // schema validation ensures correct type
+	teamID, _ := args["team_id"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	endpoint := fmt.Sprintf("/teams/%s/projects", teamID)
 	resp, err := a.makeRequest(ctx, http.MethodGet, endpoint, nil)
@@ -537,7 +550,8 @@ func (a *FigmaAdapter) getTeamProjects(ctx context.Context, args map[string]inte
 }
 
 func (a *FigmaAdapter) getProjectFiles(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	projectID, _ := args["project_id"].(string)
+	//nolint:errcheck // schema validation ensures correct type
+	projectID, _ := args["project_id"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	endpoint := fmt.Sprintf("/projects/%s/files", projectID)
 	resp, err := a.makeRequest(ctx, http.MethodGet, endpoint, nil)

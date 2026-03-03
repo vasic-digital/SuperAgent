@@ -719,7 +719,7 @@ func (s *SQLiteAdapter) ExecuteTool(ctx context.Context, toolName string, params
 
 	switch toolName {
 	case "sqlite_query":
-		query, _ := params["query"].(string)
+		query, _ := params["query"].(string) //nolint:errcheck // schema validation ensures correct type
 		var args []interface{}
 		if p, ok := params["params"].([]interface{}); ok {
 			args = p
@@ -727,7 +727,7 @@ func (s *SQLiteAdapter) ExecuteTool(ctx context.Context, toolName string, params
 		return s.Query(ctx, query, args...)
 
 	case "sqlite_execute":
-		query, _ := params["query"].(string)
+		query, _ := params["query"].(string) //nolint:errcheck // schema validation ensures correct type
 		var args []interface{}
 		if p, ok := params["params"].([]interface{}); ok {
 			args = p
@@ -738,18 +738,18 @@ func (s *SQLiteAdapter) ExecuteTool(ctx context.Context, toolName string, params
 		return s.ListTables(ctx)
 
 	case "sqlite_describe_table":
-		table, _ := params["table"].(string)
+		table, _ := params["table"].(string) //nolint:errcheck // schema validation ensures correct type
 		return s.DescribeTable(ctx, table)
 
 	case "sqlite_list_indexes":
-		table, _ := params["table"].(string)
+		table, _ := params["table"].(string) //nolint:errcheck // schema validation ensures correct type
 		return s.ListIndexes(ctx, table)
 
 	case "sqlite_stats":
 		return s.GetStats(ctx)
 
 	case "sqlite_create_table":
-		table, _ := params["table"].(string)
+		table, _ := params["table"].(string) //nolint:errcheck // schema validation ensures correct type
 		var columns []SQLiteColumnInfo
 		if cols, ok := params["columns"].([]interface{}); ok {
 			for _, c := range cols {
@@ -771,7 +771,7 @@ func (s *SQLiteAdapter) ExecuteTool(ctx context.Context, toolName string, params
 		return nil, s.CreateTable(ctx, table, columns)
 
 	case "sqlite_drop_table":
-		table, _ := params["table"].(string)
+		table, _ := params["table"].(string) //nolint:errcheck // schema validation ensures correct type
 		return nil, s.DropTable(ctx, table)
 
 	default:

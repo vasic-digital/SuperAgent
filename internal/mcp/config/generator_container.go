@@ -231,14 +231,6 @@ func (g *ContainerMCPConfigGenerator) hasAllEnvVars(names ...string) bool {
 	return true
 }
 
-// getEnvOrDefault returns the environment variable value or default
-func (g *ContainerMCPConfigGenerator) getEnvOrDefault(name, defaultVal string) string {
-	if val, ok := g.envVars[name]; ok && val != "" {
-		return val
-	}
-	return defaultVal
-}
-
 // getMCPURL returns the container URL for an MCP server
 func (g *ContainerMCPConfigGenerator) getMCPURL(name string) string {
 	if port, ok := g.portMap[name]; ok {

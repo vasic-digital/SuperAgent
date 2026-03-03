@@ -30,21 +30,6 @@ func setupDiscoveryHandler() (*DiscoveryHandler, *gin.Engine) {
 	return h, r
 }
 
-func setupDiscoveryHandlerWithModels() (*DiscoveryHandler, *gin.Engine, *verifier.ModelDiscoveryService) {
-	vs := verifier.NewVerificationService(nil)
-	ss, _ := verifier.NewScoringService(nil)
-	hs := verifier.NewHealthService(nil)
-	ds := verifier.NewModelDiscoveryService(vs, ss, hs, nil)
-
-	h := NewDiscoveryHandler(ds)
-	r := gin.New()
-
-	api := r.Group("/api/v1")
-	RegisterDiscoveryRoutes(api, h)
-
-	return h, r, ds
-}
-
 func TestNewDiscoveryHandler(t *testing.T) {
 	vs := verifier.NewVerificationService(nil)
 	ss, _ := verifier.NewScoringService(nil)

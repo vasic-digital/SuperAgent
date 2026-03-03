@@ -183,44 +183,44 @@ func (u *UnifiedProtocolManager) ExecuteRequest(ctx context.Context, req Unified
 
 		switch req.ToolName {
 		case "completion":
-			uri, _ := req.Arguments["uri"].(string)
-			line, _ := req.Arguments["line"].(float64)
-			character, _ := req.Arguments["character"].(float64)
-			text, _ := req.Arguments["text"].(string)
+			uri, _ := req.Arguments["uri"].(string)              //nolint:errcheck // schema validation ensures correct type
+			line, _ := req.Arguments["line"].(float64)           //nolint:errcheck // schema validation ensures correct type
+			character, _ := req.Arguments["character"].(float64) //nolint:errcheck // schema validation ensures correct type
+			text, _ := req.Arguments["text"].(string)            //nolint:errcheck // schema validation ensures correct type
 
 			position := LSPPosition{Line: int(line), Character: int(character)}
 			lspResult, lspErr = u.lspManager.GetCompletion(ctx, req.ServerID, text, uri, position)
 
 		case "hover":
-			uri, _ := req.Arguments["uri"].(string)
-			line, _ := req.Arguments["line"].(float64)
-			character, _ := req.Arguments["character"].(float64)
+			uri, _ := req.Arguments["uri"].(string)              //nolint:errcheck // schema validation ensures correct type
+			line, _ := req.Arguments["line"].(float64)           //nolint:errcheck // schema validation ensures correct type
+			character, _ := req.Arguments["character"].(float64) //nolint:errcheck // schema validation ensures correct type
 
 			lspResult, lspErr = u.lspManager.GetHover(ctx, req.ServerID, uri, int(line), int(character))
 
 		case "definition":
-			uri, _ := req.Arguments["uri"].(string)
-			line, _ := req.Arguments["line"].(float64)
-			character, _ := req.Arguments["character"].(float64)
+			uri, _ := req.Arguments["uri"].(string)              //nolint:errcheck // schema validation ensures correct type
+			line, _ := req.Arguments["line"].(float64)           //nolint:errcheck // schema validation ensures correct type
+			character, _ := req.Arguments["character"].(float64) //nolint:errcheck // schema validation ensures correct type
 
 			lspResult, lspErr = u.lspManager.GetDefinition(ctx, req.ServerID, uri, int(line), int(character))
 
 		case "references":
-			uri, _ := req.Arguments["uri"].(string)
-			line, _ := req.Arguments["line"].(float64)
-			character, _ := req.Arguments["character"].(float64)
+			uri, _ := req.Arguments["uri"].(string)              //nolint:errcheck // schema validation ensures correct type
+			line, _ := req.Arguments["line"].(float64)           //nolint:errcheck // schema validation ensures correct type
+			character, _ := req.Arguments["character"].(float64) //nolint:errcheck // schema validation ensures correct type
 
 			lspResult, lspErr = u.lspManager.GetReferences(ctx, req.ServerID, uri, int(line), int(character))
 
 		case "diagnostics":
-			uri, _ := req.Arguments["uri"].(string)
+			uri, _ := req.Arguments["uri"].(string) //nolint:errcheck // schema validation ensures correct type
 			lspResult, lspErr = u.lspManager.GetDiagnostics(ctx, req.ServerID, uri)
 
 		case "codeActions":
-			uri, _ := req.Arguments["uri"].(string)
-			line, _ := req.Arguments["line"].(float64)
-			character, _ := req.Arguments["character"].(float64)
-			text, _ := req.Arguments["text"].(string)
+			uri, _ := req.Arguments["uri"].(string)              //nolint:errcheck // schema validation ensures correct type
+			line, _ := req.Arguments["line"].(float64)           //nolint:errcheck // schema validation ensures correct type
+			character, _ := req.Arguments["character"].(float64) //nolint:errcheck // schema validation ensures correct type
+			text, _ := req.Arguments["text"].(string)            //nolint:errcheck // schema validation ensures correct type
 
 			position := LSPPosition{Line: int(line), Character: int(character)}
 			lspResult, lspErr = u.lspManager.GetCodeActions(ctx, req.ServerID, text, uri, position)

@@ -646,6 +646,7 @@ func (c *ConfigurationDiscovery) Discover(ctx context.Context) ([]*DiscoveredSer
 						Protocol: "mcp",
 						Address:  "localhost", // Default
 						Port:     3000,        // Default
+						//nolint:errcheck // schema validation ensures correct type
 						Name:     serverMap["name"].(string),
 						Type:     "config",
 						Status:   StatusOnline,

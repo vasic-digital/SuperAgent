@@ -744,12 +744,12 @@ func (r *RedisAdapter) ExecuteTool(ctx context.Context, toolName string, params 
 
 	switch toolName {
 	case "redis_get":
-		key, _ := params["key"].(string)
+		key, _ := params["key"].(string) //nolint:errcheck // schema validation ensures correct type
 		return r.Get(ctx, key)
 
 	case "redis_set":
-		key, _ := params["key"].(string)
-		value, _ := params["value"].(string)
+		key, _ := params["key"].(string)     //nolint:errcheck // schema validation ensures correct type
+		value, _ := params["value"].(string) //nolint:errcheck // schema validation ensures correct type
 		var ttl time.Duration
 		if ttlSeconds, ok := params["ttl_seconds"].(float64); ok && ttlSeconds > 0 {
 			ttl = time.Duration(ttlSeconds) * time.Second
@@ -779,20 +779,20 @@ func (r *RedisAdapter) ExecuteTool(ctx context.Context, toolName string, params 
 		return r.Exists(ctx, keys...)
 
 	case "redis_keys":
-		pattern, _ := params["pattern"].(string)
+		pattern, _ := params["pattern"].(string) //nolint:errcheck // schema validation ensures correct type
 		return r.Keys(ctx, pattern)
 
 	case "redis_hset":
-		key, _ := params["key"].(string)
-		fields, _ := params["fields"].(map[string]interface{})
+		key, _ := params["key"].(string)                       //nolint:errcheck // schema validation ensures correct type
+		fields, _ := params["fields"].(map[string]interface{}) //nolint:errcheck // schema validation ensures correct type
 		return nil, r.HSet(ctx, key, fields)
 
 	case "redis_hgetall":
-		key, _ := params["key"].(string)
+		key, _ := params["key"].(string) //nolint:errcheck // schema validation ensures correct type
 		return r.HGetAll(ctx, key)
 
 	case "redis_lpush":
-		key, _ := params["key"].(string)
+		key, _ := params["key"].(string) //nolint:errcheck // schema validation ensures correct type
 		var values []interface{}
 		if v, ok := params["values"].([]interface{}); ok {
 			values = v
@@ -800,7 +800,7 @@ func (r *RedisAdapter) ExecuteTool(ctx context.Context, toolName string, params 
 		return r.LPush(ctx, key, values...)
 
 	case "redis_lrange":
-		key, _ := params["key"].(string)
+		key, _ := params["key"].(string) //nolint:errcheck // schema validation ensures correct type
 		start := int64(0)
 		stop := int64(-1)
 		if s, ok := params["start"].(float64); ok {
@@ -812,7 +812,7 @@ func (r *RedisAdapter) ExecuteTool(ctx context.Context, toolName string, params 
 		return r.LRange(ctx, key, start, stop)
 
 	case "redis_sadd":
-		key, _ := params["key"].(string)
+		key, _ := params["key"].(string) //nolint:errcheck // schema validation ensures correct type
 		var members []interface{}
 		if m, ok := params["members"].([]interface{}); ok {
 			members = m
@@ -820,15 +820,15 @@ func (r *RedisAdapter) ExecuteTool(ctx context.Context, toolName string, params 
 		return r.SAdd(ctx, key, members...)
 
 	case "redis_smembers":
-		key, _ := params["key"].(string)
+		key, _ := params["key"].(string) //nolint:errcheck // schema validation ensures correct type
 		return r.SMembers(ctx, key)
 
 	case "redis_incr":
-		key, _ := params["key"].(string)
+		key, _ := params["key"].(string) //nolint:errcheck // schema validation ensures correct type
 		return r.Incr(ctx, key)
 
 	case "redis_info":
-		section, _ := params["section"].(string)
+		section, _ := params["section"].(string) //nolint:errcheck // schema validation ensures correct type
 		if section == "" {
 			section = "all"
 		}

@@ -13,10 +13,7 @@ import (
 
 	"dev.helix.agent/internal/llm/discovery"
 	"dev.helix.agent/internal/models"
-	"github.com/sirupsen/logrus"
 )
-
-var log = logrus.New()
 
 const (
 	SarvamAPIURL     = "https://api.sarvam.ai/v1/chat/completions"

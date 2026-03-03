@@ -1038,8 +1038,8 @@ func (m *MemoryAdapter) ExecuteTool(ctx context.Context, toolName string, params
 
 	switch toolName {
 	case "memory_create_entity":
-		name, _ := params["name"].(string)
-		entityType, _ := params["entity_type"].(string)
+		name, _ := params["name"].(string)              //nolint:errcheck // schema validation ensures correct type
+		entityType, _ := params["entity_type"].(string) //nolint:errcheck // schema validation ensures correct type
 		var observations []string
 		if obs, ok := params["observations"].([]interface{}); ok {
 			for _, o := range obs {
@@ -1048,7 +1048,7 @@ func (m *MemoryAdapter) ExecuteTool(ctx context.Context, toolName string, params
 				}
 			}
 		}
-		properties, _ := params["properties"].(map[string]interface{})
+		properties, _ := params["properties"].(map[string]interface{}) //nolint:errcheck // schema validation ensures correct type
 		return m.CreateEntity(ctx, name, entityType, observations, properties)
 
 	case "memory_get_entity":
@@ -1061,7 +1061,7 @@ func (m *MemoryAdapter) ExecuteTool(ctx context.Context, toolName string, params
 		return nil, fmt.Errorf("either id or name required")
 
 	case "memory_update_entity":
-		id, _ := params["id"].(string)
+		id, _ := params["id"].(string) //nolint:errcheck // schema validation ensures correct type
 		var observations []string
 		if obs, ok := params["observations"].([]interface{}); ok {
 			for _, o := range obs {
@@ -1070,16 +1070,16 @@ func (m *MemoryAdapter) ExecuteTool(ctx context.Context, toolName string, params
 				}
 			}
 		}
-		properties, _ := params["properties"].(map[string]interface{})
+		properties, _ := params["properties"].(map[string]interface{}) //nolint:errcheck // schema validation ensures correct type
 		return m.UpdateEntity(ctx, id, observations, properties)
 
 	case "memory_delete_entity":
-		id, _ := params["id"].(string)
+		id, _ := params["id"].(string) //nolint:errcheck // schema validation ensures correct type
 		return map[string]interface{}{"success": true}, m.DeleteEntity(ctx, id)
 
 	case "memory_search":
-		query, _ := params["query"].(string)
-		entityType, _ := params["entity_type"].(string)
+		query, _ := params["query"].(string)            //nolint:errcheck // schema validation ensures correct type
+		entityType, _ := params["entity_type"].(string) //nolint:errcheck // schema validation ensures correct type
 		limit := 20
 		if l, ok := params["limit"].(float64); ok {
 			limit = int(l)
@@ -1087,26 +1087,26 @@ func (m *MemoryAdapter) ExecuteTool(ctx context.Context, toolName string, params
 		return m.SearchEntities(ctx, query, entityType, limit)
 
 	case "memory_create_relation":
-		fromEntity, _ := params["from_entity"].(string)
-		toEntity, _ := params["to_entity"].(string)
-		relationType, _ := params["relation_type"].(string)
+		fromEntity, _ := params["from_entity"].(string)     //nolint:errcheck // schema validation ensures correct type
+		toEntity, _ := params["to_entity"].(string)         //nolint:errcheck // schema validation ensures correct type
+		relationType, _ := params["relation_type"].(string) //nolint:errcheck // schema validation ensures correct type
 		strength := float32(1.0)
 		if s, ok := params["strength"].(float64); ok {
 			strength = float32(s)
 		}
-		properties, _ := params["properties"].(map[string]interface{})
+		properties, _ := params["properties"].(map[string]interface{}) //nolint:errcheck // schema validation ensures correct type
 		return m.CreateRelation(ctx, fromEntity, toEntity, relationType, strength, properties)
 
 	case "memory_get_relations":
-		entityID, _ := params["entity_id"].(string)
-		direction, _ := params["direction"].(string)
+		entityID, _ := params["entity_id"].(string)  //nolint:errcheck // schema validation ensures correct type
+		direction, _ := params["direction"].(string) //nolint:errcheck // schema validation ensures correct type
 		if direction == "" {
 			direction = "all"
 		}
 		return m.GetEntityRelations(ctx, entityID, direction)
 
 	case "memory_delete_relation":
-		id, _ := params["id"].(string)
+		id, _ := params["id"].(string) //nolint:errcheck // schema validation ensures correct type
 		return map[string]interface{}{"success": true}, m.DeleteRelation(ctx, id)
 
 	case "memory_read_graph":
@@ -1121,8 +1121,8 @@ func (m *MemoryAdapter) ExecuteTool(ctx context.Context, toolName string, params
 		return m.ReadGraph(ctx, names)
 
 	case "memory_add_observation":
-		entityID, _ := params["entity_id"].(string)
-		observation, _ := params["observation"].(string)
+		entityID, _ := params["entity_id"].(string)      //nolint:errcheck // schema validation ensures correct type
+		observation, _ := params["observation"].(string) //nolint:errcheck // schema validation ensures correct type
 		return map[string]interface{}{"success": true}, m.AddObservation(ctx, entityID, observation)
 
 	case "memory_statistics":

@@ -328,67 +328,79 @@ func (a *GitLabAdapter) listProjects(ctx context.Context, args map[string]interf
 }
 
 func (a *GitLabAdapter) getProject(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	projectID, _ := args["project_id"].(string)
+	//nolint:errcheck // schema validation ensures correct type
+	projectID, _ := args["project_id"].(string) //nolint:errcheck // schema validation ensures correct type
 	return &ToolResult{
 		Content: []ContentBlock{{Type: "text", Text: fmt.Sprintf("GitLab get project %s - implementation requires GitLab API client", projectID)}},
 	}, nil
 }
 
 func (a *GitLabAdapter) listIssues(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	projectID, _ := args["project_id"].(string)
+	//nolint:errcheck // schema validation ensures correct type
+	projectID, _ := args["project_id"].(string) //nolint:errcheck // schema validation ensures correct type
 	return &ToolResult{
 		Content: []ContentBlock{{Type: "text", Text: fmt.Sprintf("GitLab list issues for %s - implementation requires GitLab API client", projectID)}},
 	}, nil
 }
 
 func (a *GitLabAdapter) createIssue(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	projectID, _ := args["project_id"].(string)
-	title, _ := args["title"].(string)
+	//nolint:errcheck // schema validation ensures correct type
+	projectID, _ := args["project_id"].(string) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct type
+	title, _ := args["title"].(string) //nolint:errcheck // schema validation ensures correct type
 	return &ToolResult{
 		Content: []ContentBlock{{Type: "text", Text: fmt.Sprintf("GitLab create issue '%s' in %s - implementation requires GitLab API client", title, projectID)}},
 	}, nil
 }
 
 func (a *GitLabAdapter) listMergeRequests(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	projectID, _ := args["project_id"].(string)
+	//nolint:errcheck // schema validation ensures correct type
+	projectID, _ := args["project_id"].(string) //nolint:errcheck // schema validation ensures correct type
 	return &ToolResult{
 		Content: []ContentBlock{{Type: "text", Text: fmt.Sprintf("GitLab list MRs for %s - implementation requires GitLab API client", projectID)}},
 	}, nil
 }
 
 func (a *GitLabAdapter) createMergeRequest(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	projectID, _ := args["project_id"].(string)
-	title, _ := args["title"].(string)
+	//nolint:errcheck // schema validation ensures correct type
+	projectID, _ := args["project_id"].(string) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct type
+	title, _ := args["title"].(string) //nolint:errcheck // schema validation ensures correct type
 	return &ToolResult{
 		Content: []ContentBlock{{Type: "text", Text: fmt.Sprintf("GitLab create MR '%s' in %s - implementation requires GitLab API client", title, projectID)}},
 	}, nil
 }
 
 func (a *GitLabAdapter) getFile(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	projectID, _ := args["project_id"].(string)
-	filePath, _ := args["file_path"].(string)
+	//nolint:errcheck // schema validation ensures correct type
+	projectID, _ := args["project_id"].(string) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct type
+	filePath, _ := args["file_path"].(string) //nolint:errcheck // schema validation ensures correct type
 	return &ToolResult{
 		Content: []ContentBlock{{Type: "text", Text: fmt.Sprintf("GitLab get file %s from %s - implementation requires GitLab API client", filePath, projectID)}},
 	}, nil
 }
 
 func (a *GitLabAdapter) listPipelines(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	projectID, _ := args["project_id"].(string)
+	//nolint:errcheck // schema validation ensures correct type
+	projectID, _ := args["project_id"].(string) //nolint:errcheck // schema validation ensures correct type
 	return &ToolResult{
 		Content: []ContentBlock{{Type: "text", Text: fmt.Sprintf("GitLab list pipelines for %s - implementation requires GitLab API client", projectID)}},
 	}, nil
 }
 
 func (a *GitLabAdapter) triggerPipeline(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	projectID, _ := args["project_id"].(string)
-	ref, _ := args["ref"].(string)
+	//nolint:errcheck // schema validation ensures correct type
+	projectID, _ := args["project_id"].(string) //nolint:errcheck // schema validation ensures correct type
+	//nolint:errcheck // schema validation ensures correct type
+	ref, _ := args["ref"].(string) //nolint:errcheck // schema validation ensures correct type
 	return &ToolResult{
 		Content: []ContentBlock{{Type: "text", Text: fmt.Sprintf("GitLab trigger pipeline for %s on %s - implementation requires GitLab API client", projectID, ref)}},
 	}, nil
 }
 
 func (a *GitLabAdapter) listBranches(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	projectID, _ := args["project_id"].(string)
+	projectID, _ := args["project_id"].(string) //nolint:errcheck // schema validation ensures correct type
 	return &ToolResult{
 		Content: []ContentBlock{{Type: "text", Text: fmt.Sprintf("GitLab list branches for %s - implementation requires GitLab API client", projectID)}},
 	}, nil

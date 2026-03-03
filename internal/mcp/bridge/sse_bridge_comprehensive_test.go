@@ -1587,20 +1587,3 @@ func TestSSEBridge_WriteJSONRPCResponse_MarshalError(t *testing.T) {
 	// Should write successfully with valid response
 	assert.Equal(t, http.StatusOK, w.Code)
 }
-
-// ============================================================================
-// Helper function for coverage
-// ============================================================================
-
-// testRecorderWithError is a recorder that returns errors on write
-type testRecorderWithError struct {
-	*httptest.ResponseRecorder
-	failWrite bool
-}
-
-func (r *testRecorderWithError) Write(b []byte) (int, error) {
-	if r.failWrite {
-		return 0, fmt.Errorf("simulated write error")
-	}
-	return r.ResponseRecorder.Write(b)
-}

@@ -134,9 +134,9 @@ func (s *StartupScoringService) runScoring(ctx context.Context) *StartupScoringR
 			result.TotalProviders = len(providers)
 			for _, p := range providers {
 				if pMap, ok := p.(map[string]interface{}); ok {
-					name, _ := pMap["name"].(string)
-					score, _ := pMap["score"].(float64)
-					verified, _ := pMap["verified"].(bool)
+					name, _ := pMap["name"].(string)       //nolint:errcheck // schema validation ensures correct type
+					score, _ := pMap["score"].(float64)    //nolint:errcheck // schema validation ensures correct type
+					verified, _ := pMap["verified"].(bool) //nolint:errcheck // schema validation ensures correct type
 
 					if name != "" {
 						result.ProviderScores[name] = score

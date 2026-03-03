@@ -262,16 +262,6 @@ func TestDependencyResolver_HasCapabilityConflict(t *testing.T) {
 	})
 }
 
-// Helper function to find index of element in slice
-func indexOf(slice []string, element string) int {
-	for i, e := range slice {
-		if e == element {
-			return i
-		}
-	}
-	return -1
-}
-
 // =====================================================
 // CHECKCONFLICTS TESTS
 // =====================================================

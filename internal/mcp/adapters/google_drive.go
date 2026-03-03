@@ -328,7 +328,7 @@ func (a *GoogleDriveAdapter) CallTool(ctx context.Context, name string, args map
 }
 
 func (a *GoogleDriveAdapter) listFiles(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	query, _ := args["query"].(string)
+	query, _ := args["query"].(string) //nolint:errcheck // schema validation ensures correct type
 	pageSize := getIntArg(args, "page_size", 50)
 
 	files, err := a.client.ListFiles(ctx, query, pageSize)
@@ -356,7 +356,7 @@ func (a *GoogleDriveAdapter) listFiles(ctx context.Context, args map[string]inte
 }
 
 func (a *GoogleDriveAdapter) getFile(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	fileID, _ := args["file_id"].(string)
+	fileID, _ := args["file_id"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	file, err := a.client.GetFile(ctx, fileID)
 	if err != nil {
@@ -370,7 +370,7 @@ func (a *GoogleDriveAdapter) getFile(ctx context.Context, args map[string]interf
 }
 
 func (a *GoogleDriveAdapter) downloadFile(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	fileID, _ := args["file_id"].(string)
+	fileID, _ := args["file_id"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	reader, err := a.client.DownloadFile(ctx, fileID)
 	if err != nil {
@@ -389,13 +389,13 @@ func (a *GoogleDriveAdapter) downloadFile(ctx context.Context, args map[string]i
 }
 
 func (a *GoogleDriveAdapter) createFile(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	name, _ := args["name"].(string)
-	content, _ := args["content"].(string)
-	mimeType, _ := args["mime_type"].(string)
+	name, _ := args["name"].(string)          //nolint:errcheck // schema validation ensures correct type
+	content, _ := args["content"].(string)    //nolint:errcheck // schema validation ensures correct type
+	mimeType, _ := args["mime_type"].(string) //nolint:errcheck // schema validation ensures correct type
 	if mimeType == "" {
 		mimeType = "text/plain"
 	}
-	parentID, _ := args["parent_id"].(string)
+	parentID, _ := args["parent_id"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	file, err := a.client.CreateFile(ctx, name, mimeType, parentID, strings.NewReader(content))
 	if err != nil {
@@ -408,8 +408,8 @@ func (a *GoogleDriveAdapter) createFile(ctx context.Context, args map[string]int
 }
 
 func (a *GoogleDriveAdapter) updateFile(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	fileID, _ := args["file_id"].(string)
-	content, _ := args["content"].(string)
+	fileID, _ := args["file_id"].(string)  //nolint:errcheck // schema validation ensures correct type
+	content, _ := args["content"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	file, err := a.client.UpdateFile(ctx, fileID, strings.NewReader(content))
 	if err != nil {
@@ -422,7 +422,7 @@ func (a *GoogleDriveAdapter) updateFile(ctx context.Context, args map[string]int
 }
 
 func (a *GoogleDriveAdapter) deleteFile(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	fileID, _ := args["file_id"].(string)
+	fileID, _ := args["file_id"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	err := a.client.DeleteFile(ctx, fileID)
 	if err != nil {
@@ -435,8 +435,8 @@ func (a *GoogleDriveAdapter) deleteFile(ctx context.Context, args map[string]int
 }
 
 func (a *GoogleDriveAdapter) createFolder(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	name, _ := args["name"].(string)
-	parentID, _ := args["parent_id"].(string)
+	name, _ := args["name"].(string)          //nolint:errcheck // schema validation ensures correct type
+	parentID, _ := args["parent_id"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	folder, err := a.client.CreateFolder(ctx, name, parentID)
 	if err != nil {
@@ -449,7 +449,7 @@ func (a *GoogleDriveAdapter) createFolder(ctx context.Context, args map[string]i
 }
 
 func (a *GoogleDriveAdapter) search(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	query, _ := args["query"].(string)
+	query, _ := args["query"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	files, err := a.client.SearchFiles(ctx, query)
 	if err != nil {
@@ -469,9 +469,9 @@ func (a *GoogleDriveAdapter) search(ctx context.Context, args map[string]interfa
 }
 
 func (a *GoogleDriveAdapter) shareFile(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	fileID, _ := args["file_id"].(string)
-	email, _ := args["email"].(string)
-	role, _ := args["role"].(string)
+	fileID, _ := args["file_id"].(string) //nolint:errcheck // schema validation ensures correct type
+	email, _ := args["email"].(string)    //nolint:errcheck // schema validation ensures correct type
+	role, _ := args["role"].(string)      //nolint:errcheck // schema validation ensures correct type
 	if role == "" {
 		role = "reader"
 	}
@@ -487,8 +487,8 @@ func (a *GoogleDriveAdapter) shareFile(ctx context.Context, args map[string]inte
 }
 
 func (a *GoogleDriveAdapter) copyFile(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	fileID, _ := args["file_id"].(string)
-	name, _ := args["name"].(string)
+	fileID, _ := args["file_id"].(string) //nolint:errcheck // schema validation ensures correct type
+	name, _ := args["name"].(string)      //nolint:errcheck // schema validation ensures correct type
 
 	file, err := a.client.CopyFile(ctx, fileID, name)
 	if err != nil {
@@ -501,8 +501,8 @@ func (a *GoogleDriveAdapter) copyFile(ctx context.Context, args map[string]inter
 }
 
 func (a *GoogleDriveAdapter) moveFile(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
-	fileID, _ := args["file_id"].(string)
-	newParentID, _ := args["new_parent_id"].(string)
+	fileID, _ := args["file_id"].(string)            //nolint:errcheck // schema validation ensures correct type
+	newParentID, _ := args["new_parent_id"].(string) //nolint:errcheck // schema validation ensures correct type
 
 	file, err := a.client.MoveFile(ctx, fileID, newParentID)
 	if err != nil {

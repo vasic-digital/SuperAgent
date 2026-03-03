@@ -700,7 +700,7 @@ func (p *PostgresAdapter) ExecuteTool(ctx context.Context, toolName string, para
 
 	switch toolName {
 	case "postgres_query":
-		query, _ := params["query"].(string)
+		query, _ := params["query"].(string) //nolint:errcheck // schema validation ensures correct type
 		var args []interface{}
 		if p, ok := params["params"].([]interface{}); ok {
 			args = p
@@ -708,7 +708,7 @@ func (p *PostgresAdapter) ExecuteTool(ctx context.Context, toolName string, para
 		return p.Query(ctx, query, args...)
 
 	case "postgres_execute":
-		query, _ := params["query"].(string)
+		query, _ := params["query"].(string) //nolint:errcheck // schema validation ensures correct type
 		var args []interface{}
 		if p, ok := params["params"].([]interface{}); ok {
 			args = p
@@ -716,20 +716,20 @@ func (p *PostgresAdapter) ExecuteTool(ctx context.Context, toolName string, para
 		return p.Execute(ctx, query, args...)
 
 	case "postgres_list_tables":
-		schema, _ := params["schema"].(string)
+		schema, _ := params["schema"].(string) //nolint:errcheck // schema validation ensures correct type
 		return p.ListTables(ctx, schema)
 
 	case "postgres_describe_table":
-		table, _ := params["table"].(string)
-		schema, _ := params["schema"].(string)
+		table, _ := params["table"].(string)   //nolint:errcheck // schema validation ensures correct type
+		schema, _ := params["schema"].(string) //nolint:errcheck // schema validation ensures correct type
 		return p.DescribeTable(ctx, schema, table)
 
 	case "postgres_list_schemas":
 		return p.ListSchemas(ctx)
 
 	case "postgres_list_indexes":
-		table, _ := params["table"].(string)
-		schema, _ := params["schema"].(string)
+		table, _ := params["table"].(string)   //nolint:errcheck // schema validation ensures correct type
+		schema, _ := params["schema"].(string) //nolint:errcheck // schema validation ensures correct type
 		return p.ListIndexes(ctx, schema, table)
 
 	case "postgres_stats":

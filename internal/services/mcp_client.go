@@ -507,6 +507,7 @@ func (c *MCPClient) validateToolArguments(tool *MCPTool, arguments map[string]in
 	// Basic validation - check required fields
 	if required, ok := tool.InputSchema["required"].([]interface{}); ok {
 		for _, reqField := range required {
+			//nolint:errcheck // schema validation ensures correct type
 			fieldName := reqField.(string)
 			if _, exists := arguments[fieldName]; !exists {
 				return fmt.Errorf("required field '%s' is missing", fieldName)

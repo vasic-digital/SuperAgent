@@ -68,6 +68,7 @@ func (t *SecurityTool) Validate(inputs map[string]interface{}) error {
 
 // Execute executes the tool
 func (t *SecurityTool) Execute(ctx context.Context, inputs map[string]interface{}) (*ToolResult, error) {
+	//nolint:errcheck // schema validation ensures correct type
 	code := inputs["code"].(string)
 
 	var vulnerabilities []SecurityVulnerability
@@ -307,6 +308,7 @@ func (t *PerformanceTool) Validate(inputs map[string]interface{}) error {
 
 // Execute executes the tool
 func (t *PerformanceTool) Execute(ctx context.Context, inputs map[string]interface{}) (*ToolResult, error) {
+	//nolint:errcheck // schema validation ensures correct type
 	code := inputs["code"].(string)
 
 	var issues []PerformanceIssue

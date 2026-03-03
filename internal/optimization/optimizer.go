@@ -25,7 +25,6 @@ type Service struct {
 
 	// Native Go components
 	semanticCache    *gptcache.SemanticCache
-	structuredGen    *outlines.StructuredGenerator
 	enhancedStreamer *streaming.EnhancedStreamer
 
 	// External service clients
@@ -444,14 +443,6 @@ func (s *Service) checkServiceHealth(ctx context.Context) {
 		s.serviceStatus["lmql"] = s.lmqlClient.IsAvailable(ctx)
 		s.lastHealthCheck["lmql"] = now
 	}
-}
-
-// markServiceUnavailable marks a service as temporarily unavailable.
-func (s *Service) markServiceUnavailable(service string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.serviceStatus[service] = false
-	s.unavailableUntil[service] = time.Now().Add(s.config.Fallback.RetryUnavailableAfter)
 }
 
 // isComplexTask heuristically determines if a task is complex.
