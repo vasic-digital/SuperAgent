@@ -189,14 +189,6 @@ func (p *PostgresDB) HealthCheck() error {
 	return p.pool.Ping(ctx)
 }
 
-// getEnv gets environment variable or returns default.
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
-}
-
 // RunMigration executes database migrations.
 func RunMigration(db *PostgresDB, migrations []string) error {
 	if db.client != nil {

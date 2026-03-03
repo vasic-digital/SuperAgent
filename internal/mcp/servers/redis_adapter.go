@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -868,12 +867,4 @@ func (r *RedisAdapter) MarshalJSON() ([]byte, error) {
 		"initialized":  r.initialized,
 		"capabilities": r.GetCapabilities(),
 	})
-}
-
-// parseIntOrDefault parses an int from a string or returns a default
-func parseIntOrDefault(s string, defaultVal int64) int64 {
-	if v, err := strconv.ParseInt(s, 10, 64); err == nil {
-		return v
-	}
-	return defaultVal
 }

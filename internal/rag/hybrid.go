@@ -16,7 +16,6 @@ type HybridRetriever struct {
 	reranker        Reranker
 	config          *HybridConfig
 	logger          *logrus.Logger
-	mu              sync.RWMutex
 }
 
 // HybridConfig configures hybrid retrieval

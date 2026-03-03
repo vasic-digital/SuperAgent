@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
-	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -109,7 +108,6 @@ type GraphRAG struct {
 	config   GraphRAGConfig
 	graph    *CodeGraph
 	reranker Reranker
-	mu       sync.RWMutex
 	logger   *logrus.Logger
 }
 

@@ -445,6 +445,14 @@ func (s *Service) checkServiceHealth(ctx context.Context) {
 	}
 }
 
+// markServiceUnavailable marks a service as temporarily unavailable.
+func (s *Service) markServiceUnavailable(service string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.serviceStatus[service] = false
+	s.unavailableUntil[service] = time.Now().Add(s.config.Fallback.RetryUnavailableAfter)
+}
+
 // isComplexTask heuristically determines if a task is complex.
 func isComplexTask(prompt string) bool {
 	// Simple heuristics for complex tasks

@@ -314,44 +314,6 @@ func TestRunMigration(t *testing.T) {
 	})
 }
 
-func TestGetEnv(t *testing.T) {
-	t.Run("WithDefault", func(t *testing.T) {
-		result := getEnv("NON_EXISTENT_ENV_VAR", "default_value")
-		if result != "default_value" {
-			t.Errorf("Expected 'default_value', got '%s'", result)
-		}
-	})
-
-	t.Run("EnvironmentVariable", func(t *testing.T) {
-		// Note: We can't easily set environment variables in tests without affecting other tests
-		// This test just verifies the function doesn't panic
-		result := getEnv("PATH", "default")
-		// PATH should exist on any system
-		if result == "" {
-			t.Error("Expected non-empty PATH, got empty string")
-		}
-	})
-
-	t.Run("EmptyStringEnvironmentVariable", func(t *testing.T) {
-		// Save and restore environment
-		originalValue := os.Getenv("TEST_EMPTY_VAR")
-		defer func() {
-			if originalValue != "" {
-				_ = os.Setenv("TEST_EMPTY_VAR", originalValue)
-			} else {
-				_ = os.Unsetenv("TEST_EMPTY_VAR")
-			}
-		}()
-
-		// Set empty string
-		_ = os.Setenv("TEST_EMPTY_VAR", "")
-		result := getEnv("TEST_EMPTY_VAR", "default")
-		if result != "default" {
-			t.Errorf("Expected 'default' for empty env var, got '%s'", result)
-		}
-	})
-}
-
 func TestDBInterfaceImplementation(t *testing.T) {
 	t.Run("PostgresDBImplementsDBInterface", func(t *testing.T) {
 		var _ DB = (*PostgresDB)(nil)
@@ -494,61 +456,6 @@ func TestPgxRowScan(t *testing.T) {
 			}
 		}()
 		_ = row.Scan(&result)
-	})
-}
-
-// TestGetEnvComprehensive tests the getEnv function thoroughly
-func TestGetEnvComprehensive(t *testing.T) {
-	t.Run("ReturnsDefaultWhenNotSet", func(t *testing.T) {
-		// Use a unique env var name that definitely doesn't exist
-		result := getEnv("HELIXAGENT_TEST_DEFINITELY_NOT_SET_123456", "mydefault")
-		assert.Equal(t, "mydefault", result)
-	})
-
-	t.Run("ReturnsValueWhenSet", func(t *testing.T) {
-		_ = os.Setenv("HELIXAGENT_TEST_VAR", "testvalue")
-		defer func() { _ = os.Unsetenv("HELIXAGENT_TEST_VAR") }()
-
-		result := getEnv("HELIXAGENT_TEST_VAR", "default")
-		assert.Equal(t, "testvalue", result)
-	})
-
-	t.Run("ReturnsDefaultForEmptyString", func(t *testing.T) {
-		_ = os.Setenv("HELIXAGENT_TEST_EMPTY", "")
-		defer func() { _ = os.Unsetenv("HELIXAGENT_TEST_EMPTY") }()
-
-		result := getEnv("HELIXAGENT_TEST_EMPTY", "fallback")
-		assert.Equal(t, "fallback", result)
-	})
-
-	t.Run("ReturnsValueWithSpaces", func(t *testing.T) {
-		_ = os.Setenv("HELIXAGENT_TEST_SPACES", "  value with spaces  ")
-		defer func() { _ = os.Unsetenv("HELIXAGENT_TEST_SPACES") }()
-
-		result := getEnv("HELIXAGENT_TEST_SPACES", "default")
-		assert.Equal(t, "  value with spaces  ", result)
-	})
-
-	t.Run("HandlesSpecialCharacters", func(t *testing.T) {
-		_ = os.Setenv("HELIXAGENT_TEST_SPECIAL", "user@host:password!#$%")
-		defer func() { _ = os.Unsetenv("HELIXAGENT_TEST_SPECIAL") }()
-
-		result := getEnv("HELIXAGENT_TEST_SPECIAL", "default")
-		assert.Equal(t, "user@host:password!#$%", result)
-	})
-
-	t.Run("DefaultValueVariations", func(t *testing.T) {
-		// Empty default
-		result := getEnv("NONEXISTENT_VAR_12345", "")
-		assert.Equal(t, "", result)
-
-		// Numeric default
-		result = getEnv("NONEXISTENT_VAR_12345", "5432")
-		assert.Equal(t, "5432", result)
-
-		// URL default
-		result = getEnv("NONEXISTENT_VAR_12345", "postgres://localhost:5432")
-		assert.Equal(t, "postgres://localhost:5432", result)
 	})
 }
 
@@ -1580,43 +1487,6 @@ func TestEmptyMigrations(t *testing.T) {
 		var nilMigrations []string
 		assert.Nil(t, nilMigrations)
 		assert.Len(t, nilMigrations, 0)
-	})
-}
-
-// TestGetEnvEdgeCases tests edge cases for getEnv
-func TestGetEnvEdgeCases(t *testing.T) {
-	t.Run("VeryLongValue", func(t *testing.T) {
-		longValue := strings.Repeat("a", 10000)
-		_ = os.Setenv("HELIXAGENT_TEST_LONG", longValue)
-		defer func() { _ = os.Unsetenv("HELIXAGENT_TEST_LONG") }()
-
-		result := getEnv("HELIXAGENT_TEST_LONG", "default")
-		assert.Equal(t, longValue, result)
-		assert.Len(t, result, 10000)
-	})
-
-	t.Run("UnicodeValue", func(t *testing.T) {
-		_ = os.Setenv("HELIXAGENT_TEST_UNICODE", "值中文日本語한국어")
-		defer func() { _ = os.Unsetenv("HELIXAGENT_TEST_UNICODE") }()
-
-		result := getEnv("HELIXAGENT_TEST_UNICODE", "default")
-		assert.Equal(t, "值中文日本語한국어", result)
-	})
-
-	t.Run("NewlineInValue", func(t *testing.T) {
-		_ = os.Setenv("HELIXAGENT_TEST_NEWLINE", "line1\nline2")
-		defer func() { _ = os.Unsetenv("HELIXAGENT_TEST_NEWLINE") }()
-
-		result := getEnv("HELIXAGENT_TEST_NEWLINE", "default")
-		assert.Equal(t, "line1\nline2", result)
-	})
-
-	t.Run("TabInValue", func(t *testing.T) {
-		_ = os.Setenv("HELIXAGENT_TEST_TAB", "val1\tval2")
-		defer func() { _ = os.Unsetenv("HELIXAGENT_TEST_TAB") }()
-
-		result := getEnv("HELIXAGENT_TEST_TAB", "default")
-		assert.Equal(t, "val1\tval2", result)
 	})
 }
 

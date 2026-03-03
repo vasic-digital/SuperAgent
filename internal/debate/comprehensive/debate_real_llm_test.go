@@ -141,6 +141,9 @@ func TestComprehensiveDebateWithRealLLMCalls(t *testing.T) {
 
 // TestDebateQuality validates debate quality metrics
 func TestDebateQuality(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
 	logger := logrus.New()
 	mgr, err := NewIntegrationManager(DefaultConfig(), logger)
 	require.NoError(t, err)
@@ -188,6 +191,9 @@ func TestDebateQuality(t *testing.T) {
 
 // TestStreamEvents validates all stream event types are properly emitted
 func TestStreamEvents(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
 	logger := logrus.New()
 	mgr, err := NewIntegrationManager(DefaultConfig(), logger)
 	require.NoError(t, err)

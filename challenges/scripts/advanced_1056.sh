@@ -1,4 +1,0 @@
-#!/bin/bash
-# Advanced Challenge 1056
-echo "🎯 Advanced Challenge 1056"
-echo "✅ Complete! +10 points"
