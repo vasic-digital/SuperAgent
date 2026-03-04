@@ -160,7 +160,7 @@ func TestAgentRegistry_AllAgentsRegistered(t *testing.T) {
 
 	t.Run("Verify_Agent_Names_Match", func(t *testing.T) {
 		agentNames := agents.GetAgentNames()
-		assert.Equal(t, 48, len(agentNames), "Should return 18 agent names")
+		assert.Equal(t, 48, len(agentNames), "Should return 48 agent names")
 
 		// Sort both for comparison
 		sortedExpected := make([]string, len(expectedAgents))
