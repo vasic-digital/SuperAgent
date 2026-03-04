@@ -116,6 +116,18 @@ func (o *Orchestrator) registerChallenges() error {
 		NewProviderFailoverChallenge(
 			o.adapter, providerDep,
 		),
+		NewWebSocketStreamingChallenge(
+			o.adapter, healthDep,
+		),
+		NewGRPCServiceChallenge(
+			o.adapter, healthDep,
+		),
+		NewRateLimitingChallenge(
+			o.adapter, healthDep,
+		),
+		NewPaginationChallenge(
+			o.adapter, healthDep,
+		),
 		NewFullSystemChallenge(o.adapter),
 	}
 

@@ -245,6 +245,113 @@ func TestProviderFailoverFlow(t *testing.T) {
 		flow.Steps[3].Path)
 }
 
+func TestWebSocketStreamingFlow(t *testing.T) {
+	flow := WebSocketStreamingFlow()
+	require.Len(t, flow.Steps, 3,
+		"should have 3 websocket streaming steps")
+
+	assert.Equal(t, "health_baseline",
+		flow.Steps[0].Name)
+	assert.Equal(t, "GET", flow.Steps[0].Method)
+	assert.Equal(t, "/v1/health", flow.Steps[0].Path)
+
+	assert.Equal(t, "streaming_sse",
+		flow.Steps[1].Name)
+	assert.Equal(t, "POST", flow.Steps[1].Method)
+	assert.Contains(t, flow.Steps[1].Body,
+		`"stream": true`)
+	assert.Contains(t,
+		flow.Steps[1].AcceptedStatuses, 200)
+	assert.Contains(t,
+		flow.Steps[1].AcceptedStatuses, 501)
+
+	assert.Equal(t, "post_stream_status",
+		flow.Steps[2].Name)
+	assert.Equal(t, "GET", flow.Steps[2].Method)
+}
+
+func TestGRPCServiceFlow(t *testing.T) {
+	flow := GRPCServiceFlow()
+	require.Len(t, flow.Steps, 3,
+		"should have 3 gRPC service steps")
+
+	assert.Equal(t, "health_baseline",
+		flow.Steps[0].Name)
+	assert.Equal(t, "/v1/health",
+		flow.Steps[0].Path)
+
+	assert.Equal(t, "grpc_services_list",
+		flow.Steps[1].Name)
+	assert.Equal(t, "/v1/grpc/services",
+		flow.Steps[1].Path)
+	assert.Contains(t,
+		flow.Steps[1].AcceptedStatuses, 404)
+
+	assert.Equal(t, "grpc_health",
+		flow.Steps[2].Name)
+	assert.Equal(t, "/v1/grpc/health",
+		flow.Steps[2].Path)
+	assert.Contains(t,
+		flow.Steps[2].AcceptedStatuses, 404)
+}
+
+func TestRateLimitingFlow(t *testing.T) {
+	flow := RateLimitingFlow()
+	require.Len(t, flow.Steps, 4,
+		"should have 4 rate limiting steps")
+
+	assert.Equal(t, "health_baseline",
+		flow.Steps[0].Name)
+	assert.Equal(t, "/v1/health",
+		flow.Steps[0].Path)
+
+	assert.Equal(t, "first_request",
+		flow.Steps[1].Name)
+	assert.Equal(t, "POST", flow.Steps[1].Method)
+	assert.Contains(t,
+		flow.Steps[1].AcceptedStatuses, 429)
+
+	assert.Equal(t, "rapid_second_request",
+		flow.Steps[2].Name)
+	assert.Equal(t, "POST", flow.Steps[2].Method)
+	assert.Contains(t,
+		flow.Steps[2].AcceptedStatuses, 429)
+
+	assert.Equal(t, "post_ratelimit_health",
+		flow.Steps[3].Name)
+	assert.Equal(t, "/v1/health",
+		flow.Steps[3].Path)
+}
+
+func TestPaginationFlow(t *testing.T) {
+	flow := PaginationFlow()
+	require.Len(t, flow.Steps, 3,
+		"should have 3 pagination steps")
+
+	assert.Equal(t, "list_models",
+		flow.Steps[0].Name)
+	assert.Equal(t, "/v1/models",
+		flow.Steps[0].Path)
+
+	assert.Equal(t, "list_models_limited",
+		flow.Steps[1].Name)
+	assert.Equal(t, "/v1/models?limit=1",
+		flow.Steps[1].Path)
+
+	assert.Equal(t, "list_formatters",
+		flow.Steps[2].Name)
+	assert.Equal(t, "/v1/formatters",
+		flow.Steps[2].Path)
+
+	for _, step := range flow.Steps {
+		assert.Equal(t, "GET", step.Method)
+		assert.Contains(t,
+			step.AcceptedStatuses, 200)
+		assert.Contains(t,
+			step.AcceptedStatuses, 501)
+	}
+}
+
 func TestFullSystemFlow(t *testing.T) {
 	flow := FullSystemFlow()
 	assert.GreaterOrEqual(t, len(flow.Steps), 7,
@@ -381,6 +488,34 @@ func TestChallengeConstructors_NotNil(t *testing.T) {
 					&adapter, providerDep,
 				)
 			}},
+		{"WebSocketStreaming",
+			"helix-websocket-streaming",
+			func() interface{} {
+				return NewWebSocketStreamingChallenge(
+					&adapter, healthDep,
+				)
+			}},
+		{"GRPCService",
+			"helix-grpc-service",
+			func() interface{} {
+				return NewGRPCServiceChallenge(
+					&adapter, healthDep,
+				)
+			}},
+		{"RateLimiting",
+			"helix-rate-limiting",
+			func() interface{} {
+				return NewRateLimitingChallenge(
+					&adapter, healthDep,
+				)
+			}},
+		{"Pagination",
+			"helix-pagination",
+			func() interface{} {
+				return NewPaginationChallenge(
+					&adapter, healthDep,
+				)
+			}},
 	}
 
 	for _, tt := range tests {
@@ -401,14 +536,14 @@ func TestChallengeConstructors_NotNil(t *testing.T) {
 func TestOrchestratorConstruction(t *testing.T) {
 	o := NewOrchestrator("http://localhost:7061")
 	assert.NotNil(t, o)
-	assert.Equal(t, 18, o.ChallengeCount(),
-		"should register 18 challenges")
+	assert.Equal(t, 22, o.ChallengeCount(),
+		"should register 22 challenges")
 }
 
 func TestOrchestratorListChallenges(t *testing.T) {
 	o := NewOrchestrator("http://localhost:7061")
 	ids := o.ListChallenges()
-	assert.Len(t, ids, 18)
+	assert.Len(t, ids, 22)
 
 	// Verify key challenges are present.
 	idSet := make(map[string]bool)
@@ -423,7 +558,7 @@ func TestOrchestratorListChallenges(t *testing.T) {
 func TestOrchestratorSummary(t *testing.T) {
 	o := NewOrchestrator("http://localhost:7061")
 	summary := o.Summary()
-	assert.Contains(t, summary, "18 challenges")
+	assert.Contains(t, summary, "22 challenges")
 	assert.Contains(t, summary, "localhost:7061")
 }
 
@@ -490,8 +625,8 @@ func (m *mockAPIAdapter) Available(
 func TestOrchestrator_Challenges(t *testing.T) {
 	o := NewOrchestrator("http://localhost:7061")
 	challenges := o.Challenges()
-	require.Len(t, challenges, 18,
-		"Challenges() must return all 18 challenges")
+	require.Len(t, challenges, 22,
+		"Challenges() must return all 22 challenges")
 
 	for _, c := range challenges {
 		_, ok := c.(challenge.Challenge)

@@ -251,7 +251,76 @@ echo ""
 
 # Phase 12: System Debug (public)
 log_info "Phase 12: System Debug"
-test_get "debug_ensemble" "/v1/ensemble/completions" "200 404 405"
+test_get "debug_ensemble" "/v1/ensemble/completions" \
+    "200 404 405"
+echo ""
+
+# Phase 13: Authentication
+log_info "Phase 13: Authentication"
+test_post "auth_login" "/v1/auth/login" \
+    '{"username":"admin","password":"admin"}' \
+    "200 401 404 501"
+test_get "auth_protected" "/v1/auth/me" "200 401 404 501"
+test_post "auth_bad_creds" "/v1/auth/login" \
+    '{"username":"invalid","password":"wrong"}' \
+    "401 404 501"
+echo ""
+
+# Phase 14: Error Handling
+log_info "Phase 14: Error Handling"
+test_post "error_bad_model" "/v1/chat/completions" \
+    '{"model":"nonexistent/fake","messages":[{"role":"user","content":"test"}]}' \
+    "400 404 500 501 503"
+test_post "error_bad_json" "/v1/chat/completions" \
+    '{invalid json}' \
+    "400 422 500"
+test_get "error_404" "/v1/nonexistent-endpoint" "404"
+echo ""
+
+# Phase 15: Multi-Turn Conversation
+log_info "Phase 15: Multi-Turn Conversation"
+test_post "multi_turn_first" "/v1/chat/completions" \
+    '{"model":"auto","messages":[{"role":"user","content":"Hello, my name is Alice"}]}' \
+    "200 501 503"
+test_post "multi_turn_second" "/v1/chat/completions" \
+    '{"model":"auto","messages":[{"role":"user","content":"Hello, my name is Alice"},{"role":"assistant","content":"Hello Alice!"},{"role":"user","content":"What is my name?"}]}' \
+    "200 501 503"
+echo ""
+
+# Phase 16: Tool/Function Calling
+log_info "Phase 16: Tool/Function Calling"
+test_post "tool_calling" "/v1/chat/completions" \
+    '{"model":"auto","messages":[{"role":"user","content":"What is the weather?"}],"tools":[{"type":"function","function":{"name":"get_weather","parameters":{"type":"object","properties":{"location":{"type":"string"}}}}}],"tool_choice":"auto"}' \
+    "200 400 501 503"
+echo ""
+
+# Phase 17: Provider Failover
+log_info "Phase 17: Provider Failover"
+test_get "failover_chain" "/v1/monitoring/fallback-chain" \
+    "200 404 501"
+test_get "circuit_breakers" "/v1/monitoring/circuit-breakers" \
+    "200 404 501"
+test_post "failover_bad_provider" "/v1/chat/completions" \
+    '{"model":"nonexistent-provider/fake-model","messages":[{"role":"user","content":"test"}]}' \
+    "400 404 500 501 503"
+echo ""
+
+# Phase 18: Rate Limiting
+log_info "Phase 18: Rate Limiting"
+test_post "rate_limit_first" "/v1/chat/completions" \
+    '{"model":"auto","messages":[{"role":"user","content":"rate limit test 1"}]}' \
+    "200 429 501 503"
+test_post "rate_limit_second" "/v1/chat/completions" \
+    '{"model":"auto","messages":[{"role":"user","content":"rate limit test 2"}]}' \
+    "200 429 501 503"
+test_get "post_rate_limit_health" "/v1/health" "200"
+echo ""
+
+# Phase 19: Pagination
+log_info "Phase 19: Pagination"
+test_get "models_list" "/v1/models" "200 501"
+test_get "models_limited" "/v1/models?limit=1" "200 501"
+test_get "formatters_list" "/v1/formatters" "200 501"
 echo ""
 
 # ============================================================

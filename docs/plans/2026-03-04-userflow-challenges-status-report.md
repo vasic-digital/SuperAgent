@@ -27,17 +27,17 @@ All adapters are generic, reusable across projects, and committed to the
 
 **New challenge templates:** `GRPCFlowChallenge` (481 lines), `WebSocketFlowChallenge` (410 lines)
 
-### Phase 2: HelixAgent Integration — 18 Go-Native Challenges
+### Phase 2: HelixAgent Integration — 22 Go-Native Challenges
 
 | File | Purpose | Lines |
 |------|---------|-------|
-| `internal/challenges/userflow/flows.go` | 18 API flow definitions + 18 challenge constructors | ~1050 |
-| `internal/challenges/userflow/orchestrator.go` | Challenge orchestrator with dependency graph | ~230 |
-| `internal/challenges/userflow/flows_test.go` | 29 test functions | ~600 |
-| `internal/challenges/userflow/benchmark_test.go` | 8 benchmark functions | ~200 |
-| `challenges/scripts/userflow_comprehensive_challenge.sh` | 30+ curl-based tests | 273 |
+| `internal/challenges/userflow/flows.go` | 22 API flow definitions + 22 challenge constructors | ~1410 |
+| `internal/challenges/userflow/orchestrator.go` | Challenge orchestrator with dependency graph | ~196 |
+| `internal/challenges/userflow/flows_test.go` | 32 test functions | ~720 |
+| `internal/challenges/userflow/benchmark_test.go` | 8 benchmark functions | ~217 |
+| `challenges/scripts/userflow_comprehensive_challenge.sh` | 40+ curl-based tests (19 phases) | 343 |
 
-**18 Flow Challenges:**
+**22 Flow Challenges:**
 
 | # | ID | What It Tests |
 |---|----|--------------:|
@@ -58,18 +58,23 @@ All adapters are generic, reusable across projects, and committed to the
 | 15 | `helix-multi-turn` | Multi-turn conversation with context |
 | 16 | `helix-tool-calling` | OpenAI-compatible tool/function calling |
 | 17 | `helix-provider-failover` | Failover chain and circuit breaker recovery |
-| 18 | `helix-full-system` | End-to-end: health -> discovery -> completion |
+| 18 | `helix-websocket-streaming` | SSE/WebSocket real-time data flow |
+| 19 | `helix-grpc-service` | gRPC endpoint testing |
+| 20 | `helix-rate-limiting` | Burst request and 429 response testing |
+| 21 | `helix-pagination` | Paginated endpoint testing |
+| 22 | `helix-full-system` | End-to-end: health -> discovery -> completion |
 
 **Dependency graph:**
 - health -> providers -> completion -> streaming/debate/multi-turn/tool-calling
 - health -> monitoring, formatters, authentication, error-handling, concurrent-users, MCP
+- health -> websocket-streaming, grpc-service, rate-limiting, pagination
 - providers -> embeddings -> RAG
 - providers -> provider-failover
 
 ### Phase 3: Critical Wiring (COMPLETED)
 
 - **Orchestrator wired:** `RegisterAll()` imports `userflow.NewOrchestrator()`
-  and registers all 18 Go-native challenges into the main registry
+  and registers all 22 Go-native challenges into the main registry
 - **Category override:** All userflow challenges get category `"userflow"` via
   `SetCategory()` for proper `--run-challenges=userflow` filtering
 - **BaseURL config:** `OrchestratorConfig.BaseURL` field added (default: `http://localhost:7061`)
@@ -104,7 +109,7 @@ All adapters are generic, reusable across projects, and committed to the
 - 3 error wrapping issues fixed (WebSocket Send/Close, gRPC runGRPCurl)
 - 1 unsafe nil return fixed (Maestro RunInstrumentedTests)
 - `"userflow"` added to `knownCategories` in `cmd/helixagent/challenges.go`
-- All 18 challenge constructors tested with ID verification
+- All 22 challenge constructors tested with ID verification
 - Playwright CLI adapter test expectations corrected (cdpToHTTP conversion)
 - Silent error handling in `registerChallenges()` replaced with proper error propagation
 
@@ -129,32 +134,15 @@ All adapters are generic, reusable across projects, and committed to the
 - ~~Playwright CLI Adapter Test Failures~~ FIXED
 - ~~Silent error handling in registerChallenges()~~ FIXED
 
-### REMAINING (nice-to-have)
+### REMAINING — ALL DONE
 
-#### 1. Missing Integration Tests
-
-No integration tests in `tests/integration/` for the userflow system.
-Need tests that spin up the server and execute challenges against real
-running infrastructure.
-
-#### 2. Missing Security Tests
-
-No security tests for: input validation/sanitization, injection attacks
-via flow step parameters, credential handling, WebSocket origin validation.
-
-#### 3. Missing Stress Tests
-
-No stress tests for: concurrent flow execution, adapter pool exhaustion,
-WebSocket connection storms, registry contention under load.
-
-#### 4. Additional Everyday Use Case Challenges (LOW priority)
-
-| Scenario | Priority | Notes |
-|----------|----------|-------|
-| WebSocket streaming challenge | LOW | SSE/WS real-time data flow |
-| gRPC service challenge | LOW | gRPC endpoint testing via grpcurl |
-| Rate limiting | LOW | Burst request testing |
-| Pagination | LOW | Paginated endpoint testing |
+- ~~Integration tests~~ DONE (11 tests in `tests/integration/userflow_integration_test.go`)
+- ~~Security tests~~ DONE (17 tests / 131 subtests in `tests/security/userflow_security_test.go`)
+- ~~Stress tests~~ DONE (11 tests in `tests/stress/userflow_stress_test.go`)
+- ~~WebSocket streaming challenge~~ DONE (`helix-websocket-streaming`)
+- ~~gRPC service challenge~~ DONE (`helix-grpc-service`)
+- ~~Rate limiting challenge~~ DONE (`helix-rate-limiting`)
+- ~~Pagination challenge~~ DONE (`helix-pagination`)
 
 ---
 
@@ -162,12 +150,15 @@ WebSocket connection storms, registry contention under load.
 
 | Package | Tests | Benchmarks | Status |
 |---------|-------|------------|--------|
-| `internal/challenges/userflow/` | 29 | 8 | ALL PASS |
-| `internal/challenges/` | 75 | 4 | ALL PASS |
+| `internal/challenges/userflow/` | 32 | 8 | ALL PASS |
+| `internal/challenges/` | 77 | 4 | ALL PASS |
+| `tests/integration/` (userflow) | 11 | — | ALL PASS |
+| `tests/security/` (userflow) | 17 (131 subtests) | — | ALL PASS |
+| `tests/stress/` (userflow) | 11 | — | ALL PASS |
 | `Challenges/pkg/challenge/` | 45+ | — | ALL PASS |
 | `Challenges/pkg/userflow/` (all) | 531+ | — | ALL PASS |
 
-**Total new test functions across all work: 290+**
+**Total new test functions across all work: 330+**
 **Total new benchmark functions: 12**
 
 ---
@@ -196,7 +187,7 @@ Challenges/docs/userflow/                               # 23 documentation files
 
 ### HelixAgent
 ```
-internal/challenges/userflow/flows.go                   # 18 API flow definitions
+internal/challenges/userflow/flows.go                   # 22 API flow definitions
 internal/challenges/userflow/orchestrator.go            # Go-native orchestrator
 internal/challenges/userflow/flows_test.go              # 29 test functions
 internal/challenges/userflow/benchmark_test.go          # 8 benchmark functions

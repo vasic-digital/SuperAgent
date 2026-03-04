@@ -16,7 +16,7 @@ import (
 	"dev.helix.agent/internal/challenges/userflow"
 )
 
-// expectedChallengeIDs is the canonical set of 18 userflow
+// expectedChallengeIDs is the canonical set of 22 userflow
 // challenge IDs. Keep this in sync with
 // internal/challenges/userflow/orchestrator.go.
 var expectedChallengeIDs = []string{
@@ -37,30 +37,38 @@ var expectedChallengeIDs = []string{
 	"helix-multi-turn",
 	"helix-tool-calling",
 	"helix-provider-failover",
+	"helix-websocket-streaming",
+	"helix-grpc-service",
+	"helix-rate-limiting",
+	"helix-pagination",
 	"helix-full-system",
 }
 
 // dependencyGraph maps each challenge ID to its expected
 // dependency IDs. Challenges with no dependencies map to nil.
 var dependencyGraph = map[string][]string{
-	"helix-health-check":        nil,
-	"helix-feature-flags":       nil,
-	"helix-full-system":         nil,
-	"helix-provider-discovery":  {"helix-health-check"},
-	"helix-monitoring":          {"helix-health-check"},
-	"helix-formatters":          {"helix-health-check"},
-	"helix-mcp-protocol":        {"helix-health-check"},
-	"helix-authentication":      {"helix-health-check"},
-	"helix-error-handling":      {"helix-health-check"},
-	"helix-concurrent-users":    {"helix-health-check"},
-	"helix-chat-completion":     {"helix-provider-discovery"},
-	"helix-embeddings":          {"helix-provider-discovery"},
-	"helix-provider-failover":   {"helix-provider-discovery"},
+	"helix-health-check":         nil,
+	"helix-feature-flags":        nil,
+	"helix-full-system":          nil,
+	"helix-provider-discovery":   {"helix-health-check"},
+	"helix-monitoring":           {"helix-health-check"},
+	"helix-formatters":           {"helix-health-check"},
+	"helix-mcp-protocol":         {"helix-health-check"},
+	"helix-authentication":       {"helix-health-check"},
+	"helix-error-handling":       {"helix-health-check"},
+	"helix-concurrent-users":     {"helix-health-check"},
+	"helix-websocket-streaming":  {"helix-health-check"},
+	"helix-grpc-service":         {"helix-health-check"},
+	"helix-rate-limiting":        {"helix-health-check"},
+	"helix-pagination":           {"helix-health-check"},
+	"helix-chat-completion":      {"helix-provider-discovery"},
+	"helix-embeddings":           {"helix-provider-discovery"},
+	"helix-provider-failover":    {"helix-provider-discovery"},
 	"helix-streaming-completion": {"helix-chat-completion"},
-	"helix-debate":              {"helix-chat-completion"},
-	"helix-multi-turn":          {"helix-chat-completion"},
-	"helix-tool-calling":        {"helix-chat-completion"},
-	"helix-rag":                 {"helix-embeddings"},
+	"helix-debate":               {"helix-chat-completion"},
+	"helix-multi-turn":           {"helix-chat-completion"},
+	"helix-tool-calling":         {"helix-chat-completion"},
+	"helix-rag":                  {"helix-embeddings"},
 }
 
 // --- Full Orchestrator Lifecycle ---
@@ -76,25 +84,25 @@ func TestUserflowOrchestrator_FullLifecycle(
 
 	// Count.
 	count := o.ChallengeCount()
-	assert.Equal(t, 18, count,
-		"orchestrator must register exactly 18 challenges")
+	assert.Equal(t, 22, count,
+		"orchestrator must register exactly 22 challenges")
 
 	// List.
 	ids := o.ListChallenges()
-	assert.Len(t, ids, 18,
-		"ListChallenges must return 18 IDs")
+	assert.Len(t, ids, 22,
+		"ListChallenges must return 22 IDs")
 
 	// Summary.
 	summary := o.Summary()
-	assert.Contains(t, summary, "18 challenges",
+	assert.Contains(t, summary, "22 challenges",
 		"summary must mention the challenge count")
 	assert.Contains(t, summary, "localhost:7061",
 		"summary must mention the base URL")
 
 	// Challenges() returns the same count.
 	all := o.Challenges()
-	assert.Len(t, all, 18,
-		"Challenges() must return 18 entries")
+	assert.Len(t, all, 22,
+		"Challenges() must return 22 entries")
 }
 
 // --- Challenge Registry Integrity ---
@@ -268,7 +276,7 @@ func TestUserflowOrchestrator_SummaryFormat(
 				"UserFlow Orchestrator",
 				"summary must contain orchestrator label")
 			assert.Contains(t, summary,
-				"18 challenges",
+				"22 challenges",
 				"summary must contain challenge count")
 			assert.Contains(t, summary,
 				tt.baseURL,
@@ -329,8 +337,8 @@ func TestMainOrchestrator_UserflowCategory(
 			userflowCount++
 		}
 	}
-	assert.Equal(t, 18, userflowCount,
-		"all 18 helix-* challenges must be present")
+	assert.Equal(t, 22, userflowCount,
+		"all 22 helix-* challenges must be present")
 }
 
 // --- Duplicate Registration Guard ---

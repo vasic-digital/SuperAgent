@@ -8,7 +8,7 @@ import (
 
 // BenchmarkNewOrchestrator measures the cost of creating an
 // Orchestrator, including registry setup and registration of
-// all 18 challenges.
+// all 22 challenges.
 func BenchmarkNewOrchestrator(b *testing.B) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -56,11 +56,15 @@ func BenchmarkAllFlowConstruction(b *testing.B) {
 		_ = MultiTurnConversationFlow()
 		_ = ToolCallingFlow()
 		_ = ProviderFailoverFlow()
+		_ = WebSocketStreamingFlow()
+		_ = GRPCServiceFlow()
+		_ = RateLimitingFlow()
+		_ = PaginationFlow()
 	}
 }
 
 // BenchmarkChallengeConstructors measures the cost of
-// creating all 18 challenge objects via their constructors,
+// creating all 22 challenge objects via their constructors,
 // using a mock adapter.
 func BenchmarkChallengeConstructors(b *testing.B) {
 	var adapter mockAPIAdapter
@@ -127,6 +131,18 @@ func BenchmarkChallengeConstructors(b *testing.B) {
 		_ = NewProviderFailoverChallenge(
 			&adapter, providerDep,
 		)
+		_ = NewWebSocketStreamingChallenge(
+			&adapter, healthDep,
+		)
+		_ = NewGRPCServiceChallenge(
+			&adapter, healthDep,
+		)
+		_ = NewRateLimitingChallenge(
+			&adapter, healthDep,
+		)
+		_ = NewPaginationChallenge(
+			&adapter, healthDep,
+		)
 		_ = NewFullSystemChallenge(&adapter)
 	}
 }
@@ -140,9 +156,9 @@ func BenchmarkOrchestratorListChallenges(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ids := o.ListChallenges()
-		if len(ids) != 18 {
+		if len(ids) != 22 {
 			b.Fatalf(
-				"expected 18 challenges, got %d",
+				"expected 22 challenges, got %d",
 				len(ids),
 			)
 		}
@@ -158,9 +174,9 @@ func BenchmarkOrchestratorChallengeCount(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		n := o.ChallengeCount()
-		if n != 18 {
+		if n != 22 {
 			b.Fatalf(
-				"expected 18 challenges, got %d", n,
+				"expected 22 challenges, got %d", n,
 			)
 		}
 	}
@@ -190,9 +206,9 @@ func BenchmarkOrchestratorChallenges(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		cs := o.Challenges()
-		if len(cs) != 18 {
+		if len(cs) != 22 {
 			b.Fatalf(
-				"expected 18 challenges, got %d",
+				"expected 22 challenges, got %d",
 				len(cs),
 			)
 		}

@@ -167,7 +167,7 @@ make monitoring-reset-circuits / force-health-check
 - `bigdata/` — Infinite context, distributed memory, knowledge graph streaming
 - `optimization/` — gptcache, outlines, streaming, sglang, llamaindex, langchain
 - `verifier/` — Startup verification orchestrator and adapters
-- `challenges/` — HelixAgent-specific challenge implementations (plugin, infra bridge, shell adapter, 18 Go-native userflow challenges with dependency graph)
+- `challenges/` — HelixAgent-specific challenge implementations (plugin, infra bridge, shell adapter, 22 Go-native userflow challenges with dependency graph)
 - `adapters/` — Bridge layer connecting internal types to extracted modules (20+ adapter files with 75+ tests)
 
 ### Extracted Modules (submodules)

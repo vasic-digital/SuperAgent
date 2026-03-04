@@ -20,7 +20,7 @@ const (
 	userflowConcurrency     = 50
 	userflowHighConcurrency = 1000
 	userflowSequentialCount = 500
-	userflowExpectedCount   = 18
+	userflowExpectedCount   = 22
 )
 
 // TestOrchestrator_NewOrchestrator_ConcurrentCreation
@@ -163,7 +163,7 @@ type flowFunc struct {
 	fn   func()
 }
 
-// allFlowFunctions returns all 18 user flow constructor
+// allFlowFunctions returns all 22 user flow constructor
 // functions packaged for concurrent invocation.
 func allFlowFunctions() []flowFunc {
 	return []flowFunc{
@@ -221,11 +221,23 @@ func allFlowFunctions() []flowFunc {
 		{"ProviderFailoverFlow", func() {
 			userflow.ProviderFailoverFlow()
 		}},
+		{"WebSocketStreamingFlow", func() {
+			userflow.WebSocketStreamingFlow()
+		}},
+		{"GRPCServiceFlow", func() {
+			userflow.GRPCServiceFlow()
+		}},
+		{"RateLimitingFlow", func() {
+			userflow.RateLimitingFlow()
+		}},
+		{"PaginationFlow", func() {
+			userflow.PaginationFlow()
+		}},
 	}
 }
 
 // TestFlowConstruction_ConcurrentAllFlows verifies that
-// all 18 flow constructors can be invoked concurrently from
+// all 22 flow constructors can be invoked concurrently from
 // multiple goroutines without panics or data races.
 func TestFlowConstruction_ConcurrentAllFlows(
 	t *testing.T,
@@ -596,7 +608,7 @@ type flowValidator struct {
 	fn   func() (int, bool)
 }
 
-// allFlowValidators returns all 18 flow functions with
+// allFlowValidators returns all 22 flow functions with
 // structural validation of the returned steps.
 func allFlowValidators() []flowValidator {
 	return []flowValidator{
@@ -688,6 +700,27 @@ func allFlowValidators() []flowValidator {
 		}},
 		{"ProviderFailoverFlow", func() (int, bool) {
 			f := userflow.ProviderFailoverFlow()
+			return len(f.Steps),
+				validateAPISteps(f.Steps)
+		}},
+		{"WebSocketStreamingFlow",
+			func() (int, bool) {
+				f := userflow.WebSocketStreamingFlow()
+				return len(f.Steps),
+					validateAPISteps(f.Steps)
+			}},
+		{"GRPCServiceFlow", func() (int, bool) {
+			f := userflow.GRPCServiceFlow()
+			return len(f.Steps),
+				validateAPISteps(f.Steps)
+		}},
+		{"RateLimitingFlow", func() (int, bool) {
+			f := userflow.RateLimitingFlow()
+			return len(f.Steps),
+				validateAPISteps(f.Steps)
+		}},
+		{"PaginationFlow", func() (int, bool) {
+			f := userflow.PaginationFlow()
 			return len(f.Steps),
 				validateAPISteps(f.Steps)
 		}},

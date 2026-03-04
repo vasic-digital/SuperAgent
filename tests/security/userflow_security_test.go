@@ -694,6 +694,14 @@ func TestFlowSteps_NoPathTraversalInPaths(
 			userflow.ProviderFailoverFlow()},
 		{"ProviderDiscovery",
 			userflow.ProviderDiscoveryFlow("")},
+		{"WebSocketStreaming",
+			userflow.WebSocketStreamingFlow()},
+		{"GRPCService",
+			userflow.GRPCServiceFlow()},
+		{"RateLimiting",
+			userflow.RateLimitingFlow()},
+		{"Pagination",
+			userflow.PaginationFlow()},
 	}
 
 	for _, tt := range flows {
@@ -767,6 +775,14 @@ func TestFlowSteps_SafeHTTPMethods(t *testing.T) {
 			userflow.ProviderFailoverFlow()},
 		{"ProviderDiscovery",
 			userflow.ProviderDiscoveryFlow("")},
+		{"WebSocketStreaming",
+			userflow.WebSocketStreamingFlow()},
+		{"GRPCService",
+			userflow.GRPCServiceFlow()},
+		{"RateLimiting",
+			userflow.RateLimitingFlow()},
+		{"Pagination",
+			userflow.PaginationFlow()},
 	}
 
 	for _, tt := range flows {

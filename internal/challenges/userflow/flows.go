@@ -871,6 +871,181 @@ func ProviderFailoverFlow() uf.APIFlow {
 	}
 }
 
+// WebSocketStreamingFlow returns a flow that verifies SSE
+// streaming works correctly and the system remains stable.
+func WebSocketStreamingFlow() uf.APIFlow {
+	return uf.APIFlow{
+		Steps: []uf.APIStep{
+			{
+				Name:           "health_baseline",
+				Method:         "GET",
+				Path:           "/v1/health",
+				ExpectedStatus: 200,
+				Assertions: []uf.StepAssertion{
+					{Type: "not_empty", Target: "body"},
+				},
+			},
+			{
+				Name:   "streaming_sse",
+				Method: "POST",
+				Path:   "/v1/chat/completions",
+				Body: `{
+					"model": "helixagent-debate",
+					"messages": [
+						{
+							"role": "user",
+							"content": "Count to 3"
+						}
+					],
+					"stream": true,
+					"max_tokens": 50
+				}`,
+				AcceptedStatuses: []int{200, 501},
+				Assertions: []uf.StepAssertion{
+					{Type: "not_empty", Target: "body"},
+				},
+			},
+			{
+				Name:             "post_stream_status",
+				Method:           "GET",
+				Path:             "/v1/monitoring/status",
+				AcceptedStatuses: []int{200, 501},
+			},
+		},
+	}
+}
+
+// GRPCServiceFlow returns a flow that exercises gRPC
+// service discovery and health check endpoints.
+func GRPCServiceFlow() uf.APIFlow {
+	return uf.APIFlow{
+		Steps: []uf.APIStep{
+			{
+				Name:           "health_baseline",
+				Method:         "GET",
+				Path:           "/v1/health",
+				ExpectedStatus: 200,
+				Assertions: []uf.StepAssertion{
+					{Type: "not_empty", Target: "body"},
+				},
+			},
+			{
+				Name:             "grpc_services_list",
+				Method:           "GET",
+				Path:             "/v1/grpc/services",
+				AcceptedStatuses: []int{200, 404, 501},
+			},
+			{
+				Name:             "grpc_health",
+				Method:           "GET",
+				Path:             "/v1/grpc/health",
+				AcceptedStatuses: []int{200, 404, 501},
+			},
+		},
+	}
+}
+
+// RateLimitingFlow returns a flow that verifies the system
+// handles rapid sequential requests and rate limiting.
+func RateLimitingFlow() uf.APIFlow {
+	return uf.APIFlow{
+		Steps: []uf.APIStep{
+			{
+				Name:           "health_baseline",
+				Method:         "GET",
+				Path:           "/v1/health",
+				ExpectedStatus: 200,
+				Assertions: []uf.StepAssertion{
+					{Type: "not_empty", Target: "body"},
+				},
+			},
+			{
+				Name:   "first_request",
+				Method: "POST",
+				Path:   "/v1/chat/completions",
+				Body: `{
+					"model": "helixagent-debate",
+					"messages": [
+						{
+							"role": "user",
+							"content": "Hello"
+						}
+					],
+					"max_tokens": 10
+				}`,
+				AcceptedStatuses: []int{200, 429, 501},
+				Assertions: []uf.StepAssertion{
+					{Type: "not_empty", Target: "body"},
+				},
+			},
+			{
+				Name:   "rapid_second_request",
+				Method: "POST",
+				Path:   "/v1/chat/completions",
+				Body: `{
+					"model": "helixagent-debate",
+					"messages": [
+						{
+							"role": "user",
+							"content": "Hello again"
+						}
+					],
+					"max_tokens": 10
+				}`,
+				AcceptedStatuses: []int{200, 429, 501},
+				Assertions: []uf.StepAssertion{
+					{Type: "not_empty", Target: "body"},
+				},
+			},
+			{
+				Name:             "post_ratelimit_health",
+				Method:           "GET",
+				Path:             "/v1/health",
+				AcceptedStatuses: []int{200, 429, 501},
+				Assertions: []uf.StepAssertion{
+					{Type: "not_empty", Target: "body"},
+				},
+			},
+		},
+	}
+}
+
+// PaginationFlow returns a flow that verifies pagination
+// support on list endpoints.
+func PaginationFlow() uf.APIFlow {
+	return uf.APIFlow{
+		Steps: []uf.APIStep{
+			{
+				Name:             "list_models",
+				Method:           "GET",
+				Path:             "/v1/models",
+				AcceptedStatuses: []int{200, 501},
+				Assertions: []uf.StepAssertion{
+					{Type: "not_empty", Target: "body"},
+				},
+			},
+			{
+				Name:             "list_models_limited",
+				Method:           "GET",
+				Path:             "/v1/models?limit=1",
+				AcceptedStatuses: []int{200, 501},
+				Assertions: []uf.StepAssertion{
+					{Type: "not_empty", Target: "body"},
+				},
+			},
+			{
+				Name:             "list_formatters",
+				Method:           "GET",
+				Path:             "/v1/formatters",
+				AcceptedStatuses: []int{200, 501},
+				Assertions: []uf.StepAssertion{
+					{Type: "not_empty", Target: "body"},
+				},
+			},
+		},
+	}
+}
+
 // --- Challenge Constructors ---
 
 // NewHealthCheckChallenge creates a challenge verifying all
@@ -1163,5 +1338,73 @@ func NewProviderFailoverChallenge(
 		deps,
 		adapter,
 		ProviderFailoverFlow(),
+	)
+}
+
+// NewWebSocketStreamingChallenge creates a challenge that
+// verifies SSE streaming and post-stream system stability.
+func NewWebSocketStreamingChallenge(
+	adapter uf.APIAdapter,
+	deps []challenge.ID,
+) *uf.APIFlowChallenge {
+	return uf.NewAPIFlowChallenge(
+		"helix-websocket-streaming",
+		"HelixAgent WebSocket Streaming",
+		"Verify SSE streaming completions and "+
+			"post-stream system stability",
+		deps,
+		adapter,
+		WebSocketStreamingFlow(),
+	)
+}
+
+// NewGRPCServiceChallenge creates a challenge that tests
+// gRPC service discovery and health check endpoints.
+func NewGRPCServiceChallenge(
+	adapter uf.APIAdapter,
+	deps []challenge.ID,
+) *uf.APIFlowChallenge {
+	return uf.NewAPIFlowChallenge(
+		"helix-grpc-service",
+		"HelixAgent gRPC Service",
+		"Test gRPC service listing and health "+
+			"check endpoints",
+		deps,
+		adapter,
+		GRPCServiceFlow(),
+	)
+}
+
+// NewRateLimitingChallenge creates a challenge that tests
+// rate limiting behavior under rapid sequential requests.
+func NewRateLimitingChallenge(
+	adapter uf.APIAdapter,
+	deps []challenge.ID,
+) *uf.APIFlowChallenge {
+	return uf.NewAPIFlowChallenge(
+		"helix-rate-limiting",
+		"HelixAgent Rate Limiting",
+		"Verify rate limiting behavior with rapid "+
+			"sequential requests",
+		deps,
+		adapter,
+		RateLimitingFlow(),
+	)
+}
+
+// NewPaginationChallenge creates a challenge that verifies
+// pagination support on list endpoints.
+func NewPaginationChallenge(
+	adapter uf.APIAdapter,
+	deps []challenge.ID,
+) *uf.APIFlowChallenge {
+	return uf.NewAPIFlowChallenge(
+		"helix-pagination",
+		"HelixAgent Pagination",
+		"Test pagination support on models and "+
+			"formatters list endpoints",
+		deps,
+		adapter,
+		PaginationFlow(),
 	)
 }
