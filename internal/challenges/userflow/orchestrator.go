@@ -33,7 +33,11 @@ func NewOrchestrator(baseURL string) *Orchestrator {
 		baseURL:  baseURL,
 	}
 
-	o.registerChallenges()
+	if err := o.registerChallenges(); err != nil {
+		panic(fmt.Sprintf(
+			"userflow: register challenges: %v", err,
+		))
+	}
 
 	r := runner.NewRunner(
 		runner.WithRegistry(reg),
@@ -45,127 +49,82 @@ func NewOrchestrator(baseURL string) *Orchestrator {
 
 // registerChallenges registers all HelixAgent user flow
 // challenges with their dependency graph.
-func (o *Orchestrator) registerChallenges() {
+func (o *Orchestrator) registerChallenges() error {
 	healthDep := []challenge.ID{"helix-health-check"}
-
-	// Phase 1: Health (no dependencies)
-	_ = o.registry.Register(
-		NewHealthCheckChallenge(o.adapter),
-	)
-
-	// Phase 2: Feature flags (no dependencies, public)
-	_ = o.registry.Register(
-		NewFeatureFlagsChallenge(o.adapter),
-	)
-
-	// Phase 3: Provider discovery (depends on health)
-	_ = o.registry.Register(
-		NewProviderDiscoveryChallenge(
-			o.adapter, healthDep,
-		),
-	)
-
-	// Phase 4: Monitoring (depends on health)
-	_ = o.registry.Register(
-		NewMonitoringChallenge(o.adapter, healthDep),
-	)
-
-	// Phase 5: Code formatters (depends on health)
-	_ = o.registry.Register(
-		NewFormattersChallenge(o.adapter, healthDep),
-	)
-
-	// Phase 6: Chat completion (depends on providers)
 	providerDep := []challenge.ID{
 		"helix-provider-discovery",
 	}
-	_ = o.registry.Register(
-		NewChatCompletionChallenge(
-			o.adapter, providerDep,
-		),
-	)
-
-	// Phase 7: Streaming (depends on completion)
 	completionDep := []challenge.ID{
 		"helix-chat-completion",
 	}
-	_ = o.registry.Register(
-		NewStreamingCompletionChallenge(
-			o.adapter, completionDep,
-		),
-	)
-
-	// Phase 8: Embeddings (depends on providers)
-	_ = o.registry.Register(
-		NewEmbeddingsChallenge(
-			o.adapter, providerDep,
-		),
-	)
-
-	// Phase 9: Debate (depends on completion)
-	_ = o.registry.Register(
-		NewDebateChallenge(o.adapter, completionDep),
-	)
-
-	// Phase 10: MCP protocol (depends on health)
-	_ = o.registry.Register(
-		NewMCPChallenge(o.adapter, healthDep),
-	)
-
-	// Phase 11: RAG (depends on embeddings)
 	embeddingsDep := []challenge.ID{
 		"helix-embeddings",
 	}
-	_ = o.registry.Register(
-		NewRAGChallenge(o.adapter, embeddingsDep),
-	)
 
-	// Phase 12: Authentication (depends on health)
-	_ = o.registry.Register(
+	reg := func(c challenge.Challenge) error {
+		if err := o.registry.Register(c); err != nil {
+			return fmt.Errorf(
+				"register %s: %w", c.ID(), err,
+			)
+		}
+		return nil
+	}
+
+	challenges := []challenge.Challenge{
+		NewHealthCheckChallenge(o.adapter),
+		NewFeatureFlagsChallenge(o.adapter),
+		NewProviderDiscoveryChallenge(
+			o.adapter, healthDep,
+		),
+		NewMonitoringChallenge(
+			o.adapter, healthDep,
+		),
+		NewFormattersChallenge(
+			o.adapter, healthDep,
+		),
+		NewChatCompletionChallenge(
+			o.adapter, providerDep,
+		),
+		NewStreamingCompletionChallenge(
+			o.adapter, completionDep,
+		),
+		NewEmbeddingsChallenge(
+			o.adapter, providerDep,
+		),
+		NewDebateChallenge(
+			o.adapter, completionDep,
+		),
+		NewMCPChallenge(o.adapter, healthDep),
+		NewRAGChallenge(
+			o.adapter, embeddingsDep,
+		),
 		NewAuthenticationChallenge(
 			o.adapter, healthDep,
 		),
-	)
-
-	// Phase 13: Error handling (depends on health)
-	_ = o.registry.Register(
 		NewErrorHandlingChallenge(
 			o.adapter, healthDep,
 		),
-	)
-
-	// Phase 14: Concurrent users (depends on health)
-	_ = o.registry.Register(
 		NewConcurrentUsersChallenge(
 			o.adapter, healthDep,
 		),
-	)
-
-	// Phase 15: Multi-turn conversation (depends on completion)
-	_ = o.registry.Register(
 		NewMultiTurnConversationChallenge(
 			o.adapter, completionDep,
 		),
-	)
-
-	// Phase 16: Tool/function calling (depends on completion)
-	_ = o.registry.Register(
 		NewToolCallingChallenge(
 			o.adapter, completionDep,
 		),
-	)
-
-	// Phase 17: Provider failover (depends on discovery)
-	_ = o.registry.Register(
 		NewProviderFailoverChallenge(
 			o.adapter, providerDep,
 		),
-	)
-
-	// Full system flow (standalone, no deps)
-	_ = o.registry.Register(
 		NewFullSystemChallenge(o.adapter),
-	)
+	}
+
+	for _, c := range challenges {
+		if err := reg(c); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // RunAll executes all registered challenges in dependency
