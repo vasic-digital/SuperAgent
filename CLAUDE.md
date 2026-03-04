@@ -167,7 +167,7 @@ make monitoring-reset-circuits / force-health-check
 - `bigdata/` — Infinite context, distributed memory, knowledge graph streaming
 - `optimization/` — gptcache, outlines, streaming, sglang, llamaindex, langchain
 - `verifier/` — Startup verification orchestrator and adapters
-- `challenges/` — HelixAgent-specific challenge implementations (plugin, infra bridge, shell adapter)
+- `challenges/` — HelixAgent-specific challenge implementations (plugin, infra bridge, shell adapter, 18 Go-native userflow challenges with dependency graph)
 - `adapters/` — Bridge layer connecting internal types to extracted modules (20+ adapter files with 75+ tests)
 
 ### Extracted Modules (submodules)
@@ -215,7 +215,7 @@ Each module is an independent Go module with its own go.mod, tests, CLAUDE.md, A
 
 **Pre-existing:**
 - **Containers** (`Containers/`, `digital.vasic.containers`) — Generic container orchestration: runtime abstraction (Docker/Podman/K8s), health checking, compose orchestration, lifecycle management. 12 packages.
-- **Challenges** (`Challenges/`, `digital.vasic.challenges`) — Generic challenge framework: assertion engine (19 evaluators), registry, runner, reporting, monitoring, metrics, plugin system v2.0.0, userflow testing (API/browser/mobile/desktop/build adapters), Panoptic vision/recorder/testgen/error-analyzer adapters, AI test generation challenges. 15 packages.
+- **Challenges** (`Challenges/`, `digital.vasic.challenges`) — Generic challenge framework: assertion engine (19 evaluators), registry, runner, reporting, monitoring, metrics, plugin system v2.0.0, userflow testing (21 adapters across 8 interfaces: browser/mobile/desktop/API/gRPC/WebSocket/build), Panoptic vision/recorder/testgen/error-analyzer adapters, AI test generation challenges. 16 packages.
 
 ### Key Interfaces
 - `LLMProvider` — Provider contract (Complete, CompleteStream, HealthCheck, GetCapabilities, ValidateConfig)
@@ -368,7 +368,8 @@ Registry: `internal/agents/registry.go`. Generate configs: `./bin/helixagent --g
 ./challenges/scripts/debate_performance_optimizer_challenge.sh   # 36 tests
 ./challenges/scripts/helixmemory_challenge.sh                   # 80+ tests
 ./challenges/scripts/helixspecifier_challenge.sh                # 138 tests
-./challenges/scripts/userflow_comprehensive_challenge.sh        # 30+ tests
+./challenges/scripts/userflow_comprehensive_challenge.sh        # 30+ tests (shell)
+# Go-native userflow challenges (18): run with --run-challenges=userflow
 ```
 
 ## LLMsVerifier
