@@ -369,7 +369,7 @@ Registry: `internal/agents/registry.go`. Generate configs: `./bin/helixagent --g
 ./challenges/scripts/helixmemory_challenge.sh                   # 80+ tests
 ./challenges/scripts/helixspecifier_challenge.sh                # 138 tests
 ./challenges/scripts/userflow_comprehensive_challenge.sh        # 30+ tests (shell)
-# Go-native userflow challenges (18): run with --run-challenges=userflow
+# Go-native userflow challenges (22): run with --run-challenges=userflow
 ```
 
 ## LLMsVerifier
