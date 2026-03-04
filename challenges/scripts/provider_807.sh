@@ -1,4 +1,0 @@
-#!/bin/bash
-# Provider Challenge 807
-echo "🤖 Provider Challenge 807"
-echo "✅ Complete! +10 points"
