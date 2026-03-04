@@ -67,7 +67,17 @@ func TestOrchestrator_RegisterAll_WithScripts(t *testing.T) {
 	require.NoError(t, err)
 
 	list := o.List()
-	assert.Len(t, list, 2)
+	// 2 shell + 12 Go-native userflow challenges.
+	assert.Len(t, list, 14)
+
+	// Verify shell challenges are present.
+	idSet := make(map[string]bool)
+	for _, c := range list {
+		idSet[c.ID] = true
+	}
+	assert.True(t, idSet["provider-test-challenge"])
+	assert.True(t, idSet["security-scan-challenge"])
+	assert.True(t, idSet["helix-health-check"])
 }
 
 func TestOrchestrator_List_Empty(t *testing.T) {
@@ -102,6 +112,7 @@ func TestOrchestrator_Run_WithScripts(t *testing.T) {
 	o := NewOrchestrator(OrchestratorConfig{
 		ProjectRoot: dir,
 		ResultsDir:  filepath.Join(dir, "results"),
+		Category:    "shell",
 		Timeout:     10 * time.Second,
 	})
 	require.NoError(t, o.RegisterAll())
@@ -221,6 +232,7 @@ func TestDetectCategory(t *testing.T) {
 		{"unknown_challenge.sh", "shell"},
 		{"release_build_challenge.sh", "release"},
 		{"speckit_auto_activation_challenge.sh", "speckit"},
+		{"userflow_comprehensive_challenge.sh", "userflow"},
 	}
 
 	for _, tc := range tests {
@@ -296,6 +308,7 @@ func TestOrchestrator_Run_Parallel(t *testing.T) {
 		ResultsDir:     filepath.Join(dir, "results"),
 		Parallel:       true,
 		MaxConcurrency: 2,
+		Category:       "shell",
 		Timeout:        10 * time.Second,
 	})
 	require.NoError(t, o.RegisterAll())

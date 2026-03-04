@@ -167,6 +167,12 @@ func (o *Orchestrator) ListChallenges() []string {
 	return ids
 }
 
+// Challenges returns all registered challenges for use by
+// the main orchestrator.
+func (o *Orchestrator) Challenges() []challenge.Challenge {
+	return o.registry.List()
+}
+
 // Summary returns a summary string of the orchestrator state.
 func (o *Orchestrator) Summary() string {
 	return fmt.Sprintf(

@@ -12,6 +12,8 @@ import (
 	"digital.vasic.challenges/pkg/monitor"
 	"digital.vasic.challenges/pkg/registry"
 	"digital.vasic.challenges/pkg/runner"
+
+	"dev.helix.agent/internal/challenges/userflow"
 )
 
 // OrchestratorConfig holds settings for the challenge
@@ -54,6 +56,10 @@ type OrchestratorConfig struct {
 
 	// Timeout is the per-challenge timeout.
 	Timeout time.Duration
+
+	// BaseURL is the HelixAgent server URL for Go-native
+	// userflow challenges.
+	BaseURL string
 }
 
 // OrchestratorResult holds the outcome of an orchestrator run.
@@ -139,7 +145,8 @@ func NewOrchestrator(cfg OrchestratorConfig) *Orchestrator {
 	}
 }
 
-// RegisterAll discovers and registers all challenge scripts.
+// RegisterAll discovers and registers all challenge scripts
+// and Go-native userflow challenges.
 func (o *Orchestrator) RegisterAll() error {
 	scriptsDir := o.config.ScriptsDir
 	if scriptsDir == "" && o.config.ProjectRoot != "" {
@@ -151,9 +158,36 @@ func (o *Orchestrator) RegisterAll() error {
 		return fmt.Errorf("scripts directory not configured")
 	}
 
-	return RegisterShellChallengesEnhanced(
+	if err := RegisterShellChallengesEnhanced(
 		o.registry, scriptsDir, o.config.ProjectRoot,
-	)
+	); err != nil {
+		return err
+	}
+
+	// Register Go-native userflow challenges.
+	baseURL := o.config.BaseURL
+	if baseURL == "" {
+		baseURL = "http://localhost:7061"
+	}
+	ufOrch := userflow.NewOrchestrator(baseURL)
+	for _, c := range ufOrch.Challenges() {
+		// Override category so --run-challenges=userflow
+		// includes the Go-native challenges.
+		type categorySetter interface {
+			SetCategory(string)
+		}
+		if cs, ok := c.(categorySetter); ok {
+			cs.SetCategory("userflow")
+		}
+		if err := o.registry.Register(c); err != nil {
+			return fmt.Errorf(
+				"register userflow challenge %s: %w",
+				c.ID(), err,
+			)
+		}
+	}
+
+	return nil
 }
 
 // Run executes all registered challenges according to config.
@@ -364,7 +398,7 @@ func detectCategory(filename string) string {
 		"grpc_", "release_", "speckit_", "subscription_",
 		"verification_", "fallback_", "semantic_",
 		"integration_", "full_system_", "constitution_",
-		"challenge_module_",
+		"challenge_module_", "userflow_",
 	}
 	for _, p := range prefixes {
 		if strings.HasPrefix(filename, p) {
