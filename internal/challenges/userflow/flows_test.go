@@ -108,6 +108,60 @@ func TestFeatureFlagsFlow(t *testing.T) {
 	assert.Equal(t, "/v1/features", flow.Steps[0].Path)
 }
 
+func TestAuthenticationFlow(t *testing.T) {
+	flow := AuthenticationFlow()
+	assert.GreaterOrEqual(t, len(flow.Steps), 5,
+		"should have at least 5 auth steps")
+
+	assert.Equal(t, "login_valid", flow.Steps[0].Name)
+	assert.Equal(t, "POST", flow.Steps[0].Method)
+	assert.Equal(t, "/v1/auth/login", flow.Steps[0].Path)
+
+	// Bad credentials step should be last.
+	last := flow.Steps[len(flow.Steps)-1]
+	assert.Equal(t, "login_bad_credentials", last.Name)
+	assert.Contains(t, last.Body, "invalid")
+}
+
+func TestErrorHandlingFlow(t *testing.T) {
+	flow := ErrorHandlingFlow()
+	assert.GreaterOrEqual(t, len(flow.Steps), 5,
+		"should have at least 5 error handling steps")
+
+	// First step tests nonexistent model.
+	assert.Equal(t,
+		"nonexistent_model", flow.Steps[0].Name)
+	assert.Contains(t, flow.Steps[0].Body,
+		"no-such-model-xyz")
+
+	// Second step tests invalid JSON.
+	assert.Equal(t, "invalid_json", flow.Steps[1].Name)
+
+	// Should include a 404 endpoint test.
+	paths := make([]string, len(flow.Steps))
+	for i, s := range flow.Steps {
+		paths[i] = s.Path
+	}
+	assert.Contains(t, paths,
+		"/v1/nonexistent-endpoint")
+}
+
+func TestConcurrentUsersFlow(t *testing.T) {
+	flow := ConcurrentUsersFlow()
+	assert.GreaterOrEqual(t, len(flow.Steps), 5,
+		"should have at least 5 concurrent steps")
+
+	// Starts with baseline health.
+	assert.Equal(t, "baseline_health",
+		flow.Steps[0].Name)
+	assert.Equal(t, "/health", flow.Steps[0].Path)
+
+	// Ends with post-load health check.
+	last := flow.Steps[len(flow.Steps)-1]
+	assert.Equal(t, "post_load_health", last.Name)
+	assert.Equal(t, "/v1/health", last.Path)
+}
+
 func TestFullSystemFlow(t *testing.T) {
 	flow := FullSystemFlow()
 	assert.GreaterOrEqual(t, len(flow.Steps), 7,
@@ -201,6 +255,25 @@ func TestChallengeConstructors_NotNil(t *testing.T) {
 					&adapter, embeddingsDep,
 				)
 			}},
+		{"Authentication", "helix-authentication",
+			func() interface{} {
+				return NewAuthenticationChallenge(
+					&adapter, healthDep,
+				)
+			}},
+		{"ErrorHandling", "helix-error-handling",
+			func() interface{} {
+				return NewErrorHandlingChallenge(
+					&adapter, healthDep,
+				)
+			}},
+		{"ConcurrentUsers",
+			"helix-concurrent-users",
+			func() interface{} {
+				return NewConcurrentUsersChallenge(
+					&adapter, healthDep,
+				)
+			}},
 		{"FullSystem", "helix-full-system",
 			func() interface{} {
 				return NewFullSystemChallenge(&adapter)
@@ -225,14 +298,14 @@ func TestChallengeConstructors_NotNil(t *testing.T) {
 func TestOrchestratorConstruction(t *testing.T) {
 	o := NewOrchestrator("http://localhost:7061")
 	assert.NotNil(t, o)
-	assert.Equal(t, 12, o.ChallengeCount(),
-		"should register 12 challenges")
+	assert.Equal(t, 15, o.ChallengeCount(),
+		"should register 15 challenges")
 }
 
 func TestOrchestratorListChallenges(t *testing.T) {
 	o := NewOrchestrator("http://localhost:7061")
 	ids := o.ListChallenges()
-	assert.Len(t, ids, 12)
+	assert.Len(t, ids, 15)
 
 	// Verify key challenges are present.
 	idSet := make(map[string]bool)
@@ -247,7 +320,7 @@ func TestOrchestratorListChallenges(t *testing.T) {
 func TestOrchestratorSummary(t *testing.T) {
 	o := NewOrchestrator("http://localhost:7061")
 	summary := o.Summary()
-	assert.Contains(t, summary, "12 challenges")
+	assert.Contains(t, summary, "15 challenges")
 	assert.Contains(t, summary, "localhost:7061")
 }
 
@@ -309,4 +382,89 @@ func (m *mockAPIAdapter) Available(
 	_ context.Context,
 ) bool {
 	return false
+}
+
+func TestOrchestrator_Challenges(t *testing.T) {
+	o := NewOrchestrator("http://localhost:7061")
+	challenges := o.Challenges()
+	require.Len(t, challenges, 15,
+		"Challenges() must return all 15 challenges")
+
+	for _, c := range challenges {
+		_, ok := c.(challenge.Challenge)
+		assert.True(t, ok,
+			"challenge %s must implement Challenge",
+			c.ID(),
+		)
+	}
+}
+
+func TestOrchestrator_ChallengeCategories(t *testing.T) {
+	o := NewOrchestrator("http://localhost:7061")
+	challenges := o.Challenges()
+
+	for _, c := range challenges {
+		assert.Equal(t, "api", c.Category(),
+			"challenge %s category should be 'api'",
+			c.ID(),
+		)
+	}
+}
+
+func TestSetCategory_Override(t *testing.T) {
+	var adapter mockAPIAdapter
+	c := NewHealthCheckChallenge(&adapter)
+	assert.Equal(t, "api", c.Category(),
+		"initial category should be 'api'")
+
+	c.SetCategory("userflow")
+	assert.Equal(t, "userflow", c.Category(),
+		"category should be overridden to 'userflow'")
+}
+
+func TestOrchestrator_RunByID_NotFound(t *testing.T) {
+	o := NewOrchestrator("http://localhost:7061")
+	ctx := context.Background()
+
+	_, err := o.RunByID(ctx, "nonexistent-id")
+	require.Error(t, err,
+		"RunByID with unknown ID must return error")
+	assert.Contains(t, err.Error(),
+		"failed to get challenge",
+		"error should mention lookup failure")
+}
+
+func TestOrchestrator_RunAll_NoServer(t *testing.T) {
+	o := NewOrchestrator("http://localhost:7061")
+
+	ctx, cancel := context.WithCancel(
+		context.Background(),
+	)
+	cancel()
+
+	// Must not panic with a cancelled context.
+	results, err := o.RunAll(ctx)
+	_ = results
+	_ = err
+}
+
+func TestOrchestrator_RunByID_CancelledContext(
+	t *testing.T,
+) {
+	o := NewOrchestrator("http://localhost:7061")
+
+	ctx, cancel := context.WithCancel(
+		context.Background(),
+	)
+	cancel()
+
+	// Must not panic with a cancelled context.
+	result, err := o.RunByID(
+		ctx, "helix-health-check",
+	)
+	if err != nil {
+		return
+	}
+	require.NotNil(t, result,
+		"result must not be nil when err is nil")
 }

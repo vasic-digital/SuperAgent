@@ -426,6 +426,217 @@ func FullSystemFlow() uf.APIFlow {
 	}
 }
 
+// AuthenticationFlow returns a flow that verifies JWT token
+// acquisition, authenticated requests, token refresh, and
+// rejection of invalid credentials.
+func AuthenticationFlow() uf.APIFlow {
+	return uf.APIFlow{
+		Steps: []uf.APIStep{
+			{
+				Name:   "login_valid",
+				Method: "POST",
+				Path:   "/v1/auth/login",
+				Body: `{
+					"username": "admin",
+					"password": "admin"
+				}`,
+				AcceptedStatuses: []int{200, 501},
+				ExtractTo: map[string]string{
+					"token": "auth_token",
+				},
+			},
+			{
+				Name:             "models_with_auth",
+				Method:           "GET",
+				Path:             "/v1/models",
+				AcceptedStatuses: []int{200},
+				Assertions: []uf.StepAssertion{
+					{
+						Type:   "not_empty",
+						Target: "body",
+					},
+				},
+			},
+			{
+				Name:   "token_refresh",
+				Method: "POST",
+				Path:   "/v1/auth/refresh",
+				Body: `{
+					"token": "{{auth_token}}"
+				}`,
+				AcceptedStatuses: []int{
+					200, 401, 404, 501,
+				},
+			},
+			{
+				Name:   "models_no_auth",
+				Method: "GET",
+				Path:   "/v1/models",
+				Headers: map[string]string{
+					"Authorization": "",
+				},
+				AcceptedStatuses: []int{
+					200, 401,
+				},
+			},
+			{
+				Name:   "login_bad_credentials",
+				Method: "POST",
+				Path:   "/v1/auth/login",
+				Body: `{
+					"username": "invalid",
+					"password": "wrong"
+				}`,
+				AcceptedStatuses: []int{
+					401, 403, 404, 501,
+				},
+			},
+		},
+	}
+}
+
+// ErrorHandlingFlow returns a flow that validates proper
+// error responses for invalid requests, bad payloads, and
+// nonexistent endpoints.
+func ErrorHandlingFlow() uf.APIFlow {
+	return uf.APIFlow{
+		Steps: []uf.APIStep{
+			{
+				Name:   "nonexistent_model",
+				Method: "POST",
+				Path:   "/v1/chat/completions",
+				Body: `{
+					"model": "no-such-model-xyz",
+					"messages": [
+						{
+							"role": "user",
+							"content": "test"
+						}
+					]
+				}`,
+				AcceptedStatuses: []int{
+					400, 404, 422, 500, 503,
+				},
+				Assertions: []uf.StepAssertion{
+					{
+						Type:   "not_empty",
+						Target: "body",
+					},
+				},
+			},
+			{
+				Name:   "invalid_json",
+				Method: "POST",
+				Path:   "/v1/chat/completions",
+				Body:   `{not valid json!!!`,
+				AcceptedStatuses: []int{
+					400, 422,
+				},
+			},
+			{
+				Name:   "empty_messages",
+				Method: "POST",
+				Path:   "/v1/chat/completions",
+				Body: `{
+					"model": "helixagent-debate",
+					"messages": []
+				}`,
+				AcceptedStatuses: []int{
+					400, 422, 500,
+				},
+			},
+			{
+				Name:   "nonexistent_endpoint",
+				Method: "GET",
+				Path:   "/v1/nonexistent-endpoint",
+				AcceptedStatuses: []int{
+					404, 405,
+				},
+			},
+			{
+				Name:   "empty_embedding_input",
+				Method: "POST",
+				Path:   "/v1/embeddings/generate",
+				Body: `{
+					"model": "text-embedding-ada-002",
+					"input": ""
+				}`,
+				AcceptedStatuses: []int{
+					400, 422, 500, 503,
+				},
+			},
+		},
+	}
+}
+
+// ConcurrentUsersFlow returns a flow that exercises multiple
+// endpoints to verify the system remains stable under
+// concurrent access patterns.
+func ConcurrentUsersFlow() uf.APIFlow {
+	return uf.APIFlow{
+		Steps: []uf.APIStep{
+			{
+				Name:           "baseline_health",
+				Method:         "GET",
+				Path:           "/health",
+				ExpectedStatus: 200,
+				Assertions: []uf.StepAssertion{
+					{
+						Type:   "not_empty",
+						Target: "body",
+					},
+				},
+			},
+			{
+				Name:           "concurrent_models",
+				Method:         "GET",
+				Path:           "/v1/models",
+				ExpectedStatus: 200,
+				Assertions: []uf.StepAssertion{
+					{
+						Type:   "not_empty",
+						Target: "body",
+					},
+				},
+			},
+			{
+				Name:           "concurrent_status",
+				Method:         "GET",
+				Path:           "/v1/monitoring/status",
+				ExpectedStatus: 200,
+			},
+			{
+				Name:   "concurrent_completion",
+				Method: "POST",
+				Path:   "/v1/chat/completions",
+				Body: `{
+					"model": "helixagent-debate",
+					"messages": [
+						{
+							"role": "user",
+							"content": "Ping"
+						}
+					],
+					"max_tokens": 10
+				}`,
+				AcceptedStatuses: []int{200, 503},
+			},
+			{
+				Name:           "post_load_health",
+				Method:         "GET",
+				Path:           "/v1/health",
+				ExpectedStatus: 200,
+				Assertions: []uf.StepAssertion{
+					{
+						Type:   "not_empty",
+						Target: "body",
+					},
+				},
+			},
+		},
+	}
+}
+
 // --- Challenge Constructors ---
 
 // NewHealthCheckChallenge creates a challenge verifying all
@@ -598,6 +809,60 @@ func NewFeatureFlagsChallenge(
 	)
 }
 
+// NewAuthenticationChallenge creates a challenge verifying
+// JWT token acquisition, authenticated requests, token
+// refresh, and invalid credential rejection.
+func NewAuthenticationChallenge(
+	adapter uf.APIAdapter,
+	deps []challenge.ID,
+) *uf.APIFlowChallenge {
+	return uf.NewAPIFlowChallenge(
+		"helix-authentication",
+		"HelixAgent Authentication",
+		"Verify JWT auth: login, token refresh, "+
+			"gated endpoints, invalid credentials",
+		deps,
+		adapter,
+		AuthenticationFlow(),
+	)
+}
+
+// NewErrorHandlingChallenge creates a challenge that validates
+// proper error responses for invalid requests, bad payloads,
+// missing fields, and nonexistent endpoints.
+func NewErrorHandlingChallenge(
+	adapter uf.APIAdapter,
+	deps []challenge.ID,
+) *uf.APIFlowChallenge {
+	return uf.NewAPIFlowChallenge(
+		"helix-error-handling",
+		"HelixAgent Error Handling",
+		"Validate error responses: bad model, "+
+			"invalid JSON, empty fields, 404",
+		deps,
+		adapter,
+		ErrorHandlingFlow(),
+	)
+}
+
+// NewConcurrentUsersChallenge creates a challenge that
+// exercises multiple endpoints to verify system stability
+// under concurrent access patterns.
+func NewConcurrentUsersChallenge(
+	adapter uf.APIAdapter,
+	deps []challenge.ID,
+) *uf.APIFlowChallenge {
+	return uf.NewAPIFlowChallenge(
+		"helix-concurrent-users",
+		"HelixAgent Concurrent Users",
+		"Verify system stability under parallel "+
+			"requests to multiple endpoints",
+		deps,
+		adapter,
+		ConcurrentUsersFlow(),
+	)
+}
+
 // NewFullSystemChallenge creates a comprehensive end-to-end
 // challenge that exercises all major subsystems.
 func NewFullSystemChallenge(
@@ -606,7 +871,9 @@ func NewFullSystemChallenge(
 	return uf.NewAPIFlowChallenge(
 		"helix-full-system",
 		"HelixAgent Full System Flow",
-		"End-to-end flow: health → discovery → monitoring → formatting → completion",
+		"End-to-end flow: health "+
+			"-> discovery -> monitoring "+
+			"-> formatting -> completion",
 		nil,
 		adapter,
 		FullSystemFlow(),

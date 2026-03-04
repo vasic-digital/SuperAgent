@@ -120,6 +120,27 @@ func (o *Orchestrator) registerChallenges() {
 		NewRAGChallenge(o.adapter, embeddingsDep),
 	)
 
+	// Phase 12: Authentication (depends on health)
+	_ = o.registry.Register(
+		NewAuthenticationChallenge(
+			o.adapter, healthDep,
+		),
+	)
+
+	// Phase 13: Error handling (depends on health)
+	_ = o.registry.Register(
+		NewErrorHandlingChallenge(
+			o.adapter, healthDep,
+		),
+	)
+
+	// Phase 14: Concurrent users (depends on health)
+	_ = o.registry.Register(
+		NewConcurrentUsersChallenge(
+			o.adapter, healthDep,
+		),
+	)
+
 	// Full system flow (standalone, no deps)
 	_ = o.registry.Register(
 		NewFullSystemChallenge(o.adapter),

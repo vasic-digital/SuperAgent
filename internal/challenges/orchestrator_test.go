@@ -67,8 +67,8 @@ func TestOrchestrator_RegisterAll_WithScripts(t *testing.T) {
 	require.NoError(t, err)
 
 	list := o.List()
-	// 2 shell + 12 Go-native userflow challenges.
-	assert.Len(t, list, 14)
+	// 2 shell + 15 Go-native userflow challenges.
+	assert.Len(t, list, 17)
 
 	// Verify shell challenges are present.
 	idSet := make(map[string]bool)
