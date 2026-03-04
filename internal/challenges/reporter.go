@@ -49,7 +49,8 @@ func (r *Reporter) WriteResults(
 		return fmt.Errorf("write summary: %w", err)
 	}
 
-	// Write individual results.
+	// Write individual results (best-effort, do not fail
+	// the entire report for one bad entry).
 	for _, result := range results {
 		id := strings.ReplaceAll(
 			string(result.ChallengeID), "/", "_",
@@ -57,17 +58,30 @@ func (r *Reporter) WriteResults(
 		resultPath := filepath.Join(
 			dir, id+".json",
 		)
-		resultData, err := json.MarshalIndent(result, "", "  ")
-		if err != nil {
+		resultData, mErr := json.MarshalIndent(
+			result, "", "  ",
+		)
+		if mErr != nil {
 			continue
 		}
-		_ = os.WriteFile(resultPath, resultData, 0644) //nolint:errcheck
+		if wErr := os.WriteFile(
+			resultPath, resultData, 0644,
+		); wErr != nil {
+			fmt.Fprintf(os.Stderr,
+				"warning: write result %s: %v\n",
+				id, wErr,
+			)
+		}
 	}
 
-	// Update latest symlink.
+	// Update latest symlink (best-effort).
 	latestPath := filepath.Join(r.baseDir, "latest")
-	_ = os.Remove(latestPath)
-	_ = os.Symlink(dir, latestPath) //nolint:errcheck
+	os.Remove(latestPath)
+	if sErr := os.Symlink(dir, latestPath); sErr != nil {
+		fmt.Fprintf(os.Stderr,
+			"warning: symlink latest: %v\n", sErr,
+		)
+	}
 
 	return nil
 }
