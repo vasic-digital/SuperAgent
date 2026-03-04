@@ -162,6 +162,89 @@ func TestConcurrentUsersFlow(t *testing.T) {
 	assert.Equal(t, "/v1/health", last.Path)
 }
 
+func TestMultiTurnConversationFlow(t *testing.T) {
+	flow := MultiTurnConversationFlow()
+	require.Len(t, flow.Steps, 3,
+		"should have 3 multi-turn steps")
+
+	assert.Equal(t, "initial_message",
+		flow.Steps[0].Name)
+	assert.Equal(t, "follow_up",
+		flow.Steps[1].Name)
+	assert.Equal(t, "summarize",
+		flow.Steps[2].Name)
+
+	for _, step := range flow.Steps {
+		assert.Equal(t, "POST", step.Method)
+		assert.Equal(t,
+			"/v1/chat/completions", step.Path)
+		assert.NotEmpty(t, step.Body)
+		assert.Contains(t, step.AcceptedStatuses, 200)
+		assert.Contains(t, step.AcceptedStatuses, 501)
+	}
+}
+
+func TestToolCallingFlow(t *testing.T) {
+	flow := ToolCallingFlow()
+	require.Len(t, flow.Steps, 2,
+		"should have 2 tool calling steps")
+
+	assert.Equal(t, "tool_choice_call",
+		flow.Steps[0].Name)
+	assert.Contains(t, flow.Steps[0].Body,
+		"tool_choice")
+	assert.Contains(t, flow.Steps[0].Body,
+		"get_weather")
+
+	assert.Equal(t, "legacy_function_call",
+		flow.Steps[1].Name)
+	assert.Contains(t, flow.Steps[1].Body,
+		"function_call")
+	assert.Contains(t, flow.Steps[1].Body,
+		"calculate")
+
+	for _, step := range flow.Steps {
+		assert.Equal(t, "POST", step.Method)
+		assert.Contains(t,
+			step.AcceptedStatuses, 200)
+		assert.Contains(t,
+			step.AcceptedStatuses, 400)
+		assert.Contains(t,
+			step.AcceptedStatuses, 501)
+	}
+}
+
+func TestProviderFailoverFlow(t *testing.T) {
+	flow := ProviderFailoverFlow()
+	require.Len(t, flow.Steps, 4,
+		"should have 4 failover steps")
+
+	assert.Equal(t, "fallback_chain",
+		flow.Steps[0].Name)
+	assert.Equal(t, "GET", flow.Steps[0].Method)
+	assert.Equal(t,
+		"/v1/monitoring/fallback-chain",
+		flow.Steps[0].Path)
+
+	assert.Equal(t, "circuit_breakers",
+		flow.Steps[1].Name)
+	assert.Equal(t,
+		"/v1/monitoring/circuit-breakers",
+		flow.Steps[1].Path)
+
+	assert.Equal(t, "nonexistent_model_failover",
+		flow.Steps[2].Name)
+	assert.Equal(t, "POST", flow.Steps[2].Method)
+	assert.Contains(t, flow.Steps[2].Body,
+		"nonexistent-provider/fake-model")
+
+	assert.Equal(t, "post_failover_health",
+		flow.Steps[3].Name)
+	assert.Equal(t,
+		"/v1/monitoring/provider-health",
+		flow.Steps[3].Path)
+}
+
 func TestFullSystemFlow(t *testing.T) {
 	flow := FullSystemFlow()
 	assert.GreaterOrEqual(t, len(flow.Steps), 7,
@@ -278,6 +361,26 @@ func TestChallengeConstructors_NotNil(t *testing.T) {
 			func() interface{} {
 				return NewFullSystemChallenge(&adapter)
 			}},
+		{"MultiTurnConversation",
+			"helix-multi-turn",
+			func() interface{} {
+				return NewMultiTurnConversationChallenge(
+					&adapter, completionDep,
+				)
+			}},
+		{"ToolCalling", "helix-tool-calling",
+			func() interface{} {
+				return NewToolCallingChallenge(
+					&adapter, completionDep,
+				)
+			}},
+		{"ProviderFailover",
+			"helix-provider-failover",
+			func() interface{} {
+				return NewProviderFailoverChallenge(
+					&adapter, providerDep,
+				)
+			}},
 	}
 
 	for _, tt := range tests {
@@ -298,14 +401,14 @@ func TestChallengeConstructors_NotNil(t *testing.T) {
 func TestOrchestratorConstruction(t *testing.T) {
 	o := NewOrchestrator("http://localhost:7061")
 	assert.NotNil(t, o)
-	assert.Equal(t, 15, o.ChallengeCount(),
-		"should register 15 challenges")
+	assert.Equal(t, 18, o.ChallengeCount(),
+		"should register 18 challenges")
 }
 
 func TestOrchestratorListChallenges(t *testing.T) {
 	o := NewOrchestrator("http://localhost:7061")
 	ids := o.ListChallenges()
-	assert.Len(t, ids, 15)
+	assert.Len(t, ids, 18)
 
 	// Verify key challenges are present.
 	idSet := make(map[string]bool)
@@ -320,7 +423,7 @@ func TestOrchestratorListChallenges(t *testing.T) {
 func TestOrchestratorSummary(t *testing.T) {
 	o := NewOrchestrator("http://localhost:7061")
 	summary := o.Summary()
-	assert.Contains(t, summary, "15 challenges")
+	assert.Contains(t, summary, "18 challenges")
 	assert.Contains(t, summary, "localhost:7061")
 }
 
@@ -387,8 +490,8 @@ func (m *mockAPIAdapter) Available(
 func TestOrchestrator_Challenges(t *testing.T) {
 	o := NewOrchestrator("http://localhost:7061")
 	challenges := o.Challenges()
-	require.Len(t, challenges, 15,
-		"Challenges() must return all 15 challenges")
+	require.Len(t, challenges, 18,
+		"Challenges() must return all 18 challenges")
 
 	for _, c := range challenges {
 		_, ok := c.(challenge.Challenge)

@@ -141,6 +141,27 @@ func (o *Orchestrator) registerChallenges() {
 		),
 	)
 
+	// Phase 15: Multi-turn conversation (depends on completion)
+	_ = o.registry.Register(
+		NewMultiTurnConversationChallenge(
+			o.adapter, completionDep,
+		),
+	)
+
+	// Phase 16: Tool/function calling (depends on completion)
+	_ = o.registry.Register(
+		NewToolCallingChallenge(
+			o.adapter, completionDep,
+		),
+	)
+
+	// Phase 17: Provider failover (depends on discovery)
+	_ = o.registry.Register(
+		NewProviderFailoverChallenge(
+			o.adapter, providerDep,
+		),
+	)
+
 	// Full system flow (standalone, no deps)
 	_ = o.registry.Register(
 		NewFullSystemChallenge(o.adapter),

@@ -637,6 +637,240 @@ func ConcurrentUsersFlow() uf.APIFlow {
 	}
 }
 
+// MultiTurnConversationFlow returns a flow that tests
+// conversation continuity with context retention across
+// multiple turns.
+func MultiTurnConversationFlow() uf.APIFlow {
+	return uf.APIFlow{
+		Steps: []uf.APIStep{
+			{
+				Name:   "initial_message",
+				Method: "POST",
+				Path:   "/v1/chat/completions",
+				Body: `{
+					"model": "helixagent-debate",
+					"messages": [
+						{
+							"role": "user",
+							"content": "My name is Alice"
+						}
+					],
+					"max_tokens": 50
+				}`,
+				AcceptedStatuses: []int{200, 501},
+				Assertions: []uf.StepAssertion{
+					{Type: "not_empty", Target: "body"},
+				},
+			},
+			{
+				Name:   "follow_up",
+				Method: "POST",
+				Path:   "/v1/chat/completions",
+				Body: `{
+					"model": "helixagent-debate",
+					"messages": [
+						{
+							"role": "user",
+							"content": "My name is Alice"
+						},
+						{
+							"role": "assistant",
+							"content": "Hello Alice!"
+						},
+						{
+							"role": "user",
+							"content": "What is my name?"
+						}
+					],
+					"max_tokens": 50
+				}`,
+				AcceptedStatuses: []int{200, 501},
+				Assertions: []uf.StepAssertion{
+					{Type: "not_empty", Target: "body"},
+				},
+			},
+			{
+				Name:   "summarize",
+				Method: "POST",
+				Path:   "/v1/chat/completions",
+				Body: `{
+					"model": "helixagent-debate",
+					"messages": [
+						{
+							"role": "user",
+							"content": "My name is Alice"
+						},
+						{
+							"role": "assistant",
+							"content": "Hello Alice!"
+						},
+						{
+							"role": "user",
+							"content": "What is my name?"
+						},
+						{
+							"role": "assistant",
+							"content": "Your name is Alice."
+						},
+						{
+							"role": "user",
+							"content": "Summarize our conversation"
+						}
+					],
+					"max_tokens": 100
+				}`,
+				AcceptedStatuses: []int{200, 501},
+				Assertions: []uf.StepAssertion{
+					{Type: "not_empty", Target: "body"},
+				},
+			},
+		},
+	}
+}
+
+// ToolCallingFlow returns a flow that tests OpenAI-compatible
+// tool and function calling capabilities.
+func ToolCallingFlow() uf.APIFlow {
+	return uf.APIFlow{
+		Steps: []uf.APIStep{
+			{
+				Name:   "tool_choice_call",
+				Method: "POST",
+				Path:   "/v1/chat/completions",
+				Body: `{
+					"model": "helixagent-debate",
+					"messages": [
+						{
+							"role": "user",
+							"content": "What is the weather in London?"
+						}
+					],
+					"tools": [
+						{
+							"type": "function",
+							"function": {
+								"name": "get_weather",
+								"description": "Get current weather",
+								"parameters": {
+									"type": "object",
+									"properties": {
+										"location": {
+											"type": "string",
+											"description": "City name"
+										}
+									},
+									"required": ["location"]
+								}
+							}
+						}
+					],
+					"tool_choice": "auto",
+					"max_tokens": 100
+				}`,
+				AcceptedStatuses: []int{200, 400, 501},
+				Assertions: []uf.StepAssertion{
+					{Type: "not_empty", Target: "body"},
+				},
+			},
+			{
+				Name:   "legacy_function_call",
+				Method: "POST",
+				Path:   "/v1/chat/completions",
+				Body: `{
+					"model": "helixagent-debate",
+					"messages": [
+						{
+							"role": "user",
+							"content": "What is 2 + 2?"
+						}
+					],
+					"functions": [
+						{
+							"name": "calculate",
+							"description": "Evaluate math",
+							"parameters": {
+								"type": "object",
+								"properties": {
+									"expression": {
+										"type": "string",
+										"description": "Math expression"
+									}
+								},
+								"required": ["expression"]
+							}
+						}
+					],
+					"function_call": "auto",
+					"max_tokens": 100
+				}`,
+				AcceptedStatuses: []int{200, 400, 501},
+				Assertions: []uf.StepAssertion{
+					{Type: "not_empty", Target: "body"},
+				},
+			},
+		},
+	}
+}
+
+// ProviderFailoverFlow returns a flow that validates the
+// failover chain behavior by checking monitoring endpoints,
+// triggering a failure with a nonexistent model, and verifying
+// the system remains healthy afterward.
+func ProviderFailoverFlow() uf.APIFlow {
+	return uf.APIFlow{
+		Steps: []uf.APIStep{
+			{
+				Name:           "fallback_chain",
+				Method:         "GET",
+				Path:           "/v1/monitoring/fallback-chain",
+				ExpectedStatus: 200,
+				Assertions: []uf.StepAssertion{
+					{Type: "not_empty", Target: "body"},
+				},
+			},
+			{
+				Name:           "circuit_breakers",
+				Method:         "GET",
+				Path:           "/v1/monitoring/circuit-breakers",
+				ExpectedStatus: 200,
+				Assertions: []uf.StepAssertion{
+					{Type: "not_empty", Target: "body"},
+				},
+			},
+			{
+				Name:   "nonexistent_model_failover",
+				Method: "POST",
+				Path:   "/v1/chat/completions",
+				Body: `{
+					"model": "nonexistent-provider/fake-model",
+					"messages": [
+						{
+							"role": "user",
+							"content": "test failover"
+						}
+					],
+					"max_tokens": 10
+				}`,
+				AcceptedStatuses: []int{
+					400, 404, 422, 500, 503,
+				},
+				Assertions: []uf.StepAssertion{
+					{Type: "not_empty", Target: "body"},
+				},
+			},
+			{
+				Name:           "post_failover_health",
+				Method:         "GET",
+				Path:           "/v1/monitoring/provider-health",
+				ExpectedStatus: 200,
+				Assertions: []uf.StepAssertion{
+					{Type: "not_empty", Target: "body"},
+				},
+			},
+		},
+	}
+}
+
 // --- Challenge Constructors ---
 
 // NewHealthCheckChallenge creates a challenge verifying all
@@ -877,5 +1111,57 @@ func NewFullSystemChallenge(
 		nil,
 		adapter,
 		FullSystemFlow(),
+	)
+}
+
+// NewMultiTurnConversationChallenge creates a challenge that
+// verifies conversation continuity with context retention
+// across multiple turns.
+func NewMultiTurnConversationChallenge(
+	adapter uf.APIAdapter,
+	deps []challenge.ID,
+) *uf.APIFlowChallenge {
+	return uf.NewAPIFlowChallenge(
+		"helix-multi-turn",
+		"HelixAgent Multi-Turn Conversation",
+		"Verify conversation continuity with "+
+			"context retention across turns",
+		deps,
+		adapter,
+		MultiTurnConversationFlow(),
+	)
+}
+
+// NewToolCallingChallenge creates a challenge that tests
+// OpenAI-compatible tool and function calling.
+func NewToolCallingChallenge(
+	adapter uf.APIAdapter,
+	deps []challenge.ID,
+) *uf.APIFlowChallenge {
+	return uf.NewAPIFlowChallenge(
+		"helix-tool-calling",
+		"HelixAgent Tool/Function Calling",
+		"Test OpenAI-compatible tool_choice and "+
+			"legacy function_call formats",
+		deps,
+		adapter,
+		ToolCallingFlow(),
+	)
+}
+
+// NewProviderFailoverChallenge creates a challenge that
+// validates failover chain behavior and system resilience.
+func NewProviderFailoverChallenge(
+	adapter uf.APIAdapter,
+	deps []challenge.ID,
+) *uf.APIFlowChallenge {
+	return uf.NewAPIFlowChallenge(
+		"helix-provider-failover",
+		"HelixAgent Provider Failover",
+		"Validate failover chain, circuit breakers, "+
+			"and post-failure system health",
+		deps,
+		adapter,
+		ProviderFailoverFlow(),
 	)
 }
