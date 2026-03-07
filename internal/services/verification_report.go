@@ -290,7 +290,7 @@ func (g *VerificationReportGenerator) formatModelDetails(entry ModelReportEntry)
 
 func (g *VerificationReportGenerator) saveReport(content string) error {
 	dir := filepath.Dir(g.reportPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0750); err != nil { // #nosec G301
 		return fmt.Errorf("failed to create report directory: %w", err)
 	}
 

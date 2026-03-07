@@ -482,7 +482,7 @@ func encodeDNSName(name string) ([]byte, error) {
 		if len(label) > 63 {
 			return nil, fmt.Errorf("DNS label too long (%d > 63): %s", len(label), label)
 		}
-		buf = append(buf, byte(len(label)))
+		buf = append(buf, byte(len(label))) // #nosec G115 - len(label) <= 63, checked above
 		buf = append(buf, []byte(label)...)
 	}
 	buf = append(buf, 0x00) // Root label terminator
