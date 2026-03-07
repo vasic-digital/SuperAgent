@@ -428,7 +428,7 @@ func TestNewMCPClient(t *testing.T) {
 	require.NotNil(t, client)
 	assert.NotNil(t, client.servers)
 	assert.NotNil(t, client.tools)
-	assert.Equal(t, 1, client.messageID)
+	assert.Equal(t, int64(1), client.messageID.Load())
 	assert.NotNil(t, client.logger)
 }
 

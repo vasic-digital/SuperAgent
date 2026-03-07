@@ -1,6 +1,8 @@
 package background
 
 import (
+	"sync"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -228,17 +230,22 @@ func (m *WorkerPoolMetrics) UpdateQueueDepth(depths map[string]int64) {
 }
 
 // Global metrics instance for packages that don't have access to WorkerPool
-var globalMetrics *WorkerPoolMetrics
+var (
+	globalMetrics     *WorkerPoolMetrics
+	globalMetricsOnce sync.Once
+)
 
 // GetGlobalMetrics returns the global metrics instance, creating if necessary
 func GetGlobalMetrics() *WorkerPoolMetrics {
-	if globalMetrics == nil {
-		globalMetrics = NewWorkerPoolMetrics()
-	}
+	globalMetricsOnce.Do(func() {
+		if globalMetrics == nil {
+			globalMetrics = NewWorkerPoolMetrics()
+		}
+	})
 	return globalMetrics
 }
 
-// SetGlobalMetrics sets the global metrics instance
+// SetGlobalMetrics sets the global metrics instance (must be called before GetGlobalMetrics)
 func SetGlobalMetrics(metrics *WorkerPoolMetrics) {
 	globalMetrics = metrics
 }

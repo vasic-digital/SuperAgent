@@ -347,7 +347,18 @@ func (p *HTTPClientPool) Close() error {
 }
 
 // GlobalPool is the default global HTTP client pool
-var GlobalPool *HTTPClientPool
+var (
+	GlobalPool     *HTTPClientPool
+	globalPoolOnce sync.Once
+)
+
+func ensureGlobalPool() {
+	globalPoolOnce.Do(func() {
+		if GlobalPool == nil {
+			GlobalPool = NewHTTPClientPool(nil)
+		}
+	})
+}
 
 // InitGlobalPool initializes the global HTTP client pool
 func InitGlobalPool(config *PoolConfig) {
@@ -359,17 +370,13 @@ func InitGlobalPool(config *PoolConfig) {
 
 // Get performs a GET request using the global pool
 func Get(ctx context.Context, url string) (*http.Response, error) {
-	if GlobalPool == nil {
-		GlobalPool = NewHTTPClientPool(nil)
-	}
+	ensureGlobalPool()
 	return GlobalPool.Get(ctx, url)
 }
 
 // PostJSON performs a POST request with JSON content using the global pool
 func PostJSON(ctx context.Context, url string, body io.Reader) (*http.Response, error) {
-	if GlobalPool == nil {
-		GlobalPool = NewHTTPClientPool(nil)
-	}
+	ensureGlobalPool()
 	return GlobalPool.PostJSON(ctx, url, body)
 }
 

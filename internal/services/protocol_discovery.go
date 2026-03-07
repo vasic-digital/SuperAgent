@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -17,7 +18,7 @@ import (
 // ACPDiscoveryClient implements a real Agent Client Protocol client for discovery
 type ACPDiscoveryClient struct {
 	agents    map[string]*ACPAgentConnection
-	messageID int
+	messageID atomic.Int64
 	mu        sync.RWMutex
 	logger    *logrus.Logger
 }
@@ -101,11 +102,12 @@ type ACPActionResult struct {
 
 // NewACPDiscoveryClient creates a new ACP discovery client
 func NewACPDiscoveryClient(logger *logrus.Logger) *ACPDiscoveryClient {
-	return &ACPDiscoveryClient{
-		agents:    make(map[string]*ACPAgentConnection),
-		messageID: 1,
-		logger:    logger,
+	client := &ACPDiscoveryClient{
+		agents: make(map[string]*ACPAgentConnection),
+		logger: logger,
 	}
+	client.messageID.Store(1)
+	return client
 }
 
 // ConnectAgent connects to an ACP agent
@@ -415,8 +417,7 @@ func (c *ACPDiscoveryClient) initializeAgent(ctx context.Context, connection *AC
 }
 
 func (c *ACPDiscoveryClient) nextMessageID() int {
-	c.messageID++
-	return c.messageID
+	return int(c.messageID.Add(1))
 }
 
 func (c *ACPDiscoveryClient) unmarshalMessage(data interface{}, message *ACPMessage) error {

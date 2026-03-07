@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"dev.helix.agent/internal/models"
@@ -20,7 +21,7 @@ type LSPClient struct {
 	servers      map[string]*LSPServerConnection
 	capabilities map[string]*LSPCapabilities
 	diagnostics  map[string][]*ACPDiagnostic // URI -> diagnostics
-	messageID    int
+	messageID    atomic.Int64
 	mu           sync.RWMutex
 	logger       *logrus.Logger
 }
@@ -251,13 +252,14 @@ type Location struct {
 
 // NewLSPClient creates a new LSP client
 func NewLSPClient(logger *logrus.Logger) *LSPClient {
-	return &LSPClient{
+	client := &LSPClient{
 		servers:      make(map[string]*LSPServerConnection),
 		capabilities: make(map[string]*LSPCapabilities),
 		diagnostics:  make(map[string][]*ACPDiagnostic),
-		messageID:    1,
 		logger:       logger,
 	}
+	client.messageID.Store(1)
+	return client
 }
 
 // ConnectServer connects to an LSP server
@@ -913,8 +915,7 @@ func (c *LSPClient) initializeServer(ctx context.Context, connection *LSPServerC
 }
 
 func (c *LSPClient) nextMessageID() int {
-	c.messageID++
-	return c.messageID
+	return int(c.messageID.Add(1))
 }
 
 func (c *LSPClient) unmarshalMessage(data interface{}, message *LSPMessage) error {

@@ -77,7 +77,7 @@ func TestNewACPDiscoveryClient(t *testing.T) {
 
 	require.NotNil(t, client)
 	assert.NotNil(t, client.agents)
-	assert.Equal(t, 1, client.messageID)
+	assert.Equal(t, int64(1), client.messageID.Load())
 }
 
 func TestACPDiscoveryClient_ListAgents(t *testing.T) {
@@ -366,7 +366,7 @@ func TestNewLSPClient(t *testing.T) {
 	require.NotNil(t, client)
 	assert.NotNil(t, client.servers)
 	assert.NotNil(t, client.capabilities)
-	assert.Equal(t, 1, client.messageID)
+	assert.Equal(t, int64(1), client.messageID.Load())
 	assert.NotNil(t, client.logger)
 }
 

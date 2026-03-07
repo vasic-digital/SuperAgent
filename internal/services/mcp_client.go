@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os/exec"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -19,7 +20,7 @@ import (
 type MCPClient struct {
 	servers   map[string]*MCPServerConnection
 	tools     map[string]*MCPTool
-	messageID int
+	messageID atomic.Int64
 	mu        sync.RWMutex
 	logger    *logrus.Logger
 }
@@ -121,12 +122,13 @@ type MCPContent struct {
 
 // NewMCPClient creates a new MCP client
 func NewMCPClient(logger *logrus.Logger) *MCPClient {
-	return &MCPClient{
-		servers:   make(map[string]*MCPServerConnection),
-		tools:     make(map[string]*MCPTool),
-		messageID: 1,
-		logger:    logger,
+	client := &MCPClient{
+		servers: make(map[string]*MCPServerConnection),
+		tools:   make(map[string]*MCPTool),
+		logger:  logger,
 	}
+	client.messageID.Store(1)
+	return client
 }
 
 // ConnectServer connects to an MCP server
@@ -518,8 +520,7 @@ func (c *MCPClient) validateToolArguments(tool *MCPTool, arguments map[string]in
 }
 
 func (c *MCPClient) nextMessageID() int {
-	c.messageID++
-	return c.messageID
+	return int(c.messageID.Add(1))
 }
 
 func (c *MCPClient) unmarshalResponse(data interface{}, response *MCPResponse) error {
