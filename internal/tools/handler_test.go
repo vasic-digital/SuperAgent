@@ -80,8 +80,8 @@ func TestToolRegistry_Execute_ValidationError(t *testing.T) {
 	assert.False(t, result.Success)
 }
 
-func TestDefaultToolRegistry(t *testing.T) {
-	// Verify DefaultToolRegistry has handlers registered via init()
+func TestGetDefaultToolRegistry(t *testing.T) {
+	// Verify GetDefaultToolRegistry() has handlers registered via init()
 	expectedHandlers := []string{
 		"read_file", "git", "test", "lint", "diff", "treeview",
 		"fileinfo", "symbols", "references", "definition",
@@ -90,8 +90,8 @@ func TestDefaultToolRegistry(t *testing.T) {
 
 	for _, name := range expectedHandlers {
 		t.Run(name, func(t *testing.T) {
-			h, ok := DefaultToolRegistry.Get(name)
-			assert.True(t, ok, "DefaultToolRegistry should have %s handler", name)
+			h, ok := GetDefaultToolRegistry().Get(name)
+			assert.True(t, ok, "GetDefaultToolRegistry() should have %s handler", name)
 			assert.NotNil(t, h)
 		})
 	}

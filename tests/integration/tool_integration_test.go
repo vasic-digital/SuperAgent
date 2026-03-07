@@ -473,7 +473,7 @@ func TestToolRegistry_ExecuteBash(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	registry := tools.DefaultToolRegistry
+	registry := tools.GetDefaultToolRegistry()
 
 	// Get Git handler
 	handler, exists := registry.Get("Git")
@@ -495,7 +495,7 @@ func TestToolRegistry_ExecuteTest(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	registry := tools.DefaultToolRegistry
+	registry := tools.GetDefaultToolRegistry()
 
 	handler, exists := registry.Get("Test")
 	require.True(t, exists, "Test handler should exist")
@@ -517,7 +517,7 @@ func TestToolRegistry_ExecuteDiff(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	registry := tools.DefaultToolRegistry
+	registry := tools.GetDefaultToolRegistry()
 
 	handler, exists := registry.Get("Diff")
 	require.True(t, exists, "Diff handler should exist")
@@ -535,7 +535,7 @@ func TestToolRegistry_ExecuteTreeView(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	registry := tools.DefaultToolRegistry
+	registry := tools.GetDefaultToolRegistry()
 
 	handler, exists := registry.Get("TreeView")
 	require.True(t, exists, "TreeView handler should exist")
@@ -555,7 +555,7 @@ func TestToolRegistry_ExecuteSymbols(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	registry := tools.DefaultToolRegistry
+	registry := tools.GetDefaultToolRegistry()
 
 	handler, exists := registry.Get("Symbols")
 	require.True(t, exists, "Symbols handler should exist")
@@ -579,7 +579,7 @@ func TestToolRegistry_ExecuteReferences(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	registry := tools.DefaultToolRegistry
+	registry := tools.GetDefaultToolRegistry()
 
 	handler, exists := registry.Get("References")
 	require.True(t, exists, "References handler should exist")
@@ -597,7 +597,7 @@ func TestToolRegistry_ExecuteDefinition(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	registry := tools.DefaultToolRegistry
+	registry := tools.GetDefaultToolRegistry()
 
 	handler, exists := registry.Get("Definition")
 	require.True(t, exists, "Definition handler should exist")
@@ -614,7 +614,7 @@ func TestToolRegistry_ValidationBeforeExecution(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	registry := tools.DefaultToolRegistry
+	registry := tools.GetDefaultToolRegistry()
 
 	// Test that missing required fields are caught
 	handler, exists := registry.Get("Git")
@@ -643,7 +643,7 @@ func TestToolRegistry_ValidationBeforeExecution(t *testing.T) {
 }
 
 func TestToolRegistry_GenerateDefaultArgs(t *testing.T) {
-	registry := tools.DefaultToolRegistry
+	registry := tools.GetDefaultToolRegistry()
 
 	tests := []struct {
 		toolName string
@@ -1093,7 +1093,7 @@ func TestErrorHandling_TimeoutContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Immediately cancel
 
-	registry := tools.DefaultToolRegistry
+	registry := tools.GetDefaultToolRegistry()
 	handler, exists := registry.Get("Git")
 	require.True(t, exists, "Git handler should exist")
 
@@ -1402,7 +1402,7 @@ func TestFullIntegrationFlow_CLIAgentToToolExecution(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	registry := tools.DefaultToolRegistry
+	registry := tools.GetDefaultToolRegistry()
 	if handler, exists := registry.Get("Git"); exists {
 		// Use Git as a safer test command
 		result, err := handler.Execute(ctx, map[string]interface{}{

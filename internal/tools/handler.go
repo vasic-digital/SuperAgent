@@ -74,13 +74,9 @@ var (
 	defaultToolRegistryOnce sync.Once
 )
 
-// DefaultToolRegistry is the global tool registry with all built-in handlers,
+// GetDefaultToolRegistry returns the global tool registry with all built-in handlers,
 // initialized lazily on first access via sync.Once.
-var DefaultToolRegistry = getDefaultToolRegistry()
-
-// getDefaultToolRegistry returns the singleton default tool registry,
-// initializing it with all built-in handlers on the first call.
-func getDefaultToolRegistry() *ToolRegistry {
+func GetDefaultToolRegistry() *ToolRegistry {
 	defaultToolRegistryOnce.Do(func() {
 		r := NewToolRegistry()
 		r.Register(&ReadFileHandler{})
