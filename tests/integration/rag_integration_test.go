@@ -72,10 +72,7 @@ func createTestEmbeddingRegistry() *models.EmbeddingModelRegistry {
 
 // TestRAGPipeline_Integration tests the RAG pipeline with all components
 func TestRAGPipeline_Integration(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required
 
 	_ = context.Background() // Available for future use
 	registry := createTestEmbeddingRegistry()
@@ -130,10 +127,7 @@ func TestRAGPipeline_Integration(t *testing.T) {
 
 // TestAdvancedRAG_Integration tests advanced RAG techniques
 func TestAdvancedRAG_Integration(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required
 
 	ctx := context.Background()
 	registry := createTestEmbeddingRegistry()
@@ -226,10 +220,7 @@ func TestAdvancedRAG_Integration(t *testing.T) {
 
 // TestEmbeddingModelRegistry_Integration tests embedding model registry
 func TestEmbeddingModelRegistry_Integration(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required
 
 	ctx := context.Background()
 
@@ -276,10 +267,7 @@ func TestEmbeddingModelRegistry_Integration(t *testing.T) {
 
 // TestRAGWithAdvancedRAG_EndToEnd tests the complete RAG workflow
 func TestRAGWithAdvancedRAG_EndToEnd(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required
 
 	ctx := context.Background()
 
@@ -374,10 +362,7 @@ func TestRAGWithAdvancedRAG_EndToEnd(t *testing.T) {
 
 // TestConcurrentRAGOperations tests thread safety
 func TestConcurrentRAGOperations(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required
 
 	ctx := context.Background()
 	registry := createTestEmbeddingRegistry()

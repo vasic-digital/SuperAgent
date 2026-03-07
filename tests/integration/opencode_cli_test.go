@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/testutil"
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -501,12 +502,9 @@ func skipIfNoServer(t *testing.T, config *TestConfig) {
 
 // TestModelsEndpoint tests GET /v1/models
 func TestModelsEndpoint(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping live server test in short mode")
-	}
+	testutil.RequireServer(t)
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
-	skipIfNoServer(t, config)
 
 	t.Run("ListModels", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), APITimeout)
@@ -569,13 +567,9 @@ func TestModelsEndpoint(t *testing.T) {
 
 // TestChatCompletionsEndpoint tests POST /v1/chat/completions (non-streaming)
 func TestChatCompletionsEndpoint(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping chat completions test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
-	skipIfNoServer(t, config)
 
 	t.Run("SimpleChatCompletion", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), APITimeout)
@@ -776,13 +770,9 @@ func TestChatCompletionsEndpoint(t *testing.T) {
 
 // TestChatCompletionsStreamingEndpoint tests POST /v1/chat/completions with streaming
 func TestChatCompletionsStreamingEndpoint(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping streaming chat completions test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
-	skipIfNoServer(t, config)
 
 	t.Run("StreamingChatCompletion", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), StreamTimeout)
@@ -965,13 +955,9 @@ func TestChatCompletionsStreamingEndpoint(t *testing.T) {
 
 // TestOpenCodeConcurrentRequests tests multiple simultaneous requests for OpenCode CLI
 func TestOpenCodeConcurrentRequests(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping concurrent requests test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
-	skipIfNoServer(t, config)
 
 	t.Run("ParallelNonStreamingRequests", func(t *testing.T) {
 		numRequests := 5
@@ -1364,12 +1350,9 @@ func TestOpenCodeConfigValidation(t *testing.T) {
 
 // TestErrorHandling tests various error scenarios
 func TestErrorHandling(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping live server test in short mode")
-	}
+	testutil.RequireServer(t)
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
-	skipIfNoServer(t, config)
 
 	t.Run("InvalidModel", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), APITimeout)

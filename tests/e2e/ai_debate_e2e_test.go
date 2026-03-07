@@ -10,15 +10,14 @@ import (
 
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/services"
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // TestAIDebateSystem_E2E tests the complete AI debate system end-to-end
 func TestAIDebateSystem_E2E(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping E2E test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	// Create temporary directory for test configurations
 	tempDir, err := os.MkdirTemp("", "ai-debate-e2e-test")

@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,10 +21,7 @@ import (
 // properly sends the [DONE] marker at the end of the stream.
 // This is critical for OpenCode compatibility.
 func TestStreaming_OpenCode_DoneMarker(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 120 * time.Second}
 
@@ -92,10 +90,7 @@ func TestStreaming_OpenCode_DoneMarker(t *testing.T) {
 // TestStreaming_OpenCode_ChunkFormat tests that streaming chunks are
 // properly formatted according to OpenAI's SSE specification.
 func TestStreaming_OpenCode_ChunkFormat(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 60 * time.Second}
 
@@ -168,10 +163,7 @@ func TestStreaming_OpenCode_ChunkFormat(t *testing.T) {
 // TestStreaming_OpenCode_NoInfiniteLoop tests that the stream properly
 // terminates and doesn't loop infinitely (the bug that was reported).
 func TestStreaming_OpenCode_NoInfiniteLoop(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 90 * time.Second}
 
@@ -256,10 +248,7 @@ func TestStreaming_OpenCode_NoInfiniteLoop(t *testing.T) {
 // TestStreaming_OpenCode_Headers tests that the response has correct
 // SSE headers for proper client handling.
 func TestStreaming_OpenCode_Headers(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 30 * time.Second}
 

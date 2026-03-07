@@ -77,9 +77,7 @@ func AllExternalMCPServers() []ExternalMCPServerConfig {
 
 // TestExternalMCPServersSubmodulesExist verifies that the MCP server git submodules are properly initialized
 func TestExternalMCPServersSubmodulesExist(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping submodule check in short mode")
-	}
+
 
 	projectRoot := getExternalMCPProjectRoot()
 	require.NotEmpty(t, projectRoot, "Could not find project root")
@@ -110,9 +108,7 @@ func TestExternalMCPServersSubmodulesExist(t *testing.T) {
 
 // TestExternalMCPServerSourcesExist verifies that source code for all MCP servers exists
 func TestExternalMCPServerSourcesExist(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping source check in short mode")
-	}
+
 
 	projectRoot := getExternalMCPProjectRoot()
 	require.NotEmpty(t, projectRoot, "Could not find project root")
@@ -144,9 +140,7 @@ func TestExternalMCPServerSourcesExist(t *testing.T) {
 
 // TestExternalMCPContainerBuild verifies that the MCP servers container can be built
 func TestExternalMCPContainerBuild(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping container build in short mode")
-	}
+
 
 	projectRoot := getExternalMCPProjectRoot()
 	require.NotEmpty(t, projectRoot, "Could not find project root")
@@ -169,9 +163,7 @@ func TestExternalMCPContainerBuild(t *testing.T) {
 
 // TestExternalMCPContainerHealth verifies that the MCP servers container is healthy
 func TestExternalMCPContainerHealth(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping container health check in short mode")
-	}
+
 
 	// Check if container is running
 	runtime := detectContainerRuntime()
@@ -198,9 +190,7 @@ func TestExternalMCPContainerHealth(t *testing.T) {
 
 // TestExternalMCPServerConnectivity verifies that each MCP server can be connected to
 func TestExternalMCPServerConnectivity(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping connectivity test in short mode")
-	}
+
 
 	mcpHost := os.Getenv("MCP_HOST")
 	if mcpHost == "" {
@@ -236,9 +226,7 @@ func TestExternalMCPServerConnectivity(t *testing.T) {
 
 // TestExternalMCPServerJSONRPC verifies that MCP servers respond to JSON-RPC requests
 func TestExternalMCPServerJSONRPC(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping JSON-RPC test in short mode")
-	}
+
 
 	mcpHost := os.Getenv("MCP_HOST")
 	if mcpHost == "" {
@@ -298,9 +286,7 @@ func TestExternalMCPServerJSONRPC(t *testing.T) {
 
 // TestExternalMCPServerToolsList verifies that MCP servers list their tools
 func TestExternalMCPServerToolsList(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping tools list test in short mode")
-	}
+
 
 	mcpHost := os.Getenv("MCP_HOST")
 	if mcpHost == "" {
@@ -363,9 +349,7 @@ func detectContainerRuntime() string {
 
 // TestAllExternalMCPServersDocumented verifies that all MCP servers are documented
 func TestAllExternalMCPServersDocumented(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping documentation check in short mode")
-	}
+
 
 	projectRoot := getExternalMCPProjectRoot()
 	require.NotEmpty(t, projectRoot, "Could not find project root")
@@ -389,9 +373,7 @@ func TestAllExternalMCPServersDocumented(t *testing.T) {
 
 // TestExternalMCPServersInOpenCodeConfig verifies that all MCP servers are in the OpenCode config
 func TestExternalMCPServersInOpenCodeConfig(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping config check in short mode")
-	}
+
 
 	projectRoot := getExternalMCPProjectRoot()
 	require.NotEmpty(t, projectRoot, "Could not find project root")
@@ -425,9 +407,7 @@ func TestExternalMCPServersInOpenCodeConfig(t *testing.T) {
 // TestMCPContainerBuildNetworkConnectivity verifies that network connectivity
 // is available for container builds (needed for Alpine apk, npm, pip)
 func TestMCPContainerBuildNetworkConnectivity(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping network connectivity test in short mode")
-	}
+
 
 	// Test host-level network connectivity to Alpine repo
 	t.Run("AlpineRepository", func(t *testing.T) {
@@ -470,9 +450,7 @@ func TestMCPContainerBuildNetworkConnectivity(t *testing.T) {
 
 // TestMCPContainerNetworkDNSResolution verifies that container DNS resolution works
 func TestMCPContainerNetworkDNSResolution(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping container DNS test in short mode")
-	}
+
 
 	runtime := detectContainerRuntime()
 	if runtime == "" {

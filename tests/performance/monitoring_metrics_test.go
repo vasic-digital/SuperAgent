@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,9 +21,7 @@ const monitoringBaseURL = "http://localhost:7061"
 // TestMonitoringMetrics_UnderLoad verifies Prometheus metrics are
 // populated when the system processes requests.
 func TestMonitoringMetrics_UnderLoad(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping performance test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	// Generate 20 requests (keep resource limits low per CLAUDE.md §15)
 	client := &http.Client{Timeout: 5 * time.Second}
@@ -58,9 +57,7 @@ func TestMonitoringMetrics_UnderLoad(t *testing.T) {
 
 // TestMonitoringMetrics_HealthEndpoint verifies the health endpoint responds.
 func TestMonitoringMetrics_HealthEndpoint(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping performance test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Get(monitoringBaseURL + "/health")
@@ -72,9 +69,7 @@ func TestMonitoringMetrics_HealthEndpoint(t *testing.T) {
 // TestMonitoringMetrics_ConcurrentRequests verifies the system handles
 // concurrent requests without panicking.
 func TestMonitoringMetrics_ConcurrentRequests(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping performance test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	const numWorkers = 5
 	const requestsPerWorker = 4

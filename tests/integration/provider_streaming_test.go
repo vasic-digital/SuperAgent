@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -145,9 +146,6 @@ func getAPIKey(envKey string) string {
 
 // TestProviderStreamingOpenAICompatible tests streaming for OpenAI-compatible providers
 func TestProviderStreamingOpenAICompatible(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping live streaming provider test in short mode")
-	}
 	loadEnvFile(t)
 
 	providers := []ProviderConfig{
@@ -182,9 +180,6 @@ func TestProviderStreamingOpenAICompatible(t *testing.T) {
 
 // TestProviderNonStreamingOpenAICompatible tests non-streaming for OpenAI-compatible providers
 func TestProviderNonStreamingOpenAICompatible(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping live streaming provider test in short mode")
-	}
 	loadEnvFile(t)
 
 	providers := []ProviderConfig{
@@ -219,79 +214,42 @@ func TestProviderNonStreamingOpenAICompatible(t *testing.T) {
 
 // TestGeminiNativeStreaming tests Gemini's native API streaming
 func TestGeminiNativeStreaming(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping live streaming provider test in short mode")
-	}
 	loadEnvFile(t)
+	testutil.RequireAPIKey(t, "gemini")
 
 	apiKey := getAPIKey("GEMINI_API_KEY")
-	if apiKey == "" {
-		t.Skip("GEMINI_API_KEY not set")
-	}
 
 	testGeminiStreaming(t, apiKey, "gemini-2.0-flash")
 }
 
 // TestGeminiNativeNonStreaming tests Gemini's native API non-streaming
 func TestGeminiNativeNonStreaming(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping live streaming provider test in short mode")
-	}
 	loadEnvFile(t)
+	testutil.RequireAPIKey(t, "gemini")
 
 	apiKey := getAPIKey("GEMINI_API_KEY")
-	if apiKey == "" {
-		t.Skip("GEMINI_API_KEY not set")
-	}
 
 	testGeminiNonStreaming(t, apiKey, "gemini-2.0-flash")
 }
 
 // TestHelixAgentEnsembleStreaming tests HelixAgent's ensemble streaming
 func TestHelixAgentEnsembleStreaming(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping live streaming provider test in short mode")
-	}
 	loadEnvFile(t)
-
-	// Check if HelixAgent is running
-	resp, err := http.Get("http://localhost:7061/health")
-	if err != nil {
-		t.Skip("HelixAgent server not running")
-	}
-	resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		t.Skip("HelixAgent server not healthy")
-	}
+	testutil.RequireServer(t)
 
 	testHelixAgentStreaming(t)
 }
 
 // TestHelixAgentEnsembleNonStreaming tests HelixAgent's ensemble non-streaming
 func TestHelixAgentEnsembleNonStreaming(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping live streaming provider test in short mode")
-	}
 	loadEnvFile(t)
-
-	// Check if HelixAgent is running
-	resp, err := http.Get("http://localhost:7061/health")
-	if err != nil {
-		t.Skip("HelixAgent server not running")
-	}
-	resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		t.Skip("HelixAgent server not healthy")
-	}
+	testutil.RequireServer(t)
 
 	testHelixAgentNonStreaming(t)
 }
 
 // TestHTTPErrorHandling tests that providers properly handle HTTP errors
 func TestHTTPErrorHandling(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping live streaming provider test in short mode")
-	}
 	loadEnvFile(t)
 
 	t.Run("DeepSeek_InvalidAPIKey", func(t *testing.T) {
@@ -319,9 +277,6 @@ func TestHTTPErrorHandling(t *testing.T) {
 
 // TestAllProvidersParallel tests all providers in parallel
 func TestAllProvidersParallel(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping live streaming provider test in short mode")
-	}
 	loadEnvFile(t)
 
 	var wg sync.WaitGroup
@@ -943,9 +898,6 @@ func testGeminiStreamingQuiet(t *testing.T, apiKey, model string) bool {
 
 // TestStreamingContentIntegrity verifies streaming returns correct content
 func TestStreamingContentIntegrity(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping live streaming provider test in short mode")
-	}
 	loadEnvFile(t)
 
 	testCases := []struct {
@@ -1035,15 +987,10 @@ func TestStreamingContentIntegrity(t *testing.T) {
 
 // TestStreamingTimeout tests that streaming handles timeouts properly
 func TestStreamingTimeout(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping live streaming provider test in short mode")
-	}
 	loadEnvFile(t)
+	testutil.RequireAPIKey(t, "deepseek")
 
 	apiKey := getAPIKey("DEEPSEEK_API_KEY")
-	if apiKey == "" {
-		t.Skip("DEEPSEEK_API_KEY not set")
-	}
 
 	// Use a very short timeout
 	client := &http.Client{Timeout: 100 * time.Millisecond}

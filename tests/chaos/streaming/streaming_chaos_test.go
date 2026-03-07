@@ -14,6 +14,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 const baseURL = "http://localhost:7061"
@@ -31,12 +33,7 @@ func checkAvailable(url string) bool {
 // TestStreamingChaos_AbruptDisconnect opens streaming connections and drops them
 // at random points to verify the server handles client disconnections.
 func TestStreamingChaos_AbruptDisconnect(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	var wg sync.WaitGroup
 	var attemptCount, disconnectCount int64
@@ -105,12 +102,7 @@ func TestStreamingChaos_AbruptDisconnect(t *testing.T) {
 // TestStreamingChaos_SlowConsumer tests server behavior with a slow consumer
 // that reads very slowly from the SSE stream.
 func TestStreamingChaos_SlowConsumer(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	var wg sync.WaitGroup
 	var successCount int64
@@ -164,12 +156,7 @@ func TestStreamingChaos_SlowConsumer(t *testing.T) {
 
 // TestStreamingChaos_ConcurrentStreams opens many concurrent SSE streams.
 func TestStreamingChaos_ConcurrentStreams(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	var wg sync.WaitGroup
 	var openedCount, errorCount int64
@@ -216,12 +203,7 @@ func TestStreamingChaos_ConcurrentStreams(t *testing.T) {
 // TestStreamingChaos_MixedStreamingAndNonStreaming sends interleaved
 // streaming and non-streaming requests concurrently.
 func TestStreamingChaos_MixedStreamingAndNonStreaming(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	var wg sync.WaitGroup
 	var streamCount, nonStreamCount int64

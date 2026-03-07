@@ -702,9 +702,7 @@ func TestMemoryAdapterBasicOperations(t *testing.T) {
 
 // TestFetchAdapterBasicOperations tests fetch adapter functionality
 func TestFetchAdapterBasicOperations(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping fetch adapter tests in short mode")
-	}
+	// Integration test — no external deps required
 
 	config := servers.FetchAdapterConfig{
 		UserAgent:       "HelixAgent-Test/1.0",

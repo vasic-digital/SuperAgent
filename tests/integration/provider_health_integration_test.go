@@ -171,10 +171,6 @@ func TestProviderHealthAlert_Types(t *testing.T) {
 
 // TestIntegration_HealthMonitorsCanStart verifies both health monitors can start
 func TestIntegration_HealthMonitorsCanStart(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-
 	logger := logrus.New()
 	logger.SetOutput(os.Stdout)
 	logger.SetLevel(logrus.ErrorLevel) // Suppress info logs during test

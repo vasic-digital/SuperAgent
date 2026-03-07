@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -86,9 +87,7 @@ func TestServerHealthCheck(t *testing.T) {
 
 // TestInfrastructureStartStop tests infrastructure start/stop (integration)
 func TestInfrastructureStartStop(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping infrastructure integration test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	if os.Getenv("CI") == "true" {
 		t.Skip("Skipping infrastructure test in CI")

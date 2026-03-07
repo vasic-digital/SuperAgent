@@ -5,25 +5,18 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"os"
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // skipIfNoServer skips the test if HelixAgent server is not running
 func skipIfNoServer(t *testing.T) {
-	if os.Getenv("SKIP_E2E") == "true" {
-		t.Skip("Skipping E2E test (SKIP_E2E=true)")
-	}
-
-	// Check if server is running
-	resp, err := http.Get("http://localhost:7061/health")
-	if err != nil || resp.StatusCode != 200 {
-		t.Skip("Skipping E2E test (server not running on localhost:7061)")
-	}
+	t.Helper()
+	testutil.RequireServer(t)
 }
 
 type DebateParticipant struct {

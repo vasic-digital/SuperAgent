@@ -161,6 +161,42 @@ func (p *PostgresDB) QueryRow(query string, args ...any) Row {
 	return &pgxRow{row: row}
 }
 
+// PingContext performs a ping with the provided context.
+func (p *PostgresDB) PingContext(ctx context.Context) error {
+	return p.pool.Ping(ctx)
+}
+
+// ExecContext executes a query with the provided context.
+func (p *PostgresDB) ExecContext(ctx context.Context, query string, args ...any) error {
+	_, err := p.pool.Exec(ctx, query, args...)
+	return err
+}
+
+// QueryContext executes a query with the provided context and returns results.
+func (p *PostgresDB) QueryContext(ctx context.Context, query string, args ...any) ([]any, error) {
+	rows, err := p.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []any
+	for rows.Next() {
+		values, err := rows.Values()
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, values)
+	}
+	return results, nil
+}
+
+// QueryRowContext executes a single-row query with the provided context.
+func (p *PostgresDB) QueryRowContext(ctx context.Context, query string, args ...any) Row {
+	row := p.pool.QueryRow(ctx, query, args...)
+	return &pgxRow{row: row}
+}
+
 func (p *PostgresDB) Close() error {
 	if p.client != nil {
 		return p.client.Close()

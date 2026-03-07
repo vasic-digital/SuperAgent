@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 // StressTestConfig holds configuration for stress tests
@@ -49,20 +51,14 @@ func checkServerAvailable(baseURL string, timeout time.Duration) bool {
 
 // TestVerifierStress performs stress testing on verifier endpoints
 func TestVerifierStress(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping stress test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	config := StressTestConfig{
-		BaseURL:     "http://localhost:7061",
+		BaseURL:     testutil.ServerURL(),
 		Concurrency: 50,
 		Duration:    30 * time.Second,
 		RequestRate: 100,
 		Timeout:     30 * time.Second,
-	}
-
-	if !checkServerAvailable(config.BaseURL, 5*time.Second) {
-		t.Skip("Skipping stress test - server not available at " + config.BaseURL)
 	}
 
 	t.Run("VerifyEndpointStress", func(t *testing.T) {
@@ -110,19 +106,13 @@ func TestVerifierStress(t *testing.T) {
 
 // TestVerifierConcurrency tests concurrent request handling
 func TestVerifierConcurrency(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping stress test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	config := StressTestConfig{
-		BaseURL:     "http://localhost:7061",
+		BaseURL:     testutil.ServerURL(),
 		Concurrency: 100,
 		Duration:    10 * time.Second,
 		Timeout:     30 * time.Second,
-	}
-
-	if !checkServerAvailable(config.BaseURL, 5*time.Second) {
-		t.Skip("Skipping stress test - server not available at " + config.BaseURL)
 	}
 
 	t.Run("ConcurrentVerifications", func(t *testing.T) {
@@ -221,18 +211,12 @@ func TestVerifierConcurrency(t *testing.T) {
 
 // TestVerifierBurstLoad tests burst load handling
 func TestVerifierBurstLoad(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping stress test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	config := StressTestConfig{
-		BaseURL:     "http://localhost:7061",
+		BaseURL:     testutil.ServerURL(),
 		Concurrency: 200,
 		Timeout:     30 * time.Second,
-	}
-
-	if !checkServerAvailable(config.BaseURL, 5*time.Second) {
-		t.Skip("Skipping stress test - server not available at " + config.BaseURL)
 	}
 
 	t.Run("BurstVerifyRequests", func(t *testing.T) {
@@ -279,19 +263,13 @@ func TestVerifierBurstLoad(t *testing.T) {
 
 // TestVerifierMemoryStress tests memory usage under load
 func TestVerifierMemoryStress(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping stress test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	config := StressTestConfig{
-		BaseURL:     "http://localhost:7061",
+		BaseURL:     testutil.ServerURL(),
 		Concurrency: 50,
 		Duration:    15 * time.Second,
 		Timeout:     30 * time.Second,
-	}
-
-	if !checkServerAvailable(config.BaseURL, 5*time.Second) {
-		t.Skip("Skipping stress test - server not available at " + config.BaseURL)
 	}
 
 	t.Run("MemoryUsageUnderLoad", func(t *testing.T) {
@@ -341,18 +319,12 @@ func TestVerifierMemoryStress(t *testing.T) {
 
 // TestVerifierBatchStress tests batch verification under stress
 func TestVerifierBatchStress(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping stress test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	config := StressTestConfig{
-		BaseURL:     "http://localhost:7061",
+		BaseURL:     testutil.ServerURL(),
 		Concurrency: 20,
 		Timeout:     60 * time.Second,
-	}
-
-	if !checkServerAvailable(config.BaseURL, 5*time.Second) {
-		t.Skip("Skipping stress test - server not available at " + config.BaseURL)
 	}
 
 	t.Run("ConcurrentBatchVerifications", func(t *testing.T) {

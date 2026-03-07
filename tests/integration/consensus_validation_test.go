@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -47,15 +48,7 @@ func consensusServerAvailable(t *testing.T) bool {
 // is NOT empty when making a real API request
 // THIS TEST WILL FAIL if the consensus generation is broken
 func TestConsensusNotEmpty_EndToEnd(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
-
-	// Check if server is running
-	if !consensusServerAvailable(t) {
-		return
-	}
+	testutil.RequireServer(t)
 
 	var client *http.Client
 	var resp *http.Response
@@ -175,15 +168,7 @@ func TestConsensusNotEmpty_EndToEnd(t *testing.T) {
 
 // TestConsensusHasSubstantiveContent validates that the consensus is not just filler text
 func TestConsensusHasSubstantiveContent(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
-
-	// Check if server is running
-	if !consensusServerAvailable(t) {
-		return
-	}
+	testutil.RequireServer(t)
 
 	var client *http.Client
 	var resp *http.Response
@@ -264,15 +249,7 @@ func TestConsensusHasSubstantiveContent(t *testing.T) {
 
 // TestAllDebatePositionsHaveRealResponses validates each position has actual LLM responses
 func TestAllDebatePositionsHaveRealResponses(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
-
-	// Check if server is running
-	if !consensusServerAvailable(t) {
-		return
-	}
+	testutil.RequireServer(t)
 
 	var client *http.Client
 	var resp *http.Response

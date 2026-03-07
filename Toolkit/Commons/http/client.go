@@ -91,13 +91,13 @@ func (c *Client) AddResponseInterceptor(interceptor ResponseInterceptor) {
 
 // DoRequest performs an HTTP request with retry logic and interceptors.
 func (c *Client) DoRequest(ctx context.Context, method, endpoint string, payload interface{}, result interface{}) error {
-	var body io.Reader
+	var jsonData []byte
 	if payload != nil {
-		jsonData, err := json.Marshal(payload)
+		var err error
+		jsonData, err = json.Marshal(payload)
 		if err != nil {
 			return fmt.Errorf("failed to marshal payload: %w", err)
 		}
-		body = bytes.NewBuffer(jsonData)
 	}
 
 	url := c.baseURL + endpoint
@@ -108,6 +108,11 @@ func (c *Client) DoRequest(ctx context.Context, method, endpoint string, payload
 			if err := c.rateLimiter.Wait(ctx); err != nil {
 				return fmt.Errorf("rate limit error: %w", err)
 			}
+		}
+
+		var body io.Reader
+		if jsonData != nil {
+			body = bytes.NewBuffer(jsonData)
 		}
 
 		req, err := http.NewRequestWithContext(ctx, method, url, body)
@@ -143,26 +148,33 @@ func (c *Client) DoRequest(ctx context.Context, method, endpoint string, payload
 		}
 
 		// Apply response interceptors
+		var interceptorErr error
 		for _, interceptor := range c.responseInterceptors {
 			if err := interceptor(resp); err != nil {
-				resp.Body.Close()
-				return fmt.Errorf("response interceptor error: %w", err)
+				interceptorErr = fmt.Errorf("response interceptor error: %w", err)
+				break
 			}
 		}
 
-		defer resp.Body.Close()
+		if interceptorErr != nil {
+			resp.Body.Close()
+			return interceptorErr
+		}
 
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 			if result != nil {
 				if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
+					resp.Body.Close()
 					return fmt.Errorf("failed to decode response: %w", err)
 				}
 			}
+			resp.Body.Close()
 			return nil
 		}
 
 		// Handle error responses
 		bodyBytes, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
 		lastErr = fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
 
 		// Retry on server errors or rate limits

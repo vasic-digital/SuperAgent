@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -34,25 +35,10 @@ func mcpAuthCheckHelper(t *testing.T, client *http.Client, baseURL string) {
 // TestE2EMCPSSE tests MCP SSE endpoint end-to-end
 // Note: These tests require a running HelixAgent server on localhost:7061
 func TestE2EMCPSSE(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping E2E MCP SSE test in short mode")
-	}
+	testutil.RequireServer(t)
 
-	baseURL := "http://localhost:7061"
+	baseURL := testutil.ServerURL()
 	client := &http.Client{Timeout: 60 * time.Second}
-
-	// Check if server is running
-	resp, err := client.Get(baseURL + "/health")
-	if err != nil {
-		t.Skipf("Skipping E2E test: HelixAgent server not running at %s. Start server with 'make run-dev'", baseURL)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Skipf("Skipping E2E test: Server at %s returned status %d", baseURL, resp.StatusCode)
-	}
-
-	t.Logf("HelixAgent server is running at %s", baseURL)
 
 	// Check if MCP endpoint requires authentication before running tests
 	mcpAuthCheckHelper(t, client, baseURL)
@@ -273,19 +259,10 @@ func TestE2EMCPSSE(t *testing.T) {
 
 // TestE2EAllProtocolsSSE tests all protocol SSE endpoints
 func TestE2EAllProtocolsSSE(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping E2E all protocols SSE test in short mode")
-	}
+	testutil.RequireServer(t)
 
-	baseURL := "http://localhost:7061"
+	baseURL := testutil.ServerURL()
 	client := &http.Client{Timeout: 60 * time.Second}
-
-	// Check if server is running
-	resp, err := client.Get(baseURL + "/health")
-	if err != nil {
-		t.Skipf("Skipping E2E test: HelixAgent server not running at %s", baseURL)
-	}
-	defer resp.Body.Close()
 
 	// Check if protocol endpoints require authentication
 	mcpAuthCheckHelper(t, client, baseURL)
@@ -370,19 +347,10 @@ func TestE2EAllProtocolsSSE(t *testing.T) {
 
 // TestE2ECLIAgentIntegration tests CLI agent integration (OpenCode, Crush, HelixCode)
 func TestE2ECLIAgentIntegration(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping E2E CLI agent test in short mode")
-	}
+	testutil.RequireServer(t)
 
-	baseURL := "http://localhost:7061"
+	baseURL := testutil.ServerURL()
 	client := &http.Client{Timeout: 60 * time.Second}
-
-	// Check if server is running
-	resp, err := client.Get(baseURL + "/health")
-	if err != nil {
-		t.Skipf("Skipping E2E test: HelixAgent server not running at %s", baseURL)
-	}
-	defer resp.Body.Close()
 
 	// Check if MCP endpoint requires authentication
 	mcpAuthCheckHelper(t, client, baseURL)
@@ -558,19 +526,10 @@ func TestE2ECLIAgentIntegration(t *testing.T) {
 
 // TestE2EMCPSSEConcurrency tests concurrent MCP SSE connections
 func TestE2EMCPSSEConcurrency(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping E2E MCP SSE concurrency test in short mode")
-	}
+	testutil.RequireServer(t)
 
-	baseURL := "http://localhost:7061"
+	baseURL := testutil.ServerURL()
 	client := &http.Client{Timeout: 60 * time.Second}
-
-	// Check if server is running
-	resp, err := client.Get(baseURL + "/health")
-	if err != nil {
-		t.Skipf("Skipping E2E test: HelixAgent server not running at %s", baseURL)
-	}
-	defer resp.Body.Close()
 
 	// Check if MCP endpoint requires authentication
 	mcpAuthCheckHelper(t, client, baseURL)
@@ -634,19 +593,10 @@ func TestE2EMCPSSEConcurrency(t *testing.T) {
 
 // TestE2EMCPSSEConnection tests actual SSE connection behavior
 func TestE2EMCPSSEConnection(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping E2E MCP SSE connection test in short mode")
-	}
+	testutil.RequireServer(t)
 
-	baseURL := "http://localhost:7061"
+	baseURL := testutil.ServerURL()
 	client := &http.Client{Timeout: 60 * time.Second}
-
-	// Check if server is running
-	resp, err := client.Get(baseURL + "/health")
-	if err != nil {
-		t.Skipf("Skipping E2E test: HelixAgent server not running at %s", baseURL)
-	}
-	defer resp.Body.Close()
 
 	// Check if MCP endpoint requires authentication
 	mcpAuthCheckHelper(t, client, baseURL)

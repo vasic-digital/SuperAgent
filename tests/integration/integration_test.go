@@ -12,14 +12,13 @@ import (
 	"dev.helix.agent/internal/database"
 	"dev.helix.agent/internal/handlers"
 	"dev.helix.agent/internal/services"
+	"dev.helix.agent/internal/testutil"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
 
 func TestMultiProviderIntegration(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping multi-provider integration test in short mode (makes live API calls)")
-	}
+	testutil.RequirePostgres(t)
 	// Setup test configuration
 	cfg := &config.Config{
 		Server: config.ServerConfig{

@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 // ChaosTestConfig holds configuration for chaos tests
@@ -36,19 +38,13 @@ func checkServerAvailable(baseURL string, timeout time.Duration) bool {
 
 // TestVerifierChaos performs chaos testing on verifier service
 func TestVerifierChaos(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	config := ChaosTestConfig{
 		BaseURL:     "http://localhost:7061",
 		Timeout:     30 * time.Second,
 		Concurrency: 50,
 		Duration:    20 * time.Second,
-	}
-
-	if !checkServerAvailable(config.BaseURL, 5*time.Second) {
-		t.Skip("Skipping chaos test - server not available at " + config.BaseURL)
 	}
 
 	t.Run("RandomRequestPatterns", func(t *testing.T) {
@@ -432,17 +428,11 @@ func runRecoveryAfterFailure(t *testing.T, config ChaosTestConfig) {
 
 // TestVerifierCircuitBreaker tests circuit breaker behavior
 func TestVerifierCircuitBreaker(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	config := ChaosTestConfig{
 		BaseURL: "http://localhost:7061",
 		Timeout: 30 * time.Second,
-	}
-
-	if !checkServerAvailable(config.BaseURL, 5*time.Second) {
-		t.Skip("Skipping chaos test - server not available at " + config.BaseURL)
 	}
 
 	t.Run("CircuitBreakerTrip", func(t *testing.T) {
@@ -474,18 +464,12 @@ func TestVerifierCircuitBreaker(t *testing.T) {
 
 // TestVerifierResourceExhaustion tests behavior under resource pressure
 func TestVerifierResourceExhaustion(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	config := ChaosTestConfig{
 		BaseURL:     "http://localhost:7061",
 		Timeout:     30 * time.Second,
 		Concurrency: 100,
-	}
-
-	if !checkServerAvailable(config.BaseURL, 5*time.Second) {
-		t.Skip("Skipping chaos test - server not available at " + config.BaseURL)
 	}
 
 	t.Run("MaxConnections", func(t *testing.T) {

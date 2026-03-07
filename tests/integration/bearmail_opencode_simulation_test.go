@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -159,10 +160,7 @@ func bearMailSkipIfNotRunning(t *testing.T) {
 // 3. Multi-provider debate works correctly
 // 4. No premature termination
 func TestBearMailOpenCodeConversation(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping long-running OpenCode simulation test")
-		return
-	}
+	testutil.RequireServer(t)
 	if !bearMailServiceAvailable(t) {
 		return
 	}
@@ -326,10 +324,7 @@ If there's already an AGENTS.md, improve it if it's located in /run/media/milosv
 
 // TestBearMailContentQuality verifies the AI doesn't hallucinate project structure
 func TestBearMailContentQuality(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping long-running test")
-		return
-	}
+	testutil.RequireServer(t)
 	if !bearMailServiceAvailable(t) {
 		return
 	}
@@ -406,10 +401,7 @@ func TestBearMailContentQuality(t *testing.T) {
 
 // TestBearMailResponseCompleteness ensures no premature cutoffs
 func TestBearMailResponseCompleteness(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping long-running test")
-		return
-	}
+	testutil.RequireServer(t)
 	if !bearMailServiceAvailable(t) {
 		return
 	}
@@ -527,10 +519,7 @@ Make sure to complete ALL sections. Do not stop mid-section.`,
 
 // TestBearMailMultiProviderParticipation verifies all providers contribute
 func TestBearMailMultiProviderParticipation(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping long-running test")
-		return
-	}
+	testutil.RequireServer(t)
 	if !bearMailServiceAvailable(t) {
 		return
 	}
@@ -799,10 +788,7 @@ func truncate(s string, maxLen int) string {
 
 // TestBearMailStreamingContentIntegrity verifies no content interleaving from multiple providers
 func TestBearMailStreamingContentIntegrity(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping long-running test")
-		return
-	}
+	testutil.RequireServer(t)
 	if !bearMailServiceAvailable(t) {
 		return
 	}
@@ -927,10 +913,7 @@ func TestBearMailStreamingContentIntegrity(t *testing.T) {
 
 // TestBearMailStreamingFormatValidity verifies proper SSE streaming format
 func TestBearMailStreamingFormatValidity(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping long-running test")
-		return
-	}
+	testutil.RequireServer(t)
 	if !bearMailServiceAvailable(t) {
 		return
 	}
@@ -1115,10 +1098,7 @@ func TestBearMailStreamingFormatValidity(t *testing.T) {
 // TestOpenCodeToolCallFormat verifies responses contain properly formatted tool calls
 // that OpenCode clients can parse and execute
 func TestOpenCodeToolCallFormat(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping long-running test")
-		return
-	}
+	testutil.RequireServer(t)
 	if !bearMailServiceAvailable(t) {
 		return
 	}
@@ -1235,10 +1215,7 @@ func TestOpenCodeToolCallFormat(t *testing.T) {
 
 // TestResponseContentValidity verifies responses are valid and coherent
 func TestResponseContentValidity(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping long-running test")
-		return
-	}
+	testutil.RequireServer(t)
 	if !bearMailServiceAvailable(t) {
 		return
 	}
@@ -1334,10 +1311,7 @@ func TestResponseContentValidity(t *testing.T) {
 
 // TestBearMailNoResponseCutoff verifies responses complete without premature termination
 func TestBearMailNoResponseCutoff(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping long-running test")
-		return
-	}
+	testutil.RequireServer(t)
 	if !bearMailServiceAvailable(t) {
 		return
 	}

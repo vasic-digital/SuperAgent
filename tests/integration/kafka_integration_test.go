@@ -14,21 +14,12 @@ import (
 
 	"dev.helix.agent/internal/messaging"
 	"dev.helix.agent/internal/messaging/kafka"
+	"dev.helix.agent/internal/testutil"
 )
 
 // skipIfNoKafka skips the test if Kafka infrastructure is not available
 func skipIfNoKafka(t *testing.T) *kafka.Broker {
 	t.Helper()
-
-	// Skip in short mode - these tests require external Kafka infrastructure
-	if testing.Short() {
-		t.Skip("Skipping Kafka integration test in short mode")
-	}
-
-	// Skip if KAFKA_ENABLED env var is explicitly set to false
-	if os.Getenv("KAFKA_ENABLED") == "false" {
-		t.Skip("Skipping Kafka integration test - KAFKA_ENABLED=false")
-	}
 
 	kafkaHost := os.Getenv("KAFKA_HOST")
 	if kafkaHost == "" {
@@ -38,6 +29,7 @@ func skipIfNoKafka(t *testing.T) *kafka.Broker {
 	if kafkaPort == "" {
 		kafkaPort = "9092"
 	}
+	testutil.RequireExternalService(t, "kafka", kafkaHost, kafkaPort)
 
 	cfg := &kafka.Config{
 		Brokers:            []string{kafkaHost + ":" + kafkaPort},

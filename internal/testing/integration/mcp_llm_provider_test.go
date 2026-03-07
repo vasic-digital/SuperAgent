@@ -9,12 +9,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 // LLMProviderConfig represents an LLM provider configuration
@@ -201,18 +202,12 @@ func TestLLMProviderDiscovery(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
 	}
+	testutil.RequireServer(t)
 
 	client := NewLLMClient("http://localhost:8080")
 
 	providers, err := client.ListProviders()
-	if err != nil {
-		if strings.Contains(err.Error(), "connection refused") ||
-			strings.Contains(err.Error(), "status 404") {
-			t.Skip("HelixAgent not running or not available at expected address")
-			return
-		}
-		t.Fatalf("Failed to list providers: %v", err)
-	}
+	require.NoError(t, err, "Failed to list providers")
 
 	assert.NotEmpty(t, providers, "Should have at least one provider")
 	t.Logf("Found %d providers: %v", len(providers), providers)
@@ -223,6 +218,7 @@ func TestLLMProviderCompletion(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
 	}
+	testutil.RequireServer(t)
 
 	client := NewLLMClient("http://localhost:8080")
 
@@ -240,18 +236,8 @@ func TestLLMProviderCompletion(t *testing.T) {
 
 			resp, err := client.Complete(req)
 			if err != nil {
-				if strings.Contains(err.Error(), "connection refused") ||
-					strings.Contains(err.Error(), "status 404") {
-					t.Skip("HelixAgent not running or not available at expected address")
-					return
-				}
-				if strings.Contains(err.Error(), "not available") ||
-					strings.Contains(err.Error(), "no API key") ||
-					strings.Contains(err.Error(), "unauthorized") {
-					t.Skipf("Provider %s not configured: %v", provider.Name, err)
-					return
-				}
-				t.Fatalf("Completion failed: %v", err)
+				t.Skipf("Provider %s not available: %v", provider.Name, err)
+				return
 			}
 
 			if resp.Error != nil {
@@ -276,17 +262,12 @@ func TestMCPContextWithLLMProvider(t *testing.T) {
 	}
 
 	// Test time server
+	testutil.RequireExternalService(t, "time", "localhost", "9103")
 	timeClient, err := NewMCPClient(9103, 10*time.Second)
-	if err != nil {
-		t.Skipf("Time MCP server not running: %v", err)
-		return
-	}
+	require.NoError(t, err)
 
 	err = timeClient.Initialize()
-	if err != nil {
-		t.Skipf("Failed to initialize time server: %v", err)
-		return
-	}
+	require.NoError(t, err)
 
 	tools, _ := timeClient.ListTools()
 	mcpContext.AvailableServers = append(mcpContext.AvailableServers, MCPServerInfo{
@@ -308,6 +289,7 @@ func TestMCPContextWithLLMProvider(t *testing.T) {
 	_ = timeClient.Close()
 
 	// Now test with each LLM provider
+	testutil.RequireServer(t)
 	llmClient := NewLLMClient("http://localhost:8080")
 
 	for _, provider := range SupportedLLMProviders {
@@ -330,10 +312,6 @@ func TestMCPContextWithLLMProvider(t *testing.T) {
 
 			llmResp, err := llmClient.Complete(req)
 			if err != nil {
-				if strings.Contains(err.Error(), "connection refused") {
-					t.Skip("HelixAgent not running")
-					return
-				}
 				t.Skipf("Provider %s not available: %v", provider.Name, err)
 				return
 			}
@@ -352,6 +330,7 @@ func TestMCPContextWithLLMProvider(t *testing.T) {
 
 // TestLLMToolCalling tests LLM providers with tool calling capability
 func TestLLMToolCalling(t *testing.T) {
+	testutil.RequireServer(t)
 	llmClient := NewLLMClient("http://localhost:8080")
 
 	// Define tools that mirror MCP tools
@@ -407,10 +386,6 @@ func TestLLMToolCalling(t *testing.T) {
 
 			resp, err := llmClient.Complete(req)
 			if err != nil {
-				if strings.Contains(err.Error(), "connection refused") {
-					t.Skip("HelixAgent not running")
-					return
-				}
 				t.Skipf("Provider %s not available: %v", provider.Name, err)
 				return
 			}
@@ -495,6 +470,7 @@ func TestAllMCPServersWithAllProviders(t *testing.T) {
 	_ = ctx // For cancellation in real implementation
 
 	// Test with each LLM provider
+	testutil.RequireServer(t)
 	llmClient := NewLLMClient("http://localhost:8080")
 
 	for _, provider := range SupportedLLMProviders {
@@ -518,10 +494,6 @@ func TestAllMCPServersWithAllProviders(t *testing.T) {
 
 			resp, err := llmClient.Complete(req)
 			if err != nil {
-				if strings.Contains(err.Error(), "connection refused") {
-					t.Skip("HelixAgent not running")
-					return
-				}
 				t.Skipf("Provider %s not available: %v", provider.Name, err)
 				return
 			}

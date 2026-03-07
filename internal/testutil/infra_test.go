@@ -1,0 +1,131 @@
+package testutil
+
+import (
+	"os"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestDefaultInfraConfig(t *testing.T) {
+	cfg := DefaultInfraConfig()
+	assert.Equal(t, "localhost", cfg.PostgresHost)
+	assert.Equal(t, "15432", cfg.PostgresPort)
+	assert.Equal(t, "localhost", cfg.RedisHost)
+	assert.Equal(t, "16379", cfg.RedisPort)
+	assert.Equal(t, "localhost", cfg.MockLLMHost)
+	assert.Equal(t, "18081", cfg.MockLLMPort)
+	assert.Equal(t, "localhost", cfg.ServerHost)
+	assert.Equal(t, "7061", cfg.ServerPort)
+}
+
+func TestDefaultInfraConfig_EnvOverride(t *testing.T) {
+	t.Setenv("DB_HOST", "dbhost")
+	t.Setenv("DB_PORT", "5432")
+	t.Setenv("REDIS_HOST", "redishost")
+	t.Setenv("REDIS_PORT", "6379")
+
+	// Reset cache so env vars take effect
+	infraMu.Lock()
+	infraResults = make(map[string]bool)
+	infraMu.Unlock()
+
+	cfg := DefaultInfraConfig()
+	assert.Equal(t, "dbhost", cfg.PostgresHost)
+	assert.Equal(t, "5432", cfg.PostgresPort)
+	assert.Equal(t, "redishost", cfg.RedisHost)
+	assert.Equal(t, "6379", cfg.RedisPort)
+}
+
+func TestEnvOr(t *testing.T) {
+	assert.Equal(t, "fallback", envOr("NONEXISTENT_TEST_VAR_12345", "fallback"))
+
+	t.Setenv("TEST_ENVVAR_INFRA", "custom")
+	assert.Equal(t, "custom", envOr("TEST_ENVVAR_INFRA", "fallback"))
+}
+
+func TestCheckTCP_Unreachable(t *testing.T) {
+	// Port 1 is almost certainly not listening
+	result := checkTCP("127.0.0.1", "1", 100*1000*1000) // 100ms as Duration
+	assert.False(t, result)
+}
+
+func TestCachedCheck(t *testing.T) {
+	// Reset cache
+	infraMu.Lock()
+	delete(infraResults, "test_cached")
+	infraMu.Unlock()
+
+	callCount := 0
+	checker := func() bool {
+		callCount++
+		return true
+	}
+
+	// First call should invoke checker
+	result := cachedCheck("test_cached", checker)
+	assert.True(t, result)
+	assert.Equal(t, 1, callCount)
+
+	// Second call should use cache
+	result = cachedCheck("test_cached", checker)
+	assert.True(t, result)
+	assert.Equal(t, 1, callCount, "checker should not be called twice")
+
+	// Cleanup
+	infraMu.Lock()
+	delete(infraResults, "test_cached")
+	infraMu.Unlock()
+}
+
+func TestServerURL(t *testing.T) {
+	url := ServerURL()
+	assert.Contains(t, url, "http://")
+	assert.Contains(t, url, "7061")
+}
+
+func TestPostgresDSN(t *testing.T) {
+	dsn := PostgresDSN()
+	assert.Contains(t, dsn, "postgres://")
+	assert.Contains(t, dsn, "sslmode=disable")
+}
+
+func TestRedisAddr(t *testing.T) {
+	addr := RedisAddr()
+	assert.Contains(t, addr, ":")
+}
+
+func TestRedisPassword(t *testing.T) {
+	pass := RedisPassword()
+	assert.NotEmpty(t, pass)
+}
+
+func TestRequireEnv_Missing(t *testing.T) {
+	// This should skip, not fail
+	mockT := &testing.T{}
+	// We can't directly test t.Skip behavior, but we verify the env check
+	val := os.Getenv("DEFINITELY_NOT_SET_ENV_VAR_XYZ123")
+	assert.Empty(t, val)
+	_ = mockT // used to show the pattern
+}
+
+func TestShortTimeout(t *testing.T) {
+	ctx, cancel := ShortTimeout(t)
+	defer cancel()
+	assert.NotNil(t, ctx)
+	deadline, ok := ctx.Deadline()
+	assert.True(t, ok)
+	assert.False(t, deadline.IsZero())
+}
+
+func TestMediumTimeout(t *testing.T) {
+	ctx, cancel := MediumTimeout(t)
+	defer cancel()
+	assert.NotNil(t, ctx)
+}
+
+func TestLongTimeout(t *testing.T) {
+	ctx, cancel := LongTimeout(t)
+	defer cancel()
+	assert.NotNil(t, ctx)
+}

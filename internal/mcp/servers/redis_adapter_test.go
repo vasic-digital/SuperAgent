@@ -7,6 +7,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 func TestNewRedisAdapter(t *testing.T) {
@@ -326,8 +328,7 @@ func TestRedisAdapter_MarshalJSON(t *testing.T) {
 // Integration tests that require a running Redis instance
 // These tests are skipped by default
 func TestRedisAdapter_Integration(t *testing.T) {
-	// Skip unless explicitly running integration tests
-	t.Skip("Skipping Redis integration tests - requires running Redis instance")
+	testutil.RequireRedis(t)
 
 	config := RedisAdapterConfig{
 		Host:     "localhost",

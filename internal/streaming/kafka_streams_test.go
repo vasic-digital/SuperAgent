@@ -9,6 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 func TestConversationStreamProcessor_New(t *testing.T) {
@@ -27,7 +29,7 @@ func TestConversationStreamProcessor_New(t *testing.T) {
 }
 
 func TestConversationStreamProcessor_NewWithRedis(t *testing.T) {
-	t.Skip("Skipping Redis test - requires Redis instance")
+	testutil.RequireRedis(t)
 
 	config := DefaultStreamProcessorConfig()
 	config.StateStoreType = "redis"

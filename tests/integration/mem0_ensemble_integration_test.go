@@ -15,6 +15,7 @@ import (
 
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/services"
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -229,10 +230,7 @@ func TestAllEnsembleProvidersHaveMem0Capabilities(t *testing.T) {
 
 // TestMem0LiveIntegration tests Mem0 Memory integration with live server
 func TestMem0LiveIntegration(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping live integration test")
-		return
-	}
+	testutil.RequireServer(t)
 
 	// Only run these tests if HELIXAGENT_INTEGRATION_TESTS is set
 	if os.Getenv("HELIXAGENT_INTEGRATION_TESTS") != "1" {

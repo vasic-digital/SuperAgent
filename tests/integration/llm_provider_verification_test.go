@@ -11,6 +11,8 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 // VerifyProviderConfig holds test configuration for each provider (verification tests)
@@ -62,10 +64,7 @@ type VerifyError struct {
 
 // TestLLMProviders_AllProviders tests all configured LLM providers
 func TestLLMProviders_AllProviders(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping LLM provider tests (acceptable)")
-		return
-	}
+	// External API test — each subtest skips when its API key is missing
 
 	providers := []VerifyProviderConfig{
 		{
@@ -100,10 +99,7 @@ func TestLLMProviders_AllProviders(t *testing.T) {
 
 // TestLLMProviders_DeepSeek specifically tests DeepSeek API
 func TestLLMProviders_DeepSeek(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping DeepSeek test (acceptable)")
-		return
-	}
+	testutil.RequireAPIKey(t, "deepseek")
 
 	provider := VerifyProviderConfig{
 		Name:       "DeepSeek",
@@ -118,10 +114,7 @@ func TestLLMProviders_DeepSeek(t *testing.T) {
 
 // TestLLMProviders_Mistral specifically tests Mistral API
 func TestLLMProviders_Mistral(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping Mistral test (acceptable)")
-		return
-	}
+	testutil.RequireAPIKey(t, "mistral")
 
 	provider := VerifyProviderConfig{
 		Name:       "Mistral",
@@ -136,10 +129,7 @@ func TestLLMProviders_Mistral(t *testing.T) {
 
 // TestLLMProviders_Cerebras specifically tests Cerebras API
 func TestLLMProviders_Cerebras(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping Cerebras test (acceptable)")
-		return
-	}
+	testutil.RequireAPIKey(t, "cerebras")
 
 	provider := VerifyProviderConfig{
 		Name:       "Cerebras",
@@ -154,10 +144,7 @@ func TestLLMProviders_Cerebras(t *testing.T) {
 
 // TestLLMProviders_ResponseTime verifies providers respond within acceptable time
 func TestLLMProviders_ResponseTime(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping response time test (acceptable)")
-		return
-	}
+	// External API test — each subtest skips when its API key is missing
 
 	providers := []VerifyProviderConfig{
 		{
@@ -210,10 +197,7 @@ func TestLLMProviders_ResponseTime(t *testing.T) {
 
 // TestLLMProviders_AuthValidation verifies API key validation
 func TestLLMProviders_AuthValidation(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping auth validation test (acceptable)")
-		return
-	}
+	// External API test — tests provider auth error handling (no API key required)
 
 	providers := []VerifyProviderConfig{
 		{Name: "DeepSeek", BaseURL: "https://api.deepseek.com/v1/chat/completions", Model: "deepseek-chat", MaxTimeout: 10 * time.Second},
@@ -233,27 +217,11 @@ func TestLLMProviders_AuthValidation(t *testing.T) {
 
 // TestHelixAgent_Endpoint tests the HelixAgent chat completions endpoint
 func TestHelixAgent_Endpoint(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping HelixAgent endpoint test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	helixagentURL := os.Getenv("HELIXAGENT_URL")
 	if helixagentURL == "" {
-		helixagentURL = "http://localhost:7061"
-	}
-
-	// Check if server is available
-	healthClient := &http.Client{Timeout: 2 * time.Second}
-	healthResp, err := healthClient.Get(helixagentURL + "/health")
-	if err != nil {
-		t.Logf("HelixAgent server not available at %s (acceptable)", helixagentURL)
-		return
-	}
-	healthResp.Body.Close()
-	if healthResp.StatusCode != http.StatusOK {
-		t.Logf("HelixAgent server unhealthy at %s (acceptable)", helixagentURL)
-		return
+		helixagentURL = testutil.ServerURL()
 	}
 
 	apiKey := os.Getenv("HELIXAGENT_API_KEY")

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"dev.helix.agent/internal/services"
+	"dev.helix.agent/internal/testutil"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
@@ -421,9 +422,7 @@ func TestErrorHandlerIntegration(t *testing.T) {
 
 // TestLiveChatCompletionsErrorHandling tests error handling with actual server
 func TestLiveChatCompletionsErrorHandling(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping live error handling test requiring running server in short mode")
-	}
+	testutil.RequireServer(t)
 	config := loadErrorTestConfig(t)
 
 	// Skip if server not running - use a short timeout for the health check

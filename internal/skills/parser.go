@@ -12,6 +12,14 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Pre-compiled regexes for skill parsing
+var (
+	skillQuotedRegex   = regexp.MustCompile(`"([^"]+)"`)
+	skillExampleRegex  = regexp.MustCompile(`\*\*Example:?\s*([^*]*)\*\*\s*\n([^*]+)`)
+	skillCategoryRegex = regexp.MustCompile(`\*\*([^*]+)\*\*`)
+	skillTagRegex      = regexp.MustCompile(`Tags?:\s*([^\n]+)`)
+)
+
 // Parser handles parsing of SKILL.md files.
 type Parser struct {
 	triggerPattern *regexp.Regexp
@@ -126,9 +134,7 @@ func (p *Parser) extractTriggers(description string) []string {
 		}
 	}
 
-	// Also extract quoted phrases as potential triggers
-	quotedPattern := regexp.MustCompile(`"([^"]+)"`)
-	quotedMatches := quotedPattern.FindAllStringSubmatch(description, -1)
+	quotedMatches := skillQuotedRegex.FindAllStringSubmatch(description, -1)
 	for _, match := range quotedMatches {
 		if len(match) > 1 {
 			trigger := strings.ToLower(strings.TrimSpace(match[1]))
@@ -201,9 +207,7 @@ func (p *Parser) saveSection(skill *Skill, section, content string) {
 func (p *Parser) parseExamples(content string) []SkillExample {
 	examples := make([]SkillExample, 0)
 
-	// Find example blocks
-	examplePattern := regexp.MustCompile(`\*\*Example:?\s*([^*]*)\*\*\s*\n([^*]+)`)
-	matches := examplePattern.FindAllStringSubmatch(content, -1)
+	matches := skillExampleRegex.FindAllStringSubmatch(content, -1)
 
 	for _, match := range matches {
 		if len(match) > 2 {
@@ -285,9 +289,7 @@ func (p *Parser) parseErrorTable(content string) []SkillError {
 func (p *Parser) parseRelated(content string) []string {
 	related := make([]string, 0)
 
-	// Look for skill category mentions
-	categoryPattern := regexp.MustCompile(`\*\*([^*]+)\*\*`)
-	matches := categoryPattern.FindAllStringSubmatch(content, -1)
+	matches := skillCategoryRegex.FindAllStringSubmatch(content, -1)
 	for _, match := range matches {
 		if len(match) > 1 {
 			related = append(related, strings.TrimSpace(match[1]))
@@ -316,9 +318,7 @@ func (p *Parser) extractCategory(filePath string) string {
 func (p *Parser) extractTags(content string) []string {
 	tags := make([]string, 0)
 
-	// Look for Tags: line
-	tagPattern := regexp.MustCompile(`Tags?:\s*([^\n]+)`)
-	matches := tagPattern.FindStringSubmatch(content)
+	matches := skillTagRegex.FindStringSubmatch(content)
 	if len(matches) > 1 {
 		parts := strings.Split(matches[1], ",")
 		for _, part := range parts {

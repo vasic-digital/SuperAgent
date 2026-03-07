@@ -17,10 +17,7 @@ import (
 
 // TestAPIEndToEndScenarios tests complete API workflows
 func TestAPIEndToEndScenarios(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping API integration test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required
 
 	// Setup test server
 	gin.SetMode(gin.TestMode)

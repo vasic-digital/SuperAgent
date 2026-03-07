@@ -12,15 +12,14 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // TestAPIServerLifecycle tests the API server start/stop/restart
 func TestAPIServerLifecycle(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping server lifecycle test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	binPath := filepath.Join("..", "..", "bin", "helixagent")
 	if _, err := os.Stat(binPath); os.IsNotExist(err) {
@@ -111,9 +110,7 @@ func TestAPIServerLifecycle(t *testing.T) {
 
 // TestServerHealthCheckWithExternalServer tests health check endpoint with external server
 func TestServerHealthCheckWithExternalServer(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping health check test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	// This test assumes a running server (from manual testing or CI)
 	// For unit testing health check logic, see internal/handlers tests
@@ -143,9 +140,7 @@ func TestServerHealthCheckWithExternalServer(t *testing.T) {
 
 // TestServerRestart tests server restart capability
 func TestServerRestart(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping server restart test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	if os.Getenv("CI") == "true" {
 		t.Skip("Skipping restart test in CI")
@@ -220,9 +215,7 @@ func TestServerRestart(t *testing.T) {
 
 // TestServerSignalHandling tests various signal handling
 func TestServerSignalHandling(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping signal handling test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	if os.Getenv("CI") == "true" {
 		t.Skip("Skipping signal test in CI")

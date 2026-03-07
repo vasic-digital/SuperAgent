@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"dev.helix.agent/internal/llm"
+	"dev.helix.agent/internal/testutil"
 	"dev.helix.agent/internal/verifier"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -68,9 +69,7 @@ func TestProviderVerification_StartupVerifierCreation(t *testing.T) {
 // TestProviderVerification_ModelVerificationLifecycle tests the full lifecycle
 // of model verification including discovery, verification, and scoring
 func TestProviderVerification_ModelVerificationLifecycle(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
+	testutil.RequireAPIKey(t, "deepseek")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
@@ -115,26 +114,9 @@ func TestProviderVerification_ModelVerificationLifecycle(t *testing.T) {
 // TestProviderVerification_VerifiedModelsCanBeUsed tests that verified models
 // can actually be used for LLM calls
 func TestProviderVerification_VerifiedModelsCanBeUsed(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
+	testutil.RequireAPIKey(t, "deepseek")
 
-	// This test requires at least one working provider
 	ctx := context.Background()
-
-	// Check if any API keys are set
-	hasAPIKey := false
-	apiKeys := []string{"CLAUDE_API_KEY", "DEEPSEEK_API_KEY", "GEMINI_API_KEY", "OPENROUTER_API_KEY"}
-	for _, key := range apiKeys {
-		if os.Getenv(key) != "" {
-			hasAPIKey = true
-			break
-		}
-	}
-
-	if !hasAPIKey {
-		t.Skip("Skipping test - no API keys configured")
-	}
 
 	logger := logrus.New()
 	config := &verifier.StartupConfig{
@@ -171,9 +153,7 @@ func TestProviderVerification_VerifiedModelsCanBeUsed(t *testing.T) {
 // TestProviderVerification_FailedProvidersHaveReasons tests that failed providers
 // have proper error messages and failure reasons
 func TestProviderVerification_FailedProvidersHaveReasons(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
+	testutil.RequireAPIKey(t, "deepseek")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
@@ -209,23 +189,7 @@ func TestProviderVerification_FailedProvidersHaveReasons(t *testing.T) {
 // TestProviderVerification_DebateTeamUsesVerifiedProviders tests that the debate team
 // configuration uses only verified providers
 func TestProviderVerification_DebateTeamUsesVerifiedProviders(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-
-	// Check if any API keys are set
-	hasAPIKey := false
-	apiKeys := []string{"CLAUDE_API_KEY", "DEEPSEEK_API_KEY", "GEMINI_API_KEY", "OPENROUTER_API_KEY"}
-	for _, key := range apiKeys {
-		if os.Getenv(key) != "" {
-			hasAPIKey = true
-			break
-		}
-	}
-
-	if !hasAPIKey {
-		t.Skip("Skipping test - no API keys configured")
-	}
+	testutil.RequireAPIKey(t, "deepseek")
 
 	ctx := context.Background()
 

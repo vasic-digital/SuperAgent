@@ -14,6 +14,7 @@ import (
 	"dev.helix.agent/internal/debate/orchestrator"
 	"dev.helix.agent/internal/debate/topology"
 	"dev.helix.agent/internal/debate/voting"
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -81,10 +82,6 @@ func createDebatePayload(
 // TestDebateFullFlow_OrchestratorInit verifies that the default orchestrator
 // configuration can be created with valid defaults.
 func TestDebateFullFlow_OrchestratorInit(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-
 	cfg := orchestrator.DefaultOrchestratorConfig()
 
 	assert.Equal(t, 3, cfg.DefaultMaxRounds,
@@ -116,12 +113,7 @@ func TestDebateFullFlow_OrchestratorInit(t *testing.T) {
 // TestDebateFullFlow_HealthEndpoint verifies that the HelixAgent /health
 // endpoint is reachable and returns HTTP 200.
 func TestDebateFullFlow_HealthEndpoint(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-	if !isDebateServerAvailable() {
-		t.Skip("HelixAgent server not available — skipping")
-	}
+	testutil.RequireServer(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -145,12 +137,7 @@ func TestDebateFullFlow_HealthEndpoint(t *testing.T) {
 // TestDebateFullFlow_CreateDebate verifies that POST /v1/debates accepts a
 // valid debate creation request and returns HTTP 202 (Accepted).
 func TestDebateFullFlow_CreateDebate(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-	if !isDebateServerAvailable() {
-		t.Skip("HelixAgent server not available — skipping")
-	}
+	testutil.RequireServer(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -197,12 +184,7 @@ func TestDebateFullFlow_CreateDebate(t *testing.T) {
 // TestDebateFullFlow_DebateStatus verifies that we can retrieve the status
 // of a debate after creating it via GET /v1/debates/:id/status.
 func TestDebateFullFlow_DebateStatus(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-	if !isDebateServerAvailable() {
-		t.Skip("HelixAgent server not available — skipping")
-	}
+	testutil.RequireServer(t)
 
 	debateID := "integration-status-001"
 
@@ -270,12 +252,7 @@ func TestDebateFullFlow_DebateStatus(t *testing.T) {
 // TestDebateFullFlow_DebateComplete tests the full lifecycle of a debate:
 // create, poll for completion, and verify the results.
 func TestDebateFullFlow_DebateComplete(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-	if !isDebateServerAvailable() {
-		t.Skip("HelixAgent server not available — skipping")
-	}
+	testutil.RequireServer(t)
 
 	debateID := "integration-complete-001"
 
@@ -389,12 +366,7 @@ done:
 // TestDebateFullFlow_ConcurrentDebates verifies that multiple debates can
 // be created and run concurrently without interference.
 func TestDebateFullFlow_ConcurrentDebates(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-	if !isDebateServerAvailable() {
-		t.Skip("HelixAgent server not available — skipping")
-	}
+	testutil.RequireServer(t)
 
 	const concurrentCount = 3
 	var wg sync.WaitGroup
@@ -501,12 +473,7 @@ func TestDebateFullFlow_ConcurrentDebates(t *testing.T) {
 // TestDebateFullFlow_InvalidTopic tests that the server returns an error
 // when creating a debate with an empty or invalid topic.
 func TestDebateFullFlow_InvalidTopic(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-	if !isDebateServerAvailable() {
-		t.Skip("HelixAgent server not available — skipping")
-	}
+	testutil.RequireServer(t)
 
 	testCases := []struct {
 		name     string

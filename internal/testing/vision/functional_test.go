@@ -16,6 +16,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 // VisionClient provides a client for testing vision capabilities
@@ -144,13 +146,11 @@ func createTestImage() string {
 
 // TestVisionCapabilityDiscovery tests capability discovery endpoint
 func TestVisionCapabilityDiscovery(t *testing.T) {
+	testutil.RequireHTTPEndpoint(t, "vision", "http://localhost:8080/v1/vision/health")
 	client := NewVisionClient("http://localhost:8080")
 
 	capabilities, err := client.ListCapabilities()
-	if err != nil {
-		t.Skipf("Vision service not running: %v", err)
-		return
-	}
+	require.NoError(t, err)
 
 	assert.NotEmpty(t, capabilities, "Should have at least one capability")
 	t.Logf("Discovered %d vision capabilities: %v", len(capabilities), capabilities)
@@ -158,6 +158,7 @@ func TestVisionCapabilityDiscovery(t *testing.T) {
 
 // TestVisionAnalyze tests image analysis capability
 func TestVisionAnalyze(t *testing.T) {
+	testutil.RequireHTTPEndpoint(t, "vision", "http://localhost:8080/v1/vision/health")
 	client := NewVisionClient("http://localhost:8080")
 
 	for _, cap := range VisionCapabilities {
@@ -189,6 +190,7 @@ func TestVisionAnalyze(t *testing.T) {
 
 // TestVisionWithURL tests vision analysis with image URL
 func TestVisionWithURL(t *testing.T) {
+	testutil.RequireHTTPEndpoint(t, "vision", "http://localhost:8080/v1/vision/health")
 	client := NewVisionClient("http://localhost:8080")
 
 	// Use a public test image
@@ -212,6 +214,7 @@ func TestVisionWithURL(t *testing.T) {
 
 // TestVisionOCR tests OCR capability specifically
 func TestVisionOCR(t *testing.T) {
+	testutil.RequireHTTPEndpoint(t, "vision", "http://localhost:8080/v1/vision/health")
 	client := NewVisionClient("http://localhost:8080")
 
 	// In a real test, you'd use an image with actual text
@@ -233,6 +236,7 @@ func TestVisionOCR(t *testing.T) {
 
 // TestVisionDetection tests object detection capability
 func TestVisionDetection(t *testing.T) {
+	testutil.RequireHTTPEndpoint(t, "vision", "http://localhost:8080/v1/vision/health")
 	client := NewVisionClient("http://localhost:8080")
 
 	req := &VisionRequest{
@@ -258,26 +262,20 @@ func TestVisionHealthCheck(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping functional test in short mode")
 	}
+	testutil.RequireHTTPEndpoint(t, "vision", "http://localhost:8080/v1/vision/health")
 
 	client := NewVisionClient("http://localhost:8080")
 
 	resp, err := client.httpClient.Get(client.baseURL + "/v1/vision/health")
-	if err != nil {
-		t.Skipf("Vision service not running: %v", err)
-		return
-	}
+	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode == http.StatusNotFound {
-		t.Skip("Vision endpoint not found: HelixAgent not running at expected address")
-		return
-	}
 
 	require.Equal(t, http.StatusOK, resp.StatusCode, "Health check should return 200")
 }
 
 // TestVisionFromFile tests vision analysis from a local file
 func TestVisionFromFile(t *testing.T) {
+	testutil.RequireHTTPEndpoint(t, "vision", "http://localhost:8080/v1/vision/health")
 	client := NewVisionClient("http://localhost:8080")
 
 	// Create a temporary test image file

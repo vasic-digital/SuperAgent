@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"dev.helix.agent/internal/services"
+	"dev.helix.agent/internal/testutil"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,25 +24,10 @@ import (
 // 2. Run E2E tests: make test-e2e
 // 3. Or run all tests: make test-all-types
 func TestE2EUserWorkflow(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping E2E test in short mode")
-	}
+	testutil.RequireServer(t)
 
-	baseURL := "http://localhost:7061"
+	baseURL := testutil.ServerURL()
 	client := &http.Client{Timeout: 60 * time.Second}
-
-	// Check if server is running
-	resp, err := client.Get(baseURL + "/health")
-	if err != nil {
-		t.Skipf("Skipping E2E test: HelixAgent server not running at %s. Start server with 'make run-dev'", baseURL)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Skipf("Skipping E2E test: Server at %s returned status %d", baseURL, resp.StatusCode)
-	}
-
-	t.Logf("✅ HelixAgent server is running at %s", baseURL)
 
 	t.Run("CompleteChatWorkflow", func(t *testing.T) {
 		// Step 1: Check available models
@@ -206,23 +192,10 @@ func TestE2EUserWorkflow(t *testing.T) {
 
 // TestE2EErrorHandling tests error scenarios end-to-end
 func TestE2EErrorHandling(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping E2E error handling test in short mode")
-	}
+	testutil.RequireServer(t)
 
-	baseURL := "http://localhost:7061"
+	baseURL := testutil.ServerURL()
 	client := &http.Client{Timeout: 30 * time.Second}
-
-	// Check if server is running
-	resp, err := client.Get(baseURL + "/health")
-	if err != nil {
-		t.Skipf("Skipping E2E test: HelixAgent server not running at %s. Start server with 'make run-dev'", baseURL)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Skipf("Skipping E2E test: Server at %s returned status %d", baseURL, resp.StatusCode)
-	}
 
 	t.Run("InvalidEndpoint", func(t *testing.T) {
 		resp, err := client.Get(baseURL + "/invalid/endpoint")
@@ -269,11 +242,9 @@ func TestE2EErrorHandling(t *testing.T) {
 
 // TestE2EPerformance tests performance characteristics
 func TestE2EPerformance(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping E2E performance test in short mode")
-	}
+	testutil.RequireServer(t)
 
-	baseURL := "http://localhost:7061"
+	baseURL := testutil.ServerURL()
 	client := &http.Client{Timeout: 30 * time.Second}
 
 	t.Run("ConcurrentRequests", func(t *testing.T) {
@@ -334,9 +305,7 @@ func TestE2EPerformance(t *testing.T) {
 
 // TestE2ENewServicesWorkflow tests end-to-end workflows using the new services
 func TestE2ENewServicesWorkflow(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping E2E new services test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	t.Run("CompleteCodeAnalysisWorkflow", func(t *testing.T) {
 		// Initialize all services

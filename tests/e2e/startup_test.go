@@ -12,14 +12,13 @@ import (
 
 	events "dev.helix.agent/internal/adapters"
 	"dev.helix.agent/internal/cache"
+	"dev.helix.agent/internal/testutil"
 	concurrency "digital.vasic.concurrency/pkg/pool"
 )
 
 // TestE2E_StartupPerformance tests that system startup is fast
 func TestE2E_StartupPerformance(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping E2E test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	start := time.Now()
 
@@ -61,9 +60,7 @@ func TestE2E_StartupPerformance(t *testing.T) {
 
 // TestE2E_LazyLoadingReducesStartupTime verifies lazy loading benefits
 func TestE2E_LazyLoadingReducesStartupTime(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping E2E test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	// Measure startup WITHOUT lazy loading (eager init)
 	startEager := time.Now()
@@ -118,9 +115,7 @@ func TestE2E_LazyLoadingReducesStartupTime(t *testing.T) {
 
 // TestE2E_SystemUnderLoad tests system behavior under realistic load
 func TestE2E_SystemUnderLoad(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping E2E test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	// Setup
 	bus := events.NewEventBus(&events.BusConfig{
@@ -245,9 +240,7 @@ func TestE2E_SystemUnderLoad(t *testing.T) {
 
 // TestE2E_GracefulShutdown tests that system shuts down cleanly
 func TestE2E_GracefulShutdown(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping E2E test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	bus := events.NewEventBus(nil)
 	pool := concurrency.NewWorkerPool(&concurrency.PoolConfig{
@@ -302,9 +295,7 @@ func TestE2E_GracefulShutdown(t *testing.T) {
 
 // TestE2E_ResourceCleanup tests that resources are properly cleaned up
 func TestE2E_ResourceCleanup(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping E2E test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	for iteration := 0; iteration < 5; iteration++ {
 		// Create and destroy components multiple times
@@ -355,9 +346,7 @@ func TestE2E_ResourceCleanup(t *testing.T) {
 
 // TestE2E_EventPropagation tests event flow through the system
 func TestE2E_EventPropagation(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping E2E test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	bus := events.NewEventBus(&events.BusConfig{
 		BufferSize:     10000,
@@ -404,9 +393,7 @@ func TestE2E_EventPropagation(t *testing.T) {
 
 // TestE2E_CacheEviction tests that cache eviction works correctly
 func TestE2E_CacheEviction(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping E2E test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	tc := cache.NewTieredCache(nil, &cache.TieredCacheConfig{
 		L1MaxSize: 10, // Small cache to trigger eviction
@@ -436,9 +423,7 @@ func TestE2E_CacheEviction(t *testing.T) {
 
 // TestE2E_ConcurrentStartupShutdown tests rapid startup/shutdown cycles
 func TestE2E_ConcurrentStartupShutdown(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping E2E test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	var wg sync.WaitGroup
 	var successCount int64

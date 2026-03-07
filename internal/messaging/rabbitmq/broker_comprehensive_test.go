@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 
 	"dev.helix.agent/internal/messaging"
+	"dev.helix.agent/internal/testutil"
 )
 
 // ============================================================================
@@ -933,30 +934,21 @@ func TestBrokerMetrics_SuccessRate(t *testing.T) {
 // ============================================================================
 
 func TestBroker_IntegrationPlaceholder_Connect(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
+	testutil.RequireExternalService(t, "rabbitmq", "localhost", "5672")
 
 	// This test would connect to a real RabbitMQ instance
-	t.Skip("Requires RabbitMQ infrastructure")
 }
 
 func TestBroker_IntegrationPlaceholder_PublishAndConsume(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
+	testutil.RequireExternalService(t, "rabbitmq", "localhost", "5672")
 
 	// This test would publish and consume messages
-	t.Skip("Requires RabbitMQ infrastructure")
 }
 
 func TestBroker_IntegrationPlaceholder_Reconnection(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
+	testutil.RequireExternalService(t, "rabbitmq", "localhost", "5672")
 
 	// This test would verify reconnection after disconnect
-	t.Skip("Requires RabbitMQ infrastructure")
 }
 
 // =============================================================================

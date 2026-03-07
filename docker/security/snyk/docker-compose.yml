@@ -6,13 +6,13 @@ version: '3.8'
 services:
   snyk-deps:
     build:
-      context: /run/media/milosvasic/DATA4TB/Projects/HelixAgent
+      context: ../../..
       dockerfile: docker/security/snyk/Dockerfile
     container_name: helixagent-snyk-deps
     environment:
       SNYK_TOKEN: ${SNYK_TOKEN:-}
     volumes:
-      - /run/media/milosvasic/DATA4TB/Projects/HelixAgent:/app:ro
+      - ../../..:/app:ro
       - snyk-reports:/reports
     command: /scripts/scan-dependencies.sh
     networks:
@@ -23,13 +23,13 @@ services:
 
   snyk-code:
     build:
-      context: /run/media/milosvasic/DATA4TB/Projects/HelixAgent
+      context: ../../..
       dockerfile: docker/security/snyk/Dockerfile
     container_name: helixagent-snyk-code
     environment:
       SNYK_TOKEN: ${SNYK_TOKEN:-}
     volumes:
-      - /run/media/milosvasic/DATA4TB/Projects/HelixAgent:/app:ro
+      - ../../..:/app:ro
       - snyk-reports:/reports
     command: /scripts/scan-code.sh
     networks:
@@ -40,13 +40,13 @@ services:
 
   snyk-iac:
     build:
-      context: /run/media/milosvasic/DATA4TB/Projects/HelixAgent
+      context: ../../..
       dockerfile: docker/security/snyk/Dockerfile
     container_name: helixagent-snyk-iac
     environment:
       SNYK_TOKEN: ${SNYK_TOKEN:-}
     volumes:
-      - /run/media/milosvasic/DATA4TB/Projects/HelixAgent:/app:ro
+      - ../../..:/app:ro
       - snyk-reports:/reports
     command: /scripts/scan-iac.sh
     networks:
@@ -57,13 +57,13 @@ services:
 
   snyk-full:
     build:
-      context: /run/media/milosvasic/DATA4TB/Projects/HelixAgent
+      context: ../../..
       dockerfile: docker/security/snyk/Dockerfile
     container_name: helixagent-snyk-full
     environment:
       SNYK_TOKEN: ${SNYK_TOKEN:-}
     volumes:
-      - /run/media/milosvasic/DATA4TB/Projects/HelixAgent:/app:ro
+      - ../../..:/app:ro
       - snyk-reports:/reports
     command: /scripts/scan-all.sh
     networks:

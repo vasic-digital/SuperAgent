@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 const baseURL = "http://localhost:7061"
@@ -28,12 +30,7 @@ func checkAvailable(url string) bool {
 // TestCircuitBreakerChaos_TripAndRecover trips circuit breakers by sending
 // many requests to broken providers, then verifies recovery.
 func TestCircuitBreakerChaos_TripAndRecover(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	var openCount, closedCount int64
@@ -93,12 +90,7 @@ func TestCircuitBreakerChaos_TripAndRecover(t *testing.T) {
 // TestCircuitBreakerChaos_ConcurrentFailures generates concurrent failures
 // to multiple providers to stress circuit breaker state management.
 func TestCircuitBreakerChaos_ConcurrentFailures(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	// Different broken providers to stress multiple circuit breakers
 	brokenProviders := []string{
@@ -153,12 +145,7 @@ func TestCircuitBreakerChaos_ConcurrentFailures(t *testing.T) {
 // TestCircuitBreakerChaos_IntermittentFailures alternates between
 // good and bad requests to trigger half-open circuit behavior.
 func TestCircuitBreakerChaos_IntermittentFailures(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	var goodCount, badCount int64
@@ -212,12 +199,7 @@ func TestCircuitBreakerChaos_IntermittentFailures(t *testing.T) {
 // TestCircuitBreakerChaos_StatusMonitoring verifies circuit breaker status
 // is reported correctly under chaos conditions.
 func TestCircuitBreakerChaos_StatusMonitoring(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 5 * time.Second}
 	var wg sync.WaitGroup

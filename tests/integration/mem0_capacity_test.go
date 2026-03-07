@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -28,9 +29,7 @@ import (
 
 // TestMem0FullCapacity_InfrastructureRunning verifies all required containers are running
 func TestMem0FullCapacity_InfrastructureRunning(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping Mem0 Memory capacity test in short mode")
-	}
+	testutil.RequireServer(t)
 	if os.Getenv("SKIP_MEM0_TESTS") == "true" {
 		t.Skip("Mem0 Memory capacity tests disabled via SKIP_MEM0_TESTS")
 	}
@@ -55,9 +54,7 @@ func TestMem0FullCapacity_InfrastructureRunning(t *testing.T) {
 
 // TestMem0FullCapacity_ServiceHealthy verifies Mem0 Memory health endpoint returns healthy status
 func TestMem0FullCapacity_ServiceHealthy(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping Mem0 Memory capacity test in short mode")
-	}
+	testutil.RequireServer(t)
 	if os.Getenv("SKIP_MEM0_TESTS") == "true" {
 		t.Skip("Mem0 Memory capacity tests disabled")
 	}
@@ -92,9 +89,7 @@ func TestMem0FullCapacity_ServiceHealthy(t *testing.T) {
 
 // TestMem0FullCapacity_AllFeaturesEnabled verifies all Mem0 Memory features are enabled
 func TestMem0FullCapacity_AllFeaturesEnabled(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping Mem0 Memory capacity test in short mode")
-	}
+	testutil.RequireServer(t)
 	if os.Getenv("SKIP_MEM0_TESTS") == "true" {
 		t.Skip("Mem0 Memory capacity tests disabled")
 	}
@@ -153,9 +148,7 @@ func TestMem0FullCapacity_AllFeaturesEnabled(t *testing.T) {
 
 // TestMem0FullCapacity_RelationalDatabaseConnected verifies PostgreSQL connection
 func TestMem0FullCapacity_RelationalDatabaseConnected(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping Mem0 Memory capacity test in short mode")
-	}
+	testutil.RequireServer(t)
 	if os.Getenv("SKIP_MEM0_TESTS") == "true" {
 		t.Skip("Mem0 Memory capacity tests disabled")
 	}
@@ -177,9 +170,7 @@ func TestMem0FullCapacity_RelationalDatabaseConnected(t *testing.T) {
 
 // TestMem0FullCapacity_CacheConnected verifies Redis connection
 func TestMem0FullCapacity_CacheConnected(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping Mem0 Memory capacity test in short mode")
-	}
+	testutil.RequireServer(t)
 	if os.Getenv("SKIP_MEM0_TESTS") == "true" {
 		t.Skip("Mem0 Memory capacity tests disabled")
 	}
@@ -198,9 +189,7 @@ func TestMem0FullCapacity_CacheConnected(t *testing.T) {
 
 // TestMem0FullCapacity_MemoryOperations verifies memory add/search works
 func TestMem0FullCapacity_MemoryOperations(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping Mem0 Memory capacity test in short mode")
-	}
+	testutil.RequireServer(t)
 	if os.Getenv("SKIP_MEM0_TESTS") == "true" {
 		t.Skip("Mem0 Memory capacity tests disabled")
 	}
@@ -284,9 +273,7 @@ func TestMem0FullCapacity_MemoryOperations(t *testing.T) {
 
 // TestMem0FullCapacity_DatasetOperations verifies dataset CRUD works
 func TestMem0FullCapacity_DatasetOperations(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping Mem0 Memory capacity test in short mode")
-	}
+	testutil.RequireServer(t)
 	if os.Getenv("SKIP_MEM0_TESTS") == "true" {
 		t.Skip("Mem0 Memory capacity tests disabled")
 	}
@@ -317,9 +304,7 @@ func TestMem0FullCapacity_DatasetOperations(t *testing.T) {
 
 // TestMem0FullCapacity_MemorizeOperation verifies memorize (knowledge consolidation) works
 func TestMem0FullCapacity_MemorizeOperation(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping Mem0 Memory capacity test in short mode")
-	}
+	testutil.RequireServer(t)
 	if os.Getenv("SKIP_MEM0_TESTS") == "true" {
 		t.Skip("Mem0 Memory capacity tests disabled")
 	}
@@ -361,9 +346,7 @@ func TestMem0FullCapacity_MemorizeOperation(t *testing.T) {
 
 // TestMem0FullCapacity_StatsEndpoint verifies stats endpoint returns valid data
 func TestMem0FullCapacity_StatsEndpoint(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping Mem0 Memory capacity test in short mode")
-	}
+	testutil.RequireServer(t)
 	if os.Getenv("SKIP_MEM0_TESTS") == "true" {
 		t.Skip("Mem0 Memory capacity tests disabled")
 	}
@@ -394,9 +377,7 @@ func TestMem0FullCapacity_StatsEndpoint(t *testing.T) {
 
 // TestMem0FullCapacity_AllEndpointsAccessible verifies all Mem0 Memory endpoints are registered
 func TestMem0FullCapacity_AllEndpointsAccessible(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping Mem0 Memory capacity test in short mode")
-	}
+	testutil.RequireServer(t)
 	if os.Getenv("SKIP_MEM0_TESTS") == "true" {
 		t.Skip("Mem0 Memory capacity tests disabled")
 	}
@@ -442,9 +423,7 @@ func TestMem0FullCapacity_AllEndpointsAccessible(t *testing.T) {
 
 // TestMem0FullCapacity_LLMProviderConfigured verifies LLM provider (Gemini) is configured for Mem0
 func TestMem0FullCapacity_LLMProviderConfigured(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping Mem0 Memory capacity test in short mode")
-	}
+	testutil.RequireServer(t)
 	if os.Getenv("SKIP_MEM0_TESTS") == "true" {
 		t.Skip("Mem0 Memory capacity tests disabled")
 	}
@@ -485,9 +464,7 @@ func TestMem0FullCapacity_LLMProviderConfigured(t *testing.T) {
 
 // TestMem0FullCapacity_EmbeddingProviderConfigured verifies embedding provider is configured for Mem0
 func TestMem0FullCapacity_EmbeddingProviderConfigured(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping Mem0 Memory capacity test in short mode")
-	}
+	testutil.RequireServer(t)
 	if os.Getenv("SKIP_MEM0_TESTS") == "true" {
 		t.Skip("Mem0 Memory capacity tests disabled")
 	}
@@ -512,9 +489,7 @@ func TestMem0FullCapacity_EmbeddingProviderConfigured(t *testing.T) {
 
 // TestMem0FullCapacity_NoErrorsInLogs checks HelixAgent logs for critical Mem0-related errors
 func TestMem0FullCapacity_NoErrorsInLogs(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping Mem0 Memory capacity test in short mode")
-	}
+	testutil.RequireServer(t)
 	if os.Getenv("SKIP_MEM0_TESTS") == "true" {
 		t.Skip("Mem0 Memory capacity tests disabled")
 	}
@@ -551,9 +526,7 @@ func TestMem0FullCapacity_NoErrorsInLogs(t *testing.T) {
 
 // TestMem0FullCapacity_ResponseTime verifies response times are acceptable
 func TestMem0FullCapacity_ResponseTime(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping Mem0 Memory capacity test in short mode")
-	}
+	testutil.RequireServer(t)
 	if os.Getenv("SKIP_MEM0_TESTS") == "true" {
 		t.Skip("Mem0 Memory capacity tests disabled")
 	}
@@ -582,9 +555,7 @@ func TestMem0FullCapacity_ResponseTime(t *testing.T) {
 // =============================================================================
 
 func TestMem0FullCapacity_Summary(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping Mem0 Memory capacity test in short mode")
-	}
+	testutil.RequireServer(t)
 	if os.Getenv("SKIP_MEM0_TESTS") == "true" {
 		t.Skip("Mem0 Memory capacity tests disabled")
 	}

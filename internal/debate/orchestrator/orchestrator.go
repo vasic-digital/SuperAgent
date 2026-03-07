@@ -5,6 +5,7 @@ package orchestrator
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -779,28 +780,28 @@ Guidelines:
 
 // buildFullPrompt builds the full prompt with debate context.
 func buildFullPrompt(prompt string, debateCtx protocol.DebateContext) string {
-	var fullPrompt string
+	var sb strings.Builder
 
-	fullPrompt = fmt.Sprintf("Topic: %s\n\n", debateCtx.Topic)
+	sb.WriteString(fmt.Sprintf("Topic: %s\n\n", debateCtx.Topic))
 
 	if debateCtx.Context != "" {
-		fullPrompt += fmt.Sprintf("Context: %s\n\n", debateCtx.Context)
+		sb.WriteString(fmt.Sprintf("Context: %s\n\n", debateCtx.Context))
 	}
 
 	// Include previous phase summaries
 	if len(debateCtx.PreviousPhases) > 0 {
-		fullPrompt += "Previous Discussion:\n"
+		sb.WriteString("Previous Discussion:\n")
 		for _, phase := range debateCtx.PreviousPhases {
 			if len(phase.KeyInsights) > 0 {
-				fullPrompt += fmt.Sprintf("- %s: %v\n", phase.Phase, phase.KeyInsights)
+				sb.WriteString(fmt.Sprintf("- %s: %v\n", phase.Phase, phase.KeyInsights))
 			}
 		}
-		fullPrompt += "\n"
+		sb.WriteString("\n")
 	}
 
-	fullPrompt += fmt.Sprintf("Round %d - %s\n\n", debateCtx.Round, prompt)
+	sb.WriteString(fmt.Sprintf("Round %d - %s\n\n", debateCtx.Round, prompt))
 
-	return fullPrompt
+	return sb.String()
 }
 
 // calculateConfidence extracts or estimates confidence from response.

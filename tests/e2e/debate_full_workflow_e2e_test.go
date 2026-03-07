@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -76,12 +77,7 @@ func debateWorkflowPayload(
 // TestDebateWorkflow_CreateToResult tests the full E2E workflow of
 // creating a debate, polling for status, and retrieving results.
 func TestDebateWorkflow_CreateToResult(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping E2E test in short mode")
-	}
-	if !isWorkflowServerAvailable() {
-		t.Skip("HelixAgent server not available -- skipping E2E test")
-	}
+	testutil.RequireServer(t)
 
 	debateID := fmt.Sprintf("e2e-workflow-%d", time.Now().UnixNano()%100000)
 	topic := "Design a rate limiting system for a distributed API gateway"
@@ -205,12 +201,7 @@ results:
 // TestDebateWorkflow_ConcurrentDebates verifies that 3 debates can be
 // created concurrently and each runs in isolation.
 func TestDebateWorkflow_ConcurrentDebates(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping E2E test in short mode")
-	}
-	if !isWorkflowServerAvailable() {
-		t.Skip("HelixAgent server not available -- skipping E2E test")
-	}
+	testutil.RequireServer(t)
 
 	const concurrentCount = 3
 	topics := []string{
@@ -320,12 +311,7 @@ func TestDebateWorkflow_ConcurrentDebates(t *testing.T) {
 // TestDebateWorkflow_InvalidRequest verifies the server rejects invalid
 // debate creation requests with appropriate error responses.
 func TestDebateWorkflow_InvalidRequest(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping E2E test in short mode")
-	}
-	if !isWorkflowServerAvailable() {
-		t.Skip("HelixAgent server not available -- skipping E2E test")
-	}
+	testutil.RequireServer(t)
 
 	testCases := []struct {
 		name     string

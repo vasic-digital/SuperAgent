@@ -67,7 +67,7 @@ services:
       SONAR_HOST_URL: http://sonarqube:9000
       SONAR_TOKEN: ${SONAR_TOKEN:-}
     volumes:
-      - /run/media/milosvasic/DATA4TB/Projects/HelixAgent:/usr/src:ro
+      - ../../..:/usr/src:ro
       - ./sonar-project.properties:/usr/src/sonar-project.properties:ro
     networks:
       - security-network

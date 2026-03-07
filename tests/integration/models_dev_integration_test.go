@@ -12,6 +12,7 @@ import (
 
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/router"
+	"dev.helix.agent/internal/testutil"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
@@ -138,12 +139,7 @@ func setupTestRouter(t *testing.T) (*gin.Engine, func()) {
 }
 
 func TestModelsDevIntegration_APIEndpoints(t *testing.T) {
-	if !checkDatabaseAvailable(t) {
-		t.Skip("Database not available - run with test infrastructure")
-	}
-	if testing.Short() {
-		t.Skip("Skipping models.dev integration test requiring router init in short mode")
-	}
+	testutil.RequirePostgres(t)
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
@@ -174,12 +170,7 @@ func TestModelsDevIntegration_APIEndpoints(t *testing.T) {
 }
 
 func TestModelsDevIntegration_ModelMetadataEndpoints(t *testing.T) {
-	if !checkDatabaseAvailable(t) {
-		t.Skip("Database not available - run with test infrastructure")
-	}
-	if testing.Short() {
-		t.Skip("Skipping models.dev integration test requiring router init in short mode")
-	}
+	testutil.RequirePostgres(t)
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
@@ -236,12 +227,7 @@ func TestModelsDevIntegration_ModelMetadataEndpoints(t *testing.T) {
 }
 
 func TestModelsDevIntegration_ModelComparison(t *testing.T) {
-	if !checkDatabaseAvailable(t) {
-		t.Skip("Database not available - run with test infrastructure")
-	}
-	if testing.Short() {
-		t.Skip("Skipping models.dev integration test requiring router init in short mode")
-	}
+	testutil.RequirePostgres(t)
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
@@ -294,12 +280,7 @@ func TestModelsDevIntegration_ModelComparison(t *testing.T) {
 }
 
 func TestModelsDevIntegration_CapabilityEndpoints(t *testing.T) {
-	if !checkDatabaseAvailable(t) {
-		t.Skip("Database not available - run with test infrastructure")
-	}
-	if testing.Short() {
-		t.Skip("Skipping models.dev integration test requiring router init in short mode")
-	}
+	testutil.RequirePostgres(t)
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
@@ -342,12 +323,7 @@ func TestModelsDevIntegration_CapabilityEndpoints(t *testing.T) {
 }
 
 func TestModelsDevIntegration_ProviderEndpoints(t *testing.T) {
-	if !checkDatabaseAvailable(t) {
-		t.Skip("Database not available - run with test infrastructure")
-	}
-	if testing.Short() {
-		t.Skip("Skipping models.dev integration test requiring router init in short mode")
-	}
+	testutil.RequirePostgres(t)
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
@@ -387,12 +363,7 @@ func TestModelsDevIntegration_ProviderEndpoints(t *testing.T) {
 }
 
 func TestModelsDevIntegration_BenchmarkEndpoints(t *testing.T) {
-	if !checkDatabaseAvailable(t) {
-		t.Skip("Database not available - run with test infrastructure")
-	}
-	if testing.Short() {
-		t.Skip("Skipping models.dev integration test requiring router init in short mode")
-	}
+	testutil.RequirePostgres(t)
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
@@ -431,12 +402,7 @@ func TestModelsDevIntegration_BenchmarkEndpoints(t *testing.T) {
 }
 
 func TestModelsDevIntegration_AdminEndpoints(t *testing.T) {
-	if !checkDatabaseAvailable(t) {
-		t.Skip("Database not available - run with test infrastructure")
-	}
-	if testing.Short() {
-		t.Skip("Skipping models.dev integration test requiring router init in short mode")
-	}
+	testutil.RequirePostgres(t)
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
@@ -463,12 +429,7 @@ func TestModelsDevIntegration_AdminEndpoints(t *testing.T) {
 }
 
 func TestModelsDevIntegration_CacheBehavior(t *testing.T) {
-	if !checkDatabaseAvailable(t) {
-		t.Skip("Database not available - run with test infrastructure")
-	}
-	if testing.Short() {
-		t.Skip("Skipping models.dev integration test requiring router init in short mode")
-	}
+	testutil.RequirePostgres(t)
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
@@ -503,12 +464,7 @@ func TestModelsDevIntegration_CacheBehavior(t *testing.T) {
 }
 
 func TestModelsDevIntegration_ResponseFormats(t *testing.T) {
-	if !checkDatabaseAvailable(t) {
-		t.Skip("Database not available - run with test infrastructure")
-	}
-	if testing.Short() {
-		t.Skip("Skipping models.dev integration test requiring router init in short mode")
-	}
+	testutil.RequirePostgres(t)
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
@@ -540,12 +496,7 @@ func TestModelsDevIntegration_ResponseFormats(t *testing.T) {
 }
 
 func TestModelsDevIntegration_ErrorHandling(t *testing.T) {
-	if !checkDatabaseAvailable(t) {
-		t.Skip("Database not available - run with test infrastructure")
-	}
-	if testing.Short() {
-		t.Skip("Skipping models.dev integration test requiring router init in short mode")
-	}
+	testutil.RequirePostgres(t)
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
@@ -585,12 +536,7 @@ func TestModelsDevIntegration_ErrorHandling(t *testing.T) {
 }
 
 func TestModelsDevIntegration_EndToEndWorkflow(t *testing.T) {
-	if !checkDatabaseAvailable(t) {
-		t.Skip("Database not available - run with test infrastructure")
-	}
-	if testing.Short() {
-		t.Skip("Skipping models.dev integration test requiring router init in short mode")
-	}
+	testutil.RequirePostgres(t)
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
@@ -649,12 +595,7 @@ func TestModelsDevIntegration_EndToEndWorkflow(t *testing.T) {
 }
 
 func TestModelsDevIntegration_Performance(t *testing.T) {
-	if !checkDatabaseAvailable(t) {
-		t.Skip("Database not available - run with test infrastructure")
-	}
-	if testing.Short() {
-		t.Skip("Skipping models.dev integration test requiring router init in short mode")
-	}
+	testutil.RequirePostgres(t)
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
@@ -705,12 +646,7 @@ func TestModelsDevIntegration_Performance(t *testing.T) {
 }
 
 func TestModelsDevIntegration_ConcurrentRequests(t *testing.T) {
-	if !checkDatabaseAvailable(t) {
-		t.Skip("Database not available - run with test infrastructure")
-	}
-	if testing.Short() {
-		t.Skip("Skipping models.dev integration test requiring router init in short mode")
-	}
+	testutil.RequirePostgres(t)
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
@@ -762,12 +698,7 @@ func TestModelsDevIntegration_ConcurrentRequests(t *testing.T) {
 }
 
 func TestModelsDevIntegration_DataIntegrity(t *testing.T) {
-	if !checkDatabaseAvailable(t) {
-		t.Skip("Database not available - run with test infrastructure")
-	}
-	if testing.Short() {
-		t.Skip("Skipping models.dev integration test requiring router init in short mode")
-	}
+	testutil.RequirePostgres(t)
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
@@ -822,12 +753,7 @@ func TestModelsDevIntegration_DataIntegrity(t *testing.T) {
 }
 
 func TestModelsDevIntegration_ServiceAvailability(t *testing.T) {
-	if !checkDatabaseAvailable(t) {
-		t.Skip("Database not available - run with test infrastructure")
-	}
-	if testing.Short() {
-		t.Skip("Skipping models.dev integration test requiring router init in short mode")
-	}
+	testutil.RequirePostgres(t)
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()

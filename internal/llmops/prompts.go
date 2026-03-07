@@ -13,6 +13,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var templateVarRegex = regexp.MustCompile(`\{\{(\w+)\}\}`)
+
 // InMemoryPromptRegistry implements PromptRegistry with in-memory storage
 type InMemoryPromptRegistry struct {
 	prompts map[string]map[string]*PromptVersion // name -> version -> prompt
@@ -276,9 +278,7 @@ func (r *InMemoryPromptRegistry) Render(ctx context.Context, name, version strin
 }
 
 func (r *InMemoryPromptRegistry) validateVariables(prompt *PromptVersion) error {
-	// Find all placeholders in content
-	re := regexp.MustCompile(`\{\{(\w+)\}\}`)
-	matches := re.FindAllStringSubmatch(prompt.Content, -1)
+	matches := templateVarRegex.FindAllStringSubmatch(prompt.Content, -1)
 
 	definedVars := make(map[string]bool)
 	for _, v := range prompt.Variables {

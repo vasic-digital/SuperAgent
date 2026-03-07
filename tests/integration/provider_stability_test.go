@@ -12,6 +12,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 // ProviderStabilityConfig holds test configuration for provider stability tests
@@ -75,10 +77,7 @@ type StabilityError struct {
 
 // TestProviderStability_AllProviders tests all configured LLM providers
 func TestProviderStability_AllProviders(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping provider stability tests (acceptable)")
-		return
-	}
+	// External API test — each subtest skips when its API key is missing
 
 	providers := []ProviderStabilityConfig{
 		{
@@ -180,10 +179,7 @@ func testProviderStability(t *testing.T, provider ProviderStabilityConfig) {
 
 // TestProviderStability_ErrorHandling tests error handling for providers
 func TestProviderStability_ErrorHandling(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping error handling tests (acceptable)")
-		return
-	}
+	// External API test — tests provider auth error handling (no API key required)
 
 	providers := []ProviderStabilityConfig{
 		{Name: "DeepSeek", APIEndpoint: "https://api.deepseek.com/v1/chat/completions", Model: "deepseek-chat", Timeout: 10 * time.Second},
@@ -204,10 +200,7 @@ func TestProviderStability_ErrorHandling(t *testing.T) {
 
 // TestProviderStability_Concurrent tests concurrent requests to providers
 func TestProviderStability_Concurrent(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping concurrent tests (acceptable)")
-		return
-	}
+	// External API test — each subtest skips when its API key is missing
 
 	providers := []ProviderStabilityConfig{
 		{Name: "DeepSeek", APIEndpoint: "https://api.deepseek.com/v1/chat/completions", Model: "deepseek-chat", APIKeyEnvVar: "DEEPSEEK_API_KEY", Timeout: 60 * time.Second},
@@ -274,10 +267,7 @@ func TestProviderStability_Concurrent(t *testing.T) {
 
 // TestProviderStability_ResponseTime tests response time for providers
 func TestProviderStability_ResponseTime(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping response time tests (acceptable)")
-		return
-	}
+	// External API test — each subtest skips when its API key is missing
 
 	providers := []ProviderStabilityConfig{
 		{Name: "DeepSeek", APIEndpoint: "https://api.deepseek.com/v1/chat/completions", Model: "deepseek-chat", APIKeyEnvVar: "DEEPSEEK_API_KEY", Timeout: 30 * time.Second},
@@ -313,10 +303,7 @@ func TestProviderStability_ResponseTime(t *testing.T) {
 
 // TestHelixAgent_ProviderIntegration tests HelixAgent's integration with providers
 func TestHelixAgent_ProviderIntegration(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping HelixAgent integration test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	helixagentURL := os.Getenv("HELIXAGENT_URL")
 	if helixagentURL == "" {

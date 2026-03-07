@@ -23,6 +23,7 @@ import (
 	"dev.helix.agent/internal/cache"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/database"
+	"dev.helix.agent/internal/testutil"
 )
 
 // =============================================================================
@@ -41,10 +42,7 @@ func infraGetEnvOrDefault(key, defaultValue string) string {
 // =============================================================================
 
 func TestIntegration_PostgreSQL_Connection(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequirePostgres(t)
 
 	cfg := &config.Config{
 		Database: config.DatabaseConfig{
@@ -78,10 +76,7 @@ func TestIntegration_PostgreSQL_Connection(t *testing.T) {
 }
 
 func TestIntegration_PostgreSQL_CRUD(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequirePostgres(t)
 
 	cfg := &config.Config{
 		Database: config.DatabaseConfig{
@@ -151,10 +146,7 @@ func TestIntegration_PostgreSQL_CRUD(t *testing.T) {
 }
 
 func TestIntegration_PostgreSQL_Transactions(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequirePostgres(t)
 
 	cfg := &config.Config{
 		Database: config.DatabaseConfig{
@@ -229,10 +221,7 @@ func TestIntegration_PostgreSQL_Transactions(t *testing.T) {
 // =============================================================================
 
 func TestIntegration_Redis_Connection(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireRedis(t)
 
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
@@ -258,10 +247,7 @@ func TestIntegration_Redis_Connection(t *testing.T) {
 }
 
 func TestIntegration_Redis_CRUD(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireRedis(t)
 
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
@@ -310,10 +296,7 @@ func TestIntegration_Redis_CRUD(t *testing.T) {
 }
 
 func TestIntegration_Redis_Expiration(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireRedis(t)
 
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
@@ -355,10 +338,7 @@ func TestIntegration_Redis_Expiration(t *testing.T) {
 }
 
 func TestIntegration_Redis_Pipeline(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireRedis(t)
 
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
@@ -414,10 +394,7 @@ func TestIntegration_Redis_Pipeline(t *testing.T) {
 // =============================================================================
 
 func TestIntegration_MinIO_Connection(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireExternalService(t, "minio", infraGetEnvOrDefault("MINIO_HOST", "localhost"), infraGetEnvOrDefault("MINIO_PORT", "9000"))
 
 	cfg := &minio.Config{
 		Endpoint:          infraGetEnvOrDefault("MINIO_ENDPOINT", "localhost:9000"),
@@ -451,10 +428,7 @@ func TestIntegration_MinIO_Connection(t *testing.T) {
 }
 
 func TestIntegration_MinIO_BucketOperations(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireExternalService(t, "minio", infraGetEnvOrDefault("MINIO_HOST", "localhost"), infraGetEnvOrDefault("MINIO_PORT", "9000"))
 
 	cfg := &minio.Config{
 		Endpoint:          infraGetEnvOrDefault("MINIO_ENDPOINT", "localhost:9000"),
@@ -505,10 +479,7 @@ func TestIntegration_MinIO_BucketOperations(t *testing.T) {
 }
 
 func TestIntegration_MinIO_ObjectOperations(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireExternalService(t, "minio", infraGetEnvOrDefault("MINIO_HOST", "localhost"), infraGetEnvOrDefault("MINIO_PORT", "9000"))
 
 	cfg := &minio.Config{
 		Endpoint:          infraGetEnvOrDefault("MINIO_ENDPOINT", "localhost:9000"),
@@ -578,10 +549,7 @@ func TestIntegration_MinIO_ObjectOperations(t *testing.T) {
 }
 
 func TestIntegration_MinIO_PresignedURLs(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireExternalService(t, "minio", infraGetEnvOrDefault("MINIO_HOST", "localhost"), infraGetEnvOrDefault("MINIO_PORT", "9000"))
 
 	cfg := &minio.Config{
 		Endpoint:          infraGetEnvOrDefault("MINIO_ENDPOINT", "localhost:9000"),
@@ -641,10 +609,7 @@ func TestIntegration_MinIO_PresignedURLs(t *testing.T) {
 // =============================================================================
 
 func TestIntegration_Qdrant_Connection(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireExternalService(t, "qdrant", infraGetEnvOrDefault("QDRANT_HOST", "localhost"), "6333")
 
 	cfg := qdrant.DefaultConfig()
 	cfg.Host = infraGetEnvOrDefault("QDRANT_HOST", "localhost")
@@ -668,10 +633,7 @@ func TestIntegration_Qdrant_Connection(t *testing.T) {
 }
 
 func TestIntegration_Qdrant_CollectionOperations(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireExternalService(t, "qdrant", infraGetEnvOrDefault("QDRANT_HOST", "localhost"), "6333")
 
 	cfg := qdrant.DefaultConfig()
 	cfg.Host = infraGetEnvOrDefault("QDRANT_HOST", "localhost")
@@ -717,10 +679,7 @@ func TestIntegration_Qdrant_CollectionOperations(t *testing.T) {
 }
 
 func TestIntegration_Qdrant_VectorOperations(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireExternalService(t, "qdrant", infraGetEnvOrDefault("QDRANT_HOST", "localhost"), "6333")
 
 	cfg := qdrant.DefaultConfig()
 	cfg.Host = infraGetEnvOrDefault("QDRANT_HOST", "localhost")
@@ -818,10 +777,7 @@ func TestIntegration_Qdrant_VectorOperations(t *testing.T) {
 }
 
 func TestIntegration_Qdrant_BatchSearch(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireExternalService(t, "qdrant", infraGetEnvOrDefault("QDRANT_HOST", "localhost"), "6333")
 
 	cfg := qdrant.DefaultConfig()
 	cfg.Host = infraGetEnvOrDefault("QDRANT_HOST", "localhost")
@@ -897,10 +853,7 @@ func TestIntegration_Qdrant_BatchSearch(t *testing.T) {
 // =============================================================================
 
 func TestIntegration_Kafka_Connection(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireExternalService(t, "kafka", infraGetEnvOrDefault("KAFKA_HOST", "localhost"), "9092")
 
 	brokers := infraGetEnvOrDefault("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 
@@ -921,10 +874,7 @@ func TestIntegration_Kafka_Connection(t *testing.T) {
 }
 
 func TestIntegration_Kafka_TopicOperations(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireExternalService(t, "kafka", infraGetEnvOrDefault("KAFKA_HOST", "localhost"), "9092")
 
 	brokers := infraGetEnvOrDefault("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 
@@ -970,10 +920,7 @@ func TestIntegration_Kafka_TopicOperations(t *testing.T) {
 }
 
 func TestIntegration_Kafka_ProduceConsume(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireExternalService(t, "kafka", infraGetEnvOrDefault("KAFKA_HOST", "localhost"), "9092")
 
 	brokers := infraGetEnvOrDefault("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 
@@ -1057,10 +1004,7 @@ func TestIntegration_Kafka_ProduceConsume(t *testing.T) {
 }
 
 func TestIntegration_Kafka_ConsumerGroup(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireExternalService(t, "kafka", infraGetEnvOrDefault("KAFKA_HOST", "localhost"), "9092")
 
 	brokers := infraGetEnvOrDefault("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 
@@ -1149,10 +1093,7 @@ func TestIntegration_Kafka_ConsumerGroup(t *testing.T) {
 // =============================================================================
 
 func TestIntegration_RabbitMQ_Connection(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireExternalService(t, "rabbitmq", infraGetEnvOrDefault("RABBITMQ_HOST", "localhost"), infraGetEnvOrDefault("RABBITMQ_PORT", "5672"))
 
 	// Get RabbitMQ connection URL
 	host := infraGetEnvOrDefault("RABBITMQ_HOST", "localhost")
@@ -1182,10 +1123,7 @@ func TestIntegration_RabbitMQ_Connection(t *testing.T) {
 }
 
 func TestIntegration_RabbitMQ_QueueOperations(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireExternalService(t, "rabbitmq", infraGetEnvOrDefault("RABBITMQ_HOST", "localhost"), infraGetEnvOrDefault("RABBITMQ_PORT", "5672"))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -1265,10 +1203,7 @@ func TestIntegration_RabbitMQ_QueueOperations(t *testing.T) {
 }
 
 func TestIntegration_RabbitMQ_ExchangeOperations(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireExternalService(t, "rabbitmq", infraGetEnvOrDefault("RABBITMQ_HOST", "localhost"), infraGetEnvOrDefault("RABBITMQ_PORT", "5672"))
 
 	host := infraGetEnvOrDefault("RABBITMQ_HOST", "localhost")
 	port := infraGetEnvOrDefault("RABBITMQ_PORT", "5672")
@@ -1344,10 +1279,7 @@ func TestIntegration_RabbitMQ_ExchangeOperations(t *testing.T) {
 }
 
 func TestIntegration_RabbitMQ_PublishConfirm(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireExternalService(t, "rabbitmq", infraGetEnvOrDefault("RABBITMQ_HOST", "localhost"), infraGetEnvOrDefault("RABBITMQ_PORT", "5672"))
 
 	host := infraGetEnvOrDefault("RABBITMQ_HOST", "localhost")
 	port := infraGetEnvOrDefault("RABBITMQ_PORT", "5672")
@@ -1405,10 +1337,7 @@ func TestIntegration_RabbitMQ_PublishConfirm(t *testing.T) {
 // =============================================================================
 
 func TestIntegration_AllInfrastructure_HealthCheck(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireInfra(t)
 
 	services := map[string]string{
 		"PostgreSQL": fmt.Sprintf("%s:%s", infraGetEnvOrDefault("DB_HOST", "localhost"), infraGetEnvOrDefault("DB_PORT", "5432")),

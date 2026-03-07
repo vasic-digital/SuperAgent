@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -210,12 +211,9 @@ func TestOpenCodeConfigOnlyShowsHelixAgentModel(t *testing.T) {
 // TestModelsEndpointOnlyReturnsHelixAgentModel verifies the /v1/models
 // endpoint only returns HelixAgent models
 func TestModelsEndpointOnlyReturnsHelixAgentModel(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping models endpoint test in short mode")
-	}
+	testutil.RequireServer(t)
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
-	skipIfNoServer(t, config)
 
 	t.Run("ModelsEndpointReturnsOnlyHelixAgent", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), APITimeout)
@@ -446,12 +444,9 @@ func TestOpenCodeConfigAPIKeyHandling(t *testing.T) {
 // TestOpenCodeChatCompletionWithHelixAgentModel tests that chat completions
 // work correctly with the helixagent-debate model
 func TestOpenCodeChatCompletionWithHelixAgentModel(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chat completion test in short mode")
-	}
+	testutil.RequireServer(t)
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
-	skipIfNoServer(t, config)
 
 	t.Run("ChatCompletionWithHelixAgentDebate", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)

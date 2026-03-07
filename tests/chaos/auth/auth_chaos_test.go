@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 const baseURL = "http://localhost:7061"
@@ -29,12 +31,7 @@ func checkAvailable(url string) bool {
 
 // TestAuthChaos_InvalidTokenFlood floods the server with invalid JWT tokens.
 func TestAuthChaos_InvalidTokenFlood(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	invalidTokens := []string{
 		"",
@@ -100,12 +97,7 @@ func TestAuthChaos_InvalidTokenFlood(t *testing.T) {
 
 // TestAuthChaos_ExpiredAndMutatedTokens tests handling of expired/mutated tokens.
 func TestAuthChaos_ExpiredAndMutatedTokens(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	// Expired JWT (exp=0 means 1970-01-01) - well-structured but invalid
 	expiredToken := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." +
@@ -156,12 +148,7 @@ func TestAuthChaos_ExpiredAndMutatedTokens(t *testing.T) {
 
 // TestAuthChaos_ConcurrentAuthAttempts tests concurrent authentication requests.
 func TestAuthChaos_ConcurrentAuthAttempts(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 5 * time.Second}
 	var wg sync.WaitGroup
@@ -198,12 +185,7 @@ func TestAuthChaos_ConcurrentAuthAttempts(t *testing.T) {
 
 // TestAuthChaos_HeaderInjection tests header injection and manipulation.
 func TestAuthChaos_HeaderInjection(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	maliciousHeaders := map[string]string{
 		"X-Forwarded-For": "127.0.0.1, 192.168.1.1, 10.0.0.1",

@@ -3,6 +3,7 @@ package resolvers
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -228,12 +229,12 @@ func ResolveProviders(p graphql.ResolveParams) (interface{}, error) {
 func ResolveProvider(p graphql.ResolveParams) (interface{}, error) {
 	ctx := GetGlobalContext()
 	if ctx == nil || ctx.Services == nil {
-		return nil, nil
+		return nil, fmt.Errorf("provider service unavailable")
 	}
 
 	id, ok := p.Args["id"].(string)
 	if !ok {
-		return nil, nil
+		return nil, fmt.Errorf("invalid provider ID")
 	}
 
 	provider, err := ctx.Services.GetProvider(id)
@@ -260,12 +261,12 @@ func ResolveDebates(p graphql.ResolveParams) (interface{}, error) {
 func ResolveDebate(p graphql.ResolveParams) (interface{}, error) {
 	ctx := GetGlobalContext()
 	if ctx == nil || ctx.DebateSvc == nil {
-		return nil, nil
+		return nil, fmt.Errorf("debate service unavailable")
 	}
 
 	id, ok := p.Args["id"].(string)
 	if !ok {
-		return nil, nil
+		return nil, fmt.Errorf("invalid debate ID")
 	}
 
 	return ctx.DebateSvc.GetDebate(id)
@@ -357,12 +358,12 @@ func ResolveProviderScores(p graphql.ResolveParams) (interface{}, error) {
 func ResolveCreateDebate(p graphql.ResolveParams) (interface{}, error) {
 	ctx := GetGlobalContext()
 	if ctx == nil || ctx.DebateSvc == nil {
-		return nil, nil
+		return nil, fmt.Errorf("debate service unavailable")
 	}
 
 	input := extractCreateDebateInput(p.Args)
 	if input == nil {
-		return nil, nil
+		return nil, fmt.Errorf("invalid input for createDebate")
 	}
 
 	return ctx.DebateSvc.CreateDebate(p.Context, input)
@@ -372,12 +373,12 @@ func ResolveCreateDebate(p graphql.ResolveParams) (interface{}, error) {
 func ResolveSubmitDebateResponse(p graphql.ResolveParams) (interface{}, error) {
 	ctx := GetGlobalContext()
 	if ctx == nil || ctx.DebateSvc == nil {
-		return nil, nil
+		return nil, fmt.Errorf("debate service unavailable")
 	}
 
 	input := extractDebateResponseInput(p.Args)
 	if input == nil {
-		return nil, nil
+		return nil, fmt.Errorf("invalid input for submitDebateResponse")
 	}
 
 	return ctx.DebateSvc.SubmitResponse(p.Context, input)
@@ -387,12 +388,12 @@ func ResolveSubmitDebateResponse(p graphql.ResolveParams) (interface{}, error) {
 func ResolveCreateTask(p graphql.ResolveParams) (interface{}, error) {
 	ctx := GetGlobalContext()
 	if ctx == nil || ctx.TaskSvc == nil {
-		return nil, nil
+		return nil, fmt.Errorf("task service unavailable")
 	}
 
 	input := extractCreateTaskInput(p.Args)
 	if input == nil {
-		return nil, nil
+		return nil, fmt.Errorf("invalid input for createTask")
 	}
 
 	return ctx.TaskSvc.CreateTask(p.Context, input)
@@ -402,12 +403,12 @@ func ResolveCreateTask(p graphql.ResolveParams) (interface{}, error) {
 func ResolveCancelTask(p graphql.ResolveParams) (interface{}, error) {
 	ctx := GetGlobalContext()
 	if ctx == nil || ctx.TaskSvc == nil {
-		return nil, nil
+		return nil, fmt.Errorf("task service unavailable")
 	}
 
 	id, ok := p.Args["id"].(string)
 	if !ok {
-		return nil, nil
+		return nil, fmt.Errorf("invalid task ID")
 	}
 
 	return ctx.TaskSvc.CancelTask(p.Context, id)
@@ -417,12 +418,12 @@ func ResolveCancelTask(p graphql.ResolveParams) (interface{}, error) {
 func ResolveRefreshProvider(p graphql.ResolveParams) (interface{}, error) {
 	ctx := GetGlobalContext()
 	if ctx == nil || ctx.Services == nil {
-		return nil, nil
+		return nil, fmt.Errorf("provider service unavailable")
 	}
 
 	id, ok := p.Args["id"].(string)
 	if !ok {
-		return nil, nil
+		return nil, fmt.Errorf("invalid provider ID")
 	}
 
 	provider, err := ctx.Services.RefreshProvider(p.Context, id)

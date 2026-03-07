@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -48,9 +49,7 @@ var AllLSPServers = []LSPServerConfig{
 
 // TestLSPEndpoints tests all LSP endpoints are accessible
 func TestLSPEndpoints(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping LSP endpoints test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	baseURL := os.Getenv("HELIXAGENT_URL")
 	if baseURL == "" {
@@ -79,9 +78,7 @@ func TestLSPEndpoints(t *testing.T) {
 
 // TestLSPDiagnostics tests LSP diagnostic capabilities
 func TestLSPDiagnostics(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping LSP diagnostics test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	baseURL := os.Getenv("HELIXAGENT_URL")
 	if baseURL == "" {
@@ -151,9 +148,7 @@ func main() {
 
 // TestLSPCompletion tests LSP code completion
 func TestLSPCompletion(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping LSP completion test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	baseURL := os.Getenv("HELIXAGENT_URL")
 	if baseURL == "" {
@@ -186,9 +181,7 @@ func TestLSPCompletion(t *testing.T) {
 
 // TestLSPWithLLMProviders tests LSP integration with all LLM providers
 func TestLSPWithLLMProviders(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping LSP-LLM integration test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	baseURL := os.Getenv("HELIXAGENT_URL")
 	if baseURL == "" {
@@ -251,9 +244,7 @@ var AllACPAgents = []ACPAgentConfig{
 
 // TestACPAgentDiscovery tests ACP agent discovery
 func TestACPAgentDiscovery(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping ACP agent discovery test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	baseURL := os.Getenv("HELIXAGENT_URL")
 	if baseURL == "" {
@@ -280,9 +271,7 @@ func TestACPAgentDiscovery(t *testing.T) {
 
 // TestACPAgentCommunication tests ACP agent-to-agent communication
 func TestACPAgentCommunication(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping ACP communication test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	baseURL := os.Getenv("HELIXAGENT_URL")
 	if baseURL == "" {
@@ -320,9 +309,7 @@ func TestACPAgentCommunication(t *testing.T) {
 
 // TestACPWithLLMProviders tests ACP integration with LLM providers
 func TestACPWithLLMProviders(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping ACP-LLM integration test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	baseURL := os.Getenv("HELIXAGENT_URL")
 	if baseURL == "" {
@@ -384,9 +371,7 @@ var AllEmbeddingProviders = []EmbeddingProviderConfig{
 
 // TestEmbeddingProviders tests all embedding provider endpoints
 func TestEmbeddingProviders(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping embedding providers test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	baseURL := os.Getenv("HELIXAGENT_URL")
 	if baseURL == "" {
@@ -432,9 +417,7 @@ func TestEmbeddingProviders(t *testing.T) {
 
 // TestEmbeddingBatch tests batch embedding capabilities
 func TestEmbeddingBatch(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping embedding batch test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	baseURL := os.Getenv("HELIXAGENT_URL")
 	if baseURL == "" {
@@ -474,9 +457,7 @@ func TestEmbeddingBatch(t *testing.T) {
 
 // TestEmbeddingWithVectorStores tests embedding integration with vector stores
 func TestEmbeddingWithVectorStores(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping embedding-vector store test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	baseURL := os.Getenv("HELIXAGENT_URL")
 	if baseURL == "" {
@@ -539,9 +520,7 @@ var AllVisionCapabilities = []VisionCapability{
 
 // TestVisionEndpoints tests all vision endpoints
 func TestVisionEndpoints(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping vision endpoints test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	baseURL := os.Getenv("HELIXAGENT_URL")
 	if baseURL == "" {
@@ -580,9 +559,7 @@ func TestVisionEndpoints(t *testing.T) {
 
 // TestVisionWithLLMProviders tests vision integration with LLM providers
 func TestVisionWithLLMProviders(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping vision-LLM integration test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	baseURL := os.Getenv("HELIXAGENT_URL")
 	if baseURL == "" {
@@ -625,9 +602,7 @@ func TestVisionWithLLMProviders(t *testing.T) {
 
 // TestVisionOCR tests OCR functionality
 func TestVisionOCR(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping vision OCR test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	baseURL := os.Getenv("HELIXAGENT_URL")
 	if baseURL == "" {
@@ -664,9 +639,7 @@ func TestVisionOCR(t *testing.T) {
 
 // TestProtocolsWithAIDebate tests all protocols within AI Debate system
 func TestProtocolsWithAIDebate(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping protocols-AI Debate integration test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	baseURL := os.Getenv("HELIXAGENT_URL")
 	if baseURL == "" {
@@ -708,9 +681,7 @@ func TestProtocolsWithAIDebate(t *testing.T) {
 
 // TestProtocolHealthCheck tests health endpoints for all protocols
 func TestProtocolHealthCheck(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping protocol health check test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	baseURL := os.Getenv("HELIXAGENT_URL")
 	if baseURL == "" {

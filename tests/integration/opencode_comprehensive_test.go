@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,11 +20,7 @@ import (
 // TestOpenCodeComprehensiveRequest tests the exact request pattern from OpenCode
 // This verifies that responses are complete, non-generic, and all providers participate
 func TestOpenCodeComprehensiveRequest(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping OpenCode comprehensive test (acceptable)")
-		return
-	}
-	skipIfNotRunning(t)
+	testutil.RequireServer(t)
 
 	baseURL := getBaseURL()
 
@@ -305,10 +302,7 @@ func TestOpenCodeComprehensiveRequest(t *testing.T) {
 
 // TestOpenCodeComprehensiveConcurrent tests handling of concurrent requests
 func TestOpenCodeComprehensiveConcurrent(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping concurrent requests test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 	skipIfNotRunning(t)
 
 	baseURL := getBaseURL()
@@ -391,10 +385,7 @@ func TestOpenCodeComprehensiveConcurrent(t *testing.T) {
 
 // TestOpenCodeEdgeCases tests edge cases and error handling
 func TestOpenCodeEdgeCases(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping edge cases test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 	skipIfNotRunning(t)
 
 	baseURL := getBaseURL()
@@ -513,10 +504,7 @@ func TestOpenCodeEdgeCases(t *testing.T) {
 
 // TestFallbackMechanismValidation tests that fallback providers are invoked when primary fails
 func TestFallbackMechanismValidation(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping fallback mechanism test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 	skipIfNotRunning(t)
 
 	baseURL := getBaseURL()
@@ -660,10 +648,7 @@ func TestFallbackMechanismValidation(t *testing.T) {
 
 // TestContentValidation tests that content is valid and complete
 func TestContentValidation(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping content validation test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 	skipIfNotRunning(t)
 
 	baseURL := getBaseURL()

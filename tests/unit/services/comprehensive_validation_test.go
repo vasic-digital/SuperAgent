@@ -598,12 +598,7 @@ func TestCogneeEndpointMocking(t *testing.T) {
 
 // TestServerHealthCheckIntegration validates server health check
 func TestServerHealthCheckIntegration(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-
-	// This test would normally hit the actual server
-	// For unit testing, we mock it
+	// Uses httptest mock — no real infrastructure needed
 	t.Run("health_check_returns_status", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/v1/health" {

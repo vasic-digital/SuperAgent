@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+var deadlineRegex = regexp.MustCompile(`deadline exceeded|timeout|timed out`)
+
 // ContrastiveAnalysis contains the comparison of test results across solutions.
 type ContrastiveAnalysis struct {
 	TestID          string                          `json:"test_id"`
@@ -343,8 +345,7 @@ func (a *DifferentialContrastiveAnalyzer) analyzeErrorDeep(testCase *TestCase, r
 		}
 	}
 
-	deadlinePattern := regexp.MustCompile(`deadline exceeded|timeout|timed out`)
-	if deadlinePattern.MatchString(errorMsg) {
+	if deadlineRegex.MatchString(errorMsg) {
 		causes = append(causes, &RootCause{
 			Type:        RootCausePerformance,
 			SolutionID:  solution.ID,

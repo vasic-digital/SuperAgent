@@ -14,6 +14,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 // ACPClient provides a client for testing ACP agents
@@ -139,13 +141,11 @@ var ACPAgents = []ACPAgentConfig{
 
 // TestACPAgentDiscovery tests agent discovery endpoint
 func TestACPAgentDiscovery(t *testing.T) {
+	testutil.RequireHTTPEndpoint(t, "acp", "http://localhost:8080/v1/acp/health")
 	client := NewACPClient("http://localhost:8080")
 
 	agents, err := client.ListAgents()
-	if err != nil {
-		t.Skipf("ACP service not running: %v", err)
-		return
-	}
+	require.NoError(t, err)
 
 	assert.NotEmpty(t, agents, "Should have at least one agent")
 	t.Logf("Discovered %d ACP agents: %v", len(agents), agents)
@@ -153,6 +153,7 @@ func TestACPAgentDiscovery(t *testing.T) {
 
 // TestACPAgentInfo tests getting agent information
 func TestACPAgentInfo(t *testing.T) {
+	testutil.RequireHTTPEndpoint(t, "acp", "http://localhost:8080/v1/acp/health")
 	client := NewACPClient("http://localhost:8080")
 
 	for _, agent := range ACPAgents {
@@ -171,6 +172,7 @@ func TestACPAgentInfo(t *testing.T) {
 
 // TestACPAgentExecution tests actual agent task execution
 func TestACPAgentExecution(t *testing.T) {
+	testutil.RequireHTTPEndpoint(t, "acp", "http://localhost:8080/v1/acp/health")
 	client := NewACPClient("http://localhost:8080")
 
 	testCode := `
@@ -209,20 +211,13 @@ func TestACPHealthCheck(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping functional test in short mode")
 	}
+	testutil.RequireHTTPEndpoint(t, "acp", "http://localhost:8080/v1/acp/health")
 
 	client := NewACPClient("http://localhost:8080")
 
 	resp, err := client.httpClient.Get(client.baseURL + "/v1/acp/health")
-	if err != nil {
-		t.Skipf("ACP service not running: %v", err)
-		return
-	}
+	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode == http.StatusNotFound {
-		t.Skip("ACP endpoint not found: HelixAgent not running at expected address")
-		return
-	}
 
 	require.Equal(t, http.StatusOK, resp.StatusCode, "Health check should return 200")
 }

@@ -143,7 +143,11 @@ func (dpo *DebatePerformanceOptimizer) ExecuteParallel(
 		go func(m *DebateTeamMember) {
 			defer wg.Done()
 
-			dpo.semaphore <- struct{}{}
+			select {
+			case dpo.semaphore <- struct{}{}:
+			case <-ctx.Done():
+				return
+			}
 			defer func() { <-dpo.semaphore }()
 
 			dpo.mu.Lock()
@@ -299,8 +303,11 @@ func (dpo *DebatePerformanceOptimizer) calculateConsensus(responses map[DebateTe
 func (dpo *DebatePerformanceOptimizer) getCachedResponse(prompt, model string) *CachedResponse {
 	cacheKey := dpo.generateCacheKey(prompt, model)
 	if cached, ok := dpo.cache.Load(cacheKey); ok {
-		//nolint:errcheck // type assertion safe after Load check
-		cachedResp := cached.(*CachedResponse)
+		cachedResp, ok := cached.(*CachedResponse)
+		if !ok {
+			dpo.cache.Delete(cacheKey)
+			return nil
+		}
 		if time.Since(cachedResp.Timestamp) < dpo.config.CacheTTL {
 			return cachedResp
 		}

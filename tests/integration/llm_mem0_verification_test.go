@@ -38,10 +38,7 @@ import (
 
 // TestLLMProviderMem0Verification_AllProviders tests all LLM providers with Mem0 Memory context
 func TestLLMProviderMem0Verification_AllProviders(t *testing.T) {
-	if testing.Short() {
-		t.Log("Short mode - skipping full LLM Mem0 Memory verification test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required (uses httptest mock servers)
 
 	ctx := context.Background()
 
@@ -546,10 +543,7 @@ func TestLLMProviderMem0Verification_AllProviders(t *testing.T) {
 // TestMem0IntegrationVerification tests the Mem0 Memory service integration
 // via the HelixAgent memory endpoints (proxied through /v1/cognee/ routes)
 func TestMem0IntegrationVerification(t *testing.T) {
-	if testing.Short() {
-		t.Log("Short mode - skipping Mem0 Memory integration test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required (uses httptest mock servers)
 
 	ctx := context.Background()
 	logger := logrus.New()
@@ -774,10 +768,7 @@ func TestMem0IntegrationVerification(t *testing.T) {
 // TestMem0StartupVerifierPipeline tests the complete startup verification pipeline
 // with Mem0 Memory as the primary memory backend
 func TestMem0StartupVerifierPipeline(t *testing.T) {
-	if testing.Short() {
-		t.Log("Short mode - skipping Mem0 startup verifier test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required (uses httptest mock servers)
 
 	_ = context.Background()
 	logger := logrus.New()
@@ -834,10 +825,7 @@ func TestMem0StartupVerifierPipeline(t *testing.T) {
 
 // TestMem0LLMProviderConcurrency tests concurrent provider access with Mem0 Memory context
 func TestMem0LLMProviderConcurrency(t *testing.T) {
-	if testing.Short() {
-		t.Log("Short mode - skipping Mem0 concurrency test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required (uses httptest mock servers)
 
 	ctx := context.Background()
 
@@ -924,10 +912,7 @@ func TestMem0LLMProviderConcurrency(t *testing.T) {
 
 // TestMem0ProviderToolCalling tests tool/function calling capabilities with Mem0 Memory
 func TestMem0ProviderToolCalling(t *testing.T) {
-	if testing.Short() {
-		t.Log("Short mode - skipping Mem0 tool calling test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required (uses httptest mock servers)
 
 	ctx := context.Background()
 
@@ -1006,10 +991,7 @@ func TestMem0ProviderToolCalling(t *testing.T) {
 
 // TestMem0EndToEndLLMWorkflow tests a complete end-to-end workflow with Mem0 Memory
 func TestMem0EndToEndLLMWorkflow(t *testing.T) {
-	if testing.Short() {
-		t.Log("Short mode - skipping Mem0 E2E workflow test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required (uses httptest mock servers)
 
 	ctx := context.Background()
 	logger := logrus.New()
@@ -1177,10 +1159,7 @@ func mem0MinInt(a, b int) int {
 
 // TestMem0ServiceFromConfig tests Mem0 Memory service creation from config
 func TestMem0ServiceFromConfig(t *testing.T) {
-	if testing.Short() {
-		t.Log("Short mode - skipping Mem0 Memory config test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required
 
 	logger := logrus.New()
 

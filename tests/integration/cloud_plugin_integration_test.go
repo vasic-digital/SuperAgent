@@ -15,10 +15,7 @@ import (
 
 // TestCloudIntegrationManager tests cloud provider integration
 func TestCloudIntegrationManager(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
@@ -101,10 +98,7 @@ func TestCloudIntegrationManager(t *testing.T) {
 
 // TestPluginSystemIntegration tests the plugin system integration
 func TestPluginSystemIntegration(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required
 
 	t.Run("Registry and Loader integration", func(t *testing.T) {
 		registry := plugins.NewRegistry()
@@ -147,10 +141,7 @@ func TestPluginSystemIntegration(t *testing.T) {
 
 // TestServiceToolIntegration tests service and tool integration
 func TestServiceToolIntegration(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
@@ -254,10 +245,7 @@ func TestServiceToolIntegration(t *testing.T) {
 
 // TestContextAndCacheIntegration tests context manager caching integration
 func TestContextAndCacheIntegration(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required
 
 	t.Run("Cache results with context", func(t *testing.T) {
 		contextManager := services.NewContextManager(100)

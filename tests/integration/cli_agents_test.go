@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -283,13 +284,7 @@ func truncateCLIResponse(s string, max int) string {
 
 // TestHelixCodeStreamingIntegrity tests streaming response integrity for HelixCode
 func TestHelixCodeStreamingIntegrity(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping long-running streaming test")
-		return
-	}
-	if !cliAgentServiceAvailable(t) {
-		return
-	}
+	testutil.RequireServer(t)
 	if !helixCodeExists(t) {
 		return
 	}
@@ -387,13 +382,7 @@ func TestHelixCodeStreamingIntegrity(t *testing.T) {
 
 // TestHelixCodeCodebaseAnalysis tests codebase analysis for HelixCode project
 func TestHelixCodeCodebaseAnalysis(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping long-running test")
-		return
-	}
-	if !cliAgentServiceAvailable(t) {
-		return
-	}
+	testutil.RequireServer(t)
 	if !helixCodeExists(t) {
 		return
 	}
@@ -460,13 +449,7 @@ func TestHelixCodeCodebaseAnalysis(t *testing.T) {
 
 // TestOpenCodeStreamingIntegrity tests streaming response integrity for OpenCode
 func TestOpenCodeStreamingIntegrity(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping long-running test")
-		return
-	}
-	if !cliAgentServiceAvailable(t) {
-		return
-	}
+	testutil.RequireServer(t)
 
 	baseURL := cliAgentGetBaseURL()
 
@@ -557,13 +540,7 @@ func TestOpenCodeStreamingIntegrity(t *testing.T) {
 
 // TestOpenCodeBearMailAnalysis tests OpenCode analyzing Bear-Mail project
 func TestOpenCodeBearMailAnalysis(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping long-running test")
-		return
-	}
-	if !cliAgentServiceAvailable(t) {
-		return
-	}
+	testutil.RequireServer(t)
 	if !bearMailExists(t) {
 		return
 	}
@@ -603,13 +580,7 @@ func TestOpenCodeBearMailAnalysis(t *testing.T) {
 
 // TestClineStreamingIntegrity tests streaming response integrity for Cline
 func TestClineStreamingIntegrity(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping long-running test")
-		return
-	}
-	if !cliAgentServiceAvailable(t) {
-		return
-	}
+	testutil.RequireServer(t)
 
 	// Check if Cline CLI is available
 	if _, err := os.Stat(clineCLIPath); err != nil {
@@ -680,13 +651,7 @@ func TestClineStreamingIntegrity(t *testing.T) {
 
 // TestCrossAgentConsistency tests that all CLI agents receive consistent responses
 func TestCrossAgentConsistency(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping long-running test")
-		return
-	}
-	if !cliAgentServiceAvailable(t) {
-		return
-	}
+	testutil.RequireServer(t)
 
 	baseURL := cliAgentGetBaseURL()
 
@@ -736,13 +701,7 @@ func TestCrossAgentConsistency(t *testing.T) {
 
 // TestToolCallFormatAcrossAgents tests tool call format consistency
 func TestToolCallFormatAcrossAgents(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping long-running test")
-		return
-	}
-	if !cliAgentServiceAvailable(t) {
-		return
-	}
+	testutil.RequireServer(t)
 
 	baseURL := cliAgentGetBaseURL()
 
@@ -837,13 +796,7 @@ func TestToolCallFormatAcrossAgents(t *testing.T) {
 
 // TestResponseValidityAllAgents tests response validity across all agent types
 func TestResponseValidityAllAgents(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping long-running test")
-		return
-	}
-	if !cliAgentServiceAvailable(t) {
-		return
-	}
+	testutil.RequireServer(t)
 
 	baseURL := cliAgentGetBaseURL()
 
@@ -918,13 +871,7 @@ func TestResponseValidityAllAgents(t *testing.T) {
 
 // TestNoResponseCutoffAllAgents tests that responses don't get cut off
 func TestNoResponseCutoffAllAgents(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping long-running test")
-		return
-	}
-	if !cliAgentServiceAvailable(t) {
-		return
-	}
+	testutil.RequireServer(t)
 
 	baseURL := cliAgentGetBaseURL()
 

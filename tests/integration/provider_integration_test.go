@@ -1214,10 +1214,6 @@ func TestScenario_ProviderFailover(t *testing.T) {
 // =============================================================================
 
 func TestProviderRegistry_Performance(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping performance test in short mode")
-	}
-
 	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 
 	// Register many providers

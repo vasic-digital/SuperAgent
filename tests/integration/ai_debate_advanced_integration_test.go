@@ -15,10 +15,7 @@ import (
 
 // TestAdvancedAIDebateIntegration tests the complete advanced AI debate system
 func TestAdvancedAIDebateIntegration(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping advanced integration test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required
 
 	// Setup test configuration
 	cfg := setupAdvancedTestConfig(t)

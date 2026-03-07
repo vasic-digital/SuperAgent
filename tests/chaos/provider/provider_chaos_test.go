@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 const baseURL = "http://localhost:7061"
@@ -29,12 +31,7 @@ func checkAvailable(url string) bool {
 // TestProviderChaos_InvalidModelIDs sends requests with random invalid model IDs
 // to verify graceful error handling and fallback.
 func TestProviderChaos_InvalidModelIDs(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	invalidModels := []string{
 		"", "nonexistent-model", "gpt-999999", "invalid/model",
@@ -90,12 +87,7 @@ func TestProviderChaos_InvalidModelIDs(t *testing.T) {
 // TestProviderChaos_ConcurrentProviderRequests fires concurrent requests targeting
 // different providers simultaneously.
 func TestProviderChaos_ConcurrentProviderRequests(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	providers := []string{
 		"openai", "claude", "gemini", "deepseek", "mistral",
@@ -150,12 +142,7 @@ func TestProviderChaos_ConcurrentProviderRequests(t *testing.T) {
 // TestProviderChaos_ProviderHealthUnderLoad checks provider health endpoint
 // under high concurrent load.
 func TestProviderChaos_ProviderHealthUnderLoad(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 5 * time.Second}
 	var wg sync.WaitGroup
@@ -194,12 +181,7 @@ func TestProviderChaos_ProviderHealthUnderLoad(t *testing.T) {
 // TestProviderChaos_RecoveryAfterProviderExhaustion checks that the server recovers
 // after a storm of failing provider requests.
 func TestProviderChaos_RecoveryAfterProviderExhaustion(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 10 * time.Second}
 

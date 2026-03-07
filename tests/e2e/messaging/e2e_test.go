@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -17,6 +16,7 @@ import (
 	"dev.helix.agent/internal/messaging/dlq"
 	"dev.helix.agent/internal/messaging/inmemory"
 	"dev.helix.agent/internal/messaging/replay"
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -423,19 +423,14 @@ func TestE2E_GracefulDegradation(t *testing.T) {
 
 // TestE2E_APIEndpoints tests HTTP API endpoints
 func TestE2E_APIEndpoints(t *testing.T) {
-	// Skip if server not running
-	baseURL := os.Getenv("HELIXAGENT_TEST_URL")
-	if baseURL == "" {
-		t.Skip("HELIXAGENT_TEST_URL not set, skipping API tests")
-	}
+	testutil.RequireServer(t)
 
+	baseURL := testutil.ServerURL()
 	client := &http.Client{Timeout: 10 * time.Second}
 
 	// Test health endpoint
 	resp, err := client.Get(baseURL + "/health")
-	if err != nil {
-		t.Skipf("Server not available: %v", err)
-	}
+	require.NoError(t, err)
 	defer resp.Body.Close()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 

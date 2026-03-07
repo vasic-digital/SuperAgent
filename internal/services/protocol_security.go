@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"strings"
@@ -103,9 +105,11 @@ func (s *ProtocolSecurity) ValidateAccess(ctx context.Context, req ProtocolAcces
 			permission == fmt.Sprintf("%s:*", req.Protocol) ||
 			permission == "*" {
 			// Update last used time
-			s.mu.Lock()
-			apiKey.LastUsed = time.Now()
-			s.mu.Unlock()
+			func() {
+				s.mu.Lock()
+				defer s.mu.Unlock()
+				apiKey.LastUsed = time.Now()
+			}()
 
 			return nil
 		}
@@ -249,8 +253,12 @@ func generateSecureToken() string {
 }
 
 func generateID() string {
-	// Simple ID generation - in production, use crypto/rand
-	return fmt.Sprintf("%d", time.Now().UnixNano())
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		// Fallback only if crypto/rand fails (extremely rare)
+		return fmt.Sprintf("%d", time.Now().UnixNano())
+	}
+	return hex.EncodeToString(b)
 }
 
 // Middleware helpers

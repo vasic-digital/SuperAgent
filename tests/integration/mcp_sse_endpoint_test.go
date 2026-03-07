@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -25,10 +26,7 @@ func getHelixAgentBaseURL() string {
 
 // TestHelixAgentSSEEndpoints verifies all 9 HelixAgent SSE endpoints return proper SSE responses
 func TestHelixAgentSSEEndpoints(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping SSE endpoint tests (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	baseURL := getHelixAgentBaseURL()
 
@@ -161,10 +159,7 @@ func TestHelixAgentSSEEndpoints(t *testing.T) {
 
 // TestSSEProtocolToolsExist verifies each protocol exposes at least 1 tool
 func TestSSEProtocolToolsExist(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping SSE protocol tools test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	baseURL := getHelixAgentBaseURL()
 	client := &http.Client{Timeout: 3 * time.Second}
@@ -224,10 +219,7 @@ func TestSSEProtocolToolsExist(t *testing.T) {
 
 // TestSSEProtocolCapabilities verifies each protocol returns valid capabilities
 func TestSSEProtocolCapabilities(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping SSE protocol capabilities test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	baseURL := getHelixAgentBaseURL()
 	client := &http.Client{Timeout: 3 * time.Second}
@@ -285,10 +277,7 @@ func TestSSEProtocolCapabilities(t *testing.T) {
 
 // TestMCPConfigURLCorrectness verifies generated configs have correct URLs
 func TestMCPConfigURLCorrectness(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping MCP config URL test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	// Check if helixagent binary exists
 	binaryPath := "bin/helixagent"
@@ -316,10 +305,7 @@ func TestMCPConfigURLCorrectness(t *testing.T) {
 
 // TestFormattersRESTEndpointPreserved verifies GET /v1/formatters still returns JSON list
 func TestFormattersRESTEndpointPreserved(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping formatters REST test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	baseURL := getHelixAgentBaseURL()
 	client := &http.Client{Timeout: 3 * time.Second}
@@ -381,10 +367,7 @@ func TestFormattersRESTEndpointPreserved(t *testing.T) {
 
 // TestNPMPackageNamesCorrect verifies npm registry returns 200 for our MCP packages
 func TestNPMPackageNamesCorrect(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping npm package test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 10 * time.Second}
 
@@ -434,10 +417,7 @@ func TestNPMPackageNamesCorrect(t *testing.T) {
 
 // TestLocalMCPStdioRespond verifies local MCP servers respond to JSON-RPC initialize via stdio
 func TestLocalMCPStdioRespond(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping local MCP stdio test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	servers := []struct {
 		name    string

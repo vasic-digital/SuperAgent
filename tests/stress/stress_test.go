@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 // StressTestConfig holds configuration for stress tests
@@ -48,21 +50,14 @@ func checkServerAvailable(baseURL string, timeout time.Duration) bool {
 
 // TestHTTPStress performs HTTP stress testing
 func TestHTTPStress(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping stress test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	config := StressTestConfig{
-		BaseURL:     "http://localhost:7061",
+		BaseURL:     testutil.ServerURL(),
 		Concurrency: 50,
 		Duration:    30 * time.Second,
 		RequestRate: 100, // 100 req/sec
 		Timeout:     30 * time.Second,
-	}
-
-	// Skip if server is not available
-	if !checkServerAvailable(config.BaseURL, 5*time.Second) {
-		t.Skip("Skipping stress test - server not available at " + config.BaseURL)
 	}
 
 	t.Run("APIEndpointStress", func(t *testing.T) {
@@ -103,21 +98,14 @@ func TestHTTPStress(t *testing.T) {
 
 // TestMemoryStress performs memory stress testing
 func TestMemoryStress(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping memory stress test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	config := StressTestConfig{
-		BaseURL:     "http://localhost:7061",
+		BaseURL:     testutil.ServerURL(),
 		Concurrency: 100,
 		Duration:    60 * time.Second,
 		RequestRate: 200, // 200 req/sec
 		Timeout:     30 * time.Second,
-	}
-
-	// Skip if server is not available
-	if !checkServerAvailable(config.BaseURL, 5*time.Second) {
-		t.Skip("Skipping stress test - server not available at " + config.BaseURL)
 	}
 
 	t.Run("MemoryLeakDetection", func(t *testing.T) {
@@ -156,15 +144,9 @@ func TestMemoryStress(t *testing.T) {
 
 // TestConnectionStress performs connection stress testing
 func TestConnectionStress(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping connection stress test in short mode")
-	}
+	testutil.RequireServer(t)
 
-	baseURL := "http://localhost:7061"
-	// Skip if server is not available
-	if !checkServerAvailable(baseURL, 5*time.Second) {
-		t.Skip("Skipping stress test - server not available at " + baseURL)
-	}
+	baseURL := testutil.ServerURL()
 
 	t.Run("MaxConnections", func(t *testing.T) {
 		maxConnections := 1000
@@ -246,14 +228,7 @@ func TestConnectionStress(t *testing.T) {
 
 // TestLoadGradual performs gradual load increase testing
 func TestLoadGradual(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping gradual load test in short mode")
-	}
-
-	// Skip if server is not available
-	if !checkServerAvailable("http://localhost:7061", 5*time.Second) {
-		t.Skip("Skipping stress test - server not available")
-	}
+	testutil.RequireServer(t)
 
 	stages := []struct {
 		concurrency int
@@ -270,7 +245,7 @@ func TestLoadGradual(t *testing.T) {
 
 	for _, stage := range stages {
 		config := StressTestConfig{
-			BaseURL:     "http://localhost:7061",
+			BaseURL:     testutil.ServerURL(),
 			Concurrency: stage.concurrency,
 			Duration:    stage.duration,
 			RequestRate: stage.concurrency * 2, // 2x concurrent connections

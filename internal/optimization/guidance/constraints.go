@@ -443,11 +443,21 @@ func (c *FormatConstraint) Validate(output string) error {
 }
 
 var (
-	emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
-	urlRegex   = regexp.MustCompile(`^https?://[^\s]+$`)
-	uuidRegex  = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
-	ipv4Regex  = regexp.MustCompile(`^(\d{1,3}\.){3}\d{1,3}$`)
-	phoneRegex = regexp.MustCompile(`^[\d\s\-\+\(\)]{7,20}$`)
+	emailRegex    = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+	urlRegex      = regexp.MustCompile(`^https?://[^\s]+$`)
+	uuidRegex     = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+	ipv4Regex     = regexp.MustCompile(`^(\d{1,3}\.){3}\d{1,3}$`)
+	phoneRegex    = regexp.MustCompile(`^[\d\s\-\+\(\)]{7,20}$`)
+	dateISORegex   = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
+	dateSlashRegex = regexp.MustCompile(`^\d{4}/\d{2}/\d{2}$`)
+	numberedListRegex  = regexp.MustCompile(`^\d+[\.\)]\s`)
+	kvWordColonRegex   = regexp.MustCompile(`^\s*\w+\s*[:=]\s*.+`)
+	kvQuotedColonRegex = regexp.MustCompile(`^\s*"[^"]+"\s*[:=]\s*.+`)
+	grammarRuleRegex   = regexp.MustCompile(`(\w+)\s*(?:=|::=|:)\s*(.+?)(?:;|$)`)
+	dblQuotedRegex     = regexp.MustCompile(`"([^"]+)"`)
+	sglQuotedRegex     = regexp.MustCompile(`'([^']+)'`)
+	optionalBracketRegex = regexp.MustCompile(`\[([^\]]+)\]`)
+	repetitionBraceRegex = regexp.MustCompile(`\{([^\}]+)\}`)
 )
 
 // Description returns a human-readable description.
@@ -724,7 +734,7 @@ func (c *GrammarConstraint) validateList(output string) error {
 	// Check for bullet/numbered list
 	lines := strings.Split(output, "\n")
 	listPatterns := []string{"- ", "* ", "• "}
-	numberedPattern := regexp.MustCompile(`^\d+[\.\)]\s`)
+	numberedPattern := numberedListRegex
 	validLines := 0
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -756,11 +766,7 @@ func (c *GrammarConstraint) validateKeyValue(output string) error {
 			return nil
 		}
 	}
-	// Check for key: value or key = value format
-	kvPatterns := []*regexp.Regexp{
-		regexp.MustCompile(`^\s*\w+\s*[:=]\s*.+`),
-		regexp.MustCompile(`^\s*"[^"]+"\s*[:=]\s*.+`),
-	}
+	kvPatterns := []*regexp.Regexp{kvWordColonRegex, kvQuotedColonRegex}
 	lines := strings.Split(output, "\n")
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -804,8 +810,7 @@ func (c *GrammarConstraint) validateBoolean(output string) error {
 
 // validateEmail checks if output is a valid email format.
 func (c *GrammarConstraint) validateEmail(output string) error {
-	emailPattern := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
-	if emailPattern.MatchString(strings.TrimSpace(output)) {
+	if emailRegex.MatchString(strings.TrimSpace(output)) {
 		return nil
 	}
 	return fmt.Errorf("%w: output is not a valid email", ErrConstraintViolation)
@@ -813,8 +818,7 @@ func (c *GrammarConstraint) validateEmail(output string) error {
 
 // validateURL checks if output is a valid URL format.
 func (c *GrammarConstraint) validateURL(output string) error {
-	urlPattern := regexp.MustCompile(`^https?://[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(/\S*)?$`)
-	if urlPattern.MatchString(strings.TrimSpace(output)) {
+	if urlRegex.MatchString(strings.TrimSpace(output)) {
 		return nil
 	}
 	return fmt.Errorf("%w: output is not a valid URL", ErrConstraintViolation)
@@ -842,16 +846,14 @@ func (c *GrammarConstraint) validateDate(output string) error {
 
 // parseDate attempts to parse a date string with the given format.
 func parseDate(value, format string) (bool, error) {
-	// Simple date validation using regexp patterns derived from format
+	// Simple date validation using pre-compiled regexp patterns
 	switch format {
 	case "2006-01-02":
-		pattern := regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
-		if pattern.MatchString(value) {
+		if dateISORegex.MatchString(value) {
 			return true, nil
 		}
 	case "2006/01/02":
-		pattern := regexp.MustCompile(`^\d{4}/\d{2}/\d{2}$`)
-		if pattern.MatchString(value) {
+		if dateSlashRegex.MatchString(value) {
 			return true, nil
 		}
 	default:
@@ -898,9 +900,7 @@ func (c *GrammarConstraint) validateEBNF(output string) error {
 // parseGrammarRules parses EBNF-style grammar into rules map.
 func (c *GrammarConstraint) parseGrammarRules() map[string]string {
 	rules := make(map[string]string)
-	// Match patterns like: rulename = definition or rulename ::= definition
-	rulePattern := regexp.MustCompile(`(\w+)\s*(?:=|::=|:)\s*(.+?)(?:;|$)`)
-	matches := rulePattern.FindAllStringSubmatch(c.Grammar, -1)
+	matches := grammarRuleRegex.FindAllStringSubmatch(c.Grammar, -1)
 	for _, match := range matches {
 		if len(match) >= 3 {
 			rules[match[1]] = strings.TrimSpace(match[2])
@@ -934,15 +934,10 @@ func (c *GrammarConstraint) ruleToRegex(rule string, rules map[string]string, de
 		return ".*" // Prevent infinite recursion
 	}
 
-	// Handle terminal strings (quoted)
-	rule = regexp.MustCompile(`"([^"]+)"`).ReplaceAllString(rule, `$1`)
-	rule = regexp.MustCompile(`'([^']+)'`).ReplaceAllString(rule, `$1`)
-
-	// Handle optional: [x] -> (x)?
-	rule = regexp.MustCompile(`\[([^\]]+)\]`).ReplaceAllString(rule, `($1)?`)
-
-	// Handle repetition: {x} -> (x)*
-	rule = regexp.MustCompile(`\{([^\}]+)\}`).ReplaceAllString(rule, `($1)*`)
+	rule = dblQuotedRegex.ReplaceAllString(rule, `$1`)
+	rule = sglQuotedRegex.ReplaceAllString(rule, `$1`)
+	rule = optionalBracketRegex.ReplaceAllString(rule, `($1)?`)
+	rule = repetitionBraceRegex.ReplaceAllString(rule, `($1)*`)
 
 	// Handle alternation: x | y already works in regex
 

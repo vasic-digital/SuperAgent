@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 const baseURL = "http://localhost:7061"
@@ -32,12 +34,7 @@ func checkAvailable(url string) bool {
 // TestAPIChaos_CompletionEndpoint hammers the completion endpoint with concurrent
 // valid and invalid requests to verify resilience.
 func TestAPIChaos_CompletionEndpoint(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	var successCount, failCount int64
 	var wg sync.WaitGroup
@@ -86,12 +83,7 @@ func TestAPIChaos_CompletionEndpoint(t *testing.T) {
 
 // TestAPIChaos_LargePayloads sends increasingly large payloads to test request size handling.
 func TestAPIChaos_LargePayloads(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 15 * time.Second}
 	sizes := []int{1024, 10 * 1024, 100 * 1024, 1024 * 1024}
@@ -122,12 +114,7 @@ func TestAPIChaos_LargePayloads(t *testing.T) {
 
 // TestAPIChaos_ConcurrentMixedRequests sends a storm of mixed valid/invalid requests.
 func TestAPIChaos_ConcurrentMixedRequests(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	type reqFunc func() *http.Request
 
@@ -199,12 +186,7 @@ func TestAPIChaos_ConcurrentMixedRequests(t *testing.T) {
 
 // TestAPIChaos_ModelListChaos rapid fires model list requests.
 func TestAPIChaos_ModelListChaos(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 5 * time.Second}
 	var wg sync.WaitGroup
@@ -243,12 +225,7 @@ func TestAPIChaos_ModelListChaos(t *testing.T) {
 
 // TestAPIChaos_ContextCancellation tests request cancellation mid-flight.
 func TestAPIChaos_ContextCancellation(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	var cancelledCount, completedCount int64
 	var wg sync.WaitGroup

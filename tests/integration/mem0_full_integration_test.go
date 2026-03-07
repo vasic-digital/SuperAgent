@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,10 +27,7 @@ const (
 
 // TestMem0Infrastructure verifies Mem0 Memory service containers are running
 func TestMem0Infrastructure(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping infrastructure test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	t.Run("ContainersRunning", func(t *testing.T) {
 		containers := []string{"helixagent-postgres", "helixagent-redis"}
@@ -65,10 +63,7 @@ func TestMem0Infrastructure(t *testing.T) {
 
 // TestMem0HealthEndpoint verifies Mem0 Memory health check functionality
 func TestMem0HealthEndpoint(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping health test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 60 * time.Second}
 
@@ -133,10 +128,7 @@ func TestMem0HealthEndpoint(t *testing.T) {
 
 // TestMem0FeatureConfiguration verifies all Mem0 Memory features are properly configured
 func TestMem0FeatureConfiguration(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping feature configuration test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {
@@ -209,10 +201,7 @@ func TestMem0FeatureConfiguration(t *testing.T) {
 
 // TestMem0MemoryOperations tests Mem0 Memory add/search functionality
 func TestMem0MemoryOperations(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping memory operations test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {
@@ -293,10 +282,7 @@ func TestMem0MemoryOperations(t *testing.T) {
 
 // TestMem0KnowledgeGraph tests Mem0 Memory knowledge graph operations
 func TestMem0KnowledgeGraph(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping knowledge graph test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {
@@ -376,10 +362,7 @@ func TestMem0KnowledgeGraph(t *testing.T) {
 
 // TestMem0CodeIntelligence tests Mem0 Memory code analysis features
 func TestMem0CodeIntelligence(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping code intelligence test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {
@@ -437,10 +420,7 @@ func main() {
 
 // TestMem0DatasetManagement tests Mem0 Memory dataset CRUD operations
 func TestMem0DatasetManagement(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping dataset management test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {
@@ -507,10 +487,7 @@ func TestMem0DatasetManagement(t *testing.T) {
 
 // TestMem0Feedback tests Mem0 Memory feedback loop functionality
 func TestMem0Feedback(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping feedback test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {
@@ -547,10 +524,7 @@ func TestMem0Feedback(t *testing.T) {
 
 // TestMem0GracefulDegradation tests that system works when Mem0 Memory is unavailable
 func TestMem0GracefulDegradation(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping graceful degradation test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {
@@ -604,10 +578,7 @@ func TestMem0GracefulDegradation(t *testing.T) {
 
 // TestMem0LLMIntegration tests that Mem0 Memory properly uses LLM providers
 func TestMem0LLMIntegration(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping LLM integration test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {
@@ -685,10 +656,7 @@ func TestMem0LLMIntegration(t *testing.T) {
 
 // TestMem0ContainerAutoStart tests that containers auto-start when needed
 func TestMem0ContainerAutoStart(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping container auto-start test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {
@@ -716,10 +684,7 @@ func TestMem0ContainerAutoStart(t *testing.T) {
 
 // TestMem0RealAPIIntegration tests actual Mem0 Memory API responses
 func TestMem0RealAPIIntegration(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping real API test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -745,9 +710,7 @@ func TestMem0RealAPIIntegration(t *testing.T) {
 
 // TestAllMem0Endpoints validates all Mem0 Memory endpoints are registered
 func TestAllMem0Endpoints(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Short mode - skipping endpoint test")
-	}
+	testutil.RequireServer(t)
 
 	// First check if HelixAgent is running with Mem0 Memory enabled
 	client := &http.Client{Timeout: 10 * time.Second}

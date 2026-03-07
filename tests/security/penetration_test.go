@@ -14,6 +14,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 // TestLLMPenetration tests LLM-specific security vulnerabilities
@@ -23,9 +25,7 @@ import (
 // Run with: go test -v ./tests/security -run TestLLMPenetration -timeout 15m
 // To skip in automated testing: set SKIP_LLM_PENETRATION_TESTS=1
 func TestLLMPenetration(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping LLM penetration test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	// Allow skipping in CI environments where real LLM API calls may timeout
 	if os.Getenv("SKIP_LLM_PENETRATION_TESTS") == "1" {
@@ -33,12 +33,8 @@ func TestLLMPenetration(t *testing.T) {
 	}
 
 	config := SecurityTestConfig{
-		BaseURL: "http://localhost:7061",
+		BaseURL: testutil.ServerURL(),
 		Timeout: 30 * time.Second, // Reduced timeout to fail fast on unresponsive LLMs
-	}
-
-	if !checkServerAvailable(config.BaseURL, 5*time.Second) {
-		t.Skip("Server not available")
 	}
 
 	t.Run("PromptInjection", func(t *testing.T) {
@@ -540,17 +536,11 @@ func sendCompletionRequest(client *http.Client, baseURL, prompt string) string {
 
 // TestAPISecurityPenetration tests API-level security vulnerabilities
 func TestAPISecurityPenetration(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping API security penetration test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	config := SecurityTestConfig{
-		BaseURL: "http://localhost:7061",
+		BaseURL: testutil.ServerURL(),
 		Timeout: 30 * time.Second,
-	}
-
-	if !checkServerAvailable(config.BaseURL, 5*time.Second) {
-		t.Skip("Server not available")
 	}
 
 	t.Run("APIFuzzing", func(t *testing.T) {
@@ -787,17 +777,11 @@ func testConcurrentAttack(t *testing.T, config SecurityTestConfig) {
 
 // TestDenialOfServiceResistance tests DoS resistance
 func TestDenialOfServiceResistance(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping DoS resistance test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	config := SecurityTestConfig{
-		BaseURL: "http://localhost:7061",
+		BaseURL: testutil.ServerURL(),
 		Timeout: 10 * time.Second,
-	}
-
-	if !checkServerAvailable(config.BaseURL, 5*time.Second) {
-		t.Skip("Server not available")
 	}
 
 	t.Run("SlowlorisSimulation", func(t *testing.T) {
@@ -873,18 +857,7 @@ func TestDenialOfServiceResistance(t *testing.T) {
 
 // TestSecuritySummary provides a summary of all security tests
 func TestSecuritySummary(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security summary in short mode")
-	}
-
-	config := SecurityTestConfig{
-		BaseURL: "http://localhost:7061",
-		Timeout: 10 * time.Second,
-	}
-
-	if !checkServerAvailable(config.BaseURL, 5*time.Second) {
-		t.Skip("Server not available")
-	}
+	testutil.RequireServer(t)
 
 	t.Log("")
 	t.Log("═══════════════════════════════════════════════════")

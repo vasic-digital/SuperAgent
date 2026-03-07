@@ -418,35 +418,38 @@ func FormatFinalResponseForFormat(format OutputFormat, content string) string {
 // Stripping Functions
 // ============================================================================
 
+// Pre-compiled regex patterns for StripMarkdown — avoids recompilation per call.
+var (
+	mdHeaderRegex     = regexp.MustCompile(`(?m)^#{1,6}\s+`)
+	mdBoldRegex       = regexp.MustCompile(`\*\*([^*]+)\*\*`)
+	mdItalicRegex     = regexp.MustCompile(`\*([^*]+)\*`)
+	mdBoldUSRegex     = regexp.MustCompile(`__([^_]+)__`)
+	mdItalicUSRegex   = regexp.MustCompile(`_([^_]+)_`)
+	mdCodeBlockRegex  = regexp.MustCompile("```[^`]*```")
+	mdInlineCodeRegex = regexp.MustCompile("`([^`]+)`")
+	mdLinkRegex       = regexp.MustCompile(`\[([^\]]+)\]\([^)]+\)`)
+	mdHRDashRegex     = regexp.MustCompile(`(?m)^---+$`)
+	mdHRStarRegex     = regexp.MustCompile(`(?m)^\*\*\*+$`)
+	mdBlockquoteRegex = regexp.MustCompile(`(?m)^>\s*`)
+	mdPipeRegex       = regexp.MustCompile(`\|`)
+	mdTableSepRegex   = regexp.MustCompile(`(?m)^[-:]+$`)
+)
+
 // StripMarkdown removes common Markdown formatting from text
 func StripMarkdown(s string) string {
-	// Remove headers
-	s = regexp.MustCompile(`(?m)^#{1,6}\s+`).ReplaceAllString(s, "")
-
-	// Remove bold/italic
-	s = regexp.MustCompile(`\*\*([^*]+)\*\*`).ReplaceAllString(s, "$1")
-	s = regexp.MustCompile(`\*([^*]+)\*`).ReplaceAllString(s, "$1")
-	s = regexp.MustCompile(`__([^_]+)__`).ReplaceAllString(s, "$1")
-	s = regexp.MustCompile(`_([^_]+)_`).ReplaceAllString(s, "$1")
-
-	// Remove code blocks
-	s = regexp.MustCompile("```[^`]*```").ReplaceAllString(s, "")
-	s = regexp.MustCompile("`([^`]+)`").ReplaceAllString(s, "$1")
-
-	// Remove links
-	s = regexp.MustCompile(`\[([^\]]+)\]\([^)]+\)`).ReplaceAllString(s, "$1")
-
-	// Remove horizontal rules
-	s = regexp.MustCompile(`(?m)^---+$`).ReplaceAllString(s, "")
-	s = regexp.MustCompile(`(?m)^\*\*\*+$`).ReplaceAllString(s, "")
-
-	// Remove blockquotes
-	s = regexp.MustCompile(`(?m)^>\s*`).ReplaceAllString(s, "")
-
-	// Remove table formatting
-	s = regexp.MustCompile(`\|`).ReplaceAllString(s, " ")
-	s = regexp.MustCompile(`(?m)^[-:]+$`).ReplaceAllString(s, "")
-
+	s = mdHeaderRegex.ReplaceAllString(s, "")
+	s = mdBoldRegex.ReplaceAllString(s, "$1")
+	s = mdItalicRegex.ReplaceAllString(s, "$1")
+	s = mdBoldUSRegex.ReplaceAllString(s, "$1")
+	s = mdItalicUSRegex.ReplaceAllString(s, "$1")
+	s = mdCodeBlockRegex.ReplaceAllString(s, "")
+	s = mdInlineCodeRegex.ReplaceAllString(s, "$1")
+	s = mdLinkRegex.ReplaceAllString(s, "$1")
+	s = mdHRDashRegex.ReplaceAllString(s, "")
+	s = mdHRStarRegex.ReplaceAllString(s, "")
+	s = mdBlockquoteRegex.ReplaceAllString(s, "")
+	s = mdPipeRegex.ReplaceAllString(s, " ")
+	s = mdTableSepRegex.ReplaceAllString(s, "")
 	return s
 }
 

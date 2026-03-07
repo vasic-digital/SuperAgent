@@ -15,6 +15,7 @@ import (
 
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/services"
+	"dev.helix.agent/internal/testutil"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -342,27 +343,13 @@ func TestResponseMetadataValidation(t *testing.T) {
 
 // TestOpenCodeAPIIntegration tests the full API flow with real HTTP requests
 func TestOpenCodeAPIIntegration(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping live server ensemble test in short mode")
-	}
-	// Skip if no server is running
+	testutil.RequireServer(t)
 	serverURL := os.Getenv("HELIXAGENT_TEST_URL")
 	if serverURL == "" {
-		serverURL = "http://localhost:7061"
+		serverURL = testutil.ServerURL()
 	}
 
-	// Check if server is available - use longer timeout for ensemble operations
 	client := &http.Client{Timeout: 60 * time.Second}
-	healthResp, err := client.Get(serverURL + "/health")
-	if err != nil {
-		t.Logf("HelixAgent server not available (acceptable)")
-		return
-	}
-	healthResp.Body.Close()
-	if healthResp.StatusCode != http.StatusOK {
-		t.Logf("HelixAgent server not healthy (acceptable)")
-		return
-	}
 
 	t.Run("ChatCompletions returns ensemble response", func(t *testing.T) {
 		reqBody := map[string]interface{}{

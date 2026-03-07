@@ -627,6 +627,13 @@ func (g *CodeInjectionBlocker) Check(ctx context.Context, content string, metada
 	}, nil
 }
 
+// Pre-compiled regexes for output sanitization
+var (
+	htmlTagRegex      = regexp.MustCompile(`<[^>]*>`)
+	jsURLRegex        = regexp.MustCompile(`(?i)javascript\s*:`)
+	eventHandlerRegex = regexp.MustCompile(`(?i)\bon\w+\s*=`)
+)
+
 // OutputSanitizer sanitizes LLM output to prevent XSS and other issues
 type OutputSanitizer struct {
 	sanitizeHTML bool
@@ -653,24 +660,18 @@ func (g *OutputSanitizer) Check(ctx context.Context, content string, metadata ma
 	modified := content
 
 	if g.sanitizeHTML {
-		// Basic HTML tag removal/escape
-		htmlPattern := regexp.MustCompile(`<[^>]*>`)
-		if htmlPattern.MatchString(content) {
-			modified = htmlPattern.ReplaceAllString(modified, "")
+		if htmlTagRegex.MatchString(content) {
+			modified = htmlTagRegex.ReplaceAllString(modified, "")
 		}
 	}
 
 	if g.sanitizeJS {
-		// Remove javascript: URLs
-		jsPattern := regexp.MustCompile(`(?i)javascript\s*:`)
-		if jsPattern.MatchString(content) {
-			modified = jsPattern.ReplaceAllString(modified, "")
+		if jsURLRegex.MatchString(content) {
+			modified = jsURLRegex.ReplaceAllString(modified, "")
 		}
 
-		// Remove on* event handlers
-		eventPattern := regexp.MustCompile(`(?i)\bon\w+\s*=`)
-		if eventPattern.MatchString(content) {
-			modified = eventPattern.ReplaceAllString(modified, "")
+		if eventHandlerRegex.MatchString(content) {
+			modified = eventHandlerRegex.ReplaceAllString(modified, "")
 		}
 	}
 

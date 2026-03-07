@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/testutil"
 	appversion "dev.helix.agent/internal/version"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -894,10 +895,7 @@ func TestRun_ServerStartAndShutdown(t *testing.T) {
 	// - The router setup uses config.Load() internally
 	//
 	// To run this test, use: make test-with-infra
-	// Skip if infrastructure is not available
-	if os.Getenv("DB_HOST") == "" || os.Getenv("JWT_SECRET") == "" {
-		t.Skip("Requires full infrastructure (database, JWT_SECRET) - run with make test-with-infra")
-	}
+	testutil.RequireInfra(t)
 
 	// Create a shutdown signal channel
 	shutdownSignal := make(chan os.Signal, 1)
@@ -936,10 +934,7 @@ func TestRun_ServerStartAndShutdown(t *testing.T) {
 
 func TestRun_NilLogger(t *testing.T) {
 	// This test requires a full environment setup
-	// Skip if infrastructure is not available
-	if os.Getenv("DB_HOST") == "" || os.Getenv("JWT_SECRET") == "" {
-		t.Skip("Requires full infrastructure (database, JWT_SECRET) - run with make test-with-infra")
-	}
+	testutil.RequireInfra(t)
 
 	shutdownSignal := make(chan os.Signal, 1)
 
@@ -976,10 +971,7 @@ func TestRun_NilLogger(t *testing.T) {
 
 func TestRun_PortInUse(t *testing.T) {
 	// This test requires a full environment setup
-	// Skip if infrastructure is not available
-	if os.Getenv("DB_HOST") == "" || os.Getenv("JWT_SECRET") == "" {
-		t.Skip("Requires full infrastructure (database, JWT_SECRET) - run with make test-with-infra")
-	}
+	testutil.RequireInfra(t)
 
 	// Start a server on a specific port
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
@@ -1098,9 +1090,7 @@ func TestCheckChromaDBHealth(t *testing.T) {
 }
 
 func TestCheckPostgresHealth(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test in short mode")
-	}
+	testutil.RequirePostgres(t)
 	// Requires running PostgreSQL - skip if not accessible
 	if err := checkPostgresHealth(); err != nil {
 		t.Skipf("Skipping: PostgreSQL not accessible: %v", err)
@@ -1110,9 +1100,7 @@ func TestCheckPostgresHealth(t *testing.T) {
 }
 
 func TestCheckRedisHealth(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test in short mode")
-	}
+	testutil.RequireRedis(t)
 	// Requires running Redis
 	err := checkRedisHealth()
 	assert.NoError(t, err)
@@ -1129,9 +1117,7 @@ func TestShowVersion(t *testing.T) {
 }
 
 func TestVerifyServicesHealth_PostgresAndRedis(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test in short mode")
-	}
+	testutil.RequireInfra(t)
 	// Requires running PostgreSQL and Redis - skip if not accessible
 	if err := checkPostgresHealth(); err != nil {
 		t.Skipf("Skipping: PostgreSQL not accessible: %v", err)
@@ -1238,9 +1224,7 @@ func TestVerifyServicesHealth_SingleService(t *testing.T) {
 	logger.SetLevel(logrus.ErrorLevel)
 
 	t.Run("Postgres", func(t *testing.T) {
-		if testing.Short() {
-			t.Skip("skipping integration test in short mode")
-		}
+		testutil.RequirePostgres(t)
 		if err := checkPostgresHealth(); err != nil {
 			t.Skipf("Skipping: PostgreSQL not accessible: %v", err)
 		}
@@ -1249,9 +1233,7 @@ func TestVerifyServicesHealth_SingleService(t *testing.T) {
 	})
 
 	t.Run("Redis", func(t *testing.T) {
-		if testing.Short() {
-			t.Skip("skipping integration test in short mode")
-		}
+		testutil.RequireRedis(t)
 		if err := checkRedisHealth(); err != nil {
 			t.Skipf("Skipping: Redis not accessible: %v", err)
 		}
@@ -1338,9 +1320,7 @@ func TestGetRunningServices_EmptyResult(t *testing.T) {
 // TestCheckHealthFunctions tests the health check functions
 func TestCheckHealthFunctions(t *testing.T) {
 	t.Run("PostgresHealth_Placeholder", func(t *testing.T) {
-		if testing.Short() {
-			t.Skip("skipping integration test in short mode")
-		}
+		testutil.RequirePostgres(t)
 		// Requires running PostgreSQL - skip if not accessible
 		if err := checkPostgresHealth(); err != nil {
 			t.Skipf("Skipping: PostgreSQL not accessible: %v", err)
@@ -1350,9 +1330,7 @@ func TestCheckHealthFunctions(t *testing.T) {
 	})
 
 	t.Run("RedisHealth_Placeholder", func(t *testing.T) {
-		if testing.Short() {
-			t.Skip("skipping integration test in short mode")
-		}
+		testutil.RequireRedis(t)
 		// Requires running Redis - skip if not accessible
 		if err := checkRedisHealth(); err != nil {
 			t.Skipf("Skipping: Redis not accessible: %v", err)
@@ -1583,9 +1561,7 @@ func TestGetRunningServices_WithDocker(t *testing.T) {
 
 // TestVerifyServicesHealth_CombinedServices tests various service combinations
 func TestVerifyServicesHealth_CombinedServices(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test in short mode")
-	}
+	testutil.RequireInfra(t)
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)

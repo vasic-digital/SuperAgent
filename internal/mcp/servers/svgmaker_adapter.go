@@ -13,6 +13,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Pre-compiled regexes for SVG validation
+var (
+	svgOpenTagRegex  = regexp.MustCompile(`<([a-zA-Z][a-zA-Z0-9]*)[^/>]*>`)
+	svgCloseTagRegex = regexp.MustCompile(`</([a-zA-Z][a-zA-Z0-9]*)>`)
+)
+
 // SVGMakerAdapterConfig holds configuration for SVGMaker MCP adapter
 type SVGMakerAdapterConfig struct {
 	// DefaultWidth is the default SVG width
@@ -766,9 +772,8 @@ func (s *SVGMakerAdapter) ValidateSVG(ctx context.Context, svg string) (bool, []
 		errors = append(errors, "missing xmlns namespace declaration")
 	}
 
-	// Check for balanced tags
-	openTags := regexp.MustCompile(`<([a-zA-Z][a-zA-Z0-9]*)[^/>]*>`).FindAllStringSubmatch(svg, -1)
-	closeTags := regexp.MustCompile(`</([a-zA-Z][a-zA-Z0-9]*)>`).FindAllStringSubmatch(svg, -1)
+	openTags := svgOpenTagRegex.FindAllStringSubmatch(svg, -1)
+	closeTags := svgCloseTagRegex.FindAllStringSubmatch(svg, -1)
 
 	openCount := make(map[string]int)
 	closeCount := make(map[string]int)
@@ -784,7 +789,11 @@ func (s *SVGMakerAdapter) ValidateSVG(ctx context.Context, svg string) (bool, []
 	for tag, count := range openCount {
 		if closeCount[tag] != count {
 			// Check if self-closing
-			selfClosing := regexp.MustCompile(`<`+tag+`[^>]*/>`).FindAllString(svg, -1)
+			selfClosingRe, err := regexp.Compile(`<` + tag + `[^>]*/>`)
+			var selfClosing []string
+			if err == nil {
+				selfClosing = selfClosingRe.FindAllString(svg, -1)
+			}
 			if closeCount[tag]+len(selfClosing) != count {
 				errors = append(errors, fmt.Sprintf("unbalanced <%s> tags", tag))
 			}

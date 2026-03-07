@@ -13,6 +13,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var controlCharRegex = regexp.MustCompile(`[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]`)
+
 // ValidationConfig defines validation parameters
 type ValidationConfig struct {
 	MaxBodySize      int64   // Maximum request body size in bytes
@@ -299,8 +301,6 @@ func (v *Validator) sanitizeJSON(data []byte) []byte {
 	// Convert to string for regex processing
 	content := string(data)
 
-	// Remove control characters except for \n, \r, \t
-	controlCharRegex := regexp.MustCompile(`[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]`)
 	content = controlCharRegex.ReplaceAllString(content, "")
 
 	return []byte(content)

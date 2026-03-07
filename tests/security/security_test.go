@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 // SecurityTestConfig holds configuration for security tests
@@ -44,18 +46,11 @@ func checkServerAvailable(baseURL string, timeout time.Duration) bool {
 
 // TestInputValidation tests for input validation vulnerabilities
 func TestInputValidation(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	config := SecurityTestConfig{
-		BaseURL: "http://localhost:7061",
+		BaseURL: testutil.ServerURL(),
 		Timeout: 30 * time.Second,
-	}
-
-	// Skip if server is not available
-	if !checkServerAvailable(config.BaseURL, 5*time.Second) {
-		t.Skip("Skipping security test - server not available at " + config.BaseURL)
 	}
 
 	t.Run("SQLInjection", func(t *testing.T) {
@@ -236,18 +231,11 @@ func TestInputValidation(t *testing.T) {
 
 // TestAuthenticationSecurity tests authentication and authorization
 func TestAuthenticationSecurity(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping authentication security test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	config := SecurityTestConfig{
-		BaseURL: "http://localhost:7061",
+		BaseURL: testutil.ServerURL(),
 		Timeout: 30 * time.Second,
-	}
-
-	// Skip if server is not available
-	if !checkServerAvailable(config.BaseURL, 5*time.Second) {
-		t.Skip("Skipping security test - server not available at " + config.BaseURL)
 	}
 
 	t.Run("UnauthorizedAccess", func(t *testing.T) {
@@ -309,12 +297,10 @@ func TestAuthenticationSecurity(t *testing.T) {
 
 // TestRateLimitingSecurity tests rate limiting mechanisms
 func TestRateLimitingSecurity(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping rate limiting security test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	config := SecurityTestConfig{
-		BaseURL: "http://localhost:7061",
+		BaseURL: testutil.ServerURL(),
 		Timeout: 30 * time.Second,
 	}
 
@@ -388,9 +374,7 @@ func TestRateLimitingSecurity(t *testing.T) {
 
 // TestTLSConfiguration tests TLS security (if applicable)
 func TestTLSConfiguration(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping TLS security test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	config := SecurityTestConfig{
 		BaseURL: "https://localhost:8443", // Assuming HTTPS on different port
@@ -462,18 +446,11 @@ func TestTLSConfiguration(t *testing.T) {
 
 // TestInformationDisclosure tests for information disclosure vulnerabilities
 func TestInformationDisclosure(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping information disclosure test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	config := SecurityTestConfig{
-		BaseURL: "http://localhost:7061",
+		BaseURL: testutil.ServerURL(),
 		Timeout: 30 * time.Second,
-	}
-
-	// Skip if server is not available
-	if !checkServerAvailable(config.BaseURL, 5*time.Second) {
-		t.Skip("Skipping security test - server not available at " + config.BaseURL)
 	}
 
 	t.Run("ServerErrorMessages", func(t *testing.T) {
@@ -550,12 +527,10 @@ func TestInformationDisclosure(t *testing.T) {
 
 // TestSecurityHeaders tests for proper security headers
 func TestSecurityHeaders(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security headers test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	config := SecurityTestConfig{
-		BaseURL: "http://localhost:7061",
+		BaseURL: testutil.ServerURL(),
 		Timeout: 30 * time.Second,
 	}
 

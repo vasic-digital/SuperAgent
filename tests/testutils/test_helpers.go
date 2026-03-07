@@ -5,8 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -292,20 +294,59 @@ func SkipIfShort(t *testing.T) {
 	}
 }
 
-// SkipIfNoDatabase skips the test if database is not available
+// SkipIfNoDatabase skips the test if database is not available.
+// Performs actual TCP connectivity check against the configured PostgreSQL port.
 func SkipIfNoDatabase(t *testing.T) {
-	// Check if database connection can be established
-	// For now, just skip in short mode
+	t.Helper()
 	if testing.Short() {
-		t.Skip("Skipping test that requires database connection")
+		t.Skip("Skipping test that requires database connection (short mode)")
+	}
+	if !checkTCPEndpoint(envOrDefault("DB_HOST", "localhost"), envOrDefault("DB_PORT", "15432")) {
+		t.Skip("PostgreSQL not available — start with: make test-infra-start")
 	}
 }
 
-// SkipIfNoRedis skips the test if Redis is not available
+// SkipIfNoRedis skips the test if Redis is not available.
+// Performs actual TCP connectivity check against the configured Redis port.
 func SkipIfNoRedis(t *testing.T) {
+	t.Helper()
 	if testing.Short() {
-		t.Skip("Skipping test that requires Redis connection")
+		t.Skip("Skipping test that requires Redis connection (short mode)")
 	}
+	if !checkTCPEndpoint(envOrDefault("REDIS_HOST", "localhost"), envOrDefault("REDIS_PORT", "16379")) {
+		t.Skip("Redis not available — start with: make test-infra-start")
+	}
+}
+
+// SkipIfNoServer skips the test if the HelixAgent server is not running.
+func SkipIfNoServer(t *testing.T) {
+	t.Helper()
+	if testing.Short() {
+		t.Skip("Skipping test that requires HelixAgent server (short mode)")
+	}
+	host := envOrDefault("HELIXAGENT_HOST", "localhost")
+	port := envOrDefault("HELIXAGENT_PORT", "7061")
+	if !checkTCPEndpoint(host, port) {
+		t.Skipf("HelixAgent server not available at %s:%s — start with: make run", host, port)
+	}
+}
+
+// checkTCPEndpoint checks if a TCP endpoint is reachable.
+func checkTCPEndpoint(host, port string) bool {
+	conn, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), 2*time.Second)
+	if err != nil {
+		return false
+	}
+	conn.Close()
+	return true
+}
+
+// envOrDefault returns the env var value or a default.
+func envOrDefault(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
 }
 
 // JSONMarshal marshals to JSON and panics on error

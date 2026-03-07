@@ -10,6 +10,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 func TestNewClient(t *testing.T) {
@@ -589,12 +591,14 @@ func TestGetEmptyIDs(t *testing.T) {
 
 // Integration tests - only run when PostgreSQL with pgvector is available
 func skipIfNoPostgres(t *testing.T) *Client {
+	testutil.RequirePostgres(t)
+
 	host := os.Getenv("PGVECTOR_HOST")
 	if host == "" {
 		host = os.Getenv("DB_HOST")
 	}
 	if host == "" {
-		t.Skip("Skipping integration test: no PostgreSQL available (set PGVECTOR_HOST or DB_HOST)")
+		host = "localhost"
 	}
 
 	config := &Config{

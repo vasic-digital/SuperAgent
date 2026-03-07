@@ -11,10 +11,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"dev.helix.agent/internal/services"
+	"dev.helix.agent/internal/testutil"
 )
 
 // skipIfNoInfra skips the test if infrastructure is not available
 func skipIfNoInfra(t *testing.T) {
+	t.Helper()
+	testutil.RequireInfra(t)
 	if os.Getenv("SKIP_INTEGRATION") == "true" {
 		t.Skip("Skipping integration test (SKIP_INTEGRATION=true)")
 	}
@@ -26,9 +29,6 @@ func skipIfNoInfra(t *testing.T) {
 // TestDebateIntegration_FullWorkflow tests complete debate workflow with integrated features
 func TestDebateIntegration_FullWorkflow(t *testing.T) {
 	skipIfNoInfra(t)
-	if testing.Short() {
-		t.Skip("Skipping debate integration test with live LLM calls in short mode")
-	}
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.InfoLevel)
@@ -83,9 +83,6 @@ func TestDebateIntegration_FullWorkflow(t *testing.T) {
 // TestDebateIntegration_CodeGenerationDetection tests code generation detection triggers Test-Driven mode
 func TestDebateIntegration_CodeGenerationDetection(t *testing.T) {
 	skipIfNoInfra(t)
-	if testing.Short() {
-		t.Skip("Skipping debate integration test with live LLM calls in short mode")
-	}
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
@@ -127,9 +124,6 @@ func TestDebateIntegration_CodeGenerationDetection(t *testing.T) {
 // TestDebateIntegration_ValidationPipelineExecution tests that 4-Pass validation runs
 func TestDebateIntegration_ValidationPipelineExecution(t *testing.T) {
 	skipIfNoInfra(t)
-	if testing.Short() {
-		t.Skip("Skipping debate integration test with live LLM calls in short mode")
-	}
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
@@ -178,9 +172,6 @@ func TestDebateIntegration_ValidationPipelineExecution(t *testing.T) {
 // TestDebateIntegration_SpecializedRoleSelection tests role selection
 func TestDebateIntegration_SpecializedRoleSelection(t *testing.T) {
 	skipIfNoInfra(t)
-	if testing.Short() {
-		t.Skip("Skipping debate integration test with live LLM calls in short mode")
-	}
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
@@ -247,9 +238,6 @@ func TestDebateIntegration_SpecializedRoleSelection(t *testing.T) {
 // TestDebateIntegration_ToolEnrichmentFlag tests that tool enrichment flag is set
 func TestDebateIntegration_ToolEnrichmentFlag(t *testing.T) {
 	skipIfNoInfra(t)
-	if testing.Short() {
-		t.Skip("Skipping debate integration test with live LLM calls in short mode")
-	}
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
@@ -290,9 +278,6 @@ func TestDebateIntegration_ToolEnrichmentFlag(t *testing.T) {
 // TestDebateIntegration_MetadataPropagation tests metadata propagation through pipeline
 func TestDebateIntegration_MetadataPropagation(t *testing.T) {
 	skipIfNoInfra(t)
-	if testing.Short() {
-		t.Skip("Skipping debate integration test with live LLM calls in short mode")
-	}
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
@@ -340,9 +325,6 @@ func TestDebateIntegration_MetadataPropagation(t *testing.T) {
 // TestDebateIntegration_ConcurrentDebates tests multiple debates running concurrently
 func TestDebateIntegration_ConcurrentDebates(t *testing.T) {
 	skipIfNoInfra(t)
-	if testing.Short() {
-		t.Skip("Skipping debate integration test with live LLM calls in short mode")
-	}
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
@@ -399,9 +381,6 @@ func TestDebateIntegration_ConcurrentDebates(t *testing.T) {
 // TestDebateIntegration_TimeoutHandling tests debate timeout behavior
 func TestDebateIntegration_TimeoutHandling(t *testing.T) {
 	skipIfNoInfra(t)
-	if testing.Short() {
-		t.Skip("Skipping debate integration test with live LLM calls in short mode")
-	}
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
@@ -443,9 +422,6 @@ func TestDebateIntegration_TimeoutHandling(t *testing.T) {
 // TestDebateIntegration_EmptyParticipants tests handling of empty participants
 func TestDebateIntegration_EmptyParticipants(t *testing.T) {
 	skipIfNoInfra(t)
-	if testing.Short() {
-		t.Skip("Skipping debate integration test with live LLM calls in short mode")
-	}
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
@@ -477,9 +453,6 @@ func TestDebateIntegration_EmptyParticipants(t *testing.T) {
 // TestDebateIntegration_ContextCancellation tests context cancellation
 func TestDebateIntegration_ContextCancellation(t *testing.T) {
 	skipIfNoInfra(t)
-	if testing.Short() {
-		t.Skip("Skipping debate integration test with live LLM calls in short mode")
-	}
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
@@ -530,9 +503,6 @@ func TestDebateIntegration_ContextCancellation(t *testing.T) {
 // TestDebateIntegration_ServiceReuse tests service can be reused for multiple debates
 func TestDebateIntegration_ServiceReuse(t *testing.T) {
 	skipIfNoInfra(t)
-	if testing.Short() {
-		t.Skip("Skipping debate integration test with live LLM calls in short mode")
-	}
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)

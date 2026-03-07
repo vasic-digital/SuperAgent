@@ -13,9 +13,7 @@ import (
 )
 
 func TestFormattersSystem_EndToEnd(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping formatter system test in short mode")
-	}
+
 	logger := logrus.New()
 	logger.SetLevel(logrus.WarnLevel)
 
@@ -37,9 +35,7 @@ func TestFormattersSystem_EndToEnd(t *testing.T) {
 }
 
 func TestFormattersSystem_PythonFormatting(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping formatter system test in short mode")
-	}
+
 	logger := logrus.New()
 	logger.SetLevel(logrus.WarnLevel)
 
@@ -76,9 +72,7 @@ func TestFormattersSystem_PythonFormatting(t *testing.T) {
 }
 
 func TestFormattersRegistry_LanguageDetection(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping formatter system test in short mode")
-	}
+
 	logger := logrus.New()
 	logger.SetLevel(logrus.WarnLevel)
 
@@ -113,9 +107,7 @@ func TestFormattersRegistry_LanguageDetection(t *testing.T) {
 }
 
 func TestFormattersRegistry_GetByLanguage(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping formatter system test in short mode")
-	}
+
 	logger := logrus.New()
 	logger.SetLevel(logrus.WarnLevel)
 
@@ -141,9 +133,7 @@ func TestFormattersRegistry_GetByLanguage(t *testing.T) {
 }
 
 func TestFormattersCache(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping formatter system test in short mode")
-	}
+
 	logger := logrus.New()
 	logger.SetLevel(logrus.WarnLevel)
 
@@ -182,9 +172,7 @@ func TestFormattersCache(t *testing.T) {
 }
 
 func TestFormattersHealthCheck(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping formatter system test in short mode")
-	}
+
 	logger := logrus.New()
 	logger.SetLevel(logrus.WarnLevel)
 
@@ -207,9 +195,7 @@ func TestFormattersHealthCheck(t *testing.T) {
 }
 
 func TestFormattersBatchExecution(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping formatter system test in short mode")
-	}
+
 	logger := logrus.New()
 	logger.SetLevel(logrus.WarnLevel)
 
@@ -247,9 +233,7 @@ func TestFormattersBatchExecution(t *testing.T) {
 }
 
 func TestFormattersMiddleware(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping formatter system test in short mode")
-	}
+
 	logger := logrus.New()
 	logger.SetLevel(logrus.WarnLevel)
 

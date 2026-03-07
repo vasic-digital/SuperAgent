@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 // SecurityTestConfig holds configuration for security tests
@@ -41,17 +43,11 @@ func checkServerAvailable(baseURL string, timeout time.Duration) bool {
 
 // TestVerifierInputValidation tests for input validation vulnerabilities
 func TestVerifierInputValidation(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	config := SecurityTestConfig{
-		BaseURL: "http://localhost:7061",
+		BaseURL: testutil.ServerURL(),
 		Timeout: 30 * time.Second,
-	}
-
-	if !checkServerAvailable(config.BaseURL, 5*time.Second) {
-		t.Skip("Skipping security test - server not available at " + config.BaseURL)
 	}
 
 	client := &http.Client{Timeout: config.Timeout}
@@ -227,17 +223,11 @@ func TestVerifierInputValidation(t *testing.T) {
 
 // TestVerifierAuthentication tests authentication security
 func TestVerifierAuthentication(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	config := SecurityTestConfig{
-		BaseURL: "http://localhost:7061",
+		BaseURL: testutil.ServerURL(),
 		Timeout: 30 * time.Second,
-	}
-
-	if !checkServerAvailable(config.BaseURL, 5*time.Second) {
-		t.Skip("Skipping security test - server not available at " + config.BaseURL)
 	}
 
 	client := &http.Client{Timeout: config.Timeout}
@@ -298,17 +288,11 @@ func TestVerifierAuthentication(t *testing.T) {
 
 // TestVerifierRateLimiting tests rate limiting behavior
 func TestVerifierRateLimiting(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	config := SecurityTestConfig{
-		BaseURL: "http://localhost:7061",
+		BaseURL: testutil.ServerURL(),
 		Timeout: 30 * time.Second,
-	}
-
-	if !checkServerAvailable(config.BaseURL, 5*time.Second) {
-		t.Skip("Skipping security test - server not available at " + config.BaseURL)
 	}
 
 	client := &http.Client{Timeout: config.Timeout}
@@ -340,17 +324,11 @@ func TestVerifierRateLimiting(t *testing.T) {
 
 // TestVerifierSecurityHeaders tests security headers
 func TestVerifierSecurityHeaders(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	config := SecurityTestConfig{
-		BaseURL: "http://localhost:7061",
+		BaseURL: testutil.ServerURL(),
 		Timeout: 30 * time.Second,
-	}
-
-	if !checkServerAvailable(config.BaseURL, 5*time.Second) {
-		t.Skip("Skipping security test - server not available at " + config.BaseURL)
 	}
 
 	client := &http.Client{Timeout: config.Timeout}
@@ -411,17 +389,11 @@ func TestVerifierSecurityHeaders(t *testing.T) {
 
 // TestVerifierDataLeakage tests for data leakage vulnerabilities
 func TestVerifierDataLeakage(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
+	testutil.RequireServer(t)
 
 	config := SecurityTestConfig{
-		BaseURL: "http://localhost:7061",
+		BaseURL: testutil.ServerURL(),
 		Timeout: 30 * time.Second,
-	}
-
-	if !checkServerAvailable(config.BaseURL, 5*time.Second) {
-		t.Skip("Skipping security test - server not available at " + config.BaseURL)
 	}
 
 	client := &http.Client{Timeout: config.Timeout}

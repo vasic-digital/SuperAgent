@@ -239,10 +239,7 @@ func makeOpenAIChatRequest(t *testing.T, router *gin.Engine, req map[string]inte
 // =============================================================================
 
 func TestRequestFlow_RequestParsing(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping request flow test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required
 
 	router, registry, cleanup := setupRequestFlowTestServer(t)
 	defer cleanup()
@@ -376,10 +373,7 @@ func TestRequestFlow_RequestParsing(t *testing.T) {
 // =============================================================================
 
 func TestRequestFlow_ProviderSelection(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping provider selection test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required
 
 	t.Run("Select provider based on availability", func(t *testing.T) {
 		router, registry, cleanup := setupRequestFlowTestServer(t)
@@ -491,10 +485,7 @@ func TestRequestFlow_ProviderSelection(t *testing.T) {
 // =============================================================================
 
 func TestRequestFlow_ToolCallHandling(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping tool call test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required
 
 	t.Run("Extract tool calls from request", func(t *testing.T) {
 		router, registry, cleanup := setupRequestFlowTestServer(t)
@@ -660,10 +651,7 @@ func TestRequestFlow_ToolCallHandling(t *testing.T) {
 // =============================================================================
 
 func TestRequestFlow_ResponseFormatting(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping response formatting test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required
 
 	t.Run("Format response for OpenCode agent", func(t *testing.T) {
 		router, registry, cleanup := setupRequestFlowTestServer(t)
@@ -808,10 +796,7 @@ func TestRequestFlow_ResponseFormatting(t *testing.T) {
 // =============================================================================
 
 func TestRequestFlow_ErrorHandling(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping error handling test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required
 
 	t.Run("Handle provider unavailable", func(t *testing.T) {
 		router, _, cleanup := setupRequestFlowTestServer(t)
@@ -955,10 +940,7 @@ func TestRequestFlow_ErrorHandling(t *testing.T) {
 // =============================================================================
 
 func TestRequestFlow_CompleteFlow(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping complete flow test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required
 
 	t.Run("User message -> Provider -> Response", func(t *testing.T) {
 		router, registry, cleanup := setupRequestFlowTestServer(t)
@@ -1209,10 +1191,7 @@ func TestRequestFlow_CompleteFlow(t *testing.T) {
 // =============================================================================
 
 func TestRequestFlow_CLIAgentCompatibility(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping CLI agent compatibility test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required
 
 	t.Run("OpenCode compatible request format", func(t *testing.T) {
 		router, registry, cleanup := setupRequestFlowTestServer(t)
@@ -1333,10 +1312,7 @@ func TestRequestFlow_CLIAgentCompatibility(t *testing.T) {
 // =============================================================================
 
 func TestRequestFlow_DebateServiceIntegration(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping debate service test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required
 
 	t.Run("Debate service creates participant responses", func(t *testing.T) {
 		logger := logrus.New()
@@ -1373,10 +1349,7 @@ func TestRequestFlow_DebateServiceIntegration(t *testing.T) {
 // =============================================================================
 
 func TestRequestFlow_ConcurrentRequests(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping concurrent request test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required
 
 	router, registry, cleanup := setupRequestFlowTestServer(t)
 	defer cleanup()

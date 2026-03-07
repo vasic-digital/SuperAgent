@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -25,10 +26,7 @@ func checkServerAvailable(baseURL string, timeout time.Duration) bool {
 
 // TestFullSystemIntegration tests the complete HelixAgent system
 func TestFullSystemIntegration(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	// Test configuration
 	baseURL := "http://localhost:7061"
@@ -265,10 +263,7 @@ func TestFullSystemIntegration(t *testing.T) {
 
 // TestDockerServicesIntegration tests that all Docker services are running
 func TestDockerServicesIntegration(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping Docker services integration test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	// Skip if primary server is not available (Docker environment not running)
 	if !checkServerAvailable("http://localhost:7061", 5*time.Second) {

@@ -11,12 +11,13 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 // MCPClient provides MCP protocol communication
@@ -296,11 +297,9 @@ func (d *DebateClient) CreateDebate(req *DebateRequest) (*DebateResponse, error)
 func TestMCPServerConnectivity(t *testing.T) {
 	for _, server := range CoreMCPServers {
 		t.Run(server.Name, func(t *testing.T) {
+			testutil.RequireExternalService(t, server.Name, "localhost", fmt.Sprintf("%d", server.Port))
 			client, err := NewMCPClient(server.Port, 10*time.Second)
-			if err != nil {
-				t.Skipf("MCP server %s not running on port %d: %v", server.Name, server.Port, err)
-				return
-			}
+			require.NoError(t, err)
 			defer func() { _ = client.Close() }()
 
 			assert.NotNil(t, client)
@@ -312,11 +311,9 @@ func TestMCPServerConnectivity(t *testing.T) {
 func TestMCPServerInitialize(t *testing.T) {
 	for _, server := range CoreMCPServers {
 		t.Run(server.Name, func(t *testing.T) {
+			testutil.RequireExternalService(t, server.Name, "localhost", fmt.Sprintf("%d", server.Port))
 			client, err := NewMCPClient(server.Port, 10*time.Second)
-			if err != nil {
-				t.Skipf("MCP server %s not running: %v", server.Name, err)
-				return
-			}
+			require.NoError(t, err)
 			defer func() { _ = client.Close() }()
 
 			err = client.Initialize()
@@ -329,11 +326,9 @@ func TestMCPServerInitialize(t *testing.T) {
 func TestMCPServerToolDiscovery(t *testing.T) {
 	for _, server := range CoreMCPServers {
 		t.Run(server.Name, func(t *testing.T) {
+			testutil.RequireExternalService(t, server.Name, "localhost", fmt.Sprintf("%d", server.Port))
 			client, err := NewMCPClient(server.Port, 10*time.Second)
-			if err != nil {
-				t.Skipf("MCP server %s not running: %v", server.Name, err)
-				return
-			}
+			require.NoError(t, err)
 			defer func() { _ = client.Close() }()
 
 			err = client.Initialize()
@@ -382,11 +377,9 @@ func TestMCPToolExecution(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("%s/%s", tc.server, tc.tool), func(t *testing.T) {
+			testutil.RequireExternalService(t, tc.server, "localhost", fmt.Sprintf("%d", tc.port))
 			client, err := NewMCPClient(tc.port, 10*time.Second)
-			if err != nil {
-				t.Skipf("MCP server %s not running: %v", tc.server, err)
-				return
-			}
+			require.NoError(t, err)
 			defer func() { _ = client.Close() }()
 
 			err = client.Initialize()
@@ -414,17 +407,12 @@ func TestMCPDebateIntegration(t *testing.T) {
 	}
 
 	// Test time server and collect result
+	testutil.RequireExternalService(t, "time", "localhost", "9103")
 	timeClient, err := NewMCPClient(9103, 10*time.Second)
-	if err != nil {
-		t.Skipf("Time MCP server not running: %v", err)
-		return
-	}
+	require.NoError(t, err)
 
 	err = timeClient.Initialize()
-	if err != nil {
-		t.Skipf("Failed to initialize time server: %v", err)
-		return
-	}
+	require.NoError(t, err)
 
 	tools, err := timeClient.ListTools()
 	if err == nil {
@@ -458,14 +446,9 @@ func TestMCPDebateIntegration(t *testing.T) {
 		MCPContext: mcpContext,
 	}
 
+	testutil.RequireServer(t)
 	debateResp, err := debateClient.CreateDebate(debateReq)
-	if err != nil {
-		if strings.Contains(err.Error(), "connection refused") {
-			t.Skipf("HelixAgent not running: %v", err)
-			return
-		}
-		t.Fatalf("Failed to create debate: %v", err)
-	}
+	require.NoError(t, err, "Failed to create debate")
 
 	assert.NotEmpty(t, debateResp.DebateID, "Should have debate ID")
 	assert.NotEmpty(t, debateResp.Consensus, "Should have consensus")
@@ -538,6 +521,7 @@ func TestMCPContextualDebate(t *testing.T) {
 	t.Logf("Collected %d tool results from %d servers", len(mcpContext.ToolResults), len(mcpContext.ServerInfo))
 
 	// Test debate with this context
+	testutil.RequireServer(t)
 	debateClient := NewDebateClient("http://localhost:8080")
 
 	debateReq := &DebateRequest{
@@ -547,13 +531,7 @@ func TestMCPContextualDebate(t *testing.T) {
 	}
 
 	debateResp, err := debateClient.CreateDebate(debateReq)
-	if err != nil {
-		if strings.Contains(err.Error(), "connection refused") {
-			t.Skipf("HelixAgent not running: %v", err)
-			return
-		}
-		t.Fatalf("Failed to create debate: %v", err)
-	}
+	require.NoError(t, err, "Failed to create debate")
 
 	assert.NotEmpty(t, debateResp.DebateID)
 	t.Logf("Debate created with MCP context: %s", debateResp.DebateID)
@@ -565,11 +543,9 @@ func TestAllMCPServersForDebate(t *testing.T) {
 
 	for _, server := range CoreMCPServers {
 		t.Run(server.Name, func(t *testing.T) {
+			testutil.RequireExternalService(t, server.Name, "localhost", fmt.Sprintf("%d", server.Port))
 			client, err := NewMCPClient(server.Port, 10*time.Second)
-			if err != nil {
-				t.Skipf("MCP server %s not running", server.Name)
-				return
-			}
+			require.NoError(t, err)
 			defer func() { _ = client.Close() }()
 
 			err = client.Initialize()

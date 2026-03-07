@@ -14,21 +14,12 @@ import (
 
 	"dev.helix.agent/internal/messaging"
 	"dev.helix.agent/internal/messaging/rabbitmq"
+	"dev.helix.agent/internal/testutil"
 )
 
 // skipIfNoRabbitMQ skips the test if RabbitMQ infrastructure is not available
 func skipIfNoRabbitMQ(t *testing.T) *rabbitmq.Broker {
 	t.Helper()
-
-	// Skip in short mode - these tests require external RabbitMQ infrastructure
-	if testing.Short() {
-		t.Skip("Skipping RabbitMQ integration test in short mode")
-	}
-
-	// Skip if RABBITMQ_ENABLED env var is explicitly set to false
-	if os.Getenv("RABBITMQ_ENABLED") == "false" {
-		t.Skip("Skipping RabbitMQ integration test - RABBITMQ_ENABLED=false")
-	}
 
 	host := os.Getenv("RABBITMQ_HOST")
 	if host == "" {
@@ -38,6 +29,7 @@ func skipIfNoRabbitMQ(t *testing.T) *rabbitmq.Broker {
 	if port == "" {
 		port = "5672"
 	}
+	testutil.RequireExternalService(t, "rabbitmq", host, port)
 	user := os.Getenv("RABBITMQ_USER")
 	if user == "" {
 		user = "guest"

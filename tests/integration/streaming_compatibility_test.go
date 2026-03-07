@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"dev.helix.agent/internal/config"
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -56,10 +57,7 @@ func skipIfNotRunning(t *testing.T) {
 // TestStreamingFormat_OpenCodeCompatibility tests that streaming responses are
 // compatible with OpenCode's requirements
 func TestStreamingFormat_OpenCodeCompatibility(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping streaming compatibility test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 	skipIfNotRunning(t)
 
 	baseURL := getBaseURL()
@@ -216,10 +214,7 @@ func TestStreamingFormat_OpenCodeCompatibility(t *testing.T) {
 // TestStreamingFormat_CrushCompatibility tests that streaming responses are
 // compatible with Crush's requirements
 func TestStreamingFormat_CrushCompatibility(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping streaming compatibility test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 	skipIfNotRunning(t)
 
 	baseURL := getBaseURL()
@@ -294,10 +289,7 @@ func TestStreamingFormat_CrushCompatibility(t *testing.T) {
 // TestStreamingFormat_HelixCodeCompatibility tests that streaming responses are
 // compatible with HelixCode's requirements
 func TestStreamingFormat_HelixCodeCompatibility(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping streaming compatibility test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 	skipIfNotRunning(t)
 
 	baseURL := getBaseURL()
@@ -446,10 +438,7 @@ func TestConfigGenerator_AllAgents(t *testing.T) {
 // TestAgentStreamingTimeout tests that streaming doesn't hang indefinitely
 // (Renamed from TestStreamingTimeout to avoid conflict with provider_streaming_test.go)
 func TestAgentStreamingTimeout(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping streaming timeout test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 	skipIfNotRunning(t)
 
 	baseURL := getBaseURL()
@@ -492,10 +481,7 @@ func TestAgentStreamingTimeout(t *testing.T) {
 
 // TestNonStreamingCompatibility tests that non-streaming requests still work
 func TestNonStreamingCompatibility(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping non-streaming compatibility test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 	skipIfNotRunning(t)
 
 	baseURL := getBaseURL()

@@ -13,10 +13,7 @@ import (
 
 // TestServiceInteractions tests interactions between different services
 func TestServiceInteractions(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required
 
 	t.Run("RequestService with ProviderRegistry integration", func(t *testing.T) {
 		// Create services directly to avoid provider registry registering real providers

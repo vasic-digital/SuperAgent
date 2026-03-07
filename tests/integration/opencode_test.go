@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -455,16 +456,7 @@ func createTempOpenCodeConfig(t *testing.T, config map[string]interface{}) strin
 
 // TestOpenCodeWithRunningServer tests OpenCode validation with a running HelixAgent
 func TestOpenCodeWithRunningServer(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
-
-	// Check if server is running
-	if !isURLResponding("http://localhost:7061/health") {
-		t.Logf("HelixAgent server not running on localhost:7061 (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	binaryPath := findHelixAgentBinary(t)
 

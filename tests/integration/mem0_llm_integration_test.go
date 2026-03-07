@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -28,10 +29,7 @@ const (
 
 // TestMem0LLMIntegration_AuthenticationViaHelixAgent verifies Mem0 authentication works via HelixAgent
 func TestMem0LLMIntegration_AuthenticationViaHelixAgent(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 30 * time.Second}
 
@@ -85,10 +83,7 @@ func TestMem0LLMIntegration_AuthenticationViaHelixAgent(t *testing.T) {
 
 // TestMem0LLMIntegration_LLMProviderConfigured verifies LLM providers are configured for memory
 func TestMem0LLMIntegration_LLMProviderConfigured(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	// Test 1: Verify at least one LLM provider API key is set
 	t.Run("LLMProviderAPIKeyConfigured", func(t *testing.T) {
@@ -155,10 +150,7 @@ func TestMem0LLMIntegration_LLMProviderConfigured(t *testing.T) {
 
 // TestMem0LLMIntegration_NoOllamaDependency verifies no Ollama dependency for memory
 func TestMem0LLMIntegration_NoOllamaDependency(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 10 * time.Second}
 
@@ -240,10 +232,7 @@ func TestMem0LLMIntegration_NoOllamaDependency(t *testing.T) {
 
 // TestMem0LLMIntegration_AuthenticatedAPICalls verifies authenticated API calls work via Mem0
 func TestMem0LLMIntegration_AuthenticatedAPICalls(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 30 * time.Second}
 
@@ -308,10 +297,7 @@ func TestMem0LLMIntegration_AuthenticatedAPICalls(t *testing.T) {
 
 // TestMem0LLMIntegration_LLMVerifierProviderScores verifies LLM providers are scored and ranked
 func TestMem0LLMIntegration_LLMVerifierProviderScores(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	// Test: Verify LLM providers have diverse verification scores
 	t.Run("ProvidersHaveDiverseScores", func(t *testing.T) {
@@ -332,10 +318,7 @@ func TestMem0LLMIntegration_LLMVerifierProviderScores(t *testing.T) {
 
 // TestMem0LLMIntegration_HealthcheckConfiguration verifies healthcheck is correct for Mem0
 func TestMem0LLMIntegration_HealthcheckConfiguration(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 10 * time.Second}
 
@@ -381,10 +364,7 @@ func TestMem0LLMIntegration_HealthcheckConfiguration(t *testing.T) {
 
 // TestMem0LLMIntegration_Mem0ServiceConfig verifies Mem0 service configuration
 func TestMem0LLMIntegration_Mem0ServiceConfig(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 30 * time.Second}
 

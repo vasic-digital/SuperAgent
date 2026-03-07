@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -35,10 +36,7 @@ var LLMProviderScores = map[string]float64{
 
 // TestLLMProviderConfiguration_GeminiIsPrimary verifies Gemini is the primary LLM
 func TestLLMProviderConfiguration_GeminiIsPrimary(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	// Test 1: Verify Gemini API key is configured
 	t.Run("GeminiAPIKeyExists", func(t *testing.T) {
@@ -97,10 +95,7 @@ func TestLLMProviderConfiguration_GeminiIsPrimary(t *testing.T) {
 
 // TestLLMProviderConfiguration_OllamaDeprecated verifies Ollama is deprecated
 func TestLLMProviderConfiguration_OllamaDeprecated(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 10 * time.Second}
 
@@ -160,10 +155,7 @@ func TestLLMProviderConfiguration_OllamaDeprecated(t *testing.T) {
 
 // TestLLMProviderConfiguration_EnsembleUsesVerifiedProviders verifies ensemble uses verified providers
 func TestLLMProviderConfiguration_EnsembleUsesVerifiedProviders(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 60 * time.Second}
 
@@ -242,10 +234,7 @@ func TestLLMProviderConfiguration_EnsembleUsesVerifiedProviders(t *testing.T) {
 
 // TestLLMProviderConfiguration_CogneeUsesGemini verifies Cognee uses Gemini
 func TestLLMProviderConfiguration_CogneeUsesGemini(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	// Test 1: Verify Cognee LLM environment variables
 	t.Run("CogneeLLMConfiguredForGemini", func(t *testing.T) {
@@ -296,10 +285,7 @@ func TestLLMProviderConfiguration_CogneeUsesGemini(t *testing.T) {
 
 // TestLLMProviderConfiguration_ProviderFallback verifies provider fallback works
 func TestLLMProviderConfiguration_ProviderFallback(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 30 * time.Second}
 
@@ -342,10 +328,7 @@ func TestLLMProviderConfiguration_ProviderFallback(t *testing.T) {
 
 // TestLLMProviderConfiguration_VerifierScoresAccurate verifies LLMsVerifier scores are accurate
 func TestLLMProviderConfiguration_VerifierScoresAccurate(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	// Test: Verify the score ordering matches our configuration
 	t.Run("ScoreOrderingCorrect", func(t *testing.T) {

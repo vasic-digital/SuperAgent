@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"dev.helix.agent/internal/services"
+	"dev.helix.agent/internal/testutil"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -458,10 +459,8 @@ func TestMem0AuthenticationResilience(t *testing.T) {
 
 // TestMem0LiveIntegrationResilience tests live Mem0 Memory resilience via HelixAgent endpoints
 func TestMem0LiveIntegrationResilience(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - live integration test (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
+
 	serverURL := os.Getenv("HELIXAGENT_TEST_URL")
 	if serverURL == "" {
 		serverURL = "http://localhost:7061"

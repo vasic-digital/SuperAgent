@@ -7,6 +7,23 @@ import (
 	"time"
 )
 
+// Pre-compiled regexes for parsing utilities
+var (
+	codeBlockRegex     = regexp.MustCompile("(?s)```(\\w+)?\\n(.*?)```")
+	thoughtPatterns    = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)Thinking:\s*(.+?)(?:\n\n|\n*$)`),
+		regexp.MustCompile(`(?i)Reasoning:\s*(.+?)(?:\n\n|\n*$)`),
+		regexp.MustCompile(`(?i)Analysis:\s*(.+?)(?:\n\n|\n*$)`),
+		regexp.MustCompile(`<think>([\s\S]*?)</think>`),
+	}
+	confidencePatterns = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)confidence[:\s]+(\d+(?:\.\d+)?)\s*%?`),
+		regexp.MustCompile(`(?i)(\d+(?:\.\d+)?)\s*%\s+confident`),
+	}
+	keyPointsRegex     = regexp.MustCompile(`(?m)^\s*(?:[-*•]|\d+\.)\s+(.+)$`)
+	whitespaceRegex    = regexp.MustCompile(`\s+`)
+)
+
 // PromptBuilder helps construct prompts for agents
 type PromptBuilder struct {
 	systemPrompt string
@@ -228,9 +245,7 @@ type Parser struct{}
 func (p Parser) ParseCodeBlocks(content string) []CodeBlock {
 	var blocks []CodeBlock
 
-	// Match code blocks with optional language specifier
-	re := regexp.MustCompile("(?s)```(\\w+)?\\n(.*?)```")
-	matches := re.FindAllStringSubmatch(content, -1)
+	matches := codeBlockRegex.FindAllStringSubmatch(content, -1)
 
 	for _, match := range matches {
 		language := ""
@@ -260,16 +275,7 @@ type CodeBlock struct {
 func (p Parser) ExtractThoughts(content string) []string {
 	var thoughts []string
 
-	// Look for common patterns
-	patterns := []string{
-		`(?i)Thinking:\s*(.+?)(?:\n\n|\n*$)`,
-		`(?i)Reasoning:\s*(.+?)(?:\n\n|\n*$)`,
-		`(?i)Analysis:\s*(.+?)(?:\n\n|\n*$)`,
-		`<think>([\s\S]*?)</think>`,
-	}
-
-	for _, pattern := range patterns {
-		re := regexp.MustCompile(pattern)
+	for _, re := range thoughtPatterns {
 		matches := re.FindAllStringSubmatch(content, -1)
 		for _, match := range matches {
 			if len(match) > 1 {
@@ -283,14 +289,7 @@ func (p Parser) ExtractThoughts(content string) []string {
 
 // ParseConfidence extracts confidence score from content
 func (p Parser) ParseConfidence(content string) float64 {
-	// Look for confidence indicators
-	patterns := []string{
-		`(?i)confidence[:\s]+(\d+(?:\.\d+)?)\s*%?`,
-		`(?i)(\d+(?:\.\d+)?)\s*%\s+confident`,
-	}
-
-	for _, pattern := range patterns {
-		re := regexp.MustCompile(pattern)
+	for _, re := range confidencePatterns {
 		matches := re.FindStringSubmatch(content)
 		if len(matches) > 1 {
 			var score float64
@@ -313,9 +312,7 @@ func (p Parser) ParseConfidence(content string) float64 {
 func (p Parser) ExtractKeyPoints(content string) []string {
 	var points []string
 
-	// Match bullet points and numbered lists
-	re := regexp.MustCompile(`(?m)^\s*(?:[-*•]|\d+\.)\s+(.+)$`)
-	matches := re.FindAllStringSubmatch(content, -1)
+	matches := keyPointsRegex.FindAllStringSubmatch(content, -1)
 
 	for _, match := range matches {
 		if len(match) > 1 {
@@ -447,9 +444,7 @@ func TruncateString(s string, maxLen int) string {
 
 // CleanWhitespace normalizes whitespace in a string
 func CleanWhitespace(s string) string {
-	// Replace multiple whitespace with single space
-	re := regexp.MustCompile(`\s+`)
-	s = re.ReplaceAllString(s, " ")
+	s = whitespaceRegex.ReplaceAllString(s, " ")
 	return strings.TrimSpace(s)
 }
 

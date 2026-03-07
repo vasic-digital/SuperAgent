@@ -4364,6 +4364,23 @@ func escapeJSONString(s string) string {
 	return s
 }
 
+// Pre-compiled patterns for sanitizeDisplayContent — called on every response.
+var (
+	sanitizeSystemReminderRe = regexp.MustCompile(`(?s)<system-reminder>.*?</system-reminder>`)
+	sanitizeCommandNameRe    = regexp.MustCompile(`(?s)<command-name>.*?</command-name>`)
+	sanitizeContextRe        = regexp.MustCompile(`(?s)<context>.*?</context>`)
+	sanitizeExcessNewlinesRe = regexp.MustCompile(`\n{3,}`)
+
+	// Pre-compiled patterns for extractSearchPatternFromContext
+	searchDoubleQuoteRe = regexp.MustCompile(`"([^"]+)"`)
+	searchSingleQuoteRe = regexp.MustCompile(`'([^']+)'`)
+
+	// Pre-compiled patterns for parseEmbeddedFunctionCalls
+	embeddedFuncRe  = regexp.MustCompile(`(?s)<function=(\w+)>(.*?)</function>`)
+	embeddedParamRe = regexp.MustCompile(`(?s)<parameter=(\w+)>(.*?)</parameter>`)
+	embeddedFCRe    = regexp.MustCompile(`(?s)<function_call\s+name="(\w+)">(.*?)</function_call>`)
+)
+
 // sanitizeDisplayContent removes system-level tags that should not be displayed to users
 // This includes <system-reminder>, <command-name>, and similar tags that are for internal use
 func sanitizeDisplayContent(content string) string {
@@ -4371,20 +4388,10 @@ func sanitizeDisplayContent(content string) string {
 		return content
 	}
 
-	// Remove <system-reminder>...</system-reminder> tags and their content
-	systemReminderPattern := regexp.MustCompile(`(?s)<system-reminder>.*?</system-reminder>`)
-	content = systemReminderPattern.ReplaceAllString(content, "")
-
-	// Remove <command-name>...</command-name> tags and their content
-	commandNamePattern := regexp.MustCompile(`(?s)<command-name>.*?</command-name>`)
-	content = commandNamePattern.ReplaceAllString(content, "")
-
-	// Remove <context>...</context> tags and their content (internal context)
-	contextPattern := regexp.MustCompile(`(?s)<context>.*?</context>`)
-	content = contextPattern.ReplaceAllString(content, "")
-
-	// Clean up excessive whitespace left behind
-	content = regexp.MustCompile(`\n{3,}`).ReplaceAllString(content, "\n\n")
+	content = sanitizeSystemReminderRe.ReplaceAllString(content, "")
+	content = sanitizeCommandNameRe.ReplaceAllString(content, "")
+	content = sanitizeContextRe.ReplaceAllString(content, "")
+	content = sanitizeExcessNewlinesRe.ReplaceAllString(content, "\n\n")
 	content = strings.TrimSpace(content)
 
 	return content
@@ -5382,12 +5389,16 @@ func extractActionsFromSynthesis(synthesis string, availableTools map[string]Ope
 	return toolCalls
 }
 
+// Pre-compiled patterns for file path extraction.
+var (
+	filePathDoubleQuoteRe = regexp.MustCompile(`"([^"]+\.[a-zA-Z0-9]+)"`)
+	filePathSingleQuoteRe = regexp.MustCompile(`'([^']+\.[a-zA-Z0-9]+)'`)
+)
+
 // extractFilePathFromContext extracts a file path from context text
 func extractFilePathFromContext(context string) string {
 	// Look for quoted paths first
-	patterns := []string{`"([^"]+\.[a-zA-Z0-9]+)"`, `'([^']+\.[a-zA-Z0-9]+)'`}
-	for _, pattern := range patterns {
-		re := regexp.MustCompile(pattern)
+	for _, re := range []*regexp.Regexp{filePathDoubleQuoteRe, filePathSingleQuoteRe} {
 		matches := re.FindStringSubmatch(context)
 		if len(matches) > 1 {
 			return matches[1]
@@ -5414,10 +5425,8 @@ func extractFilePathFromContext(context string) string {
 
 // extractSearchPatternFromContext extracts a search pattern from context
 func extractSearchPatternFromContext(context string) string {
-	// Look for quoted patterns
-	patterns := []string{`"([^"]+)"`, `'([^']+)'`}
-	for _, pattern := range patterns {
-		re := regexp.MustCompile(pattern)
+	searchPatterns := []*regexp.Regexp{searchDoubleQuoteRe, searchSingleQuoteRe}
+	for _, re := range searchPatterns {
 		matches := re.FindStringSubmatch(context)
 		if len(matches) > 1 && len(matches[1]) > 2 {
 			return matches[1]
@@ -5469,9 +5478,8 @@ func extractCommandFromContext(context string) string {
 		return "make build || go build ./... || npm run build"
 	}
 
-	// Look for commands in backticks
-	re := regexp.MustCompile("`([^`]+)`")
-	matches := re.FindStringSubmatch(context)
+	// Look for commands in backticks (reuse pre-compiled pattern)
+	matches := mdInlineCodeRegex.FindStringSubmatch(context)
 	if len(matches) > 1 {
 		return matches[1]
 	}
@@ -6115,7 +6123,7 @@ func stripUnparsedToolTags(content string) string {
 	result = convertXMLCodeToMarkdown(result)
 
 	// Clean up excessive whitespace and newlines left by tag removal
-	result = regexp.MustCompile(`\n{3,}`).ReplaceAllString(result, "\n\n")
+	result = sanitizeExcessNewlinesRe.ReplaceAllString(result, "\n\n")
 
 	return result
 }
@@ -6159,9 +6167,7 @@ func convertXMLCodeToMarkdown(content string) string {
 func parseEmbeddedFunctionCalls(content string) []EmbeddedFunctionCall {
 	var calls []EmbeddedFunctionCall
 
-	// Pattern 1: <function=name>...<parameter=key>value</parameter>...</function>
-	funcPattern := regexp.MustCompile(`(?s)<function=(\w+)>(.*?)</function>`)
-	funcMatches := funcPattern.FindAllStringSubmatch(content, -1)
+	funcMatches := embeddedFuncRe.FindAllStringSubmatch(content, -1)
 	for _, match := range funcMatches {
 		if len(match) >= 3 {
 			call := EmbeddedFunctionCall{
@@ -6169,9 +6175,7 @@ func parseEmbeddedFunctionCalls(content string) []EmbeddedFunctionCall {
 				Parameters: make(map[string]string),
 				RawContent: match[0],
 			}
-			// Parse parameters
-			paramPattern := regexp.MustCompile(`(?s)<parameter=(\w+)>(.*?)</parameter>`)
-			paramMatches := paramPattern.FindAllStringSubmatch(match[2], -1)
+			paramMatches := embeddedParamRe.FindAllStringSubmatch(match[2], -1)
 			for _, pm := range paramMatches {
 				if len(pm) >= 3 {
 					call.Parameters[pm[1]] = strings.TrimSpace(pm[2])
@@ -6181,9 +6185,7 @@ func parseEmbeddedFunctionCalls(content string) []EmbeddedFunctionCall {
 		}
 	}
 
-	// Pattern 2: <function_call name="...">...</function_call>
-	fcPattern := regexp.MustCompile(`(?s)<function_call\s+name="(\w+)">(.*?)</function_call>`)
-	fcMatches := fcPattern.FindAllStringSubmatch(content, -1)
+	fcMatches := embeddedFCRe.FindAllStringSubmatch(content, -1)
 	for _, match := range fcMatches {
 		if len(match) >= 3 {
 			call := EmbeddedFunctionCall{

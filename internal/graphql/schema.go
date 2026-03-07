@@ -2,6 +2,8 @@
 package graphql
 
 import (
+	"sync"
+
 	"github.com/graphql-go/graphql"
 
 	"dev.helix.agent/internal/graphql/resolvers"
@@ -9,6 +11,9 @@ import (
 
 // Schema is the GraphQL schema for HelixAgent.
 var Schema graphql.Schema
+
+var schemaOnce sync.Once
+var schemaInitErr error
 
 // healthStatusType is the GraphQL type for HealthStatus.
 var healthStatusType = graphql.NewObject(graphql.ObjectConfig{
@@ -396,14 +401,16 @@ var ResolveCancelTask graphql.FieldResolveFn = resolvers.ResolveCancelTask
 // ResolveRefreshProvider resolves the refreshProvider mutation.
 var ResolveRefreshProvider graphql.FieldResolveFn = resolvers.ResolveRefreshProvider
 
-// InitSchema initializes the GraphQL schema.
+// InitSchema initializes the GraphQL schema. Safe to call multiple times;
+// the schema is only built once via sync.Once.
 func InitSchema() error {
-	var err error
-	Schema, err = graphql.NewSchema(graphql.SchemaConfig{
-		Query:    QueryType,
-		Mutation: MutationType,
+	schemaOnce.Do(func() {
+		Schema, schemaInitErr = graphql.NewSchema(graphql.SchemaConfig{
+			Query:    QueryType,
+			Mutation: MutationType,
+		})
 	})
-	return err
+	return schemaInitErr
 }
 
 // ExecuteQuery executes a GraphQL query.

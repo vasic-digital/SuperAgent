@@ -14,10 +14,7 @@ import (
 
 // TestAIDebateIntegration_BasicWorkflow tests the basic AI debate integration workflow
 func TestAIDebateIntegration_BasicWorkflow(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	// Integration test — no external deps required
 
 	logger := logrus.New()
 	ctx := context.Background()

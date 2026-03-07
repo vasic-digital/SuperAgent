@@ -131,9 +131,7 @@ var AllMCPServers = []MCPServerPortConfig{
 
 // TestMCPServerConnectivity tests TCP connectivity to all MCP servers
 func TestMCPServerConnectivity(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping MCP connectivity test in short mode")
-	}
+
 
 	results := make(map[string]bool)
 	var mu sync.Mutex
@@ -214,9 +212,7 @@ type MCPProtocolMessage struct {
 
 // TestMCPProtocolCompliance tests that MCP servers respond correctly to protocol messages
 func TestMCPProtocolCompliance(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping MCP protocol test in short mode")
-	}
+
 
 	// Test core servers that should be running
 	coreServers := []MCPServerPortConfig{
@@ -285,9 +281,7 @@ func TestMCPProtocolCompliance(t *testing.T) {
 
 // TestMCPToolDiscovery tests that MCP servers report their available tools
 func TestMCPToolDiscovery(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping MCP tool discovery test in short mode")
-	}
+
 
 	// Expected tools for some core servers
 	expectedTools := map[string][]string{
@@ -319,9 +313,7 @@ func TestMCPToolDiscovery(t *testing.T) {
 
 // TestMCPWithLLMProviders tests MCP integration with all supported LLM providers
 func TestMCPWithLLMProviders(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping MCP-LLM integration test in short mode")
-	}
+
 
 	// List of LLM providers to test
 	providers := []string{
@@ -389,9 +381,7 @@ func TestMCPWithLLMProviders(t *testing.T) {
 
 // TestMCPWithAIDebate tests MCP integration within the AI Debate system
 func TestMCPWithAIDebate(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping MCP-AI Debate integration test in short mode")
-	}
+
 
 	baseURL := os.Getenv("HELIXAGENT_URL")
 	if baseURL == "" {
@@ -449,9 +439,7 @@ func TestMCPWithAIDebate(t *testing.T) {
 
 // TestMCPServerHealth tests health endpoints for all running MCP servers
 func TestMCPServerHealth(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping MCP health test in short mode")
-	}
+
 
 	var healthy, unhealthy, unreachable int
 
@@ -489,9 +477,7 @@ func getServerPort(name string) int {
 
 // TestMCPContainerStatus tests that all MCP Docker containers are running
 func TestMCPContainerStatus(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping MCP container status test in short mode")
-	}
+
 
 	// Use centralized container runtime detection.
 	rt := containerRuntime()
@@ -517,9 +503,7 @@ func TestMCPContainerStatus(t *testing.T) {
 
 // TestMCPEndToEnd performs a full end-to-end test of MCP functionality
 func TestMCPEndToEnd(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping MCP E2E test in short mode")
-	}
+
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()

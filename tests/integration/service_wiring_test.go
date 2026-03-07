@@ -20,16 +20,14 @@ import (
 	"dev.helix.agent/internal/middleware"
 	"dev.helix.agent/internal/notifications"
 	"dev.helix.agent/internal/services"
+	"dev.helix.agent/internal/testutil"
 	"dev.helix.agent/internal/tools"
 	"dev.helix.agent/internal/verifier"
 )
 
 // TestServiceWiring_ProviderServices tests that provider services are properly wired
 func TestServiceWiring_ProviderServices(t *testing.T) {
-	if testing.Short() {
-		t.Log("Short mode - skipping integration test")
-		return
-	}
+	// Integration test — no external deps required
 
 	t.Run("ProviderRegistry initialization", func(t *testing.T) {
 		// Create config
@@ -105,10 +103,7 @@ func TestServiceWiring_ProviderServices(t *testing.T) {
 
 // TestServiceWiring_DebateServices tests that debate services are properly wired
 func TestServiceWiring_DebateServices(t *testing.T) {
-	if testing.Short() {
-		t.Log("Short mode - skipping integration test")
-		return
-	}
+	// Integration test — no external deps required
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.WarnLevel)
@@ -218,10 +213,7 @@ type llmInterface = interface {
 
 // TestServiceWiring_MCPLSPACPServices tests MCP/LSP/ACP services wiring
 func TestServiceWiring_MCPLSPACPServices(t *testing.T) {
-	if testing.Short() {
-		t.Log("Short mode - skipping integration test")
-		return
-	}
+	// Integration test — no external deps required
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.WarnLevel)
@@ -255,10 +247,7 @@ func TestServiceWiring_MCPLSPACPServices(t *testing.T) {
 
 // TestServiceWiring_ToolServices tests tool services wiring
 func TestServiceWiring_ToolServices(t *testing.T) {
-	if testing.Short() {
-		t.Log("Short mode - skipping integration test")
-		return
-	}
+	// Integration test — no external deps required
 
 	t.Run("ToolSchemaRegistry exists and has tools", func(t *testing.T) {
 		registry := tools.ToolSchemaRegistry
@@ -326,10 +315,7 @@ func TestServiceWiring_ToolServices(t *testing.T) {
 
 // TestServiceWiring_CacheServices tests cache services wiring
 func TestServiceWiring_CacheServices(t *testing.T) {
-	if testing.Short() {
-		t.Log("Short mode - skipping integration test")
-		return
-	}
+	// Integration test — no external deps required
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.WarnLevel)
@@ -370,10 +356,7 @@ func TestServiceWiring_CacheServices(t *testing.T) {
 
 // TestServiceWiring_BackgroundServices tests background task services wiring
 func TestServiceWiring_BackgroundServices(t *testing.T) {
-	if testing.Short() {
-		t.Log("Short mode - skipping integration test")
-		return
-	}
+	// Integration test — no external deps required
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.WarnLevel)
@@ -409,10 +392,7 @@ func TestServiceWiring_BackgroundServices(t *testing.T) {
 
 // TestServiceWiring_NotificationServices tests notification services wiring
 func TestServiceWiring_NotificationServices(t *testing.T) {
-	if testing.Short() {
-		t.Log("Short mode - skipping integration test")
-		return
-	}
+	// Integration test — no external deps required
 
 	t.Run("HubConfig defaults", func(t *testing.T) {
 		config := notifications.DefaultHubConfig()
@@ -462,10 +442,7 @@ func TestServiceWiring_NotificationServices(t *testing.T) {
 
 // TestServiceWiring_MonitoringServices tests monitoring services wiring
 func TestServiceWiring_MonitoringServices(t *testing.T) {
-	if testing.Short() {
-		t.Log("Short mode - skipping integration test")
-		return
-	}
+	// Integration test — no external deps required
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.WarnLevel)
@@ -534,10 +511,7 @@ func TestServiceWiring_MonitoringServices(t *testing.T) {
 
 // TestServiceWiring_SecurityServices tests security services wiring
 func TestServiceWiring_SecurityServices(t *testing.T) {
-	if testing.Short() {
-		t.Log("Short mode - skipping integration test")
-		return
-	}
+	// Integration test — no external deps required
 
 	t.Run("AuthMiddleware initialization", func(t *testing.T) {
 		config := middleware.AuthConfig{
@@ -603,10 +577,7 @@ func TestServiceWiring_SecurityServices(t *testing.T) {
 
 // TestServiceWiring_CompleteServiceGraph tests that the complete service graph is wired
 func TestServiceWiring_CompleteServiceGraph(t *testing.T) {
-	if testing.Short() {
-		t.Log("Short mode - skipping integration test")
-		return
-	}
+	// Integration test — no external deps required
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.WarnLevel)
@@ -690,10 +661,7 @@ func TestServiceWiring_CompleteServiceGraph(t *testing.T) {
 
 // TestServiceWiring_DatabaseIntegration tests database-related service wiring
 func TestServiceWiring_DatabaseIntegration(t *testing.T) {
-	if testing.Short() {
-		t.Log("Short mode - skipping integration test")
-		return
-	}
+	// Integration test — no external deps required
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.WarnLevel)
@@ -707,10 +675,7 @@ func TestServiceWiring_DatabaseIntegration(t *testing.T) {
 
 // TestServiceWiring_ConfigLoading tests configuration loading and service wiring
 func TestServiceWiring_ConfigLoading(t *testing.T) {
-	if testing.Short() {
-		t.Log("Short mode - skipping integration test")
-		return
-	}
+	// Integration test — no external deps required
 
 	t.Run("LoadRegistryConfigFromAppConfig with nil", func(t *testing.T) {
 		cfg := services.LoadRegistryConfigFromAppConfig(nil)
@@ -742,10 +707,7 @@ func TestServiceWiring_ConfigLoading(t *testing.T) {
 
 // TestServiceWiring_EnsembleService tests ensemble service wiring
 func TestServiceWiring_EnsembleService(t *testing.T) {
-	if testing.Short() {
-		t.Log("Short mode - skipping integration test")
-		return
-	}
+	// Integration test — no external deps required
 
 	t.Run("EnsembleService initialization", func(t *testing.T) {
 		ensemble := services.NewEnsembleService("confidence_weighted", 30*time.Second)
@@ -764,10 +726,7 @@ func TestServiceWiring_EnsembleService(t *testing.T) {
 
 // TestServiceWiring_MemoryService tests memory service wiring
 func TestServiceWiring_MemoryService(t *testing.T) {
-	if testing.Short() {
-		t.Log("Short mode - skipping integration test")
-		return
-	}
+	// Integration test — no external deps required
 
 	t.Run("MemoryService initialization", func(t *testing.T) {
 		memoryService := services.NewMemoryService(nil)
@@ -782,10 +741,7 @@ func TestServiceWiring_MemoryService(t *testing.T) {
 
 // TestServiceWiring_EmbeddingService tests embedding service wiring
 func TestServiceWiring_EmbeddingService(t *testing.T) {
-	if testing.Short() {
-		t.Log("Short mode - skipping integration test")
-		return
-	}
+	// Integration test — no external deps required
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.WarnLevel)
@@ -806,9 +762,7 @@ func TestServiceWiring_EmbeddingService(t *testing.T) {
 // properly uses StartupVerifier when available (CRITICAL: OAuth providers like
 // Claude and Qwen will NOT be included in the debate team without this!)
 func TestDebateTeamConfig_StartupVerifierIntegration(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping startup verifier integration test in short mode (makes live API calls)")
-	}
+	testutil.RequireServer(t)
 	logger := logrus.New()
 	logger.SetLevel(logrus.WarnLevel)
 

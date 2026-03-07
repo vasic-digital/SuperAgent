@@ -16,22 +16,10 @@ import (
 // TestAIDebate_TeamInitializationWithVerifiedProviders tests that the debate team
 // initializes correctly using only verified providers
 func TestAIDebate_TeamInitializationWithVerifiedProviders(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-
-	// Check if any API keys are set
-	hasAPIKey := false
-	apiKeys := []string{"CLAUDE_API_KEY", "DEEPSEEK_API_KEY", "GEMINI_API_KEY", "OPENROUTER_API_KEY"}
-	for _, key := range apiKeys {
-		if os.Getenv(key) != "" {
-			hasAPIKey = true
-			break
-		}
-	}
-
+	hasAPIKey := os.Getenv("CLAUDE_API_KEY") != "" || os.Getenv("DEEPSEEK_API_KEY") != "" ||
+		os.Getenv("GEMINI_API_KEY") != "" || os.Getenv("OPENROUTER_API_KEY") != ""
 	if !hasAPIKey {
-		t.Skip("Skipping test - no API keys configured")
+		t.Skip("No API keys configured (need at least one of CLAUDE/DEEPSEEK/GEMINI/OPENROUTER)")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -94,22 +82,10 @@ func TestAIDebate_TeamInitializationWithVerifiedProviders(t *testing.T) {
 // TestAIDebate_FallbackActivation tests that fallbacks are properly configured
 // and can be activated when primaries fail
 func TestAIDebate_FallbackActivation(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-
-	// Check if any API keys are set
-	hasAPIKey := false
-	apiKeys := []string{"CLAUDE_API_KEY", "DEEPSEEK_API_KEY", "GEMINI_API_KEY", "OPENROUTER_API_KEY"}
-	for _, key := range apiKeys {
-		if os.Getenv(key) != "" {
-			hasAPIKey = true
-			break
-		}
-	}
-
+	hasAPIKey := os.Getenv("CLAUDE_API_KEY") != "" || os.Getenv("DEEPSEEK_API_KEY") != "" ||
+		os.Getenv("GEMINI_API_KEY") != "" || os.Getenv("OPENROUTER_API_KEY") != ""
 	if !hasAPIKey {
-		t.Skip("Skipping test - no API keys configured")
+		t.Skip("No API keys configured (need at least one of CLAUDE/DEEPSEEK/GEMINI/OPENROUTER)")
 	}
 
 	ctx := context.Background()
@@ -165,22 +141,10 @@ func TestAIDebate_NoOllamaWhenDisabled(t *testing.T) {
 		t.Skip("Skipping test - OLLAMA_ENABLED is set to true")
 	}
 
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-
-	// Check if any API keys are set
-	hasAPIKey := false
-	apiKeys := []string{"CLAUDE_API_KEY", "DEEPSEEK_API_KEY", "GEMINI_API_KEY", "OPENROUTER_API_KEY"}
-	for _, key := range apiKeys {
-		if os.Getenv(key) != "" {
-			hasAPIKey = true
-			break
-		}
-	}
-
+	hasAPIKey := os.Getenv("CLAUDE_API_KEY") != "" || os.Getenv("DEEPSEEK_API_KEY") != "" ||
+		os.Getenv("GEMINI_API_KEY") != "" || os.Getenv("OPENROUTER_API_KEY") != ""
 	if !hasAPIKey {
-		t.Skip("Skipping test - no API keys configured")
+		t.Skip("No API keys configured (need at least one of CLAUDE/DEEPSEEK/GEMINI/OPENROUTER)")
 	}
 
 	ctx := context.Background()
@@ -222,22 +186,10 @@ func TestAIDebate_NoOllamaWhenDisabled(t *testing.T) {
 // TestAIDebate_VerifiedProvidersOnly tests that only verified providers
 // are included in the debate team
 func TestAIDebate_VerifiedProvidersOnly(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-
-	// Check if any API keys are set
-	hasAPIKey := false
-	apiKeys := []string{"CLAUDE_API_KEY", "DEEPSEEK_API_KEY", "GEMINI_API_KEY", "OPENROUTER_API_KEY"}
-	for _, key := range apiKeys {
-		if os.Getenv(key) != "" {
-			hasAPIKey = true
-			break
-		}
-	}
-
+	hasAPIKey := os.Getenv("CLAUDE_API_KEY") != "" || os.Getenv("DEEPSEEK_API_KEY") != "" ||
+		os.Getenv("GEMINI_API_KEY") != "" || os.Getenv("OPENROUTER_API_KEY") != ""
 	if !hasAPIKey {
-		t.Skip("Skipping test - no API keys configured")
+		t.Skip("No API keys configured (need at least one of CLAUDE/DEEPSEEK/GEMINI/OPENROUTER)")
 	}
 
 	ctx := context.Background()

@@ -7,6 +7,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 func TestNewPostgresAdapter(t *testing.T) {
@@ -248,8 +250,7 @@ func TestPostgresAdapter_SchemaNotAllowed(t *testing.T) {
 // Integration tests that require a running PostgreSQL instance
 // These tests are skipped by default
 func TestPostgresAdapter_Integration(t *testing.T) {
-	// Skip unless explicitly running integration tests
-	t.Skip("Skipping PostgreSQL integration tests - requires running PostgreSQL instance")
+	testutil.RequirePostgres(t)
 
 	config := PostgresAdapterConfig{
 		Host:     "localhost",

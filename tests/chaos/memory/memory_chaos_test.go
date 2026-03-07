@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 const baseURL = "http://localhost:7061"
@@ -30,12 +32,7 @@ func checkAvailable(url string) bool {
 // TestMemoryChaos_ConcurrentReadWrites fires concurrent memory store and retrieve
 // operations to stress test the memory system.
 func TestMemoryChaos_ConcurrentReadWrites(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	var writeCount, readCount, errorCount int64
@@ -116,12 +113,7 @@ func TestMemoryChaos_ConcurrentReadWrites(t *testing.T) {
 
 // TestMemoryChaos_MemoryFlood floods the memory endpoint with write requests.
 func TestMemoryChaos_MemoryFlood(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 5 * time.Second}
 	var processedCount, errorCount int64
@@ -168,12 +160,7 @@ func TestMemoryChaos_MemoryFlood(t *testing.T) {
 
 // TestMemoryChaos_InvalidMemoryRequests sends malformed memory requests.
 func TestMemoryChaos_InvalidMemoryRequests(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 5 * time.Second}
 	var processedCount int64
@@ -215,12 +202,7 @@ func TestMemoryChaos_InvalidMemoryRequests(t *testing.T) {
 
 // TestMemoryChaos_DeleteUnderLoad deletes memory entries while writes happen concurrently.
 func TestMemoryChaos_DeleteUnderLoad(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 5 * time.Second}
 	var writeCount, deleteCount int64

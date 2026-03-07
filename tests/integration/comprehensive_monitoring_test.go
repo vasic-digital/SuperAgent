@@ -418,10 +418,6 @@ func TestMonitoringEndpointsLatency(t *testing.T) {
 
 // TestMonitoringStackIntegration tests the complete monitoring stack
 func TestMonitoringStackIntegration(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-
 	// This test verifies that all monitoring components work together
 	services := []struct {
 		name string

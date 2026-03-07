@@ -490,9 +490,7 @@ func TestToolRegistry_ExecuteBash(t *testing.T) {
 }
 
 func TestToolRegistry_ExecuteTest(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping test execution in short mode")
-	}
+	// Integration test — no external deps required
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

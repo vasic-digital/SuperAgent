@@ -63,9 +63,7 @@ func (m *mockLLMClient) Complete(ctx context.Context, prompt string) (string, er
 // TestReflexion_FailReflectRetrySuccess verifies the full reflexion cycle:
 // first attempt fails, reflection is generated, second attempt succeeds.
 func TestReflexion_FailReflectRetrySuccess(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
+
 
 	// Test executor: passes on attempt 2
 	executor := &mockTestExecutor{passOnAttempt: 2}
@@ -138,9 +136,7 @@ func TestReflexion_FailReflectRetrySuccess(t *testing.T) {
 // TestReflexion_AccumulatedWisdom verifies that episodes are stored and
 // wisdom can be extracted from patterns across multiple sessions.
 func TestReflexion_AccumulatedWisdom(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
+
 
 	memory := reflexion.NewEpisodicMemoryBuffer(1000)
 	wisdom := reflexion.NewAccumulatedWisdom()
@@ -240,9 +236,7 @@ func TestReflexion_AccumulatedWisdom(t *testing.T) {
 // TestReflexion_EpisodicMemory_BoundedCapacity verifies that the episodic
 // memory buffer respects its maximum size via FIFO eviction.
 func TestReflexion_EpisodicMemory_BoundedCapacity(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
+
 
 	maxSize := 50
 	memory := reflexion.NewEpisodicMemoryBuffer(maxSize)
@@ -281,9 +275,7 @@ func TestReflexion_EpisodicMemory_BoundedCapacity(t *testing.T) {
 // reflection generator falls back to deterministic analysis when the
 // LLM is unavailable.
 func TestReflexion_ReflectionGenerator_FallbackMode(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
+
 
 	// LLM client that always fails
 	failingClient := &mockLLMClient{

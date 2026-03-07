@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,25 +19,10 @@ import (
 // 1. Start the server: make run-dev
 // 2. Run E2E tests: make test-e2e
 func TestVerifierE2EWorkflow(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping E2E test in short mode")
-	}
+	testutil.RequireServer(t)
 
-	baseURL := "http://localhost:7061"
+	baseURL := testutil.ServerURL()
 	client := &http.Client{Timeout: 60 * time.Second}
-
-	// Check if server is running
-	resp, err := client.Get(baseURL + "/health")
-	if err != nil {
-		t.Skipf("Skipping E2E test: HelixAgent server not running at %s. Start server with 'make run-dev'", baseURL)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Skipf("Skipping E2E test: Server at %s returned status %d", baseURL, resp.StatusCode)
-	}
-
-	t.Logf("HelixAgent server is running at %s", baseURL)
 
 	t.Run("CompleteVerificationWorkflow", func(t *testing.T) {
 		// Step 1: Verify a model
@@ -251,19 +237,10 @@ func TestVerifierE2EWorkflow(t *testing.T) {
 
 // TestVerifierIntegrationWithChat tests verifier integration with chat completions
 func TestVerifierIntegrationWithChat(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping E2E test in short mode")
-	}
+	testutil.RequireServer(t)
 
-	baseURL := "http://localhost:7061"
+	baseURL := testutil.ServerURL()
 	client := &http.Client{Timeout: 60 * time.Second}
-
-	// Check if server is running
-	resp, err := client.Get(baseURL + "/health")
-	if err != nil {
-		t.Skipf("Skipping E2E test: HelixAgent server not running at %s", baseURL)
-	}
-	defer resp.Body.Close()
 
 	t.Run("VerifiedModelChat", func(t *testing.T) {
 		// First verify the model
@@ -287,7 +264,7 @@ func TestVerifierIntegrationWithChat(t *testing.T) {
 		}
 
 		jsonData, _ = json.Marshal(chatRequest)
-		resp, err = client.Post(baseURL+"/v1/chat/completions", "application/json", bytes.NewBuffer(jsonData))
+		resp, err := client.Post(baseURL+"/v1/chat/completions", "application/json", bytes.NewBuffer(jsonData))
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
@@ -300,19 +277,10 @@ func TestVerifierIntegrationWithChat(t *testing.T) {
 
 // TestVerifierEndpointDiscovery tests API endpoint discovery
 func TestVerifierEndpointDiscovery(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping E2E test in short mode")
-	}
+	testutil.RequireServer(t)
 
-	baseURL := "http://localhost:7061"
+	baseURL := testutil.ServerURL()
 	client := &http.Client{Timeout: 10 * time.Second}
-
-	// Check if server is running
-	resp, err := client.Get(baseURL + "/health")
-	if err != nil {
-		t.Skipf("Skipping E2E test: HelixAgent server not running at %s", baseURL)
-	}
-	resp.Body.Close()
 
 	endpoints := []struct {
 		method string

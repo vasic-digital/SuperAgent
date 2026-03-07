@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 const baseURL = "http://localhost:7061"
@@ -29,12 +31,7 @@ func checkAvailable(url string) bool {
 // TestEnsembleChaos_ConcurrentDebates fires many concurrent debate requests
 // to verify the ensemble system handles parallelism correctly.
 func TestEnsembleChaos_ConcurrentDebates(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	var wg sync.WaitGroup
 	var successCount, failCount int64
@@ -82,12 +79,7 @@ func TestEnsembleChaos_ConcurrentDebates(t *testing.T) {
 
 // TestEnsembleChaos_LargeContext sends debate requests with large context windows.
 func TestEnsembleChaos_LargeContext(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 60 * time.Second}
 
@@ -127,12 +119,7 @@ func TestEnsembleChaos_LargeContext(t *testing.T) {
 
 // TestEnsembleChaos_RapidModelSwitching rapidly switches between ensemble models.
 func TestEnsembleChaos_RapidModelSwitching(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	models := []string{
 		"helixagent", "helixagent-debate", "helixagent-fast",
@@ -184,12 +171,7 @@ func TestEnsembleChaos_RapidModelSwitching(t *testing.T) {
 
 // TestEnsembleChaos_AbortedDebates tests behavior when debate requests are aborted.
 func TestEnsembleChaos_AbortedDebates(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	var wg sync.WaitGroup
 	var abortedCount int64

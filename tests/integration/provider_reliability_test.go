@@ -9,6 +9,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 // checkProvidersAvailable checks if any LLM providers are available
@@ -36,15 +38,8 @@ func checkProvidersAvailable(helixAgentURL string) (bool, string) {
 // - Empty responses with 200 status - API bug, test fails
 // - Proper responses - test passes
 func TestProviderReliability_ConsecutiveRequests(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping live provider reliability test in short mode")
-	}
+	testutil.RequireServer(t)
 	helixAgentURL := getHelixAgentURL()
-
-	// Skip if HelixAgent is not running
-	if !isHelixAgentRunning(helixAgentURL) {
-		t.Skip("HelixAgent is not running - skipping provider reliability test")
-	}
 
 	t.Log("Testing consecutive API requests to ensure no empty responses...")
 
@@ -135,14 +130,8 @@ func TestProviderReliability_ConsecutiveRequests(t *testing.T) {
 
 // TestProviderReliability_RapidRequests validates behavior under rapid request load
 func TestProviderReliability_RapidRequests(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping live provider test in short mode")
-	}
+	testutil.RequireServer(t)
 	helixAgentURL := getHelixAgentURL()
-
-	if !isHelixAgentRunning(helixAgentURL) {
-		t.Skip("HelixAgent is not running - skipping rapid requests test")
-	}
 
 	// Check if providers are available first
 	available, reason := checkProvidersAvailable(helixAgentURL)
@@ -232,14 +221,8 @@ func TestProviderReliability_RapidRequests(t *testing.T) {
 // TestProviderReliability_CircuitBreakerRecovery validates that the system recovers
 // after provider failures
 func TestProviderReliability_CircuitBreakerRecovery(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping live provider test in short mode")
-	}
+	testutil.RequireServer(t)
 	helixAgentURL := getHelixAgentURL()
-
-	if !isHelixAgentRunning(helixAgentURL) {
-		t.Skip("HelixAgent is not running - skipping circuit breaker recovery test")
-	}
 
 	// Check if providers are available first
 	available, reason := checkProvidersAvailable(helixAgentURL)
@@ -286,14 +269,8 @@ func TestProviderReliability_CircuitBreakerRecovery(t *testing.T) {
 
 // TestAPIResponse_NonEmpty validates that API responses are never empty when the server is healthy
 func TestAPIResponse_NonEmpty(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping live provider test in short mode")
-	}
+	testutil.RequireServer(t)
 	helixAgentURL := getHelixAgentURL()
-
-	if !isHelixAgentRunning(helixAgentURL) {
-		t.Skip("HelixAgent is not running - skipping API response test")
-	}
 
 	// Check if providers are available first
 	available, reason := checkProvidersAvailable(helixAgentURL)
@@ -349,14 +326,8 @@ func TestAPIResponse_NonEmpty(t *testing.T) {
 
 // TestAPIResponse_ResponseTime validates that response times are reasonable
 func TestAPIResponse_ResponseTime(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping live provider test in short mode")
-	}
+	testutil.RequireServer(t)
 	helixAgentURL := getHelixAgentURL()
-
-	if !isHelixAgentRunning(helixAgentURL) {
-		t.Skip("HelixAgent is not running - skipping response time test")
-	}
 
 	// Check if providers are available first
 	available, reason := checkProvidersAvailable(helixAgentURL)

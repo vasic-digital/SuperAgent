@@ -11,6 +11,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 // OpenCodeRequest represents an OpenCode-style chat completion request
@@ -90,13 +92,7 @@ func skipIfServerUnavailable(t *testing.T) bool {
 
 // TestOpenCode_HealthCheck verifies HelixAgent is ready for OpenCode
 func TestOpenCode_HealthCheck(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping OpenCode simulation (acceptable)")
-		return
-	}
-	if skipIfServerUnavailable(t) {
-		return
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Get(getTestURL() + "/health")
@@ -113,10 +109,7 @@ func TestOpenCode_HealthCheck(t *testing.T) {
 
 // TestOpenCode_CodebaseQuery simulates "Do you see my codebase?" query
 func TestOpenCode_CodebaseQuery(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping OpenCode simulation (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	request := OpenCodeRequest{
 		Model: "helixagent-debate",
@@ -156,10 +149,7 @@ func TestOpenCode_CodebaseQuery(t *testing.T) {
 
 // TestOpenCode_InitRequest simulates an init/project analysis request
 func TestOpenCode_InitRequest(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping OpenCode simulation (acceptable)")
-		return
-	}
+	testutil.RequireServer(t)
 
 	request := OpenCodeRequest{
 		Model: "helixagent-debate",
@@ -194,13 +184,7 @@ func TestOpenCode_InitRequest(t *testing.T) {
 
 // TestOpenCode_DocumentationRequest simulates a documentation generation request
 func TestOpenCode_DocumentationRequest(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping OpenCode simulation (acceptable)")
-		return
-	}
-	if skipIfServerUnavailable(t) {
-		return
-	}
+	testutil.RequireServer(t)
 
 	request := OpenCodeRequest{
 		Model: "helixagent-debate",
@@ -237,13 +221,7 @@ func TestOpenCode_DocumentationRequest(t *testing.T) {
 // TestOpenCode_ConcurrentRequests simulates multiple concurrent OpenCode requests
 // This verifies no endless loops or blocking occurs
 func TestOpenCode_ConcurrentRequests(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping OpenCode simulation (acceptable)")
-		return
-	}
-	if skipIfServerUnavailable(t) {
-		return
-	}
+	testutil.RequireServer(t)
 
 	requests := []OpenCodeRequest{
 		{
@@ -352,13 +330,7 @@ func TestOpenCode_ConcurrentRequests(t *testing.T) {
 
 // TestOpenCode_NoEndlessLoop verifies responses don't repeat indefinitely
 func TestOpenCode_NoEndlessLoop(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping OpenCode simulation (acceptable)")
-		return
-	}
-	if skipIfServerUnavailable(t) {
-		return
-	}
+	testutil.RequireServer(t)
 
 	request := OpenCodeRequest{
 		Model: "helixagent-debate",
@@ -418,13 +390,7 @@ func TestOpenCode_NoEndlessLoop(t *testing.T) {
 
 // TestOpenCode_SequentialRequests verifies sequential requests work correctly
 func TestOpenCode_SequentialRequests(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping OpenCode simulation (acceptable)")
-		return
-	}
-	if skipIfServerUnavailable(t) {
-		return
-	}
+	testutil.RequireServer(t)
 
 	// Simulate OpenCode's typical request sequence
 	requests := []struct {

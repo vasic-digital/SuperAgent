@@ -265,10 +265,6 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 		logger.Info("Models.dev integration initialized successfully")
 	}
 
-	// Note: CompletionHandler functionality now provided by UnifiedHandler
-	// Legacy handler kept for reference but not used
-	_ = handlers.NewCompletionHandler // Suppress import warning
-
 	// Initialize unified OpenAI-compatible handler
 	unifiedHandler := handlers.NewUnifiedHandler(providerRegistry, cfg)
 

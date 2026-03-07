@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 const baseURL = "http://localhost:7061"
@@ -28,12 +30,7 @@ func checkAvailable(url string) bool {
 // TestRateLimitChaos_ExceedLimit sends requests at a rate that should trigger
 // rate limiting, verifying that 429 responses are returned and the server stays up.
 func TestRateLimitChaos_ExceedLimit(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 5 * time.Second}
 	var wg sync.WaitGroup
@@ -86,12 +83,7 @@ func TestRateLimitChaos_ExceedLimit(t *testing.T) {
 
 // TestRateLimitChaos_BurstPattern sends traffic in burst patterns to test token bucket behavior.
 func TestRateLimitChaos_BurstPattern(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 5 * time.Second}
 
@@ -139,12 +131,7 @@ func TestRateLimitChaos_BurstPattern(t *testing.T) {
 
 // TestRateLimitChaos_MultiIPSources tests rate limiting across different IPs.
 func TestRateLimitChaos_MultiIPSources(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 5 * time.Second}
 	var wg sync.WaitGroup
@@ -194,12 +181,7 @@ func TestRateLimitChaos_MultiIPSources(t *testing.T) {
 // TestRateLimitChaos_Recovery verifies the server recovers correctly
 // after rate limit windows expire.
 func TestRateLimitChaos_Recovery(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 5 * time.Second}
 

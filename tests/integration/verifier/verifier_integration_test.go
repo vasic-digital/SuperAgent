@@ -19,10 +19,7 @@ func init() {
 
 // TestVerifierServiceIntegration tests verifier service integration with handlers
 func TestVerifierServiceIntegration(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	// Integration test — run via `go test ./tests/integration/verifier/`
 
 	cfg := verifier.DefaultConfig()
 	cfg.Enabled = true
@@ -90,10 +87,7 @@ func TestVerifierServiceIntegration(t *testing.T) {
 
 // TestVerifierAPIIntegration tests verifier API endpoints integration
 func TestVerifierAPIIntegration(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	// Integration test — run via `go test ./tests/integration/verifier/`
 
 	router := gin.New()
 	router.Use(gin.Recovery())
@@ -200,10 +194,7 @@ func TestVerifierAPIIntegration(t *testing.T) {
 
 // TestVerifierMultiProviderIntegration tests verification across multiple providers
 func TestVerifierMultiProviderIntegration(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	// Integration test — run via `go test ./tests/integration/verifier/`
 
 	cfg := verifier.DefaultConfig()
 	svc := verifier.NewVerificationService(cfg)
@@ -238,10 +229,7 @@ func TestVerifierMultiProviderIntegration(t *testing.T) {
 
 // TestVerifierCacheIntegration tests caching behavior
 func TestVerifierCacheIntegration(t *testing.T) {
-	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)")
-		return
-	}
+	// Integration test — run via `go test ./tests/integration/verifier/`
 
 	cfg := verifier.DefaultConfig()
 	scoringSvc, err := verifier.NewScoringService(cfg)

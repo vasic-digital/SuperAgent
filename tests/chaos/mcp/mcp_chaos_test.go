@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 const baseURL = "http://localhost:7061"
@@ -29,12 +31,7 @@ func checkAvailable(url string) bool {
 
 // TestMCPChaos_InvalidToolRequests sends invalid tool call requests to the MCP endpoint.
 func TestMCPChaos_InvalidToolRequests(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	invalidPayloads := []string{
 		`{"jsonrpc": "2.0", "method": "nonexistent_tool", "params": {}, "id": 1}`,
@@ -89,12 +86,7 @@ func TestMCPChaos_InvalidToolRequests(t *testing.T) {
 
 // TestMCPChaos_ConcurrentToolCalls sends concurrent valid tool call requests.
 func TestMCPChaos_ConcurrentToolCalls(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	toolNames := []string{
 		"filesystem", "memory", "sequential-thinking", "everything",
@@ -154,12 +146,7 @@ func TestMCPChaos_ConcurrentToolCalls(t *testing.T) {
 
 // TestMCPChaos_MalformedJSONRPC sends malformed JSON-RPC 2.0 payloads.
 func TestMCPChaos_MalformedJSONRPC(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 5 * time.Second}
 	var processedCount int64
@@ -191,12 +178,7 @@ func TestMCPChaos_MalformedJSONRPC(t *testing.T) {
 
 // TestMCPChaos_LargeToolPayloads sends tool requests with very large argument payloads.
 func TestMCPChaos_LargeToolPayloads(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping chaos test in short mode")
-	}
-	if !checkAvailable(baseURL) {
-		t.Skip("Skipping chaos test - server not available at " + baseURL)
-	}
+	testutil.RequireServer(t)
 
 	client := &http.Client{Timeout: 15 * time.Second}
 	sizes := []int{1024, 10 * 1024, 100 * 1024}

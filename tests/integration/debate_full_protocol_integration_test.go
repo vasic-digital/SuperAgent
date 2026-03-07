@@ -108,9 +108,7 @@ func createTestTopology(t *testing.T) topology.Topology {
 // in the correct order: Dehallucination -> SelfEvolvement -> Proposal ->
 // Critique -> Review -> Optimization -> Adversarial -> Convergence.
 func TestDebateFullProtocol_8Phases(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
+
 
 	topo := createTestTopology(t)
 	defer topo.Close()
@@ -181,9 +179,7 @@ func TestDebateFullProtocol_8Phases(t *testing.T) {
 // TestDebateFullProtocol_EarlyConsensus verifies that the protocol exits
 // early when consensus is reached during the convergence phase.
 func TestDebateFullProtocol_EarlyConsensus(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
+
 
 	topo := createTestTopology(t)
 	defer topo.Close()
@@ -228,9 +224,7 @@ func TestDebateFullProtocol_EarlyConsensus(t *testing.T) {
 // TestDebateFullProtocol_Timeout verifies that the protocol respects the
 // configured timeout and terminates gracefully.
 func TestDebateFullProtocol_Timeout(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
+
 
 	topo := createTestTopology(t)
 	defer topo.Close()
@@ -269,9 +263,7 @@ func TestDebateFullProtocol_Timeout(t *testing.T) {
 // TestDebateFullProtocol_ContextCancellation tests that the protocol
 // responds to context cancellation promptly.
 func TestDebateFullProtocol_ContextCancellation(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
+
 
 	topo := createTestTopology(t)
 	defer topo.Close()
@@ -313,9 +305,7 @@ func TestDebateFullProtocol_ContextCancellation(t *testing.T) {
 // TestDebateFullProtocol_MultipleTopologies verifies that all topology
 // types can be used with the protocol.
 func TestDebateFullProtocol_MultipleTopologies(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
+
 
 	topoTypes := []topology.TopologyType{
 		topology.TopologyGraphMesh,

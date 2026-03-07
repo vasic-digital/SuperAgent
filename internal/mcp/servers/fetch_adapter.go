@@ -16,6 +16,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Pre-compiled regexes for fetch adapter
+var (
+	fetchLinkRegex   = regexp.MustCompile(`href=["']([^"']+)["']`)
+	fetchScriptRegex = regexp.MustCompile(`(?i)<script[^>]*>[\s\S]*?</script>`)
+	fetchStyleRegex  = regexp.MustCompile(`(?i)<style[^>]*>[\s\S]*?</style>`)
+	fetchTagRegex    = regexp.MustCompile(`<[^>]*>`)
+	fetchSpaceRegex  = regexp.MustCompile(`\s+`)
+)
+
 // FetchAdapterConfig holds configuration for Fetch MCP adapter
 type FetchAdapterConfig struct {
 	// UserAgent is the User-Agent header to use
@@ -287,9 +296,7 @@ func (f *FetchAdapter) FetchJSON(ctx context.Context, targetURL string, headers 
 
 // ExtractLinks extracts links from HTML content
 func (f *FetchAdapter) ExtractLinks(content string, baseURL string) ([]string, error) {
-	// Simple regex-based link extraction
-	linkRegex := regexp.MustCompile(`href=["']([^"']+)["']`)
-	matches := linkRegex.FindAllStringSubmatch(content, -1)
+	matches := fetchLinkRegex.FindAllStringSubmatch(content, -1)
 
 	base, err := url.Parse(baseURL)
 	if err != nil {
@@ -330,16 +337,9 @@ func (f *FetchAdapter) ExtractLinks(content string, baseURL string) ([]string, e
 
 // ExtractText extracts text content from HTML
 func (f *FetchAdapter) ExtractText(content string) string {
-	// Remove script and style tags
-	scriptRegex := regexp.MustCompile(`(?i)<script[^>]*>[\s\S]*?</script>`)
-	content = scriptRegex.ReplaceAllString(content, "")
-
-	styleRegex := regexp.MustCompile(`(?i)<style[^>]*>[\s\S]*?</style>`)
-	content = styleRegex.ReplaceAllString(content, "")
-
-	// Remove HTML tags
-	tagRegex := regexp.MustCompile(`<[^>]*>`)
-	content = tagRegex.ReplaceAllString(content, " ")
+	content = fetchScriptRegex.ReplaceAllString(content, "")
+	content = fetchStyleRegex.ReplaceAllString(content, "")
+	content = fetchTagRegex.ReplaceAllString(content, " ")
 
 	// Decode common HTML entities
 	content = strings.ReplaceAll(content, "&nbsp;", " ")
@@ -349,9 +349,7 @@ func (f *FetchAdapter) ExtractText(content string) string {
 	content = strings.ReplaceAll(content, "&quot;", "\"")
 	content = strings.ReplaceAll(content, "&#39;", "'")
 
-	// Normalize whitespace
-	spaceRegex := regexp.MustCompile(`\s+`)
-	content = spaceRegex.ReplaceAllString(content, " ")
+	content = fetchSpaceRegex.ReplaceAllString(content, " ")
 
 	return strings.TrimSpace(content)
 }

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"dev.helix.agent/internal/adapters/storage/minio"
+	"dev.helix.agent/internal/testutil"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -35,15 +36,7 @@ var (
 func skipMinIOIfUnavailable(t *testing.T) *minio.Client {
 	t.Helper()
 
-	// Skip in short mode - these tests require external MinIO infrastructure
-	if testing.Short() {
-		t.Skip("Skipping MinIO integration test in short mode")
-	}
-
-	// Skip if MINIO_ENABLED env var is explicitly set to false
-	if os.Getenv("MINIO_ENABLED") == "false" {
-		t.Skip("Skipping MinIO integration test - MINIO_ENABLED=false")
-	}
+	testutil.RequireExternalService(t, "minio", "localhost", "9000")
 
 	config := &minio.Config{
 		Endpoint:          minioEndpoint,

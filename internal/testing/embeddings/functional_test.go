@@ -15,6 +15,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 // EmbeddingClient provides a client for testing embedding providers
@@ -122,13 +124,11 @@ var EmbeddingProviders = []EmbeddingProviderConfig{
 
 // TestEmbeddingProviderDiscovery tests provider discovery endpoint
 func TestEmbeddingProviderDiscovery(t *testing.T) {
+	testutil.RequireHTTPEndpoint(t, "embeddings", "http://localhost:8080/v1/embeddings/health")
 	client := NewEmbeddingClient("http://localhost:8080")
 
 	providers, err := client.ListProviders()
-	if err != nil {
-		t.Skipf("Embedding service not running: %v", err)
-		return
-	}
+	require.NoError(t, err)
 
 	assert.NotEmpty(t, providers, "Should have at least one provider")
 	t.Logf("Discovered %d embedding providers: %v", len(providers), providers)
@@ -136,6 +136,7 @@ func TestEmbeddingProviderDiscovery(t *testing.T) {
 
 // TestEmbeddingGeneration tests actual embedding generation
 func TestEmbeddingGeneration(t *testing.T) {
+	testutil.RequireHTTPEndpoint(t, "embeddings", "http://localhost:8080/v1/embeddings/health")
 	client := NewEmbeddingClient("http://localhost:8080")
 
 	testInputs := []string{
@@ -146,9 +147,8 @@ func TestEmbeddingGeneration(t *testing.T) {
 	for _, provider := range EmbeddingProviders {
 		t.Run(provider.Provider, func(t *testing.T) {
 			// Check if API key is available
-			if provider.RequiresAuth && os.Getenv(provider.EnvKey) == "" {
-				t.Skipf("Skipping %s: %s not set", provider.Provider, provider.EnvKey)
-				return
+			if provider.RequiresAuth {
+				testutil.RequireEnv(t, provider.EnvKey)
 			}
 
 			req := &EmbeddingRequest{
@@ -177,6 +177,7 @@ func TestEmbeddingGeneration(t *testing.T) {
 
 // TestEmbeddingSimilarity tests that similar texts have similar embeddings
 func TestEmbeddingSimilarity(t *testing.T) {
+	testutil.RequireHTTPEndpoint(t, "embeddings", "http://localhost:8080/v1/embeddings/health")
 	client := NewEmbeddingClient("http://localhost:8080")
 
 	// Test with first available provider
@@ -234,20 +235,13 @@ func TestEmbeddingHealthCheck(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping functional test in short mode")
 	}
+	testutil.RequireHTTPEndpoint(t, "embeddings", "http://localhost:8080/v1/embeddings/health")
 
 	client := NewEmbeddingClient("http://localhost:8080")
 
 	resp, err := client.httpClient.Get(client.baseURL + "/v1/embeddings/health")
-	if err != nil {
-		t.Skipf("Embedding service not running: %v", err)
-		return
-	}
+	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode == http.StatusNotFound {
-		t.Skip("Embeddings endpoint not found: HelixAgent not running at expected address")
-		return
-	}
 
 	require.Equal(t, http.StatusOK, resp.StatusCode, "Health check should return 200")
 }

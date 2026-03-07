@@ -13,6 +13,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"dev.helix.agent/internal/testutil"
 )
 
 func newTestLogger() *logrus.Logger {
@@ -33,9 +35,7 @@ func TestNewAWSBedrockIntegration(t *testing.T) {
 }
 
 func TestAWSBedrockIntegration_ListModels(t *testing.T) {
-	if os.Getenv("AWS_ACCESS_KEY_ID") == "" {
-		t.Skip("Skipping AWS Bedrock ListModels test: AWS credentials not configured")
-	}
+	testutil.RequireEnv(t, "AWS_ACCESS_KEY_ID")
 
 	logger := newTestLogger()
 	integration := NewAWSBedrockIntegration("us-east-1", logger)
@@ -48,9 +48,7 @@ func TestAWSBedrockIntegration_ListModels(t *testing.T) {
 }
 
 func TestAWSBedrockIntegration_InvokeModel(t *testing.T) {
-	if os.Getenv("AWS_ACCESS_KEY_ID") == "" {
-		t.Skip("Skipping AWS Bedrock InvokeModel test: AWS credentials not configured")
-	}
+	testutil.RequireEnv(t, "AWS_ACCESS_KEY_ID")
 
 	logger := newTestLogger()
 	integration := NewAWSBedrockIntegration("us-west-2", logger)
@@ -84,7 +82,7 @@ func TestNewGCPVertexAIIntegration(t *testing.T) {
 
 func TestGCPVertexAIIntegration_ListModels(t *testing.T) {
 	if os.Getenv("GCP_ACCESS_TOKEN") == "" && os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") == "" {
-		t.Skip("Skipping GCP Vertex AI ListModels test: GCP credentials not configured")
+		t.Skip("GCP credentials not configured (GCP_ACCESS_TOKEN or GOOGLE_APPLICATION_CREDENTIALS)")
 	}
 
 	logger := newTestLogger()
@@ -132,9 +130,7 @@ func TestNewAzureOpenAIIntegration(t *testing.T) {
 }
 
 func TestAzureOpenAIIntegration_ListModels(t *testing.T) {
-	if os.Getenv("AZURE_OPENAI_API_KEY") == "" {
-		t.Skip("Skipping Azure OpenAI ListModels test: Azure credentials not configured")
-	}
+	testutil.RequireEnv(t, "AZURE_OPENAI_API_KEY")
 
 	logger := newTestLogger()
 	integration := NewAzureOpenAIIntegration("https://test.openai.azure.com", logger)
@@ -147,9 +143,7 @@ func TestAzureOpenAIIntegration_ListModels(t *testing.T) {
 }
 
 func TestAzureOpenAIIntegration_InvokeModel(t *testing.T) {
-	if os.Getenv("AZURE_OPENAI_API_KEY") == "" {
-		t.Skip("Skipping Azure OpenAI InvokeModel test: Azure credentials not configured")
-	}
+	testutil.RequireEnv(t, "AZURE_OPENAI_API_KEY")
 
 	logger := newTestLogger()
 	integration := NewAzureOpenAIIntegration("https://my-resource.openai.azure.com", logger)
@@ -276,9 +270,7 @@ func TestCloudIntegrationManager_InvokeCloudModel(t *testing.T) {
 }
 
 func TestCloudIntegrationManager_InvokeCloudModel_WithConfig(t *testing.T) {
-	if os.Getenv("AZURE_OPENAI_API_KEY") == "" {
-		t.Skip("Skipping Azure OpenAI InvokeCloudModel test: Azure credentials not configured")
-	}
+	testutil.RequireEnv(t, "AZURE_OPENAI_API_KEY")
 
 	logger := newTestLogger()
 	manager := NewCloudIntegrationManager(logger)
