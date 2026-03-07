@@ -310,10 +310,8 @@ func TestVerifierMemoryStress(t *testing.T) {
 		runtime.ReadMemStats(&memAfter)
 
 		t.Logf("Requests processed: %d", requestCount)
-		t.Logf("Memory before: %d MB, Memory after: %d MB",
-			memBefore.Alloc/1024/1024, memAfter.Alloc/1024/1024)
-		t.Logf("Memory growth: %d MB",
-			(memAfter.Alloc-memBefore.Alloc)/1024/1024)
+		t.Logf("Heap before: %d MB, Heap after: %d MB",
+			memBefore.HeapInuse/1024/1024, memAfter.HeapInuse/1024/1024)
 	})
 }
 

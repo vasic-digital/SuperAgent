@@ -2,6 +2,7 @@ package stress
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -186,5 +187,5 @@ func (r *mockAdapterRegistry) Count() int {
 }
 
 func adapterName(id int) string {
-	return "adapter-" + string(rune('a'+id%26)) + "-" + string(rune('0'+id%10))
+	return fmt.Sprintf("adapter-%d", id)
 }

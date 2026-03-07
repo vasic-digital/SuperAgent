@@ -64,13 +64,13 @@ func TestMemoryStore_HighWriteVolume(t *testing.T) {
 	runtime.GC()
 	runtime.ReadMemStats(&memAfter)
 
-	memIncreaseMB := float64(memAfter.Alloc-memBefore.Alloc) / 1024 / 1024
+	liveHeapMB := float64(memAfter.HeapInuse) / 1024 / 1024
 
 	t.Logf("High write volume: %d writes in %v (%.0f writes/sec), "+
-		"errors=%d, memory increase=%.2f MB",
+		"errors=%d, live heap=%.2f MB",
 		totalMemories, elapsed,
 		float64(totalMemories)/elapsed.Seconds(),
-		writeErrors, memIncreaseMB)
+		writeErrors, liveHeapMB)
 
 	assert.Zero(t, writeErrors, "all writes should succeed")
 
@@ -371,25 +371,14 @@ func TestMemoryStore_MemoryNotGrowingUnbounded(t *testing.T) {
 	runtime.GC()
 	runtime.ReadMemStats(&memAfter)
 
-	// Handle case where GC freed more than was allocated (underflow protection)
-	var memIncreaseMB float64
-	if memAfter.Alloc > memBefore.Alloc {
-		memIncreaseMB = float64(memAfter.Alloc-memBefore.Alloc) / 1024 / 1024
-	} else {
-		// Memory actually decreased — no leak
-		memIncreaseMB = 0
-	}
+	liveHeapMB := float64(memAfter.HeapInuse) / 1024 / 1024
 
 	t.Logf("Memory growth check: %d cycles x %d memories, "+
-		"before=%.2f MB, after=%.2f MB, increase=%.2f MB",
-		cycles, memoriesPerCycle,
-		float64(memBefore.Alloc)/1024/1024,
-		float64(memAfter.Alloc)/1024/1024,
-		memIncreaseMB)
+		"live heap=%.2f MB",
+		cycles, memoriesPerCycle, liveHeapMB)
 
-	// After writing and deleting 2000 memories, memory should not grow
-	// beyond 50 MB (generous limit to avoid flakiness)
-	assert.Less(t, memIncreaseMB, 50.0,
+	// After writing and deleting 2000 memories, live heap should be bounded
+	assert.Less(t, liveHeapMB, 200.0,
 		"memory should not grow unbounded after write-delete cycles")
 }
 

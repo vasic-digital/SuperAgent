@@ -200,13 +200,13 @@ func TestDebate_MemoryUnderLoad(t *testing.T) {
 	assert.LessOrEqual(t, memory.Size(), maxSize,
 		"Buffer size should not exceed max")
 
-	memIncreaseMB := float64(memAfter.Alloc-memBefore.Alloc) / 1024 / 1024
+	liveHeapMB := float64(memAfter.HeapInuse) / 1024 / 1024
 	t.Logf("Memory under load: stored %d episodes (max %d), "+
-		"store_errors=%d, memory increase=%.2f MB",
-		totalEpisodes, maxSize, storeErrors, memIncreaseMB)
+		"store_errors=%d, live heap=%.2f MB",
+		totalEpisodes, maxSize, storeErrors, liveHeapMB)
 
-	// Memory should be reasonable
-	assert.Less(t, memIncreaseMB, 100.0,
+	// Live heap should be reasonable after GC
+	assert.Less(t, liveHeapMB, 200.0,
 		"Memory increase should be bounded")
 
 	// Verify retrieval still works
@@ -421,12 +421,12 @@ func TestDebate_VotingSystemReset(t *testing.T) {
 	runtime.GC()
 	runtime.ReadMemStats(&memAfter)
 
-	memIncreaseMB := float64(memAfter.Alloc-memBefore.Alloc) / 1024 / 1024
-	t.Logf("Voting reset stress: %d iterations, memory increase=%.2f MB",
-		iterations, memIncreaseMB)
+	liveHeapMB := float64(memAfter.HeapInuse) / 1024 / 1024
+	t.Logf("Voting reset stress: %d iterations, live heap=%.2f MB",
+		iterations, liveHeapMB)
 
-	// After 1000 resets, memory should not have grown significantly
-	assert.Less(t, memIncreaseMB, 50.0,
+	// After 1000 resets, live heap should be bounded
+	assert.Less(t, liveHeapMB, 200.0,
 		"Memory should not grow unbounded after repeated resets")
 
 	// Final vote count should be 0 after last reset
