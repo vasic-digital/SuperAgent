@@ -348,16 +348,19 @@ func (p *HTTPClientPool) Close() error {
 
 // GlobalPool is the default global HTTP client pool
 var (
-	GlobalPool     *HTTPClientPool
-	globalPoolOnce sync.Once
+	GlobalPool  *HTTPClientPool
+	globalPoolMu sync.Mutex
 )
 
 func ensureGlobalPool() {
-	globalPoolOnce.Do(func() {
-		if GlobalPool == nil {
-			GlobalPool = NewHTTPClientPool(nil)
-		}
-	})
+	if GlobalPool != nil {
+		return
+	}
+	globalPoolMu.Lock()
+	defer globalPoolMu.Unlock()
+	if GlobalPool == nil {
+		GlobalPool = NewHTTPClientPool(nil)
+	}
 }
 
 // InitGlobalPool initializes the global HTTP client pool
