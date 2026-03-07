@@ -25,11 +25,11 @@ func TestVerificationReportGenerator_GenerateReport(t *testing.T) {
 		reportPath: reportPath,
 	}
 
-	t.Run("generates report with no verifications", func(t *testing.T) {
+	t.Run("generates placeholder report when verificationSvc is nil", func(t *testing.T) {
 		generator.verificationSvc = nil
-		_, err := generator.GenerateReport(context.Background())
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "verification service not available")
+		path, err := generator.GenerateReport(context.Background())
+		assert.NoError(t, err, "nil verificationSvc should generate placeholder, not error")
+		assert.Equal(t, reportPath, path)
 	})
 }
 
