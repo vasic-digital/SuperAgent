@@ -117,6 +117,25 @@ release-builder-image:
 .PHONY: ci-all ci-go ci-mobile ci-web ci-report ci-build-images ci-clean
 
 CI_COMPOSE_CMD = $(shell command -v docker >/dev/null 2>&1 && echo "docker compose" || echo "podman-compose")
+CI_IS_DOCKER = $(shell command -v docker >/dev/null 2>&1 && echo "yes" || echo "no")
+
+# Helper: run CI phase with proper compose flags
+# Docker supports --abort-on-container-exit --exit-code-from
+# Podman-compose needs: up -d, wait, inspect exit code, down
+define run_ci_phase
+	@if [ "$(CI_IS_DOCKER)" = "yes" ]; then \
+		$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile $(1) up --build --abort-on-container-exit --exit-code-from $(2); \
+	else \
+		$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile $(1) build; \
+		$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile $(1) up -d; \
+		echo "Waiting for $(2) to complete..."; \
+		while podman ps --filter "name=$(2)" --format "{{.Status}}" 2>/dev/null | grep -qiE "up|running"; do sleep 5; done; \
+		EXIT_CODE=$$(podman inspect --format '{{.State.ExitCode}}' $(2) 2>/dev/null || echo 1); \
+		$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile $(1) down; \
+		exit $$EXIT_CODE; \
+	fi
+	@$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile $(1) down 2>/dev/null || true
+endef
 
 ci-build-images: ## Build all CI container images
 	@echo "Building CI container images..."
@@ -125,23 +144,19 @@ ci-build-images: ## Build all CI container images
 
 ci-go: ## Phase 1: Go builds + tests + integration services
 	@echo "=== Phase 1: Go CI ==="
-	$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile go-ci up --build --abort-on-container-exit --exit-code-from ci-go
-	$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile go-ci down
+	$(call run_ci_phase,go-ci,ci-go-builder)
 
 ci-mobile: ## Phase 2: Mobile builds + Robolectric + emulator E2E
 	@echo "=== Phase 2: Mobile CI ==="
-	$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile mobile-ci up --build --abort-on-container-exit --exit-code-from ci-mobile
-	$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile mobile-ci down
+	$(call run_ci_phase,mobile-ci,ci-mobile-builder)
 
 ci-web: ## Phase 3: Web builds + Playwright + Lighthouse
 	@echo "=== Phase 3: Web CI ==="
-	$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile web-ci up --build --abort-on-container-exit --exit-code-from ci-web
-	$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile web-ci down
+	$(call run_ci_phase,web-ci,ci-web-builder)
 
 ci-report: ## Aggregate reports from all phases
 	@echo "=== CI Report Aggregation ==="
-	$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile report up --build --abort-on-container-exit --exit-code-from ci-reporter
-	$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile report down
+	$(call run_ci_phase,report,ci-reporter)
 
 ci-all: ci-go ci-mobile ci-web ci-report ## Run all CI phases + report
 	@echo "=== CI Complete ==="
@@ -149,7 +164,7 @@ ci-all: ci-go ci-mobile ci-web ci-report ## Run all CI phases + report
 	@echo "Releases: releases/"
 
 ci-clean: ## Remove CI containers, networks, volumes
-	$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile go-ci --profile mobile-ci --profile web-ci --profile report down -v --remove-orphans
+	$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile go-ci --profile mobile-ci --profile web-ci --profile report down -v --remove-orphans 2>/dev/null || true
 	@echo "CI cleanup complete"
 
 # =============================================================================

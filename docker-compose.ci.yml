@@ -206,11 +206,6 @@ services:
         condition: service_healthy
       mockllm:
         condition: service_healthy
-    deploy:
-      resources:
-        limits:
-          cpus: "${CI_CPUS:-2}"
-          memory: "${CI_MEMORY:-4G}"
     networks:
       - ci-network
     profiles:
@@ -227,11 +222,6 @@ services:
     container_name: ci-emulator
     devices:
       - /dev/kvm:/dev/kvm
-    deploy:
-      resources:
-        limits:
-          cpus: "2"
-          memory: "4G"
     healthcheck:
       test: ["CMD-SHELL", "adb shell getprop sys.boot_completed 2>/dev/null | grep -q 1"]
       interval: 10s
@@ -264,11 +254,6 @@ services:
     depends_on:
       emulator:
         condition: service_healthy
-    deploy:
-      resources:
-        limits:
-          cpus: "${CI_CPUS:-2}"
-          memory: "${CI_MEMORY:-4G}"
     networks:
       - ci-network
     profiles:
@@ -291,11 +276,6 @@ services:
       - WORKSPACE=/workspace
       - CI=true
     command: ["/workspace/ci/scripts/ci-web.sh"]
-    deploy:
-      resources:
-        limits:
-          cpus: "${CI_CPUS:-2}"
-          memory: "${CI_MEMORY:-4G}"
     networks:
       - ci-network
     profiles:
