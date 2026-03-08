@@ -224,7 +224,7 @@ func NewCogneeService(cfg *config.Config, logger *logrus.Logger) *CogneeService 
 	}
 	authPassword := os.Getenv("COGNEE_AUTH_PASSWORD")
 	if authPassword == "" {
-		authPassword = "HelixAgentPass123"
+		authPassword = "HelixAgentPass123" // #nosec G101 - dev-only default for local Cognee container
 	}
 
 	serviceConfig := &CogneeServiceConfig{

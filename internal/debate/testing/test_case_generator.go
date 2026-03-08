@@ -10,6 +10,9 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // TestCase represents a generated test case for debate validation.
@@ -239,7 +242,7 @@ func (g *LLMTestCaseGenerator) generateFallbackTestCase(req *GenerateRequest) *T
 	if !result {
 		t.Error("Test failed")
 	}
-}`, strings.Title(req.Context), req.TargetSolution[:min(50, len(req.TargetSolution))])
+}`, cases.Title(language.English).String(req.Context), req.TargetSolution[:min(50, len(req.TargetSolution))])
 	case "python":
 		fallbackCode = fmt.Sprintf(`import unittest
 
@@ -247,7 +250,7 @@ class Test%s(unittest.TestCase):
     def test_basic(self):
         """Basic functionality test for %s"""
         self.assertTrue(True)  # Placeholder
-`, strings.Title(req.Context), req.TargetSolution[:min(50, len(req.TargetSolution))])
+`, cases.Title(language.English).String(req.Context), req.TargetSolution[:min(50, len(req.TargetSolution))])
 	case "javascript":
 		fallbackCode = fmt.Sprintf(`describe('%s', () => {
     it('should pass basic test', () => {
