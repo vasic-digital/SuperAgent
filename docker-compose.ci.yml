@@ -1,0 +1,332 @@
+# HelixAgent CI/CD Container Build System
+#
+# Usage:
+#   make ci-all                          # All phases + report
+#   make ci-go                           # Phase 1: Go builds + tests
+#   make ci-mobile                       # Phase 2: Mobile builds + tests
+#   make ci-web                          # Phase 3: Web builds + tests
+#   CI_RESOURCE_LIMIT=medium make ci-all # Medium resource limits
+
+x-workspace-volume: &workspace-volume
+  - .:/workspace:rw
+
+x-cache-volumes-go: &cache-volumes-go
+  - go-mod-cache:/go/pkg/mod
+  - go-build-cache:/root/.cache/go-build
+
+services:
+  # ============================================================
+  # INTEGRATION SERVICES (shared across phases)
+  # ============================================================
+
+  postgres:
+    image: docker.io/postgres:15-alpine
+    container_name: ci-postgres
+    environment:
+      POSTGRES_USER: helixagent
+      POSTGRES_PASSWORD: helixagent123
+      POSTGRES_DB: helixagent_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U helixagent -d helixagent_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ci-network
+    profiles:
+      - go-ci
+      - infra
+
+  redis:
+    image: docker.io/redis:7-alpine
+    container_name: ci-redis
+    command: redis-server --requirepass helixagent123
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "helixagent123", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ci-network
+    profiles:
+      - go-ci
+      - infra
+
+  mockllm:
+    build:
+      context: ./tests/mock-llm-server
+      dockerfile: Dockerfile
+    container_name: ci-mockllm
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8090/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ci-network
+    profiles:
+      - go-ci
+      - infra
+
+  oauthmock:
+    image: ghcr.io/navikt/mock-oauth2-server:2.1.10
+    container_name: ci-oauthmock
+    environment:
+      SERVER_PORT: "7061"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:7061/default/.well-known/openid-configuration || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ci-network
+    profiles:
+      - go-ci
+      - infra
+
+  chromadb:
+    image: docker.io/chromadb/chroma:latest
+    container_name: ci-chromadb
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/api/v1/heartbeat || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ci-network
+    profiles:
+      - go-ci
+      - infra
+
+  qdrant:
+    image: docker.io/qdrant/qdrant:latest
+    container_name: ci-qdrant
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:6333/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ci-network
+    profiles:
+      - go-ci
+      - infra
+
+  kafka:
+    image: docker.io/bitnami/kafka:latest
+    container_name: ci-kafka
+    environment:
+      KAFKA_CFG_NODE_ID: "0"
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka:9093
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - ci-network
+    profiles:
+      - go-ci
+      - infra
+
+  rabbitmq:
+    image: docker.io/rabbitmq:3-management-alpine
+    container_name: ci-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: helixagent
+      RABBITMQ_DEFAULT_PASS: helixagent123
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ci-network
+    profiles:
+      - go-ci
+      - infra
+
+  minio:
+    image: docker.io/minio/minio:latest
+    container_name: ci-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: helixagent
+      MINIO_ROOT_PASSWORD: helixagent123
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ci-network
+    profiles:
+      - go-ci
+      - infra
+
+  # ============================================================
+  # PHASE 1: GO CI
+  # ============================================================
+
+  ci-go:
+    build:
+      context: .
+      dockerfile: docker/ci/Dockerfile.ci-go
+    container_name: ci-go-builder
+    volumes:
+      - .:/workspace:rw
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+    environment:
+      - CI_RESOURCE_LIMIT=${CI_RESOURCE_LIMIT:-low}
+      - WORKSPACE=/workspace
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=helixagent
+      - DB_PASSWORD=helixagent123
+      - DB_NAME=helixagent_db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=helixagent123
+      - MOCK_LLM_URL=http://mockllm:8090
+      - MOCK_LLM_ENABLED=true
+      - JWT_SECRET=ci-test-secret
+      - CI=true
+      - FULL_TEST_MODE=true
+    command: ["/workspace/ci/scripts/ci-go.sh"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mockllm:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "${CI_CPUS:-2}"
+          memory: "${CI_MEMORY:-4G}"
+    networks:
+      - ci-network
+    profiles:
+      - go-ci
+
+  # ============================================================
+  # PHASE 2: MOBILE CI
+  # ============================================================
+
+  emulator:
+    build:
+      context: .
+      dockerfile: docker/ci/Dockerfile.ci-emulator
+    container_name: ci-emulator
+    devices:
+      - /dev/kvm:/dev/kvm
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: "4G"
+    healthcheck:
+      test: ["CMD-SHELL", "adb shell getprop sys.boot_completed 2>/dev/null | grep -q 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    networks:
+      - ci-network
+    profiles:
+      - mobile-ci
+
+  ci-mobile:
+    build:
+      context: .
+      dockerfile: docker/ci/Dockerfile.ci-mobile
+    container_name: ci-mobile-builder
+    volumes:
+      - .:/workspace:rw
+      - gradle-cache:/root/.gradle
+      - npm-cache:/root/.npm
+    environment:
+      - CI_RESOURCE_LIMIT=${CI_RESOURCE_LIMIT:-low}
+      - WORKSPACE=/workspace
+      - CI_KEYSTORE_PATH=/workspace/keys/android/debug.keystore
+      - CI_KEYSTORE_PASSWORD=helixagent-debug
+      - CI_KEY_ALIAS=helixagent-debug
+      - CI_KEY_PASSWORD=helixagent-debug
+      - CI=true
+    command: ["/workspace/ci/scripts/ci-mobile.sh"]
+    depends_on:
+      emulator:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "${CI_CPUS:-2}"
+          memory: "${CI_MEMORY:-4G}"
+    networks:
+      - ci-network
+    profiles:
+      - mobile-ci
+
+  # ============================================================
+  # PHASE 3: WEB CI
+  # ============================================================
+
+  ci-web:
+    build:
+      context: .
+      dockerfile: docker/ci/Dockerfile.ci-web
+    container_name: ci-web-builder
+    volumes:
+      - .:/workspace:rw
+      - npm-cache-web:/root/.npm
+    environment:
+      - CI_RESOURCE_LIMIT=${CI_RESOURCE_LIMIT:-low}
+      - WORKSPACE=/workspace
+      - CI=true
+    command: ["/workspace/ci/scripts/ci-web.sh"]
+    deploy:
+      resources:
+        limits:
+          cpus: "${CI_CPUS:-2}"
+          memory: "${CI_MEMORY:-4G}"
+    networks:
+      - ci-network
+    profiles:
+      - web-ci
+
+  # ============================================================
+  # REPORT AGGREGATOR
+  # ============================================================
+
+  ci-reporter:
+    build:
+      context: .
+      dockerfile: docker/ci/Dockerfile.ci-reporter
+    container_name: ci-reporter
+    volumes:
+      - .:/workspace:rw
+    environment:
+      - WORKSPACE=/workspace
+      - CI_RESOURCE_LIMIT=${CI_RESOURCE_LIMIT:-low}
+    networks:
+      - ci-network
+    profiles:
+      - report
+
+volumes:
+  go-mod-cache:
+  go-build-cache:
+  gradle-cache:
+  npm-cache:
+  npm-cache-web:
+
+networks:
+  ci-network:
+    driver: bridge

@@ -1,0 +1,13 @@
+# HelixAgent CI - Report Aggregator
+FROM node:20-alpine
+
+RUN apk add --no-cache git bash jq
+
+WORKDIR /opt/reporter
+
+COPY ci/reporter/package.json ci/reporter/aggregate.js ci/reporter/dashboard-template.html ./
+RUN npm ci --production
+
+ENV WORKSPACE=/workspace
+
+ENTRYPOINT ["node", "/opt/reporter/aggregate.js"]
