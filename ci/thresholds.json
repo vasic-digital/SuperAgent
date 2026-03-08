@@ -1,0 +1,40 @@
+{
+  "go": {
+    "min_unit_tests": 100,
+    "min_integration_tests": 20,
+    "min_e2e_tests": 10,
+    "min_security_tests": 5,
+    "min_coverage_percent": 100
+  },
+  "mobile": {
+    "flutter": {
+      "min_unit_tests": 5,
+      "min_widget_tests": 3,
+      "min_coverage_percent": 100
+    },
+    "react_native": {
+      "min_jest_tests": 5,
+      "min_coverage_percent": 100
+    },
+    "robolectric": {
+      "min_tests": 5,
+      "min_coverage_percent": 100
+    }
+  },
+  "web": {
+    "angular": {
+      "min_karma_tests": 5,
+      "min_e2e_tests": 3,
+      "min_coverage_percent": 100,
+      "lighthouse_min_score": 80
+    },
+    "website": {
+      "min_playwright_tests": 3,
+      "lighthouse_min_score": 80
+    },
+    "sdk": {
+      "min_jest_tests": 5,
+      "min_coverage_percent": 100
+    }
+  }
+}

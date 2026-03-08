@@ -70,3 +70,18 @@ releases/generate-constitution/
 reports/security/
 reports/sbom/
 run_sonar.sh
+
+# CI generated reports
+reports/go/
+reports/mobile/
+reports/web/
+reports/summary.html
+reports/results.json
+reports/false-positive-checks.json
+
+# CI caches
+.ci-cache/
+
+# Mobile release artifacts
+releases/mobile/
+releases/web/
