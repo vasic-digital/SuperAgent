@@ -1,0 +1,52 @@
+# HelixAgent CI - Android Emulator
+# Headless Android emulator with KVM passthrough for E2E tests
+
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV ANDROID_HOME=/opt/android-sdk
+ENV ANDROID_SDK_ROOT=/opt/android-sdk
+ENV PATH="${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/emulator:${PATH}"
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget unzip curl \
+    openjdk-17-jre-headless \
+    libpulse0 libgl1 libx11-6 libxext6 \
+    qemu-kvm libvirt-daemon-system \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Android SDK + emulator
+RUN mkdir -p ${ANDROID_HOME}/cmdline-tools \
+    && cd /tmp \
+    && wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip \
+       -O cmdline-tools.zip \
+    && unzip -q cmdline-tools.zip \
+    && mv cmdline-tools ${ANDROID_HOME}/cmdline-tools/latest \
+    && rm cmdline-tools.zip
+
+RUN yes | sdkmanager --licenses > /dev/null 2>&1 || true
+RUN sdkmanager \
+    "platform-tools" \
+    "platforms;android-34" \
+    "emulator" \
+    "system-images;android-34;google_apis;x86_64" \
+    2>/dev/null
+
+# Create AVD
+RUN echo "no" | avdmanager create avd \
+    --name "ci-device" \
+    --package "system-images;android-34;google_apis;x86_64" \
+    --device "pixel_6" \
+    --force
+
+# Emulator startup script
+COPY docker/ci/emulator-start.sh /opt/emulator-start.sh
+RUN chmod +x /opt/emulator-start.sh
+
+EXPOSE 5555 5554
+
+HEALTHCHECK --interval=10s --timeout=5s --retries=30 --start-period=60s \
+    CMD adb shell getprop sys.boot_completed 2>/dev/null | grep -q "1" || exit 1
+
+ENTRYPOINT ["/opt/emulator-start.sh"]
