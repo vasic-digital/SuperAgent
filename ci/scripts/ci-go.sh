@@ -190,12 +190,13 @@ if [ -f "${WORKSPACE}/scripts/build/version-manager.sh" ]; then
   APPS=(helixagent api grpc-server cognee-mock sanity-check mcp-bridge generate-constitution)
   PLATFORMS=("linux/amd64" "linux/arm64" "darwin/amd64" "darwin/arm64" "windows/amd64")
 
+  SEMANTIC_VERSION=$(get_semantic_version)
+
   for app in "${APPS[@]}"; do
-    CMD_PATH=$(get_cmd_path "${app}")
-    LDFLAGS=$(get_ldflags "${app}")
-    increment_version_code "${app}"
-    VERSION_CODE=$(get_version_code "${app}")
-    SEMANTIC_VERSION=$(get_semantic_version)
+    CMD_PATH="${APP_REGISTRY[${app}]:-./cmd/${app}}"
+    VERSION_CODE=$(increment_version_code "${app}")
+    SOURCE_HASH=$(compute_source_hash "${app}")
+    LDFLAGS=$(get_ldflags "${app}" "${VERSION_CODE}" "${SOURCE_HASH}" "ci-go")
 
     for platform in "${PLATFORMS[@]}"; do
       GOOS="${platform%%/*}"
@@ -238,7 +239,7 @@ BIEOF
       echo "[OK] ${app} ${GOOS}/${GOARCH}"
     done
 
-    save_hash "${app}"
+    save_hash "${app}" "${SOURCE_HASH}"
   done
 else
   echo "[WARN] version-manager.sh not found, skipping release builds"

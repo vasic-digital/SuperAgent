@@ -129,9 +129,12 @@ define run_ci_phase
 		$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile $(1) build; \
 		$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile $(1) up -d; \
 		echo "Waiting for $(2) to complete..."; \
-		while podman ps --filter "name=$(2)" --format "{{.Status}}" 2>/dev/null | grep -qiE "up|running"; do sleep 5; done; \
+		podman wait $(2) >/dev/null 2>&1 || true; \
+		echo "Streaming logs from $(2):"; \
+		podman logs $(2) 2>&1; \
 		EXIT_CODE=$$(podman inspect --format '{{.State.ExitCode}}' $(2) 2>/dev/null || echo 1); \
-		$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile $(1) down; \
+		echo "$(2) exited with code $$EXIT_CODE"; \
+		$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile $(1) down 2>/dev/null || true; \
 		exit $$EXIT_CODE; \
 	fi
 	@$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile $(1) down 2>/dev/null || true

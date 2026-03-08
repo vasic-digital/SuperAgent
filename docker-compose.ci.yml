@@ -113,7 +113,7 @@ services:
       - infra
 
   kafka:
-    image: docker.io/bitnami/kafka:latest
+    image: docker.io/bitnami/kafka:3.9
     container_name: ci-kafka
     environment:
       KAFKA_CFG_NODE_ID: "0"

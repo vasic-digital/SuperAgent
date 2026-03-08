@@ -51,7 +51,7 @@ validate_go_binary() {
     [ "${host_arch}" = "aarch64" ] && host_arch="arm64"
 
     if [ "${os}" = "${host_os}" ] && [ "${arch}" = "${host_arch}" ]; then
-      if "${binary_path}" --version >/dev/null 2>&1 || "${binary_path}" version >/dev/null 2>&1; then
+      if timeout 5 "${binary_path}" --version >/dev/null 2>&1 || timeout 5 "${binary_path}" version >/dev/null 2>&1; then
         echo "[OK]   ${app}/${os}-${arch} executes successfully"
       else
         echo "[WARN] ${app}/${os}-${arch} execution check inconclusive"

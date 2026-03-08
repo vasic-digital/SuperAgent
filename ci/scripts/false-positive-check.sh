@@ -39,9 +39,9 @@ validate_junit_xml() {
   fi
 
   local tests_count
-  tests_count=$(grep -oP 'tests="(\d+)"' "${xml_file}" | head -1 | grep -oP '\d+' || echo "0")
+  tests_count=$(grep -oE 'tests="[0-9]+"' "${xml_file}" | head -1 | grep -oE '[0-9]+' || echo "0")
   local failures_count
-  failures_count=$(grep -oP 'failures="(\d+)"' "${xml_file}" | head -1 | grep -oP '\d+' || echo "0")
+  failures_count=$(grep -oE 'failures="[0-9]+"' "${xml_file}" | head -1 | grep -oE '[0-9]+' || echo "0")
 
   if [ "${tests_count}" -lt "${min_tests}" ]; then
     add_check "${label}_test_count" ">=${min_tests}" "${tests_count}" "FAIL"
@@ -68,7 +68,7 @@ validate_coverage() {
   fi
 
   local coverage
-  coverage=$(grep -oP '[\d.]+(?=%)' "${coverage_file}" | tail -1 || echo "0")
+  coverage=$(grep -oE '[0-9]+\.[0-9]+%' "${coverage_file}" | tail -1 | sed 's/%//' || echo "0")
   local coverage_int=${coverage%.*}
 
   if [ "${coverage_int}" -lt "${min_percent}" ]; then
