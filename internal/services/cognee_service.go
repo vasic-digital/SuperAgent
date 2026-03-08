@@ -8,6 +8,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	neturl "net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -532,9 +533,11 @@ func (s *CogneeService) login(ctx context.Context, email, password string) (stri
 	url := fmt.Sprintf("%s/api/v1/auth/login", s.baseURL)
 
 	// Use form-urlencoded for login as per Cognee's OAuth2 spec
-	formData := fmt.Sprintf("username=%s&password=%s", email, password)
+	form := neturl.Values{}
+	form.Set("username", email)
+	form.Set("password", password)
 
-	req, err := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(formData))
+	req, err := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(form.Encode()))
 	if err != nil {
 		return "", err
 	}

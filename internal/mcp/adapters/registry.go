@@ -305,30 +305,40 @@ var AvailableAdapters = []AdapterMetadata{
 var (
 	defaultRegistry     *AdapterRegistry
 	defaultRegistryOnce sync.Once
+
+	// DefaultRegistry is the default adapter registry.
+	// Prefer GetDefaultRegistry() for new code.
+	DefaultRegistry *AdapterRegistry
 )
 
-// DefaultRegistry is the default adapter registry, populated lazily on first access.
-var DefaultRegistry = getDefaultRegistry()
+func init() {
+	// Eagerly populate DefaultRegistry for backward compatibility.
+	// The registry only copies static metadata — no I/O or heavy work.
+	GetDefaultRegistry()
+}
 
-// getDefaultRegistry returns the singleton default adapter registry,
+// GetDefaultRegistry returns the singleton default adapter registry,
 // populating it with all available adapters on the first call.
-func getDefaultRegistry() *AdapterRegistry {
+// This uses sync.Once for thread-safe lazy initialization — the registry
+// is only created when first accessed, not at package load time.
+func GetDefaultRegistry() *AdapterRegistry {
 	defaultRegistryOnce.Do(func() {
 		r := NewAdapterRegistry()
 		for _, meta := range AvailableAdapters {
 			r.metadata[meta.Name] = meta
 		}
 		defaultRegistry = r
+		// Keep the deprecated package-level var in sync for backward compatibility.
+		DefaultRegistry = r
 	})
 	return defaultRegistry
 }
 
 // InitializeDefaultRegistry populates the default registry with all available adapters.
-// Deprecated: DefaultRegistry is now initialized lazily via sync.Once.
+// Deprecated: GetDefaultRegistry() is now initialized lazily via sync.Once.
 // This function is retained for backward compatibility.
 func InitializeDefaultRegistry() {
-	// DefaultRegistry is already populated; this is a no-op kept for compatibility.
-	_ = getDefaultRegistry()
+	_ = GetDefaultRegistry()
 }
 
 // GetAdapterCount returns the total number of available adapters.

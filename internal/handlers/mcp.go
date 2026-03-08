@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/mcp/adapters"
@@ -19,17 +20,27 @@ type MCPHandler struct {
 	config           *config.MCPConfig
 	providerRegistry *services.ProviderRegistry
 	mcpManager       *services.MCPManager
+	mcpManagerOnce   sync.Once
 	logger           *logrus.Logger
 }
 
-// NewMCPHandler creates a new MCP handler
+// NewMCPHandler creates a new MCP handler.
+// The underlying MCPManager is lazily initialized on first use via getMCPManager().
 func NewMCPHandler(providerRegistry *services.ProviderRegistry, cfg *config.MCPConfig) *MCPHandler {
 	return &MCPHandler{
 		config:           cfg,
 		providerRegistry: providerRegistry,
-		mcpManager:       services.NewMCPManager(nil, nil, logrus.New()),
 		logger:           logrus.New(),
 	}
+}
+
+// getMCPManager returns the lazily-initialized MCP manager.
+// The manager (and its underlying MCPClient) is only created on first use.
+func (h *MCPHandler) getMCPManager() *services.MCPManager {
+	h.mcpManagerOnce.Do(func() {
+		h.mcpManager = services.NewMCPManager(nil, nil, h.logger)
+	})
+	return h.mcpManager
 }
 
 // MCPCapabilities returns MCP server capabilities
@@ -63,8 +74,8 @@ func (h *MCPHandler) MCPCapabilities(c *gin.Context) {
 		capabilities["providers"] = providers
 	}
 
-	if h.mcpManager != nil {
-		servers, err := h.mcpManager.ListMCPServers(c.Request.Context())
+	if mgr := h.getMCPManager(); mgr != nil {
+		servers, err := mgr.ListMCPServers(c.Request.Context())
 		if err == nil {
 			serverNames := make([]string, len(servers))
 			for i, server := range servers {
@@ -215,14 +226,14 @@ func (h *MCPHandler) MCPResources(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"resources": resources})
 }
 
-// GetMCPManager returns the MCP manager instance
+// GetMCPManager returns the MCP manager instance, lazily initializing it if needed.
 func (h *MCPHandler) GetMCPManager() *services.MCPManager {
-	return h.mcpManager
+	return h.getMCPManager()
 }
 
 // RegisterMCPServer registers an MCP server
 func (h *MCPHandler) RegisterMCPServer(config map[string]interface{}) error {
-	if h.mcpManager == nil {
+	if h.getMCPManager() == nil {
 		return fmt.Errorf("MCP manager not initialized")
 	}
 
@@ -397,7 +408,7 @@ func (h *MCPHandler) MCPAdapterSearch(c *gin.Context) {
 		MaxResults: req.MaxResults,
 	}
 
-	results := adapters.DefaultRegistry.Search(opts)
+	results := adapters.GetDefaultRegistry().Search(opts)
 
 	// Format response
 	adapterResults := make([]map[string]interface{}, len(results))

@@ -195,19 +195,20 @@ func TestNewMCPHandler(t *testing.T) {
 	assert.NotNil(t, handler)
 	assert.Equal(t, cfg, handler.config)
 	assert.Nil(t, handler.providerRegistry)
-	assert.NotNil(t, handler.mcpManager)
+	// mcpManager is lazily initialized — verify via GetMCPManager()
+	assert.NotNil(t, handler.GetMCPManager())
 }
 
 // TestMCPHandler_GetMCPManager tests getting MCP manager
 func TestMCPHandler_GetMCPManager(t *testing.T) {
-	handler := &MCPHandler{}
+	handler := NewMCPHandler(nil, &config.MCPConfig{Enabled: true})
 
-	// Should not be nil since NewMCPHandler creates it
-	assert.Nil(t, handler.GetMCPManager())
+	// GetMCPManager lazily initializes and returns a valid manager
+	mgr := handler.GetMCPManager()
+	assert.NotNil(t, mgr)
 
-	// Test that we can set it
-	handler.mcpManager = nil
-	assert.Nil(t, handler.GetMCPManager())
+	// Subsequent calls return the same instance
+	assert.Same(t, mgr, handler.GetMCPManager())
 }
 
 // TestMCPHandler_MCPPrompts_Disabled tests MCP prompts when disabled
@@ -501,21 +502,16 @@ func TestMCPHandler_MCPToolsCall_InvalidToolFormat(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
-// TestMCPHandler_RegisterMCPServer_NilManager tests registration with nil manager
-func TestMCPHandler_RegisterMCPServer_NilManager(t *testing.T) {
-	handler := &MCPHandler{
-		config:     &config.MCPConfig{Enabled: true},
-		mcpManager: nil,
-	}
+// TestMCPHandler_RegisterMCPServer_Success tests that registration logs and succeeds
+func TestMCPHandler_RegisterMCPServer_Success(t *testing.T) {
+	handler := NewMCPHandler(nil, &config.MCPConfig{Enabled: true})
 
 	serverConfig := map[string]interface{}{
 		"name": "test-server",
 	}
 
 	err := handler.RegisterMCPServer(serverConfig)
-
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "MCP manager not initialized")
+	assert.NoError(t, err)
 }
 
 // TestMCPHandler_MCPCapabilities_WithProviderRegistry tests capabilities with nil registry

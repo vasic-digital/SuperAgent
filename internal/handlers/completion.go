@@ -196,8 +196,10 @@ func (h *CompletionHandler) CompleteStream(c *gin.Context) {
 		return
 	}
 
-	// Track client disconnection
-	clientGone := c.Writer.CloseNotify()
+	// Client disconnect detection via request context cancellation.
+	// c.Request.Context() is cancelled when the client disconnects,
+	// making the deprecated http.CloseNotifier unnecessary.
+	clientGone := c.Request.Context().Done()
 
 StreamLoop:
 	for {
@@ -348,8 +350,10 @@ func (h *CompletionHandler) ChatStream(c *gin.Context) {
 		return
 	}
 
-	// Track client disconnection
-	clientGone := c.Writer.CloseNotify()
+	// Client disconnect detection via request context cancellation.
+	// c.Request.Context() is cancelled when the client disconnects,
+	// making the deprecated http.CloseNotifier unnecessary.
+	clientGone := c.Request.Context().Done()
 
 StreamLoop:
 	for {

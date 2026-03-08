@@ -1,6 +1,8 @@
 package verifier
 
 import (
+	"sync"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -372,5 +374,16 @@ func (m *VerifierMetrics) RecordSync(direction, table string, success bool) {
 	m.SyncOperations.WithLabelValues(direction, table, result).Inc()
 }
 
-// DefaultMetrics is the default metrics instance
-var DefaultMetrics = NewVerifierMetrics("")
+// DefaultMetrics is the default metrics instance (lazy-loaded)
+var (
+	defaultMetrics     *VerifierMetrics
+	defaultMetricsOnce sync.Once
+)
+
+// GetDefaultMetrics returns the default metrics instance, initializing on first use.
+func GetDefaultMetrics() *VerifierMetrics {
+	defaultMetricsOnce.Do(func() {
+		defaultMetrics = NewVerifierMetrics("")
+	})
+	return defaultMetrics
+}

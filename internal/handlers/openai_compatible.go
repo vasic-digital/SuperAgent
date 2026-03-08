@@ -557,22 +557,10 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 	sentFinalChunk := false                                       // Track if we've already sent a finish_reason chunk
 	streamID := fmt.Sprintf("chatcmpl-%d", time.Now().UnixNano()) // Consistent ID across all chunks
 
-	// Client disconnect detection - safely get CloseNotify channel
-	// Note: In test environments, httptest.ResponseRecorder doesn't support CloseNotify
-	// but gin's wrapper implements it, causing a panic when delegating. Use recover.
-	var clientGone <-chan bool
-	dummyChan := make(chan bool)
-	clientGone = dummyChan
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				// CloseNotify not supported (test environment), use dummy channel
-			}
-		}()
-		if cn, ok := c.Writer.(http.CloseNotifier); ok {
-			clientGone = cn.CloseNotify()
-		}
-	}()
+	// Client disconnect detection via request context cancellation.
+	// c.Request.Context() is cancelled when the client disconnects,
+	// making the deprecated http.CloseNotifier unnecessary.
+	clientGone := c.Request.Context().Done()
 
 	// Idle timeout ticker - if no data for 30 seconds, exit
 	idleTimeout := time.NewTicker(30 * time.Second)
@@ -1404,22 +1392,10 @@ func (h *UnifiedHandler) ChatCompletionsStream(c *gin.Context) {
 	sentFinalChunk := false                                       // Track if we've already sent a finish_reason chunk
 	streamID := fmt.Sprintf("chatcmpl-%d", time.Now().UnixNano()) // Consistent ID across all chunks
 
-	// Client disconnect detection - safely get CloseNotify channel
-	// Note: In test environments, httptest.ResponseRecorder doesn't support CloseNotify
-	// but gin's wrapper implements it, causing a panic when delegating. Use recover.
-	var clientGone <-chan bool
-	dummyChan := make(chan bool)
-	clientGone = dummyChan
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				// CloseNotify not supported (test environment), use dummy channel
-			}
-		}()
-		if cn, ok := c.Writer.(http.CloseNotifier); ok {
-			clientGone = cn.CloseNotify()
-		}
-	}()
+	// Client disconnect detection via request context cancellation.
+	// c.Request.Context() is cancelled when the client disconnects,
+	// making the deprecated http.CloseNotifier unnecessary.
+	clientGone := c.Request.Context().Done()
 
 	// Idle timeout ticker - if no data for 30 seconds, exit
 	idleTimeout := time.NewTicker(30 * time.Second)

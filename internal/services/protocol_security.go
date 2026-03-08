@@ -243,8 +243,19 @@ func (r *RateLimiter) Allow(key string) bool {
 	return true
 }
 
-// Global rate limiter
-var GlobalRateLimiter = NewRateLimiter(100) // 100 requests per minute per API key
+// Global rate limiter (lazy-loaded)
+var (
+	globalRateLimiter     *RateLimiter
+	globalRateLimiterOnce sync.Once
+)
+
+// GetGlobalRateLimiter returns the global rate limiter, initializing on first use.
+func GetGlobalRateLimiter() *RateLimiter {
+	globalRateLimiterOnce.Do(func() {
+		globalRateLimiter = NewRateLimiter(100) // 100 requests per minute per API key
+	})
+	return globalRateLimiter
+}
 
 // Utility functions
 

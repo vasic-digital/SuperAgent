@@ -459,9 +459,18 @@ func (u *UnifiedProtocolManager) recordMetrics(protocol string, duration time.Du
 	}
 }
 
+// apiKeyCtxKey is an unexported type used as context key for API keys,
+// preventing collisions with keys defined in other packages.
+type apiKeyCtxKey struct{}
+
+// ContextWithAPIKey returns a copy of ctx carrying the given API key.
+func ContextWithAPIKey(ctx context.Context, key string) context.Context {
+	return context.WithValue(ctx, apiKeyCtxKey{}, key)
+}
+
 func extractAPIKeyFromContext(ctx context.Context) string {
-	// Extract API key from context (would be set by middleware)
-	if apiKey, ok := ctx.Value("api_key").(string); ok {
+	// Extract API key from context (set by middleware via ContextWithAPIKey)
+	if apiKey, ok := ctx.Value(apiKeyCtxKey{}).(string); ok {
 		return apiKey
 	}
 	return ""

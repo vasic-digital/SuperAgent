@@ -20,7 +20,8 @@ func TestNewMCPManager(t *testing.T) {
 	manager := NewMCPManager(nil, nil, log)
 
 	require.NotNil(t, manager)
-	assert.NotNil(t, manager.client)
+	// client is lazily initialized via getClient()
+	assert.NotNil(t, manager.getClient())
 	assert.Nil(t, manager.repo)
 	assert.Nil(t, manager.cache)
 	assert.NotNil(t, manager.log)
@@ -708,8 +709,8 @@ func TestMCPManager_CallTool_WithServer(t *testing.T) {
 	}
 
 	// Register a mock server with the client
-	manager.client.mu.Lock()
-	manager.client.servers["test-server"] = &MCPServerConnection{
+	manager.getClient().mu.Lock()
+	manager.getClient().servers["test-server"] = &MCPServerConnection{
 		ID:        "test-server",
 		Name:      "Test Server",
 		Transport: mockTransport,
@@ -718,7 +719,7 @@ func TestMCPManager_CallTool_WithServer(t *testing.T) {
 			{Name: "test-tool", Description: "Test Tool"},
 		},
 	}
-	manager.client.mu.Unlock()
+	manager.getClient().mu.Unlock()
 
 	// Call the tool
 	result, err := manager.CallTool(ctx, "test-tool", map[string]interface{}{"param": "value"})
@@ -764,8 +765,8 @@ func TestMCPManager_GetMCPStats_AllPaths(t *testing.T) {
 	t.Run("with mock server", func(t *testing.T) {
 		mockTransport := NewMockMCPTransport()
 
-		manager.client.mu.Lock()
-		manager.client.servers["stats-server"] = &MCPServerConnection{
+		manager.getClient().mu.Lock()
+		manager.getClient().servers["stats-server"] = &MCPServerConnection{
 			ID:        "stats-server",
 			Name:      "Stats Server",
 			Transport: mockTransport,
@@ -775,7 +776,7 @@ func TestMCPManager_GetMCPStats_AllPaths(t *testing.T) {
 				{Name: "tool2", Description: "Tool 2"},
 			},
 		}
-		manager.client.mu.Unlock()
+		manager.getClient().mu.Unlock()
 
 		stats, err := manager.GetMCPStats(ctx)
 		assert.NoError(t, err)
@@ -803,8 +804,8 @@ func TestMCPManager_ListTools_WithServer(t *testing.T) {
 		}, nil
 	}
 
-	manager.client.mu.Lock()
-	manager.client.servers["tools-server"] = &MCPServerConnection{
+	manager.getClient().mu.Lock()
+	manager.getClient().servers["tools-server"] = &MCPServerConnection{
 		ID:        "tools-server",
 		Name:      "Tools Server",
 		Transport: mockTransport,
@@ -813,7 +814,7 @@ func TestMCPManager_ListTools_WithServer(t *testing.T) {
 			{Name: "tool-1", Description: "Tool 1"},
 		},
 	}
-	manager.client.mu.Unlock()
+	manager.getClient().mu.Unlock()
 
 	tools := manager.ListTools()
 	assert.GreaterOrEqual(t, len(tools), 1)
@@ -844,8 +845,8 @@ func TestMCPManager_GetMCPTools_WithServer(t *testing.T) {
 		}, nil
 	}
 
-	manager.client.mu.Lock()
-	manager.client.servers["mcp-tools-server"] = &MCPServerConnection{
+	manager.getClient().mu.Lock()
+	manager.getClient().servers["mcp-tools-server"] = &MCPServerConnection{
 		ID:        "mcp-tools-server",
 		Name:      "MCP Tools Server",
 		Transport: mockTransport,
@@ -855,7 +856,7 @@ func TestMCPManager_GetMCPTools_WithServer(t *testing.T) {
 			{Name: "mcp-tool-2", Description: "MCP Tool 2"},
 		},
 	}
-	manager.client.mu.Unlock()
+	manager.getClient().mu.Unlock()
 
 	tools, err := manager.GetMCPTools(ctx)
 	assert.NoError(t, err)

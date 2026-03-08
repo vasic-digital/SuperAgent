@@ -95,7 +95,7 @@ func (d *DemoApplication) RunDemo() {
 func (d *DemoApplication) demoProtocolServerManagement() {
 	fmt.Println("\n📋 Demo 1: Protocol Server Management")
 
-	ctx := context.WithValue(context.Background(), "api_key", d.apiKey)
+	ctx := services.ContextWithAPIKey(context.Background(), d.apiKey)
 
 	// List all protocol servers
 	servers, err := d.manager.ListServers(ctx)
@@ -137,7 +137,7 @@ func (d *DemoApplication) demoMCPProtocolOperations() {
 func (d *DemoApplication) demoACPProtocolOperations() {
 	fmt.Println("\n🤖 Demo 3: ACP Protocol Operations")
 
-	ctx := context.WithValue(context.Background(), "api_key", d.apiKey)
+	ctx := services.ContextWithAPIKey(context.Background(), d.apiKey)
 
 	// List ACP servers
 	servers, err := d.manager.ListServers(ctx)
@@ -168,7 +168,7 @@ func (d *DemoApplication) demoACPProtocolOperations() {
 func (d *DemoApplication) demoEmbeddingOperations() {
 	fmt.Println("\n🧠 Demo 4: Embedding Operations")
 
-	ctx := context.WithValue(context.Background(), "api_key", d.apiKey)
+	ctx := services.ContextWithAPIKey(context.Background(), d.apiKey)
 
 	// Demonstrate embedding request
 	req := services.UnifiedProtocolRequest{
@@ -203,7 +203,7 @@ func (d *DemoApplication) demoSecurityFeatures() {
 	}
 
 	// Demonstrate permission checking
-	ctx := context.WithValue(context.Background(), "api_key", d.apiKey)
+	ctx := services.ContextWithAPIKey(context.Background(), d.apiKey)
 
 	req := services.ProtocolAccessRequest{
 		APIKey:   d.apiKey,
@@ -231,7 +231,7 @@ func (d *DemoApplication) demoMonitoringAndMetrics() {
 	fmt.Printf("Protocol Metrics: %d protocols monitored\n", len(metrics))
 
 	// Simulate some requests to generate metrics
-	ctx := context.WithValue(context.Background(), "api_key", d.apiKey)
+	ctx := services.ContextWithAPIKey(context.Background(), d.apiKey)
 
 	for i := 0; i < 5; i++ {
 		req := services.UnifiedProtocolRequest{
@@ -291,7 +291,7 @@ func (d *DemoApplication) demoRateLimiting() {
 
 // Helper function to create context with API key
 func (d *DemoApplication) createAuthenticatedContext() context.Context {
-	return context.WithValue(context.Background(), "api_key", d.apiKey)
+	return services.ContextWithAPIKey(context.Background(), d.apiKey)
 }
 
 func main() {

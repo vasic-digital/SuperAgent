@@ -312,8 +312,9 @@ func TestProtocolAccessRequest_Structure(t *testing.T) {
 }
 
 func TestGlobalRateLimiter(t *testing.T) {
-	require.NotNil(t, GlobalRateLimiter)
-	assert.Equal(t, 100, GlobalRateLimiter.maxPerMin)
+	rl := GetGlobalRateLimiter()
+	require.NotNil(t, rl)
+	assert.Equal(t, 100, rl.maxPerMin)
 }
 
 func BenchmarkRateLimiter_Allow(b *testing.B) {

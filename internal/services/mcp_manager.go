@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"dev.helix.agent/internal/database"
 	"github.com/sirupsen/logrus"
@@ -30,25 +31,34 @@ type MCPError struct {
 
 // MCPManager manages Model Context Protocol servers and tools
 type MCPManager struct {
-	client *MCPClient
-	repo   *database.ModelMetadataRepository
-	cache  CacheInterface
-	log    *logrus.Logger
+	client     *MCPClient
+	clientOnce sync.Once
+	repo       *database.ModelMetadataRepository
+	cache      CacheInterface
+	log        *logrus.Logger
 }
 
-// NewMCPManager creates a new MCP manager with dependencies
+// NewMCPManager creates a new MCP manager with dependencies.
+// The underlying MCPClient is lazily initialized on first use via getClient().
 func NewMCPManager(repo *database.ModelMetadataRepository, cache CacheInterface, log *logrus.Logger) *MCPManager {
 	return &MCPManager{
-		client: NewMCPClient(log),
-		repo:   repo,
-		cache:  cache,
-		log:    log,
+		repo:  repo,
+		cache: cache,
+		log:   log,
 	}
+}
+
+// getClient returns the lazily-initialized MCPClient.
+func (m *MCPManager) getClient() *MCPClient {
+	m.clientOnce.Do(func() {
+		m.client = NewMCPClient(m.log)
+	})
+	return m.client
 }
 
 // ListMCPServers lists all configured MCP servers (for unified manager)
 func (m *MCPManager) ListMCPServers(ctx context.Context) ([]*MCPServerConnection, error) {
-	servers := m.client.ListServers()
+	servers := m.getClient().ListServers()
 	return servers, nil
 }
 
@@ -56,7 +66,7 @@ func (m *MCPManager) ListMCPServers(ctx context.Context) ([]*MCPServerConnection
 func (m *MCPManager) ExecuteMCPTool(ctx context.Context, req interface{}) (interface{}, error) {
 	// Convert the unified protocol request to MCP call
 	if unifiedReq, ok := req.(UnifiedProtocolRequest); ok {
-		result, err := m.client.CallTool(ctx, unifiedReq.ServerID, unifiedReq.ToolName, unifiedReq.Arguments)
+		result, err := m.getClient().CallTool(ctx, unifiedReq.ServerID, unifiedReq.ToolName, unifiedReq.Arguments)
 		if err != nil {
 			return nil, err
 		}
@@ -73,7 +83,7 @@ func (m *MCPManager) ExecuteMCPTool(ctx context.Context, req interface{}) (inter
 
 // ListTools lists all available MCP tools
 func (m *MCPManager) ListTools() []*MCPTool {
-	tools, err := m.client.ListTools(context.Background())
+	tools, err := m.getClient().ListTools(context.Background())
 	if err != nil {
 		m.log.WithError(err).Error("Failed to list MCP tools")
 		return []*MCPTool{}
@@ -83,7 +93,7 @@ func (m *MCPManager) ListTools() []*MCPTool {
 
 // GetMCPTools gets all tools from all enabled MCP servers
 func (m *MCPManager) GetMCPTools(ctx context.Context) (map[string][]*MCPTool, error) {
-	tools, err := m.client.ListTools(ctx)
+	tools, err := m.getClient().ListTools(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +110,7 @@ func (m *MCPManager) GetMCPTools(ctx context.Context) (map[string][]*MCPTool, er
 // ValidateMCPRequest validates an MCP tool request
 func (m *MCPManager) ValidateMCPRequest(ctx context.Context, req interface{}) error {
 	if unifiedReq, ok := req.(UnifiedProtocolRequest); ok {
-		server, err := m.client.GetServerInfo(unifiedReq.ServerID)
+		server, err := m.getClient().GetServerInfo(unifiedReq.ServerID)
 		if err != nil {
 			return err
 		}
@@ -121,8 +131,9 @@ func (m *MCPManager) SyncMCPServer(ctx context.Context, serverID string) error {
 
 // GetMCPStats returns statistics about MCP usage
 func (m *MCPManager) GetMCPStats(ctx context.Context) (map[string]interface{}, error) {
-	servers := m.client.ListServers()
-	health := m.client.HealthCheck(ctx)
+	c := m.getClient()
+	servers := c.ListServers()
+	health := c.HealthCheck(ctx)
 
 	healthyCount := 0
 	for _, healthy := range health {
@@ -135,19 +146,19 @@ func (m *MCPManager) GetMCPStats(ctx context.Context) (map[string]interface{}, e
 		"totalServers":     len(servers),
 		"connectedServers": len(health),
 		"healthyServers":   healthyCount,
-		"totalTools":       len(m.client.tools),
+		"totalTools":       len(c.tools),
 		"lastSync":         "2024-01-01T12:00:00Z",
 	}, nil
 }
 
 // ConnectServer connects to an MCP server
 func (m *MCPManager) ConnectServer(ctx context.Context, serverID, name, command string, args []string) error {
-	return m.client.ConnectServer(ctx, serverID, name, command, args)
+	return m.getClient().ConnectServer(ctx, serverID, name, command, args)
 }
 
 // DisconnectServer disconnects from an MCP server
 func (m *MCPManager) DisconnectServer(serverID string) error {
-	return m.client.DisconnectServer(serverID)
+	return m.getClient().DisconnectServer(serverID)
 }
 
 // RegisterServer registers an MCP server (legacy method for compatibility)
@@ -175,19 +186,20 @@ func (m *MCPManager) RegisterServer(serverConfig map[string]interface{}) error {
 		args[i] = arg
 	}
 
-	return m.client.ConnectServer(context.Background(), name, name, args[0], args[1:])
+	return m.getClient().ConnectServer(context.Background(), name, name, args[0], args[1:])
 }
 
 // CallTool executes a tool on an MCP server
 func (m *MCPManager) CallTool(ctx context.Context, toolName string, params map[string]interface{}) (interface{}, error) {
 	// For now, assume the tool is on the first connected server
-	servers := m.client.ListServers()
+	c := m.getClient()
+	servers := c.ListServers()
 	if len(servers) == 0 {
 		return nil, fmt.Errorf("no MCP servers connected")
 	}
 
 	serverID := servers[0].ID
-	result, err := m.client.CallTool(ctx, serverID, toolName, params)
+	result, err := c.CallTool(ctx, serverID, toolName, params)
 	if err != nil {
 		return nil, err
 	}

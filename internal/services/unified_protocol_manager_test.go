@@ -90,7 +90,7 @@ func TestUnifiedProtocolManager_ExecuteRequest_MCP(t *testing.T) {
 	}
 
 	// Create context with API key
-	ctx := context.WithValue(context.Background(), "api_key", testKey.Key)
+	ctx := ContextWithAPIKey(context.Background(), testKey.Key)
 
 	// Test
 	response, err := manager.ExecuteRequest(ctx, req)
@@ -142,7 +142,7 @@ func TestUnifiedProtocolManager_ExecuteRequest_ACP(t *testing.T) {
 	}
 
 	// Create context with API key
-	ctx := context.WithValue(context.Background(), "api_key", testKey.Key)
+	ctx := ContextWithAPIKey(context.Background(), testKey.Key)
 
 	// Test
 	response, err := manager.ExecuteRequest(ctx, req)
@@ -172,7 +172,7 @@ func TestUnifiedProtocolManager_ExecuteRequest_Embedding(t *testing.T) {
 	}
 
 	// Create context with API key
-	ctx := context.WithValue(context.Background(), "api_key", testKey.Key)
+	ctx := ContextWithAPIKey(context.Background(), testKey.Key)
 
 	// Test
 	response, err := manager.ExecuteRequest(ctx, req)
@@ -201,7 +201,7 @@ func TestUnifiedProtocolManager_ExecuteRequest_UnsupportedProtocol(t *testing.T)
 	}
 
 	// Create context with API key
-	ctx := context.WithValue(context.Background(), "api_key", testKey.Key)
+	ctx := ContextWithAPIKey(context.Background(), testKey.Key)
 
 	// Test
 	response, err := manager.ExecuteRequest(ctx, req)
@@ -378,7 +378,7 @@ func TestUnifiedProtocolManager_ExecuteRequest_RateLimitExceeded(t *testing.T) {
 		Arguments:    map[string]interface{}{},
 	}
 
-	ctx := context.WithValue(context.Background(), "api_key", testKey.Key)
+	ctx := ContextWithAPIKey(context.Background(), testKey.Key)
 
 	// First request should succeed (or fail for other reasons)
 	_, _ = manager.ExecuteRequest(ctx, req)
@@ -413,7 +413,7 @@ func TestUnifiedProtocolManager_ExecuteRequest_LSP(t *testing.T) {
 		},
 	}
 
-	ctx := context.WithValue(context.Background(), "api_key", testKey.Key)
+	ctx := ContextWithAPIKey(context.Background(), testKey.Key)
 
 	// Execute request - may fail due to no actual server, but should hit the LSP branch
 	response, _ := manager.ExecuteRequest(ctx, req)
@@ -460,7 +460,7 @@ func TestUnifiedProtocolManager_ExecuteRequest_SecurityValidationFailed(t *testi
 		Arguments:    map[string]interface{}{},
 	}
 
-	ctx := context.WithValue(context.Background(), "api_key", testKey.Key)
+	ctx := ContextWithAPIKey(context.Background(), testKey.Key)
 
 	response, err := manager.ExecuteRequest(ctx, req)
 
@@ -486,7 +486,7 @@ func TestUnifiedProtocolManager_ExecuteRequest_EmbeddingMissingText(t *testing.T
 		Arguments:    map[string]interface{}{}, // Missing "text" argument
 	}
 
-	ctx := context.WithValue(context.Background(), "api_key", testKey.Key)
+	ctx := ContextWithAPIKey(context.Background(), testKey.Key)
 
 	response, err := manager.ExecuteRequest(ctx, req)
 
@@ -512,7 +512,7 @@ func TestUnifiedProtocolManager_ExecuteRequest_EmbeddingWrongTextType(t *testing
 		Arguments:    map[string]interface{}{"text": 12345}, // Wrong type - should be string
 	}
 
-	ctx := context.WithValue(context.Background(), "api_key", testKey.Key)
+	ctx := ContextWithAPIKey(context.Background(), testKey.Key)
 
 	response, err := manager.ExecuteRequest(ctx, req)
 
@@ -539,7 +539,7 @@ func TestUnifiedProtocolManager_RecordMetrics_Extended(t *testing.T) {
 		Arguments:    map[string]interface{}{"text": "test text"},
 	}
 
-	ctx := context.WithValue(context.Background(), "api_key", testKey.Key)
+	ctx := ContextWithAPIKey(context.Background(), testKey.Key)
 
 	// Execute request - this will internally call recordMetrics
 	response, err := manager.ExecuteRequest(ctx, req)
@@ -552,7 +552,7 @@ func TestUnifiedProtocolManager_RecordMetrics_Extended(t *testing.T) {
 // TestExtractAPIKeyFromContext_Extended tests additional extractAPIKeyFromContext scenarios
 func TestExtractAPIKeyFromContext_Extended(t *testing.T) {
 	t.Run("extracts valid API key from context", func(t *testing.T) {
-		ctx := context.WithValue(context.Background(), "api_key", "test-api-key-123")
+		ctx := ContextWithAPIKey(context.Background(), "test-api-key-123")
 		apiKey := extractAPIKeyFromContext(ctx)
 		assert.Equal(t, "test-api-key-123", apiKey)
 	})
@@ -564,7 +564,7 @@ func TestExtractAPIKeyFromContext_Extended(t *testing.T) {
 	})
 
 	t.Run("returns empty string when API key has wrong type", func(t *testing.T) {
-		ctx := context.WithValue(context.Background(), "api_key", 12345)
+		ctx := context.WithValue(context.Background(), apiKeyCtxKey{}, 12345)
 		apiKey := extractAPIKeyFromContext(ctx)
 		assert.Equal(t, "", apiKey)
 	})
