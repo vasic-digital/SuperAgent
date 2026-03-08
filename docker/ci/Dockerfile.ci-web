@@ -1,0 +1,44 @@
+# HelixAgent CI - Web Builder
+# Angular, static site, JS SDK builds and tests with Playwright + Lighthouse
+
+FROM node:20-bookworm
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# System dependencies for Playwright browsers
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 python3-pip \
+    netcat-openbsd jq curl wget file \
+    ca-certificates \
+    libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 \
+    libcups2 libdrm2 libdbus-1-3 libxkbcommon0 \
+    libatspi2.0-0 libxcomposite1 libxdamage1 libxext6 \
+    libxfixes3 libxrandr2 libgbm1 libpango-1.0-0 \
+    libcairo2 libasound2 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Angular CLI
+RUN npm install -g @angular/cli@17
+
+# Lighthouse CI
+RUN npm install -g @lhci/cli
+
+# Playwright with browsers
+RUN npx playwright install --with-deps chromium firefox webkit
+
+# http-server for serving builds
+RUN npm install -g http-server
+
+WORKDIR /workspace
+
+# Copy CI scripts
+COPY ci/scripts/ci-entrypoint.sh /usr/local/bin/ci-entrypoint.sh
+COPY ci/scripts/wait-for-services.sh /usr/local/bin/wait-for-services.sh
+COPY ci/scripts/false-positive-check.sh /usr/local/bin/false-positive-check.sh
+COPY ci/scripts/validate-artifacts.sh /usr/local/bin/validate-artifacts.sh
+RUN chmod +x /usr/local/bin/ci-entrypoint.sh /usr/local/bin/wait-for-services.sh \
+    /usr/local/bin/false-positive-check.sh /usr/local/bin/validate-artifacts.sh
+
+ENV WORKSPACE=/workspace
+
+ENTRYPOINT ["/usr/local/bin/ci-entrypoint.sh"]
