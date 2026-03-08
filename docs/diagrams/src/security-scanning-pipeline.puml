@@ -1,0 +1,93 @@
+@startuml Security Scanning Pipeline
+!theme plain
+skinparam activityFontSize 12
+skinparam defaultFontName Helvetica
+skinparam activityBackgroundColor #FFFFFF
+skinparam activityBorderColor #555555
+skinparam arrowColor #333333
+
+title HelixAgent - Security Scanning Pipeline
+
+start
+
+:Code Commit / PR Trigger;
+
+partition "Static Analysis (parallel)" #E8F4FD {
+    fork
+        :gosec\n(Go security linter);
+        note right
+            Detects SQL injection,
+            hardcoded credentials,
+            unsafe crypto usage
+        end note
+    fork again
+        :Snyk\n(Dependency vulnerabilities);
+        note right
+            Scans go.mod/go.sum,
+            checks known CVEs,
+            license compliance
+        end note
+    fork again
+        :Trivy\n(Container scanning);
+        note right
+            Image vulnerabilities,
+            OS package CVEs,
+            misconfigurations
+        end note
+    fork again
+        :Semgrep\n(Pattern-based analysis);
+        note right
+            Custom Go rules,
+            OWASP patterns,
+            taint analysis
+        end note
+    fork again
+        :KICS\n(IaC scanning);
+        note right
+            Dockerfile checks,
+            docker-compose.yml,
+            K8s manifests
+        end note
+    fork again
+        :Grype\n(SBOM vulnerability match);
+        note right
+            Binary analysis,
+            OS package scan,
+            language-specific libs
+        end note
+    end fork
+}
+
+:Aggregate Findings;
+
+partition "Quality Gate" #FFF8E8 {
+    :SonarQube Analysis;
+    note right
+        Code smells, duplication,
+        complexity metrics,
+        security hotspots
+    end note
+}
+
+partition "Supply Chain" #E8F8E8 {
+    :SBOM Generation\n(CycloneDX / SPDX);
+    note right
+        Full dependency tree,
+        27 extracted modules,
+        transitive deps
+    end note
+}
+
+:Generate Security Report;
+
+if (Critical / High findings?) then (yes)
+    #F8E8E8:FAIL - Block merge;
+    :Notify team with\ndetailed findings;
+    stop
+else (no)
+    #E8F8E8:PASS - Merge allowed;
+    :Archive report\nand SBOM artifacts;
+    stop
+endif
+
+@enduml

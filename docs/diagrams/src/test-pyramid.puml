@@ -1,0 +1,91 @@
+@startuml Test Pyramid
+!theme plain
+skinparam defaultFontName Helvetica
+skinparam rectangleFontSize 13
+skinparam rectangleBorderColor #555555
+skinparam noteFontSize 11
+
+title HelixAgent - Test Pyramid
+
+' Build the pyramid from top (narrow) to bottom (wide) using rectangles
+' Use Salt wireframe for visual pyramid shape
+
+skinparam rectangle {
+    roundCorner 5
+}
+
+rectangle "   Chaos Tests\n   50+ target   " as chaos #F44336 {
+}
+
+rectangle "     Stress Tests\n     170+ target     " as stress #FF9800 {
+}
+
+rectangle "       Security Tests\n       190+ target       " as sec #FFC107 {
+}
+
+rectangle "         E2E Tests\n         200+ target         " as e2e #FFEB3B {
+}
+
+rectangle "           Integration Tests\n           500+ target           " as integ #8BC34A {
+}
+
+rectangle "             Benchmark Tests\n             1,101 tests             " as bench #4CAF50 {
+}
+
+rectangle "                    Unit Tests\n                    31,349 tests                    " as unit #2196F3 {
+}
+
+chaos -[hidden]down- stress
+stress -[hidden]down- sec
+sec -[hidden]down- e2e
+e2e -[hidden]down- integ
+integ -[hidden]down- bench
+bench -[hidden]down- unit
+
+note right of chaos
+    Fault injection, random failures,
+    container kills, network partitions
+end note
+
+note right of stress
+    Resource limits (30-40% host),
+    GOMAXPROCS=2, nice -n 19,
+    concurrent load testing
+end note
+
+note right of sec
+    gosec, Snyk, penetration,
+    PII detection, guardrails,
+    red team framework
+end note
+
+note right of e2e
+    Full HTTP request flows,
+    debate orchestration,
+    provider fallback chains
+end note
+
+note right of integ
+    Real databases, live APIs,
+    container health checks,
+    MCP/LSP/ACP protocols
+end note
+
+note right of bench
+    Provider response times,
+    ensemble throughput,
+    memory/CPU profiling
+end note
+
+note right of unit
+    Table-driven, testify,
+    mocks/stubs allowed,
+    100% coverage target
+end note
+
+legend bottom center
+    Total: 33,560+ tests across 7 test types
+    All tests limited to 30-40% host resources
+end legend
+
+@enduml

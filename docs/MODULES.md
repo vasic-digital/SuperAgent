@@ -1,6 +1,6 @@
 # Extracted Modules Catalog
 
-HelixAgent's functionality is decomposed into **27 independent Go modules**, each with its own repository, tests, and documentation. All modules are integrated as git submodules with `replace` directives in the root `go.mod` for local development.
+HelixAgent's functionality is decomposed into **28 independent Go modules**, each with its own repository, tests, and documentation. All modules are integrated as git submodules with `replace` directives in the root `go.mod` for local development.
 
 ## Module Index
 
@@ -33,8 +33,9 @@ HelixAgent's functionality is decomposed into **27 independent Go modules**, eac
 | 25 | Benchmark | `digital.vasic.benchmark` | `Benchmark/` | 1 | AI/ML |
 | 26 | HelixMemory | `digital.vasic.helixmemory` | `HelixMemory/` | 12+ | Cognitive |
 | 27 | HelixSpecifier | `digital.vasic.helixspecifier` | `HelixSpecifier/` | 27 | Specification |
+| 28 | BuildCheck | `digital.vasic.buildcheck` | `BuildCheck/` | 1 | Pre-existing |
 
-**Total: 27 modules, 162+ packages**
+**Total: 28 modules, 163+ packages**
 
 ---
 
@@ -442,6 +443,12 @@ Generic container orchestration framework. 12 packages covering runtime abstract
 
 Generic challenge framework. 15 packages covering challenge interface, assertion engine (19 evaluators), registry with dependency ordering, runner (sequential/parallel/pipeline), reporting (MD/JSON/HTML), structured logging, env management, live monitoring, metrics, plugin system v2.0.0, Panoptic integration (vision, recorder, testgen, error-analyzer adapters), and AI test generation/vision/recorded-flow challenge templates.
 
+### BuildCheck (`digital.vasic.buildcheck`)
+
+Content-based change detection library for container image builds. 1 package providing SHA256 hash computation for source files, manifest storage (file/memory), and change detection (added/modified/deleted) to determine if container images need rebuilding. Integrates with the Containers module to skip unnecessary rebuilds.
+
+**Key types**: `ChangeDetector`, `HashComputer`, `ManifestStore`, `ImageConfig`, `ChangeReport`
+
 ---
 
 ## Development
@@ -526,7 +533,8 @@ HelixAgent (dev.helix.agent)
 │   └── HelixSpecifier ─── Spec-Driven Development (SpecKit+Superpowers+GSD)
 └── Pre-existing
     ├── Containers ─── Container orchestration
-    └── Challenges ─── Challenge framework
+    ├── Challenges ─── Challenge framework
+    └── BuildCheck ─── Container rebuild detection
 ```
 
 ---

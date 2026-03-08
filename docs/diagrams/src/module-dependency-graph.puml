@@ -1,0 +1,93 @@
+@startuml Module Dependency Graph
+!theme plain
+skinparam componentStyle rectangle
+skinparam linetype ortho
+skinparam packageBorderColor #555555
+skinparam packageFontSize 14
+skinparam componentFontSize 11
+skinparam arrowColor #333333
+skinparam defaultFontName Helvetica
+
+title HelixAgent - Module Dependency Graph (27 Extracted Modules)
+
+package "Phase 1: Foundation (zero dependencies)" as p1 #E8F4FD {
+    [EventBus\ndigital.vasic.eventbus] as eventbus
+    [Concurrency\ndigital.vasic.concurrency] as concurrency
+    [Observability\ndigital.vasic.observability] as observability
+    [Auth\ndigital.vasic.auth] as auth
+    [Storage\ndigital.vasic.storage] as storage
+    [Streaming\ndigital.vasic.streaming] as streaming
+}
+
+package "Phase 2: Infrastructure" as p2 #E8F8E8 {
+    [Security\ndigital.vasic.security] as security
+    [VectorDB\ndigital.vasic.vectordb] as vectordb
+    [Embeddings\ndigital.vasic.embeddings] as embeddings
+    [Database\ndigital.vasic.database] as database
+    [Cache\ndigital.vasic.cache] as cache
+}
+
+package "Phase 3: Services" as p3 #FFF8E8 {
+    [Messaging\ndigital.vasic.messaging] as messaging
+    [Formatters\ndigital.vasic.formatters] as formatters
+    [MCP\ndigital.vasic.mcp] as mcp
+}
+
+package "Phase 4: Integration" as p4 #F0E8F8 {
+    [RAG\ndigital.vasic.rag] as rag
+    [Memory\ndigital.vasic.memory] as memory
+    [Optimization\ndigital.vasic.optimization] as optimization
+    [Plugins\ndigital.vasic.plugins] as plugins
+}
+
+package "Phase 5: AI/ML" as p5 #F8E8E8 {
+    [Agentic\ndigital.vasic.agentic] as agentic
+    [LLMOps\ndigital.vasic.llmops] as llmops
+    [SelfImprove\ndigital.vasic.selfimprove] as selfimprove
+    [Planning\ndigital.vasic.planning] as planning
+    [Benchmark\ndigital.vasic.benchmark] as benchmark
+}
+
+package "Phase 6: Cognitive" as p6 #FCE4EC {
+    [HelixMemory\ndigital.vasic.helixmemory] as helixmemory
+}
+
+package "Phase 7: Specification" as p7 #FFF3E0 {
+    [HelixSpecifier\ndigital.vasic.helixspecifier] as helixspecifier
+}
+
+package "Pre-existing" as p0 #F5F5F5 {
+    [Containers\ndigital.vasic.containers] as containers
+    [Challenges\ndigital.vasic.challenges] as challenges
+}
+
+' --- Phase dependency arrows ---
+p2 -[#2196F3]-> p1 : depends on
+p3 -[#4CAF50]-> p2
+p3 -[#4CAF50]-> p1
+p4 -[#9C27B0]-> p3
+p4 -[#9C27B0]-> p2
+p5 -[#F44336]-> p4
+p5 -[#F44336]-> p3
+p6 -[#E91E63]-> p5
+p6 -[#E91E63]-> p4
+p7 -[#FF9800]-> p6
+p7 -[#FF9800]-> p5
+
+' --- Cross-cutting ---
+containers -[#757575,dashed]-> p1 : runtime support
+challenges -[#757575,dashed]-> p1 : test framework
+
+legend right
+  |= Color |= Phase |
+  | <#E8F4FD> | Foundation (zero deps) |
+  | <#E8F8E8> | Infrastructure |
+  | <#FFF8E8> | Services |
+  | <#F0E8F8> | Integration |
+  | <#F8E8E8> | AI/ML |
+  | <#FCE4EC> | Cognitive |
+  | <#FFF3E0> | Specification |
+  | <#F5F5F5> | Pre-existing |
+end legend
+
+@enduml

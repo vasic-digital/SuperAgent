@@ -1,0 +1,116 @@
+@startuml Debate Orchestration Flow
+!theme plain
+skinparam activityFontSize 12
+skinparam defaultFontName Helvetica
+skinparam activityBackgroundColor #FFFFFF
+skinparam activityBorderColor #555555
+skinparam arrowColor #333333
+
+title HelixAgent - 8-Phase Debate Orchestration Protocol
+
+start
+
+:Receive debate request;
+:Select debate team\n(5 positions x 5 LLMs = 25 total);
+
+partition "Phase 1: Dehallucination" #E3F2FD {
+    :Each LLM identifies potential\nhallucinations in its response;
+    :Cross-validate factual claims\nacross providers;
+    :Flag unverifiable assertions;
+}
+
+partition "Phase 2: SelfEvolvement" #E8F5E9 {
+    :LLMs reflect on own weaknesses;
+    :Episodic memory buffer lookup\n(Reflexion framework);
+    :Apply accumulated wisdom\nfrom prior sessions;
+}
+
+partition "Phase 3: Proposal" #FFF8E1 {
+    fork
+        :LLM 1 generates proposal;
+    fork again
+        :LLM 2 generates proposal;
+    fork again
+        :LLM 3 generates proposal;
+    fork again
+        :LLM 4 generates proposal;
+    fork again
+        :LLM 5 generates proposal;
+    end fork
+    note right
+        Parallel execution with
+        semaphore limiting.
+        Cache check before
+        each LLM call.
+    end note
+}
+
+partition "Phase 4: Critique" #FCE4EC {
+    :Each LLM critiques\nall other proposals;
+    :Identify logical flaws,\nmissing context, errors;
+}
+
+partition "Phase 5: Review" #F3E5F5 {
+    :Aggregate critiques per proposal;
+    :Score proposals by\ncritique severity;
+    if (Cache hit for\nsimilar debate?) then (yes)
+        :Load cached\nreview results;
+    else (no)
+        :Full review pass;
+    endif
+}
+
+partition "Phase 6: Optimization" #E0F2F1 {
+    :LLMs revise proposals\nbased on critiques;
+    :Apply CI/CD hooks\n(tests, lint, security);
+    if (Approval gate\nenabled?) then (yes)
+        :Wait for human\napproval via REST API;
+        if (Approved?) then (yes)
+            :Continue;
+        else (rejected)
+            :Return to Phase 4;
+            detach
+        endif
+    else (no)
+        :Auto-continue;
+    endif
+}
+
+partition "Phase 7: Adversarial" #FBE9E7 {
+    :Red Team attacks\noptimized proposals;
+    :Blue Team defends;
+    :Multi-round attack-defend\ncycles with structured reports;
+}
+
+partition "Phase 8: Convergence" #EFEBE9 {
+    :Check early termination\n(consensus detected?);
+    if (Consensus?) then (yes)
+        :Select consensus response;
+    else (no)
+        :Apply voting method;
+        note right
+            6 methods:
+            Weighted (MiniMax)
+            Majority
+            Borda Count
+            Condorcet
+            Plurality
+            Unanimous
+        end note
+        :Select winning response;
+    endif
+}
+
+:Fallback chain traversal\n(if primary provider failed);
+:Persist to debate_sessions\nand debate_turns tables;
+:Emit provenance audit event\n(14 event types);
+
+stop
+
+legend bottom center
+    Topologies: Mesh | Star | Chain | Tree
+    Performance: semaphore-limited parallel LLM calls,
+    response caching with TTL, smart fallback chain
+end legend
+
+@enduml

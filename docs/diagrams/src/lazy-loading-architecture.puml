@@ -1,0 +1,115 @@
+@startuml Lazy Loading Architecture
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam defaultFontName Helvetica
+skinparam participantFontSize 12
+skinparam sequenceArrowThickness 1.5
+skinparam noteBackgroundColor #FFFDE7
+
+title HelixAgent - Lazy Loading Architecture
+
+participant "Application" as app
+participant "sync.Once" as once #E8F4FD
+participant "ProviderRegistry" as providers #E8F8E8
+participant "ToolRegistry" as tools #FFF8E8
+participant "MCP Adapters" as mcp #F0E8F8
+participant "Connection Pool" as pool #F8E8E8
+participant "Formatter Registry" as fmt #FCE4EC
+database "PostgreSQL" as pg
+database "Redis" as redis
+
+== Minimal Startup (fast boot) ==
+
+app -> app : Load config, bind port
+note right of app
+    Only config parsing and
+    HTTP listener start.
+    No heavy initialization.
+end note
+
+== First Provider Request ==
+
+app -> once : GetDefaultToolRegistry()
+activate once
+once -> once : Check initialized flag
+alt not yet initialized
+    once -> tools : Initialize 21 tool schemas
+    activate tools
+    tools --> once : registry ready
+    deactivate tools
+    once -> once : Set initialized = true
+end
+once --> app : *DefaultToolRegistry
+deactivate once
+
+app -> providers : GetProvider("claude")
+activate providers
+providers -> providers : sync.Once: initProviders()
+note right of providers
+    First call triggers lazy
+    loading of all 22 providers.
+    Subsequent calls return
+    cached instances.
+end note
+providers -> pool : GetOrCreatePool()
+activate pool
+pool -> pool : sync.Once: initPool()
+pool -> pg : pgx.NewPool()
+activate pg
+pg --> pool : *pgxpool.Pool
+deactivate pg
+pool -> redis : redis.NewClient()
+activate redis
+redis --> pool : *redis.Client
+deactivate redis
+pool --> providers : connections ready
+deactivate pool
+providers --> app : LLMProvider
+deactivate providers
+
+== First Tool Invocation ==
+
+app -> tools : ExecuteTool("file_read", params)
+activate tools
+note right of tools
+    Tool schemas loaded at
+    registry init above.
+    Execution uses existing
+    provider connections.
+end note
+tools --> app : ToolResult
+deactivate tools
+
+== First MCP Call ==
+
+app -> mcp : GetAdapter("filesystem")
+activate mcp
+mcp -> mcp : sync.Once: loadAdapters()
+note right of mcp
+    45+ MCP adapters loaded
+    on first access. Each adapter
+    connects lazily to its server.
+end note
+mcp --> app : MCPAdapter
+deactivate mcp
+
+== First Format Request ==
+
+app -> fmt : GetFormatter("go")
+activate fmt
+fmt -> fmt : sync.Once: initFormatters()
+note right of fmt
+    32+ formatters registered
+    on first use. Native formatters
+    check binary availability lazily.
+end note
+fmt --> app : Formatter
+deactivate fmt
+
+legend bottom center
+    Pattern: sync.Once guarantees single initialization
+    per component. Double-checked locking for GlobalPool.
+    All heavy resources created on first use, not at startup.
+end legend
+
+@enduml
