@@ -1,0 +1,42 @@
+# HelixAgent CI - Go Builder
+# Builds all Go binaries, runs all tests, produces coverage reports
+
+FROM docker.io/golang:1.24-alpine AS ci-go
+
+# Build and quality tools
+RUN apk add --no-cache \
+    bash coreutils git make gcc musl-dev \
+    curl jq wget file \
+    ca-certificates tzdata \
+    postgresql15-client \
+    && apk add --no-cache netcat-openbsd || apk add --no-cache nmap-ncat || true
+
+# Install gotestsum for JUnit XML output
+RUN go install gotest.tools/gotestsum@latest
+
+# Install golangci-lint
+RUN wget -O- -nv https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh \
+    | sh -s -- -b /usr/local/bin v1.62.2 2>/dev/null \
+    || go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.62.2
+
+# Install gosec
+RUN go install github.com/securego/gosec/v2/cmd/gosec@latest 2>/dev/null || true
+
+# Install goimports
+RUN go install golang.org/x/tools/cmd/goimports@latest
+
+WORKDIR /workspace
+
+# Copy entrypoint and CI scripts
+COPY ci/scripts/ci-entrypoint.sh /usr/local/bin/ci-entrypoint.sh
+COPY ci/scripts/wait-for-services.sh /usr/local/bin/wait-for-services.sh
+COPY ci/scripts/false-positive-check.sh /usr/local/bin/false-positive-check.sh
+COPY ci/scripts/validate-artifacts.sh /usr/local/bin/validate-artifacts.sh
+RUN chmod +x /usr/local/bin/ci-entrypoint.sh /usr/local/bin/wait-for-services.sh \
+    /usr/local/bin/false-positive-check.sh /usr/local/bin/validate-artifacts.sh
+
+ENV WORKSPACE=/workspace
+ENV GOPATH=/go
+ENV PATH="/go/bin:/usr/local/go/bin:${PATH}"
+
+ENTRYPOINT ["/usr/local/bin/ci-entrypoint.sh"]
