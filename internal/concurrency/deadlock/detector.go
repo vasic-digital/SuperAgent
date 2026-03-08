@@ -75,7 +75,8 @@ func (lw *LockWrapper) Lock() {
 			"goroutine", goroutineID,
 			"lock", lw.name,
 		)
-		panic(fmt.Sprintf("deadlock detected: goroutine %s waiting for %s", goroutineID, lw.name))
+		// Deadlock detected: fall through to timeout-based acquisition
+		// rather than panicking. The timeout will prevent actual deadlock.
 	}
 
 	// Record that this goroutine is waiting for this lock

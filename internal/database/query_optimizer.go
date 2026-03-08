@@ -175,7 +175,9 @@ func (c *QueryCache) Clear() {
 func (c *QueryCache) removeLocked(elem *list.Element) {
 	entry, ok := elem.Value.(*cacheEntry)
 	if !ok {
-		panic("query cache: invalid cache entry type")
+		// Skip invalid entries instead of panicking — defensive coding
+		c.lruList.Remove(elem)
+		return
 	}
 	delete(c.cache, entry.key)
 	c.lruList.Remove(elem)
@@ -192,7 +194,10 @@ func (c *QueryCache) cleanupLoop() {
 		for elem := c.lruList.Back(); elem != nil; {
 			entry, ok := elem.Value.(*cacheEntry)
 			if !ok {
-				panic("query cache: invalid cache entry type during cleanup")
+				prev := elem.Prev()
+				c.lruList.Remove(elem)
+				elem = prev
+				continue
 			}
 			prev := elem.Prev()
 			if now.After(entry.expiresAt) {

@@ -23,7 +23,7 @@ type Orchestrator struct {
 // NewOrchestrator creates an Orchestrator for HelixAgent user
 // flow testing. The baseURL should point to the running
 // HelixAgent server (e.g., "http://localhost:7061").
-func NewOrchestrator(baseURL string) *Orchestrator {
+func NewOrchestrator(baseURL string) (*Orchestrator, error) {
 	reg := registry.NewRegistry()
 	adapter := uf.NewHTTPAPIAdapter(baseURL)
 
@@ -34,9 +34,7 @@ func NewOrchestrator(baseURL string) *Orchestrator {
 	}
 
 	if err := o.registerChallenges(); err != nil {
-		panic(fmt.Sprintf(
-			"userflow: register challenges: %v", err,
-		))
+		return nil, fmt.Errorf("userflow: register challenges: %w", err)
 	}
 
 	r := runner.NewRunner(
@@ -44,7 +42,7 @@ func NewOrchestrator(baseURL string) *Orchestrator {
 	)
 	o.runner = r
 
-	return o
+	return o, nil
 }
 
 // registerChallenges registers all HelixAgent user flow

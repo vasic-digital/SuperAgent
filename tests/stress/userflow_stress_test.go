@@ -56,8 +56,14 @@ func TestOrchestrator_NewOrchestrator_ConcurrentCreation(
 			url := fmt.Sprintf(
 				"http://localhost:%d", 7061+idx,
 			)
-			orchestrators[idx] =
-				userflow.NewOrchestrator(url)
+			o, oErr := userflow.NewOrchestrator(url)
+			if oErr != nil {
+				errs <- fmt.Errorf(
+					"goroutine %d: %v", idx, oErr,
+				)
+				return
+			}
+			orchestrators[idx] = o
 		}(i)
 	}
 	wg.Wait()
@@ -87,7 +93,8 @@ func TestOrchestrator_ListChallenges_RapidConcurrent(
 	}
 	runtime.GOMAXPROCS(2)
 
-	o := userflow.NewOrchestrator(userflowBaseURL)
+	o, err := userflow.NewOrchestrator(userflowBaseURL)
+	require.NoError(t, err)
 	require.NotNil(t, o)
 
 	var wg sync.WaitGroup
@@ -127,7 +134,8 @@ func TestOrchestrator_ChallengeCount_RapidConcurrent(
 	}
 	runtime.GOMAXPROCS(2)
 
-	o := userflow.NewOrchestrator(userflowBaseURL)
+	o, err := userflow.NewOrchestrator(userflowBaseURL)
+	require.NoError(t, err)
 	require.NotNil(t, o)
 
 	var wg sync.WaitGroup
@@ -329,7 +337,9 @@ func TestOrchestrator_Sequential_MemoryPressure(
 		url := fmt.Sprintf(
 			"http://localhost:%d", 7061+(i%100),
 		)
-		o := userflow.NewOrchestrator(url)
+		o, oErr := userflow.NewOrchestrator(url)
+		require.NoError(t, oErr,
+			"orchestrator %d creation failed", i)
 		require.NotNil(t, o,
 			"orchestrator %d must not be nil", i)
 		assert.Equal(t, userflowExpectedCount,
@@ -380,7 +390,8 @@ func TestOrchestrator_Summary_ConcurrentAccess(
 	}
 	runtime.GOMAXPROCS(2)
 
-	o := userflow.NewOrchestrator(userflowBaseURL)
+	o, err := userflow.NewOrchestrator(userflowBaseURL)
+	require.NoError(t, err)
 	require.NotNil(t, o)
 
 	const goroutines = 200
@@ -423,7 +434,8 @@ func TestOrchestrator_Challenges_ConcurrentAccess(
 	}
 	runtime.GOMAXPROCS(2)
 
-	o := userflow.NewOrchestrator(userflowBaseURL)
+	o, err := userflow.NewOrchestrator(userflowBaseURL)
+	require.NoError(t, err)
 	require.NotNil(t, o)
 
 	const goroutines = 200
@@ -468,7 +480,8 @@ func TestOrchestrator_MixedConcurrentAccess(
 	}
 	runtime.GOMAXPROCS(2)
 
-	o := userflow.NewOrchestrator(userflowBaseURL)
+	o, err := userflow.NewOrchestrator(userflowBaseURL)
+	require.NoError(t, err)
 	require.NotNil(t, o)
 
 	const perMethod = 100
@@ -565,7 +578,10 @@ func TestOrchestrator_ConcurrentCreation_UniqueURLs(
 			url := fmt.Sprintf(
 				"http://host-%d.local:7061", idx,
 			)
-			o := userflow.NewOrchestrator(url)
+			o, oErr := userflow.NewOrchestrator(url)
+			if oErr != nil {
+				return
+			}
 			results[idx] = result{
 				summary: o.Summary(),
 				count:   o.ChallengeCount(),

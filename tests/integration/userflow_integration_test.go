@@ -76,9 +76,10 @@ var dependencyGraph = map[string][]string{
 func TestUserflowOrchestrator_FullLifecycle(
 	t *testing.T,
 ) {
-	o := userflow.NewOrchestrator(
+	o, err := userflow.NewOrchestrator(
 		"http://localhost:7061",
 	)
+	require.NoError(t, err)
 	require.NotNil(t, o,
 		"orchestrator must not be nil")
 
@@ -110,9 +111,10 @@ func TestUserflowOrchestrator_FullLifecycle(
 func TestUserflowOrchestrator_RegistryIntegrity(
 	t *testing.T,
 ) {
-	o := userflow.NewOrchestrator(
+	o, err := userflow.NewOrchestrator(
 		"http://localhost:7061",
 	)
+	require.NoError(t, err)
 
 	ids := o.ListChallenges()
 	require.Len(t, ids, len(expectedChallengeIDs),
@@ -136,12 +138,13 @@ func TestUserflowOrchestrator_RegistryIntegrity(
 func TestUserflowOrchestrator_RunByID_InvalidID(
 	t *testing.T,
 ) {
-	o := userflow.NewOrchestrator(
+	o, err := userflow.NewOrchestrator(
 		"http://localhost:7061",
 	)
+	require.NoError(t, err)
 	ctx := context.Background()
 
-	_, err := o.RunByID(ctx, "does-not-exist-xyz")
+	_, err = o.RunByID(ctx, "does-not-exist-xyz")
 	require.Error(t, err,
 		"RunByID with invalid ID must return error")
 	assert.Contains(t, err.Error(), "failed to get challenge",
@@ -153,9 +156,10 @@ func TestUserflowOrchestrator_RunByID_InvalidID(
 func TestUserflowOrchestrator_RunAll_NoServer(
 	t *testing.T,
 ) {
-	o := userflow.NewOrchestrator(
+	o, err := userflow.NewOrchestrator(
 		"http://localhost:7061",
 	)
+	require.NoError(t, err)
 
 	// Use an already-cancelled context so we don't wait for
 	// real HTTP connections.
@@ -177,9 +181,10 @@ func TestUserflowOrchestrator_RunAll_NoServer(
 func TestUserflowOrchestrator_DependencyGraph(
 	t *testing.T,
 ) {
-	o := userflow.NewOrchestrator(
+	o, err := userflow.NewOrchestrator(
 		"http://localhost:7061",
 	)
+	require.NoError(t, err)
 
 	challengeMap := make(
 		map[string]challenge.Challenge,
@@ -216,9 +221,10 @@ func TestUserflowOrchestrator_DependencyGraph(
 func TestUserflowOrchestrator_MetadataConsistency(
 	t *testing.T,
 ) {
-	o := userflow.NewOrchestrator(
+	o, err := userflow.NewOrchestrator(
 		"http://localhost:7061",
 	)
+	require.NoError(t, err)
 
 	tests := make([]struct {
 		id   string
@@ -269,7 +275,8 @@ func TestUserflowOrchestrator_SummaryFormat(
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			o := userflow.NewOrchestrator(tt.baseURL)
+			o, oErr := userflow.NewOrchestrator(tt.baseURL)
+			require.NoError(t, oErr)
 			summary := o.Summary()
 
 			assert.Contains(t, summary,
@@ -346,9 +353,10 @@ func TestMainOrchestrator_UserflowCategory(
 func TestUserflowOrchestrator_NoDuplicateIDs(
 	t *testing.T,
 ) {
-	o := userflow.NewOrchestrator(
+	o, err := userflow.NewOrchestrator(
 		"http://localhost:7061",
 	)
+	require.NoError(t, err)
 
 	ids := o.ListChallenges()
 	seen := make(map[string]int, len(ids))
@@ -367,9 +375,10 @@ func TestUserflowOrchestrator_NoDuplicateIDs(
 func TestUserflowOrchestrator_DepsReferenceRegistered(
 	t *testing.T,
 ) {
-	o := userflow.NewOrchestrator(
+	o, err := userflow.NewOrchestrator(
 		"http://localhost:7061",
 	)
+	require.NoError(t, err)
 
 	idSet := make(map[string]bool)
 	for _, c := range o.Challenges() {
@@ -392,9 +401,10 @@ func TestUserflowOrchestrator_DepsReferenceRegistered(
 func TestUserflowOrchestrator_RunByID_CancelledCtx(
 	t *testing.T,
 ) {
-	o := userflow.NewOrchestrator(
+	o, err := userflow.NewOrchestrator(
 		"http://localhost:7061",
 	)
+	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(
 		context.Background(),

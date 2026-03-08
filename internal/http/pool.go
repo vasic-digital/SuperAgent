@@ -348,39 +348,56 @@ func (p *HTTPClientPool) Close() error {
 
 // GlobalPool is the default global HTTP client pool
 var (
-	GlobalPool  *HTTPClientPool
-	globalPoolMu sync.Mutex
+	GlobalPool     *HTTPClientPool
+	globalPoolMu   sync.RWMutex
+	globalPoolOnce sync.Once
 )
 
 func ensureGlobalPool() {
-	if GlobalPool != nil {
-		return
-	}
-	globalPoolMu.Lock()
-	defer globalPoolMu.Unlock()
-	if GlobalPool == nil {
+	globalPoolOnce.Do(func() {
 		GlobalPool = NewHTTPClientPool(nil)
-	}
+	})
 }
 
-// InitGlobalPool initializes the global HTTP client pool
+// InitGlobalPool initializes the global HTTP client pool with custom config.
+// Must be called before any concurrent access (typically during startup).
 func InitGlobalPool(config *PoolConfig) {
+	globalPoolMu.Lock()
+	defer globalPoolMu.Unlock()
 	if GlobalPool != nil {
 		_ = GlobalPool.Close()
 	}
 	GlobalPool = NewHTTPClientPool(config)
+	// Reset Once so ensureGlobalPool won't overwrite
+	globalPoolOnce = sync.Once{}
+	globalPoolOnce.Do(func() {}) // mark as done
+}
+
+// getGlobalPool returns the global pool safely
+func getGlobalPool() *HTTPClientPool {
+	globalPoolMu.RLock()
+	p := GlobalPool
+	globalPoolMu.RUnlock()
+	if p != nil {
+		return p
+	}
+	ensureGlobalPool()
+	globalPoolMu.RLock()
+	p = GlobalPool
+	globalPoolMu.RUnlock()
+	return p
 }
 
 // Get performs a GET request using the global pool
 func Get(ctx context.Context, url string) (*http.Response, error) {
-	ensureGlobalPool()
-	return GlobalPool.Get(ctx, url)
+	pool := getGlobalPool()
+	return pool.Get(ctx, url)
 }
 
 // PostJSON performs a POST request with JSON content using the global pool
 func PostJSON(ctx context.Context, url string, body io.Reader) (*http.Response, error) {
-	ensureGlobalPool()
-	return GlobalPool.PostJSON(ctx, url, body)
+	pool := getGlobalPool()
+	return pool.PostJSON(ctx, url, body)
 }
 
 // HostClient provides a client pre-configured for a specific host

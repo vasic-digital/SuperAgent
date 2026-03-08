@@ -527,6 +527,7 @@ func TestHTTPClientPool_Close(t *testing.T) {
 func TestGlobalPool_Init(t *testing.T) {
 	// Reset global pool
 	GlobalPool = nil
+	globalPoolOnce = sync.Once{}
 
 	InitGlobalPool(nil)
 	assert.NotNil(t, GlobalPool)
@@ -539,6 +540,7 @@ func TestGlobalPool_Init(t *testing.T) {
 
 func TestGlobalPool_Get(t *testing.T) {
 	GlobalPool = nil
+	globalPoolOnce = sync.Once{}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -556,6 +558,7 @@ func TestGlobalPool_Get(t *testing.T) {
 
 func TestGlobalPool_PostJSON(t *testing.T) {
 	GlobalPool = nil
+	globalPoolOnce = sync.Once{}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))

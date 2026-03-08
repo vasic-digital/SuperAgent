@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"dev.helix.agent/internal/models"
@@ -52,7 +53,6 @@ type DebatePerformanceOptimizer struct {
 	logger    *logrus.Logger
 	registry  *ProviderRegistry
 	semaphore chan struct{}
-	mu        sync.RWMutex
 	stats     *OptimizationStats
 }
 
@@ -87,15 +87,11 @@ func (dpo *DebatePerformanceOptimizer) ExecuteWithOptimization(
 	previousResponses map[DebateTeamPosition]string,
 ) (*models.LLMResponse, error) {
 	startTime := time.Now()
-	dpo.mu.Lock()
-	dpo.stats.TotalRequests++
-	dpo.mu.Unlock()
+	atomic.AddInt64(&dpo.stats.TotalRequests, 1)
 
 	if dpo.config.EnableResponseCaching {
 		if cached := dpo.getCachedResponse(prompt, member.ModelName); cached != nil {
-			dpo.mu.Lock()
-			dpo.stats.CacheHits++
-			dpo.mu.Unlock()
+			atomic.AddInt64(&dpo.stats.CacheHits, 1)
 			dpo.logger.WithFields(logrus.Fields{
 				"model":     member.ModelName,
 				"provider":  member.ProviderName,
@@ -103,9 +99,7 @@ func (dpo *DebatePerformanceOptimizer) ExecuteWithOptimization(
 			}).Debug("Debate response served from cache")
 			return cached.Response, nil
 		}
-		dpo.mu.Lock()
-		dpo.stats.CacheMisses++
-		dpo.mu.Unlock()
+		atomic.AddInt64(&dpo.stats.CacheMisses, 1)
 	}
 
 	var response *models.LLMResponse
@@ -121,10 +115,15 @@ func (dpo *DebatePerformanceOptimizer) ExecuteWithOptimization(
 		dpo.cacheResponse(prompt, member.ModelName, member.ProviderName, response)
 	}
 
-	dpo.mu.Lock()
 	latency := time.Since(startTime).Milliseconds()
-	dpo.stats.AverageLatencyMs = (dpo.stats.AverageLatencyMs + latency) / 2
-	dpo.mu.Unlock()
+	// Use CAS loop for running average — lock-free
+	for {
+		old := atomic.LoadInt64(&dpo.stats.AverageLatencyMs)
+		newAvg := (old + latency) / 2
+		if atomic.CompareAndSwapInt64(&dpo.stats.AverageLatencyMs, old, newAvg) {
+			break
+		}
+	}
 
 	return response, err
 }
@@ -150,9 +149,7 @@ func (dpo *DebatePerformanceOptimizer) ExecuteParallel(
 			}
 			defer func() { <-dpo.semaphore }()
 
-			dpo.mu.Lock()
-			dpo.stats.ParallelRequests++
-			dpo.mu.Unlock()
+			atomic.AddInt64(&dpo.stats.ParallelRequests, 1)
 
 			resp, err := dpo.ExecuteWithOptimization(ctx, m, prompt, nil)
 			if err == nil && resp != nil {
@@ -212,9 +209,7 @@ func (dpo *DebatePerformanceOptimizer) executeWithSmartFallback(
 		"error":    err.Error(),
 	}).Warn("Primary provider failed, trying fallbacks")
 
-	dpo.mu.Lock()
-	dpo.stats.FallbacksTriggered++
-	dpo.mu.Unlock()
+	atomic.AddInt64(&dpo.stats.FallbacksTriggered, 1)
 
 	for i, fallback := range member.Fallbacks {
 		if fallback == nil || !fallback.IsActive {
@@ -253,9 +248,7 @@ func (dpo *DebatePerformanceOptimizer) ShouldTerminateEarly(responses map[Debate
 
 	consensus := dpo.calculateConsensus(responses)
 	if consensus >= dpo.config.EarlyTerminationThreshold {
-		dpo.mu.Lock()
-		dpo.stats.EarlyTerminations++
-		dpo.mu.Unlock()
+		atomic.AddInt64(&dpo.stats.EarlyTerminations, 1)
 
 		dpo.logger.WithFields(logrus.Fields{
 			"consensus": consensus,
@@ -331,9 +324,15 @@ func (dpo *DebatePerformanceOptimizer) generateCacheKey(prompt, model string) st
 }
 
 func (dpo *DebatePerformanceOptimizer) GetStats() *OptimizationStats {
-	dpo.mu.RLock()
-	defer dpo.mu.RUnlock()
-	return dpo.stats
+	return &OptimizationStats{
+		CacheHits:          atomic.LoadInt64(&dpo.stats.CacheHits),
+		CacheMisses:        atomic.LoadInt64(&dpo.stats.CacheMisses),
+		ParallelRequests:   atomic.LoadInt64(&dpo.stats.ParallelRequests),
+		EarlyTerminations:  atomic.LoadInt64(&dpo.stats.EarlyTerminations),
+		FallbacksTriggered: atomic.LoadInt64(&dpo.stats.FallbacksTriggered),
+		TotalRequests:      atomic.LoadInt64(&dpo.stats.TotalRequests),
+		AverageLatencyMs:   atomic.LoadInt64(&dpo.stats.AverageLatencyMs),
+	}
 }
 
 func (dpo *DebatePerformanceOptimizer) ClearCache() {

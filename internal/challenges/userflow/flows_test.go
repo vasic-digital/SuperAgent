@@ -534,14 +534,16 @@ func TestChallengeConstructors_NotNil(t *testing.T) {
 }
 
 func TestOrchestratorConstruction(t *testing.T) {
-	o := NewOrchestrator("http://localhost:7061")
+	o, err := NewOrchestrator("http://localhost:7061")
+	require.NoError(t, err)
 	assert.NotNil(t, o)
 	assert.Equal(t, 22, o.ChallengeCount(),
 		"should register 22 challenges")
 }
 
 func TestOrchestratorListChallenges(t *testing.T) {
-	o := NewOrchestrator("http://localhost:7061")
+	o, err := NewOrchestrator("http://localhost:7061")
+	require.NoError(t, err)
 	ids := o.ListChallenges()
 	assert.Len(t, ids, 22)
 
@@ -556,7 +558,8 @@ func TestOrchestratorListChallenges(t *testing.T) {
 }
 
 func TestOrchestratorSummary(t *testing.T) {
-	o := NewOrchestrator("http://localhost:7061")
+	o, err := NewOrchestrator("http://localhost:7061")
+	require.NoError(t, err)
 	summary := o.Summary()
 	assert.Contains(t, summary, "22 challenges")
 	assert.Contains(t, summary, "localhost:7061")
@@ -623,7 +626,8 @@ func (m *mockAPIAdapter) Available(
 }
 
 func TestOrchestrator_Challenges(t *testing.T) {
-	o := NewOrchestrator("http://localhost:7061")
+	o, err := NewOrchestrator("http://localhost:7061")
+	require.NoError(t, err)
 	challenges := o.Challenges()
 	require.Len(t, challenges, 22,
 		"Challenges() must return all 22 challenges")
@@ -638,7 +642,8 @@ func TestOrchestrator_Challenges(t *testing.T) {
 }
 
 func TestOrchestrator_ChallengeCategories(t *testing.T) {
-	o := NewOrchestrator("http://localhost:7061")
+	o, err := NewOrchestrator("http://localhost:7061")
+	require.NoError(t, err)
 	challenges := o.Challenges()
 
 	for _, c := range challenges {
@@ -661,10 +666,11 @@ func TestSetCategory_Override(t *testing.T) {
 }
 
 func TestOrchestrator_RunByID_NotFound(t *testing.T) {
-	o := NewOrchestrator("http://localhost:7061")
+	o, err := NewOrchestrator("http://localhost:7061")
+	require.NoError(t, err)
 	ctx := context.Background()
 
-	_, err := o.RunByID(ctx, "nonexistent-id")
+	_, err = o.RunByID(ctx, "nonexistent-id")
 	require.Error(t, err,
 		"RunByID with unknown ID must return error")
 	assert.Contains(t, err.Error(),
@@ -673,7 +679,8 @@ func TestOrchestrator_RunByID_NotFound(t *testing.T) {
 }
 
 func TestOrchestrator_RunAll_NoServer(t *testing.T) {
-	o := NewOrchestrator("http://localhost:7061")
+	o, err := NewOrchestrator("http://localhost:7061")
+	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(
 		context.Background(),
@@ -689,7 +696,8 @@ func TestOrchestrator_RunAll_NoServer(t *testing.T) {
 func TestOrchestrator_RunByID_CancelledContext(
 	t *testing.T,
 ) {
-	o := NewOrchestrator("http://localhost:7061")
+	o, err := NewOrchestrator("http://localhost:7061")
+	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(
 		context.Background(),

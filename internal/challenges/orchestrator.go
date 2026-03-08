@@ -169,7 +169,10 @@ func (o *Orchestrator) RegisterAll() error {
 	if baseURL == "" {
 		baseURL = "http://localhost:7061"
 	}
-	ufOrch := userflow.NewOrchestrator(baseURL)
+	ufOrch, err := userflow.NewOrchestrator(baseURL)
+	if err != nil {
+		return fmt.Errorf("create userflow orchestrator: %w", err)
+	}
 	for _, c := range ufOrch.Challenges() {
 		// Override category so --run-challenges=userflow
 		// includes the Go-native challenges.

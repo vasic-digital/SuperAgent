@@ -408,9 +408,12 @@ func TestOrchestrator_InvalidBaseURL_SSRF(
 			// baseURL. We verify construction succeeds
 			// but the URL is stored correctly so that
 			// downstream validation can block it.
-			o := userflow.NewOrchestrator(tt.url)
+			o, oErr := userflow.NewOrchestrator(tt.url)
+			require.NoError(t, oErr,
+				"orchestrator creation must not fail "+
+					"on SSRF URL")
 			require.NotNil(t, o,
-				"orchestrator must not panic "+
+				"orchestrator must not be nil "+
 					"on SSRF URL")
 			assert.Greater(t, o.ChallengeCount(), 0,
 				"challenges must still register")
@@ -527,9 +530,13 @@ func TestOrchestrator_ConcurrentConstruction(
 				}
 			}()
 
-			o := userflow.NewOrchestrator(
+			o, oErr := userflow.NewOrchestrator(
 				"http://localhost:7061",
 			)
+			if oErr != nil {
+				errs <- oErr
+				return
+			}
 			if o == nil {
 				errs <- "nil orchestrator"
 			}
@@ -550,9 +557,10 @@ func TestOrchestrator_ConcurrentConstruction(
 func TestOrchestrator_ConcurrentListChallenges(
 	t *testing.T,
 ) {
-	o := userflow.NewOrchestrator(
+	o, err := userflow.NewOrchestrator(
 		"http://localhost:7061",
 	)
+	require.NoError(t, err)
 	require.NotNil(t, o)
 
 	const goroutines = 50
@@ -911,9 +919,10 @@ func TestFlowSteps_ExtractTo_NoInjection(
 func TestOrchestrator_NoDuplicateChallengeIDs(
 	t *testing.T,
 ) {
-	o := userflow.NewOrchestrator(
+	o, err := userflow.NewOrchestrator(
 		"http://localhost:7061",
 	)
+	require.NoError(t, err)
 	require.NotNil(t, o)
 
 	ids := o.ListChallenges()
@@ -990,9 +999,10 @@ func TestAPIStep_Body_TemplateInjection(
 func TestOrchestrator_Summary_NoSensitiveLeak(
 	t *testing.T,
 ) {
-	o := userflow.NewOrchestrator(
+	o, err := userflow.NewOrchestrator(
 		"http://localhost:7061",
 	)
+	require.NoError(t, err)
 	summary := o.Summary()
 
 	sensitivePatterns := []string{

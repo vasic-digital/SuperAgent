@@ -12,9 +12,12 @@ import (
 func BenchmarkNewOrchestrator(b *testing.B) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		o := NewOrchestrator(
+		o, err := NewOrchestrator(
 			"http://localhost:7061",
 		)
+		if err != nil {
+			b.Fatalf("NewOrchestrator failed: %v", err)
+		}
 		if o == nil {
 			b.Fatal("orchestrator must not be nil")
 		}
@@ -150,7 +153,10 @@ func BenchmarkChallengeConstructors(b *testing.B) {
 // BenchmarkOrchestratorListChallenges measures the cost of
 // listing all registered challenge IDs from the orchestrator.
 func BenchmarkOrchestratorListChallenges(b *testing.B) {
-	o := NewOrchestrator("http://localhost:7061")
+	o, err := NewOrchestrator("http://localhost:7061")
+	if err != nil {
+		b.Fatalf("NewOrchestrator failed: %v", err)
+	}
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -168,7 +174,10 @@ func BenchmarkOrchestratorListChallenges(b *testing.B) {
 // BenchmarkOrchestratorChallengeCount measures the cost of
 // retrieving the total count of registered challenges.
 func BenchmarkOrchestratorChallengeCount(b *testing.B) {
-	o := NewOrchestrator("http://localhost:7061")
+	o, err := NewOrchestrator("http://localhost:7061")
+	if err != nil {
+		b.Fatalf("NewOrchestrator failed: %v", err)
+	}
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -185,7 +194,10 @@ func BenchmarkOrchestratorChallengeCount(b *testing.B) {
 // BenchmarkOrchestratorSummary measures the cost of
 // generating the summary string from the orchestrator.
 func BenchmarkOrchestratorSummary(b *testing.B) {
-	o := NewOrchestrator("http://localhost:7061")
+	o, err := NewOrchestrator("http://localhost:7061")
+	if err != nil {
+		b.Fatalf("NewOrchestrator failed: %v", err)
+	}
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -200,7 +212,10 @@ func BenchmarkOrchestratorSummary(b *testing.B) {
 // BenchmarkOrchestratorChallenges measures the cost of
 // retrieving the full challenge list from the orchestrator.
 func BenchmarkOrchestratorChallenges(b *testing.B) {
-	o := NewOrchestrator("http://localhost:7061")
+	o, err := NewOrchestrator("http://localhost:7061")
+	if err != nil {
+		b.Fatalf("NewOrchestrator failed: %v", err)
+	}
 
 	b.ReportAllocs()
 	b.ResetTimer()
