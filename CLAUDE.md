@@ -396,6 +396,7 @@ CI_RESOURCE_LIMIT=medium make ci-all  # Medium resource limits (default: low)
 ./challenges/scripts/helixmemory_challenge.sh                   # 80+ tests
 ./challenges/scripts/helixspecifier_challenge.sh                # 138 tests
 ./challenges/scripts/userflow_comprehensive_challenge.sh        # 30+ tests (shell)
+./challenges/scripts/ci_container_build_challenge.sh            # 81 tests
 # Go-native userflow challenges (22): run with --run-challenges=userflow
 ```
 
