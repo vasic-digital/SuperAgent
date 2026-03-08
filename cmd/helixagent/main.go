@@ -2023,18 +2023,6 @@ type OpenCodePermissionDefOld struct {
 	AllowNet   bool `json:"allowNet,omitempty"`
 }
 
-// OpenCodeProviderDef is DEPRECATED - use OpenCodeProviderDefNew instead
-// Kept for backward compatibility with tests
-type OpenCodeProviderDef = OpenCodeProviderDefNew
-
-// OpenCodeAgentDef is DEPRECATED - use OpenCodeAgentDefNew instead
-// Kept for backward compatibility with tests
-type OpenCodeAgentDef = OpenCodeAgentDefNew
-
-// OpenCodeMCPServerDef is DEPRECATED - use OpenCodeMCPServerDefNew instead
-// Kept for backward compatibility with tests
-type OpenCodeMCPServerDef = OpenCodeMCPServerDefNew
-
 // OpenCodeTUIDef represents TUI configuration
 type OpenCodeTUIDef struct {
 	Theme string `json:"theme,omitempty"` // opencode, catppuccin, dracula, etc.
@@ -2818,12 +2806,6 @@ func buildOpenCodeMCPServersOld(baseURL string) map[string]OpenCodeMCPServerDefO
 		"aws-s3":       {Type: "local", Command: []string{"npx", "-y", "mcp-server-s3"}},
 		"datadog":      {Type: "local", Command: []string{"npx", "-y", "mcp-server-datadog"}},
 	}
-}
-
-// buildOpenCodeMCPServers is DEPRECATED - use buildOpenCodeMCPServersFiltered instead
-// This function redirects to the new implementation for backward compatibility
-func buildOpenCodeMCPServers(baseURL string) map[string]OpenCodeMCPServerDef {
-	return buildOpenCodeMCPServersFiltered(baseURL, false)
 }
 
 // handlePreinstallMCP handles the --preinstall-mcp command

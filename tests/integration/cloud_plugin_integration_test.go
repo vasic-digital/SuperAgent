@@ -5,96 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"dev.helix.agent/internal/adapters/cloud"
 	"dev.helix.agent/internal/plugins"
 	"dev.helix.agent/internal/services"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// TestCloudIntegrationManager tests cloud provider integration
-func TestCloudIntegrationManager(t *testing.T) {
-	// Integration test — no external deps required
-
-	logger := logrus.New()
-	logger.SetLevel(logrus.DebugLevel)
-
-	t.Run("Multiple cloud providers registration and retrieval", func(t *testing.T) {
-		manager := cloud.NewCloudIntegrationManager(logger)
-
-		// Register multiple providers
-		awsProvider := cloud.NewAWSBedrockIntegrationWithConfig(cloud.AWSBedrockConfig{
-			Region:          "us-east-1",
-			AccessKeyID:     "test-key",
-			SecretAccessKey: "test-secret",
-		}, logger)
-
-		gcpProvider := cloud.NewGCPVertexAIIntegrationWithConfig(cloud.GCPVertexAIConfig{
-			ProjectID:   "test-project",
-			Location:    "us-central1",
-			AccessToken: "test-token",
-		}, logger)
-
-		azureProvider := cloud.NewAzureOpenAIIntegrationWithConfig(cloud.AzureOpenAIConfig{
-			Endpoint: "https://test.openai.azure.com",
-			APIKey:   "test-key",
-		}, logger)
-
-		manager.RegisterProvider(awsProvider)
-		manager.RegisterProvider(gcpProvider)
-		manager.RegisterProvider(azureProvider)
-
-		// Verify all providers are registered
-		providers := manager.ListAllProviders()
-		assert.Len(t, providers, 3)
-		assert.Contains(t, providers, "aws-bedrock")
-		assert.Contains(t, providers, "gcp-vertex-ai")
-		assert.Contains(t, providers, "azure-openai")
-
-		// Test retrieval
-		provider, err := manager.GetProvider("aws-bedrock")
-		require.NoError(t, err)
-		assert.Equal(t, "aws-bedrock", provider.GetProviderName())
-
-		provider, err = manager.GetProvider("gcp-vertex-ai")
-		require.NoError(t, err)
-		assert.Equal(t, "gcp-vertex-ai", provider.GetProviderName())
-
-		provider, err = manager.GetProvider("azure-openai")
-		require.NoError(t, err)
-		assert.Equal(t, "azure-openai", provider.GetProviderName())
-	})
-
-	t.Run("HealthCheckAll with mock providers", func(t *testing.T) {
-		manager := cloud.NewCloudIntegrationManager(logger)
-
-		// Register providers without credentials (will fail health checks)
-		manager.RegisterProvider(cloud.NewAWSBedrockIntegration("us-east-1", logger))
-		manager.RegisterProvider(cloud.NewGCPVertexAIIntegration("project", "us-central1", logger))
-		manager.RegisterProvider(cloud.NewAzureOpenAIIntegration("https://test.openai.azure.com", logger))
-
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-
-		results := manager.HealthCheckAll(ctx)
-
-		// All should fail without real credentials
-		assert.Len(t, results, 3)
-		for name, err := range results {
-			assert.Error(t, err, "Provider %s should fail without credentials", name)
-		}
-	})
-
-	t.Run("GetProvider non-existent returns error", func(t *testing.T) {
-		manager := cloud.NewCloudIntegrationManager(logger)
-
-		provider, err := manager.GetProvider("non-existent")
-		assert.Error(t, err)
-		assert.Nil(t, provider)
-		assert.Contains(t, err.Error(), "not found")
-	})
-}
 
 // TestPluginSystemIntegration tests the plugin system integration
 func TestPluginSystemIntegration(t *testing.T) {

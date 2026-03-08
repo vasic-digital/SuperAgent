@@ -2972,7 +2972,7 @@ KEY2=value2`
 
 func TestBuildOpenCodeMCPServers(t *testing.T) {
 	t.Run("builds config with v1.1.30+ schema remote servers", func(t *testing.T) {
-		config := buildOpenCodeMCPServers("http://localhost:7061")
+		config := buildOpenCodeMCPServersFiltered("http://localhost:7061", false)
 
 		assert.NotNil(t, config)
 		// Should have HelixAgent local plugin
@@ -2991,14 +2991,14 @@ func TestBuildOpenCodeMCPServers(t *testing.T) {
 	})
 
 	t.Run("builds config with different base URL", func(t *testing.T) {
-		config := buildOpenCodeMCPServers("http://example.com:8080")
+		config := buildOpenCodeMCPServersFiltered("http://example.com:8080", false)
 
 		mcpServer := config["helixagent-mcp"]
 		assert.Contains(t, mcpServer.URL, "example.com:8080")
 	})
 
 	t.Run("includes standard MCP servers", func(t *testing.T) {
-		config := buildOpenCodeMCPServers("http://localhost:7061")
+		config := buildOpenCodeMCPServersFiltered("http://localhost:7061", false)
 
 		// Check standard MCP servers
 		assert.Contains(t, config, "filesystem")

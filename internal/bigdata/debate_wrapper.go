@@ -177,24 +177,6 @@ func (dsw *DebateServiceWrapper) publishDebateCompletion(ctx context.Context, co
 		}
 	}
 
-	// Publish entities extracted during debate (if CogneeInsights available)
-	// Note: Entity publishing temporarily disabled due to type mismatch
-	// if dsw.entityIntegration != nil && result.CogneeInsights != nil && result.CogneeInsights.EntityExtraction != nil {
-	// 	// Convert CogneeInsights.EntityExtraction to []Entity
-	// 	entities := make([]Entity, len(result.CogneeInsights.EntityExtraction))
-	// 	for i, entity := range result.CogneeInsights.EntityExtraction {
-	// 		entities[i] = Entity{
-	// 			ID:         fmt.Sprintf("entity-%d", i),
-	// 			Name:       entity.Text,
-	// 			Type:       entity.Type,
-	// 			Importance: entity.Confidence,
-	// 			Properties: map[string]interface{}{},
-	// 		}
-	// 	}
-	// 	if err := dsw.entityIntegration.PublishEntitiesBatch(ctx, entities, conversationID); err != nil {
-	// 		dsw.logger.WithError(err).Error("Failed to publish debate entities")
-	// 	}
-	// }
 }
 
 // Helper functions
