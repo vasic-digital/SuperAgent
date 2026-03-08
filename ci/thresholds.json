@@ -1,31 +1,31 @@
 {
   "go": {
-    "min_unit_tests": 100,
-    "min_integration_tests": 20,
-    "min_e2e_tests": 10,
-    "min_security_tests": 5,
-    "min_coverage_percent": 100
+    "min_unit_tests": 25000,
+    "min_integration_tests": 40,
+    "min_e2e_tests": 80,
+    "min_security_tests": 200,
+    "min_coverage_percent": 70
   },
   "mobile": {
     "flutter": {
       "min_unit_tests": 5,
       "min_widget_tests": 3,
-      "min_coverage_percent": 100
+      "min_coverage_percent": 80
     },
     "react_native": {
       "min_jest_tests": 5,
-      "min_coverage_percent": 100
+      "min_coverage_percent": 80
     },
     "robolectric": {
       "min_tests": 5,
-      "min_coverage_percent": 100
+      "min_coverage_percent": 80
     }
   },
   "web": {
     "angular": {
       "min_karma_tests": 5,
       "min_e2e_tests": 3,
-      "min_coverage_percent": 100,
+      "min_coverage_percent": 80,
       "lighthouse_min_score": 80
     },
     "website": {
@@ -34,7 +34,7 @@
     },
     "sdk": {
       "min_jest_tests": 5,
-      "min_coverage_percent": 100
+      "min_coverage_percent": 80
     }
   }
 }

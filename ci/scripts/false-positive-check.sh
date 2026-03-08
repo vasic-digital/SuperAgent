@@ -39,9 +39,9 @@ validate_junit_xml() {
   fi
 
   local tests_count
-  tests_count=$(grep -oE 'tests="[0-9]+"' "${xml_file}" | head -1 | grep -oE '[0-9]+' || echo "0")
+  tests_count=$(grep -oE 'tests="[0-9]+"' "${xml_file}" | head -1 | sed 's/tests="//;s/"//' || echo "0")
   local failures_count
-  failures_count=$(grep -oE 'failures="[0-9]+"' "${xml_file}" | head -1 | grep -oE '[0-9]+' || echo "0")
+  failures_count=$(grep -oE 'failures="[0-9]+"' "${xml_file}" | head -1 | sed 's/failures="//;s/"//' || echo "0")
 
   if [ "${tests_count}" -lt "${min_tests}" ]; then
     add_check "${label}_test_count" ">=${min_tests}" "${tests_count}" "FAIL"

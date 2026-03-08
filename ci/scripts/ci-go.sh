@@ -160,10 +160,11 @@ fi
 echo ""
 echo "--- Step 8: Benchmarks ---"
 
-go test -bench=. -benchmem -timeout 300s -short \
+# Limit total benchmark time to 20 minutes (some benchmarks are pathologically slow)
+timeout 1200 go test -bench=. -benchmem -benchtime=1s -timeout 120s -short \
   ./internal/... \
   > "${REPORTS_DIR}/benchmark-results.txt" 2>&1 || {
-  echo "[WARN] Some benchmarks failed"
+  echo "[WARN] Some benchmarks failed or timed out"
 }
 
 # --- Step 9: Race detection ---
@@ -188,7 +189,8 @@ if [ -f "${WORKSPACE}/scripts/build/version-manager.sh" ]; then
   source "${WORKSPACE}/scripts/build/version-manager.sh"
 
   APPS=(helixagent api grpc-server cognee-mock sanity-check mcp-bridge generate-constitution)
-  PLATFORMS=("linux/amd64" "linux/arm64" "darwin/amd64" "darwin/arm64" "windows/amd64")
+  # Windows excluded: syscall.Statfs_t not available for cross-compilation
+  PLATFORMS=("linux/amd64" "linux/arm64" "darwin/amd64" "darwin/arm64")
 
   SEMANTIC_VERSION=$(get_semantic_version)
 

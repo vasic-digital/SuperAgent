@@ -70,7 +70,8 @@ echo "========================================"
 case "${PHASE}" in
   go)
     APPS=(helixagent api grpc-server cognee-mock sanity-check mcp-bridge generate-constitution)
-    PLATFORMS=("linux:amd64" "linux:arm64" "darwin:amd64" "darwin:arm64" "windows:amd64")
+    # Windows excluded: syscall.Statfs_t not available for cross-compilation
+    PLATFORMS=("linux:amd64" "linux:arm64" "darwin:amd64" "darwin:arm64")
 
     for app in "${APPS[@]}"; do
       for platform in "${PLATFORMS[@]}"; do
