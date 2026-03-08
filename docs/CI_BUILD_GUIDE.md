@@ -199,6 +199,23 @@ make ci-clean  # Remove all CI volumes and containers
 ### Slow builds
 Use higher resource limits: `CI_RESOURCE_LIMIT=high make ci-all`
 
+### npm/network failures in Podman (Phase 3)
+Podman rootless containers may have network issues preventing npm registry access.
+```bash
+# Test connectivity
+podman run --rm node:20-bookworm npm ping
+
+# Fix: use host network mode for builds
+podman build --network=host -f docker/ci/Dockerfile.ci-web -t helixagent_ci-web:latest .
+
+# Or configure Podman DNS
+echo "[containers]" >> ~/.config/containers/containers.conf
+echo "dns_servers = [\"8.8.8.8\", \"1.1.1.1\"]" >> ~/.config/containers/containers.conf
+```
+
+### Windows cross-compilation failures
+Windows builds fail due to `syscall.Statfs_t` not being available. This is a known Go limitation. The CI excludes Windows builds by default.
+
 ## Adding New Components
 
 ### New Go app
