@@ -64,8 +64,8 @@ func TestNewZenProvider(t *testing.T) {
 
 func TestFreeModels(t *testing.T) {
 	models := FreeModels()
-	// Updated 2026-02-22: Free models are big-pickle, glm-5-free, minimax-m2.5-free, minimax-m2.1-free, trinity-large-preview-free
-	assert.Len(t, models, 5)
+	// Merged known + discovered: at least the 5 known free models
+	assert.GreaterOrEqual(t, len(models), 5)
 	assert.Contains(t, models, ModelBigPickle)
 	assert.Contains(t, models, ModelGLM5Free)
 	assert.Contains(t, models, ModelMinimaxM25Free)
@@ -658,11 +658,12 @@ func TestZenModelsResponse_Parsing(t *testing.T) {
 }
 
 func TestZenProvider_GetFreeModels_Filtering(t *testing.T) {
-	// Test that free models filtering logic works
+	// Test that free models filtering logic correctly separates free from paid
 	allModels := []ZenModelInfo{
 		{ID: ModelBigPickle, OwnedBy: "opencode"},
 		{ID: ModelGLM5Free, OwnedBy: "opencode"},
 		{ID: ModelMinimaxM25Free, OwnedBy: "opencode"},
+		{ID: ModelMinimaxM21Free, OwnedBy: "opencode"},
 		{ID: ModelTrinityLargePreviewFree, OwnedBy: "opencode"},
 		{ID: "opencode/gpt-5.1-codex", OwnedBy: "opencode"}, // Not in free list
 		{ID: ModelGLM47, OwnedBy: "opencode"},               // Requires API key
@@ -681,18 +682,13 @@ func TestZenProvider_GetFreeModels_Filtering(t *testing.T) {
 		}
 	}
 
-	// Should include only free models (based on FreeModels() discovery)
-	// Note: FreeModels() may return fewer models than known if API doesn't list them
-	assert.Len(t, freeModels, len(freeModelIDs))
+	// All 5 known free models should be matched from allModels
+	assert.GreaterOrEqual(t, len(freeModels), 5, "Should find at least 5 known free models")
+	// Paid/legacy models should NOT be included
 	for _, freeModel := range freeModels {
-		found := false
-		for _, freeID := range freeModelIDs {
-			if freeModel.ID == freeID || strings.HasSuffix(freeID, freeModel.ID) {
-				found = true
-				break
-			}
-		}
-		assert.True(t, found, "Filtered model %s should be in free models list", freeModel.ID)
+		assert.NotEqual(t, "opencode/gpt-5.1-codex", freeModel.ID, "Paid model should not be in free list")
+		assert.NotEqual(t, ModelGLM47, freeModel.ID, "Paid model should not be in free list")
+		assert.NotEqual(t, ModelQwen3, freeModel.ID, "Legacy model should not be in free list")
 	}
 }
 

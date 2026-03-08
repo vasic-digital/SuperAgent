@@ -85,15 +85,29 @@ var (
 	}
 )
 
-// FreeModels returns the list of free models available on Zen
-// Dynamically discovers models with fallback to known list
+// FreeModels returns the list of free models available on Zen.
+// Merges dynamically discovered models with the static known list
+// so that known models aren't dropped when the API returns a partial response.
 func FreeModels() []string {
-	// Try to get fresh models
-	models := DiscoverFreeModels()
-	if len(models) > 0 {
-		return models
+	discovered := DiscoverFreeModels()
+	// Merge: start with discovered, add any missing known models
+	seen := make(map[string]struct{}, len(discovered)+len(knownFreeModels))
+	merged := make([]string, 0, len(discovered)+len(knownFreeModels))
+	for _, m := range discovered {
+		if _, ok := seen[m]; !ok {
+			seen[m] = struct{}{}
+			merged = append(merged, m)
+		}
 	}
-	// Fallback to known models
+	for _, m := range knownFreeModels {
+		if _, ok := seen[m]; !ok {
+			seen[m] = struct{}{}
+			merged = append(merged, m)
+		}
+	}
+	if len(merged) > 0 {
+		return merged
+	}
 	return knownFreeModels
 }
 
@@ -758,11 +772,19 @@ func (p *ZenProvider) convertResponse(req *models.LLMRequest, zenResp *ZenRespon
 	}
 }
 
-// isFreeModel checks if a model is in the free tier
+// isFreeModel checks if a model is in the free tier.
+// It checks both the dynamically discovered list AND the static known list,
+// so models aren't misclassified when the API returns a partial response.
 func isFreeModel(model string) bool {
 	normalizedModel := normalizeModelID(model)
-	freeModels := FreeModels()
-	for _, m := range freeModels {
+	// Check static known free models first (no network dependency)
+	for _, m := range knownFreeModels {
+		if m == normalizedModel {
+			return true
+		}
+	}
+	// Also check dynamically discovered models (may include new free models)
+	for _, m := range FreeModels() {
 		if m == normalizedModel {
 			return true
 		}
