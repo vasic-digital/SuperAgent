@@ -111,6 +111,48 @@ release-builder-image:
 	@echo "✅ Builder image ready"
 
 # =============================================================================
+# CI/CD CONTAINER BUILD SYSTEM
+# =============================================================================
+
+.PHONY: ci-all ci-go ci-mobile ci-web ci-report ci-build-images ci-clean
+
+CI_COMPOSE_CMD = $(shell command -v docker >/dev/null 2>&1 && echo "docker compose" || echo "podman-compose")
+
+ci-build-images: ## Build all CI container images
+	@echo "Building CI container images..."
+	$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile go-ci --profile mobile-ci --profile web-ci --profile report build
+	@echo "CI images ready"
+
+ci-go: ## Phase 1: Go builds + tests + integration services
+	@echo "=== Phase 1: Go CI ==="
+	$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile go-ci up --build --abort-on-container-exit --exit-code-from ci-go
+	$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile go-ci down
+
+ci-mobile: ## Phase 2: Mobile builds + Robolectric + emulator E2E
+	@echo "=== Phase 2: Mobile CI ==="
+	$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile mobile-ci up --build --abort-on-container-exit --exit-code-from ci-mobile
+	$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile mobile-ci down
+
+ci-web: ## Phase 3: Web builds + Playwright + Lighthouse
+	@echo "=== Phase 3: Web CI ==="
+	$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile web-ci up --build --abort-on-container-exit --exit-code-from ci-web
+	$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile web-ci down
+
+ci-report: ## Aggregate reports from all phases
+	@echo "=== CI Report Aggregation ==="
+	$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile report up --build --abort-on-container-exit --exit-code-from ci-reporter
+	$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile report down
+
+ci-all: ci-go ci-mobile ci-web ci-report ## Run all CI phases + report
+	@echo "=== CI Complete ==="
+	@echo "Reports: reports/summary.html, reports/results.json"
+	@echo "Releases: releases/"
+
+ci-clean: ## Remove CI containers, networks, volumes
+	$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile go-ci --profile mobile-ci --profile web-ci --profile report down -v --remove-orphans
+	@echo "CI cleanup complete"
+
+# =============================================================================
 # RUN TARGETS
 # =============================================================================
 

@@ -324,6 +324,33 @@ Registry: `internal/agents/registry.go`. Generate configs: `./bin/helixagent --g
 
 45+ adapters in `internal/mcp/adapters/`. 65+ containerized MCP servers (ports 9101-9999, zero npx). Container config: `internal/mcp/config/generator_container.go`. Compose: `docker/mcp/docker-compose.mcp-full.yml`.
 
+## CI/CD Container Build System
+
+Three-phase CI/CD system running **all builds, tests, and artifact generation inside Docker/Podman containers**. See `docs/CI_BUILD_GUIDE.md` for full documentation.
+
+```bash
+make ci-all              # All three phases + report aggregation
+make ci-go               # Phase 1: Go builds + all tests + integration services
+make ci-mobile           # Phase 2: Flutter/RN + Robolectric + Android emulator E2E
+make ci-web              # Phase 3: Angular + Website + JS SDK + Playwright + Lighthouse
+make ci-report           # Aggregate reports into summary.html + results.json
+make ci-build-images     # Build all CI container images
+make ci-clean            # Remove CI containers, networks, volumes
+CI_RESOURCE_LIMIT=medium make ci-all  # Medium resource limits (default: low)
+```
+
+**Compose file:** `docker-compose.ci.yml` with profiles: `go-ci`, `mobile-ci`, `web-ci`, `report`, `infra`.
+
+**Integration services** (started automatically): PostgreSQL, Redis, Mock LLM, OAuth Mock, ChromaDB, Qdrant, Kafka, RabbitMQ, MinIO.
+
+**Signing:** Default Android keystore at `keys/android/debug.keystore`. Release signing via `CI_ANDROID_RELEASE_KEYSTORE` env var.
+
+**Reports:** `reports/summary.html` (dashboard), `reports/results.json` (machine-readable), `reports/<phase>/` (per-phase details).
+
+**False positive prevention:** 6-layer validation (exit codes, test counts, coverage gates, artifact integrity, integration liveness, report cross-validation). Thresholds: `ci/thresholds.json`.
+
+**Resource control:** `CI_RESOURCE_LIMIT` env var (`low`=30%, `medium`=50%, `high`=70% of host resources). Default: `low`.
+
 ## Challenges
 
 **IMPORTANT:** Infrastructure containers MUST be running before executing challenges. Start with `make test-infra-start` or `make test-infra-direct-start`.
