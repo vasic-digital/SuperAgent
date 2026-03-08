@@ -39,9 +39,11 @@ validate_junit_xml() {
   fi
 
   local tests_count
-  tests_count=$(grep -oE 'tests="[0-9]+"' "${xml_file}" | head -1 | sed 's/tests="//;s/"//' || echo "0")
+  tests_count=$(awk -F'"' '/<testsuites/{for(i=1;i<=NF;i++) if($(i-1) ~ /tests=$/) {print $i; exit}}' "${xml_file}" 2>/dev/null || echo "0")
+  [ -z "${tests_count}" ] && tests_count=0
   local failures_count
-  failures_count=$(grep -oE 'failures="[0-9]+"' "${xml_file}" | head -1 | sed 's/failures="//;s/"//' || echo "0")
+  failures_count=$(awk -F'"' '/<testsuites/{for(i=1;i<=NF;i++) if($(i-1) ~ /failures=$/) {print $i; exit}}' "${xml_file}" 2>/dev/null || echo "0")
+  [ -z "${failures_count}" ] && failures_count=0
 
   if [ "${tests_count}" -lt "${min_tests}" ]; then
     add_check "${label}_test_count" ">=${min_tests}" "${tests_count}" "FAIL"
@@ -69,7 +71,9 @@ validate_coverage() {
 
   local coverage
   coverage=$(grep -oE '[0-9]+\.[0-9]+%' "${coverage_file}" | tail -1 | sed 's/%//' || echo "0")
+  [ -z "${coverage}" ] && coverage="0"
   local coverage_int=${coverage%.*}
+  [ -z "${coverage_int}" ] && coverage_int=0
 
   if [ "${coverage_int}" -lt "${min_percent}" ]; then
     add_check "${label}_coverage" ">=${min_percent}%" "${coverage}%" "FAIL"
