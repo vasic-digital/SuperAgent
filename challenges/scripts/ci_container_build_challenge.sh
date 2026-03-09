@@ -130,6 +130,13 @@ echo "--- Section 9: Podman Compatibility ---"
 ! grep -q "deploy:" "${COMPOSE}" && pass "No deploy blocks (Podman compatible)" || fail "deploy blocks found (Podman incompatible)"
 grep -q "CI_IS_DOCKER" "${MAKEFILE}" && pass "Docker/Podman detection in Makefile" || fail "No Docker/Podman detection"
 grep -q "podman wait" "${MAKEFILE}" && pass "podman wait for container completion" || fail "No podman wait support"
+grep -q "network_mode: host" "${COMPOSE}" && pass "Host networking for Podman rootless" || fail "No host networking for containers"
+grep -q "network: host" "${COMPOSE}" && pass "Host networking for image builds" || fail "No host networking for builds"
+
+# npm install fallback (Podman rootless can't reach npm registry with bridge network)
+grep -q 'npm install' "${WORKSPACE}/ci/scripts/ci-web.sh" && pass "Web CI uses npm install fallback" || fail "Web CI missing npm install fallback"
+grep -q 'npm install' "${WORKSPACE}/ci/scripts/ci-mobile.sh" && pass "Mobile CI uses npm install fallback" || fail "Mobile CI missing npm install fallback"
+grep -q 'npm install' "${WORKSPACE}/docker/ci/Dockerfile.ci-reporter" && pass "Reporter uses npm install" || fail "Reporter uses npm ci without lockfile"
 
 echo ""
 
@@ -190,8 +197,11 @@ echo ""
 # --- Section 14: Network Configuration ---
 echo "--- Section 14: Network Configuration ---"
 
-grep -q "ci-network" "${COMPOSE}" && pass "CI network defined" || fail "CI network missing"
-grep -q "driver: bridge" "${COMPOSE}" && pass "Bridge network driver" || fail "Not using bridge driver"
+grep -q "ci-network" "${COMPOSE}" && pass "CI network defined for Go CI services" || fail "CI network missing"
+grep -q "driver: bridge" "${COMPOSE}" && pass "Bridge network driver for integration services" || fail "Not using bridge driver"
+
+# FP check JSON sanitization
+grep -q "tr -d" "${WORKSPACE}/ci/scripts/false-positive-check.sh" && pass "FP checks sanitize newlines" || fail "FP checks missing newline sanitization"
 
 echo ""
 
