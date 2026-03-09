@@ -179,6 +179,7 @@ services:
     build:
       context: .
       dockerfile: docker/ci/Dockerfile.ci-go
+      network: host
     container_name: ci-go-builder
     volumes:
       - .:/workspace:rw
@@ -222,6 +223,7 @@ services:
       context: .
       dockerfile: docker/ci/Dockerfile.ci-emulator
     container_name: ci-emulator
+    network_mode: host
     devices:
       - /dev/kvm:/dev/kvm
     healthcheck:
@@ -230,8 +232,6 @@ services:
       timeout: 5s
       retries: 30
       start_period: 60s
-    networks:
-      - ci-network
     profiles:
       - mobile-ci
 
@@ -239,7 +239,9 @@ services:
     build:
       context: .
       dockerfile: docker/ci/Dockerfile.ci-mobile
+      network: host
     container_name: ci-mobile-builder
+    network_mode: host
     volumes:
       - .:/workspace:rw
       - gradle-cache:/root/.gradle
@@ -256,8 +258,6 @@ services:
     depends_on:
       emulator:
         condition: service_healthy
-    networks:
-      - ci-network
     profiles:
       - mobile-ci
 
@@ -269,7 +269,9 @@ services:
     build:
       context: .
       dockerfile: docker/ci/Dockerfile.ci-web
+      network: host
     container_name: ci-web-builder
+    network_mode: host
     volumes:
       - .:/workspace:rw
       - npm-cache-web:/root/.npm
@@ -278,8 +280,6 @@ services:
       - WORKSPACE=/workspace
       - CI=true
     command: ["/workspace/ci/scripts/ci-web.sh"]
-    networks:
-      - ci-network
     profiles:
       - web-ci
 
@@ -291,14 +291,13 @@ services:
     build:
       context: .
       dockerfile: docker/ci/Dockerfile.ci-reporter
+      network: host
     container_name: ci-reporter
     volumes:
       - .:/workspace:rw
     environment:
       - WORKSPACE=/workspace
       - CI_RESOURCE_LIMIT=${CI_RESOURCE_LIMIT:-low}
-    networks:
-      - ci-network
     profiles:
       - report
 
