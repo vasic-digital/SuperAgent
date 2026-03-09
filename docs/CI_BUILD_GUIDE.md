@@ -199,19 +199,27 @@ make ci-clean  # Remove all CI volumes and containers
 ### Slow builds
 Use higher resource limits: `CI_RESOURCE_LIMIT=high make ci-all`
 
-### npm/network failures in Podman (Phase 3)
-Podman rootless containers may have network issues preventing npm registry access.
+### npm/network failures in Podman
+Podman rootless bridge networks cannot reach external registries (npm, pub.dev, etc.). The compose file uses `network_mode: host` for web, mobile, emulator, and reporter containers. Go CI retains bridge networking for integration service access (postgres, redis, etc.).
+
+If you still have issues:
 ```bash
 # Test connectivity
 podman run --rm node:20-bookworm npm ping
 
-# Fix: use host network mode for builds
+# Build images with host network
 podman build --network=host -f docker/ci/Dockerfile.ci-web -t helixagent_ci-web:latest .
 
 # Or configure Podman DNS
 echo "[containers]" >> ~/.config/containers/containers.conf
 echo "dns_servers = [\"8.8.8.8\", \"1.1.1.1\"]" >> ~/.config/containers/containers.conf
 ```
+
+### Flutter tar ownership errors in Podman (Phase 2)
+Flutter's gradle wrapper extraction fails in Podman rootless due to `tar` ownership changes. The Dockerfile sets `ENV TAR_OPTIONS="--no-same-owner"` to resolve this.
+
+### Android emulator multi-device errors (Phase 2)
+With host networking, ADB may see multiple devices. The emulator start script uses `adb -s emulator-5554` to target the specific emulator instance.
 
 ### Windows cross-compilation failures
 Windows builds fail due to `syscall.Statfs_t` not being available. This is a known Go limitation. The CI excludes Windows builds by default.
