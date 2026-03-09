@@ -42,6 +42,8 @@ RUN sdkmanager \
     2>/dev/null
 
 # Flutter SDK
+# Use --no-same-owner for Podman rootless tar compatibility
+ENV TAR_OPTIONS="--no-same-owner"
 RUN git clone --depth 1 --branch stable \
     https://github.com/flutter/flutter.git ${FLUTTER_HOME} \
     && flutter precache --android \
