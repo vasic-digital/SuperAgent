@@ -6,7 +6,7 @@ RUN apk add --no-cache git bash jq
 WORKDIR /opt/reporter
 
 COPY ci/reporter/package.json ci/reporter/aggregate.js ci/reporter/dashboard-template.html ./
-RUN npm ci --production
+RUN npm install --production
 
 ENV WORKSPACE=/workspace
 

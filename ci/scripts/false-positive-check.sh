@@ -16,7 +16,8 @@ FAILURES=0
 add_check() {
   local name="$1"
   local expected="$2"
-  local actual="$3"
+  local actual
+  actual=$(echo "$3" | tr -d '\n\r')
   local verdict="$4"
   CHECKS+=("{\"name\":\"${name}\",\"expected\":\"${expected}\",\"actual\":\"${actual}\",\"verdict\":\"${verdict}\"}")
   if [ "${verdict}" = "FAIL" ]; then
@@ -39,10 +40,10 @@ validate_junit_xml() {
   fi
 
   local tests_count
-  tests_count=$(awk -F'"' '/<testsuites/{for(i=1;i<=NF;i++) if($(i-1) ~ /tests=$/) {print $i; exit}}' "${xml_file}" 2>/dev/null || echo "0")
+  tests_count=$(awk -F'"' '/<testsuites/{for(i=1;i<=NF;i++) if($(i-1) ~ /tests=$/) {print $i; exit}}' "${xml_file}" 2>/dev/null | head -1 | tr -cd '0-9')
   [ -z "${tests_count}" ] && tests_count=0
   local failures_count
-  failures_count=$(awk -F'"' '/<testsuites/{for(i=1;i<=NF;i++) if($(i-1) ~ /failures=$/) {print $i; exit}}' "${xml_file}" 2>/dev/null || echo "0")
+  failures_count=$(awk -F'"' '/<testsuites/{for(i=1;i<=NF;i++) if($(i-1) ~ /failures=$/) {print $i; exit}}' "${xml_file}" 2>/dev/null | head -1 | tr -cd '0-9')
   [ -z "${failures_count}" ] && failures_count=0
 
   if [ "${tests_count}" -lt "${min_tests}" ]; then
