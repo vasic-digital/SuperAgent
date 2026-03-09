@@ -23,11 +23,12 @@ echo "========================================"
 # --- Wait for emulator ---
 echo ""
 echo "--- Waiting for Android emulator ---"
-/usr/local/bin/wait-for-services.sh emulator:5555
+EMULATOR_HOST="${EMULATOR_HOST:-localhost}"
+/usr/local/bin/wait-for-services.sh "${EMULATOR_HOST}:5555"
 
 # Connect to emulator
-adb connect emulator:5555 2>/dev/null || true
-adb wait-for-device
+adb connect "${EMULATOR_HOST}:5555" 2>/dev/null || true
+adb -s "${EMULATOR_HOST}:5555" wait-for-device
 echo "[OK] Emulator connected"
 
 # ============================================================
@@ -45,7 +46,10 @@ if [ -d "${FLUTTER_DIR}" ] && [ -f "${FLUTTER_DIR}/pubspec.yaml" ]; then
 
   # Install dependencies
   echo "--- Flutter pub get ---"
-  flutter pub get 2>&1 | tee "${REPORTS_DIR}/flutter-pub-get.log"
+  flutter pub get 2>&1 | tee "${REPORTS_DIR}/flutter-pub-get.log" || {
+    echo "[WARN] Flutter pub get failed"
+    PHASE_FAILURES=$((PHASE_FAILURES + 1))
+  }
 
   # Unit/widget tests
   echo "--- Flutter tests ---"
@@ -69,7 +73,7 @@ if [ -d "${FLUTTER_DIR}" ] && [ -f "${FLUTTER_DIR}/pubspec.yaml" ]; then
   }
 
   # Copy APK to releases
-  APK_PATH=$(find build/app/outputs -name "*.apk" -type f 2>/dev/null | head -1)
+  APK_PATH=$(find build/app/outputs -name "*.apk" -type f 2>/dev/null | head -1 || true)
   if [ -n "${APK_PATH}" ]; then
     cp "${APK_PATH}" "${RELEASES_DIR}/flutter/llm-verifier.apk"
     echo "[OK] Flutter APK: ${RELEASES_DIR}/flutter/llm-verifier.apk"
@@ -89,7 +93,7 @@ if [ -d "${FLUTTER_DIR}" ] && [ -f "${FLUTTER_DIR}/pubspec.yaml" ]; then
     PHASE_FAILURES=$((PHASE_FAILURES + 1))
   }
 
-  AAB_PATH=$(find build/app/outputs -name "*.aab" -type f 2>/dev/null | head -1)
+  AAB_PATH=$(find build/app/outputs -name "*.aab" -type f 2>/dev/null | head -1 || true)
   if [ -n "${AAB_PATH}" ]; then
     cp "${AAB_PATH}" "${RELEASES_DIR}/flutter/llm-verifier.aab"
     echo "[OK] Flutter AAB: ${RELEASES_DIR}/flutter/llm-verifier.aab"
@@ -114,7 +118,7 @@ if [ -d "${FLUTTER_DIR}" ] && [ -f "${FLUTTER_DIR}/pubspec.yaml" ]; then
   # Install on emulator and verify
   echo "--- Emulator install test ---"
   if [ -f "${RELEASES_DIR}/flutter/llm-verifier.apk" ]; then
-    adb -s emulator:5555 install -r \
+    adb -s ${EMULATOR_HOST}:5555 install -r \
       "${RELEASES_DIR}/flutter/llm-verifier.apk" \
       2>&1 | tee "${REPORTS_DIR}/flutter-install.log" || {
       echo "[WARN] Flutter APK install failed"
@@ -122,7 +126,7 @@ if [ -d "${FLUTTER_DIR}" ] && [ -f "${FLUTTER_DIR}/pubspec.yaml" ]; then
     }
 
     # Verify package is installed
-    if adb -s emulator:5555 shell pm list packages 2>/dev/null \
+    if adb -s ${EMULATOR_HOST}:5555 shell pm list packages 2>/dev/null \
        | grep -q "llm_verifier"; then
       echo "[OK] Flutter app installed on emulator"
     else
@@ -149,9 +153,15 @@ if [ -d "${RN_DIR}" ] && [ -f "${RN_DIR}/package.json" ]; then
   # Install dependencies
   echo "--- npm install ---"
   if [ -f "package-lock.json" ]; then
-    npm ci 2>&1 | tee "${REPORTS_DIR}/rn-npm-install.log"
+    npm ci 2>&1 | tee "${REPORTS_DIR}/rn-npm-install.log" || {
+      echo "[WARN] React Native npm ci failed"
+      PHASE_FAILURES=$((PHASE_FAILURES + 1))
+    }
   else
-    npm install 2>&1 | tee "${REPORTS_DIR}/rn-npm-install.log"
+    npm install 2>&1 | tee "${REPORTS_DIR}/rn-npm-install.log" || {
+      echo "[WARN] React Native npm install failed"
+      PHASE_FAILURES=$((PHASE_FAILURES + 1))
+    }
   fi
 
   # Jest tests
@@ -184,7 +194,7 @@ if [ -d "${RN_DIR}" ] && [ -f "${RN_DIR}/package.json" ]; then
       PHASE_FAILURES=$((PHASE_FAILURES + 1))
     }
 
-    RN_APK=$(find . -path "*/release/*.apk" -type f 2>/dev/null | head -1)
+    RN_APK=$(find . -path "*/release/*.apk" -type f 2>/dev/null | head -1 || true)
     if [ -n "${RN_APK}" ]; then
       cp "${RN_APK}" "${RELEASES_DIR}/react-native/llm-verifier-rn.apk"
       echo "[OK] RN APK: ${RELEASES_DIR}/react-native/llm-verifier-rn.apk"
@@ -212,7 +222,7 @@ if [ -d "${RN_DIR}" ] && [ -f "${RN_DIR}/package.json" ]; then
   # Install on emulator
   echo "--- Emulator install test ---"
   if [ -f "${RELEASES_DIR}/react-native/llm-verifier-rn.apk" ]; then
-    adb -s emulator:5555 install -r \
+    adb -s ${EMULATOR_HOST}:5555 install -r \
       "${RELEASES_DIR}/react-native/llm-verifier-rn.apk" \
       2>&1 | tee "${REPORTS_DIR}/rn-install.log" || {
       echo "[WARN] RN APK install failed"

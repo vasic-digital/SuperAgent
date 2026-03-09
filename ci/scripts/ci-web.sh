@@ -36,9 +36,13 @@ if [ -d "${ANGULAR_DIR}" ] && [ -f "${ANGULAR_DIR}/package.json" ]; then
   # Install dependencies
   echo "--- npm install ---"
   if [ -f "package-lock.json" ]; then
-    npm ci 2>&1 | tee "${REPORTS_DIR}/angular-npm-install.log"
+    npm ci 2>&1 | tee "${REPORTS_DIR}/angular-npm-install.log" || {
+      echo "[WARN] Angular npm install failed"; PHASE_FAILURES=$((PHASE_FAILURES + 1))
+    }
   else
-    npm install 2>&1 | tee "${REPORTS_DIR}/angular-npm-install.log"
+    npm install 2>&1 | tee "${REPORTS_DIR}/angular-npm-install.log" || {
+      echo "[WARN] Angular npm install failed"; PHASE_FAILURES=$((PHASE_FAILURES + 1))
+    }
   fi
 
   # Karma/Jasmine unit tests
@@ -69,7 +73,7 @@ if [ -d "${ANGULAR_DIR}" ] && [ -f "${ANGULAR_DIR}/package.json" ]; then
 
   # Copy build output
   DIST_DIR=$(find . -path "*/dist/*" -name "index.html" \
-    -exec dirname {} \; 2>/dev/null | head -1)
+    -exec dirname {} \; 2>/dev/null | head -1 || true)
   if [ -n "${DIST_DIR}" ]; then
     cp -r "${DIST_DIR}" "${RELEASES_DIR}/angular/dist"
     echo "[OK] Angular build: ${RELEASES_DIR}/angular/dist/"
@@ -136,9 +140,13 @@ if [ -d "${WEBSITE_DIR}" ] && [ -f "${WEBSITE_DIR}/package.json" ]; then
   # Install dependencies
   echo "--- npm install ---"
   if [ -f "package-lock.json" ]; then
-    npm ci 2>&1 | tee "${REPORTS_DIR}/website-npm-install.log"
+    npm ci 2>&1 | tee "${REPORTS_DIR}/website-npm-install.log" || {
+      echo "[WARN] Website npm install failed"; PHASE_FAILURES=$((PHASE_FAILURES + 1))
+    }
   else
-    npm install 2>&1 | tee "${REPORTS_DIR}/website-npm-install.log"
+    npm install 2>&1 | tee "${REPORTS_DIR}/website-npm-install.log" || {
+      echo "[WARN] Website npm install failed"; PHASE_FAILURES=$((PHASE_FAILURES + 1))
+    }
   fi
 
   # Build (PostCSS + UglifyJS)
@@ -230,9 +238,13 @@ if [ -d "${SDK_DIR}" ] && [ -f "${SDK_DIR}/package.json" ]; then
   # Install dependencies
   echo "--- npm install ---"
   if [ -f "package-lock.json" ]; then
-    npm ci 2>&1 | tee "${REPORTS_DIR}/sdk-npm-install.log"
+    npm ci 2>&1 | tee "${REPORTS_DIR}/sdk-npm-install.log" || {
+      echo "[WARN] SDK npm install failed"; PHASE_FAILURES=$((PHASE_FAILURES + 1))
+    }
   else
-    npm install 2>&1 | tee "${REPORTS_DIR}/sdk-npm-install.log"
+    npm install 2>&1 | tee "${REPORTS_DIR}/sdk-npm-install.log" || {
+      echo "[WARN] SDK npm install failed"; PHASE_FAILURES=$((PHASE_FAILURES + 1))
+    }
   fi
 
   # Jest tests
