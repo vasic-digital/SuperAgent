@@ -148,7 +148,11 @@ if [ -d "${RN_DIR}" ] && [ -f "${RN_DIR}/package.json" ]; then
 
   # Install dependencies
   echo "--- npm install ---"
-  npm ci 2>&1 | tee "${REPORTS_DIR}/rn-npm-install.log"
+  if [ -f "package-lock.json" ]; then
+    npm ci 2>&1 | tee "${REPORTS_DIR}/rn-npm-install.log"
+  else
+    npm install 2>&1 | tee "${REPORTS_DIR}/rn-npm-install.log"
+  fi
 
   # Jest tests
   echo "--- Jest tests ---"

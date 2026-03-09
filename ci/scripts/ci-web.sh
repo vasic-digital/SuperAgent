@@ -34,8 +34,12 @@ if [ -d "${ANGULAR_DIR}" ] && [ -f "${ANGULAR_DIR}/package.json" ]; then
   cd "${ANGULAR_DIR}"
 
   # Install dependencies
-  echo "--- npm ci ---"
-  npm ci 2>&1 | tee "${REPORTS_DIR}/angular-npm-install.log"
+  echo "--- npm install ---"
+  if [ -f "package-lock.json" ]; then
+    npm ci 2>&1 | tee "${REPORTS_DIR}/angular-npm-install.log"
+  else
+    npm install 2>&1 | tee "${REPORTS_DIR}/angular-npm-install.log"
+  fi
 
   # Karma/Jasmine unit tests
   echo "--- Karma unit tests ---"
@@ -130,8 +134,12 @@ if [ -d "${WEBSITE_DIR}" ] && [ -f "${WEBSITE_DIR}/package.json" ]; then
   cd "${WEBSITE_DIR}"
 
   # Install dependencies
-  echo "--- npm ci ---"
-  npm ci 2>&1 | tee "${REPORTS_DIR}/website-npm-install.log"
+  echo "--- npm install ---"
+  if [ -f "package-lock.json" ]; then
+    npm ci 2>&1 | tee "${REPORTS_DIR}/website-npm-install.log"
+  else
+    npm install 2>&1 | tee "${REPORTS_DIR}/website-npm-install.log"
+  fi
 
   # Build (PostCSS + UglifyJS)
   echo "--- Website build ---"
@@ -220,8 +228,12 @@ if [ -d "${SDK_DIR}" ] && [ -f "${SDK_DIR}/package.json" ]; then
   cd "${SDK_DIR}"
 
   # Install dependencies
-  echo "--- npm ci ---"
-  npm ci 2>&1 | tee "${REPORTS_DIR}/sdk-npm-install.log"
+  echo "--- npm install ---"
+  if [ -f "package-lock.json" ]; then
+    npm ci 2>&1 | tee "${REPORTS_DIR}/sdk-npm-install.log"
+  else
+    npm install 2>&1 | tee "${REPORTS_DIR}/sdk-npm-install.log"
+  fi
 
   # Jest tests
   echo "--- Jest tests ---"
