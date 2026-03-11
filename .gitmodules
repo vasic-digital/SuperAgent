@@ -379,3 +379,9 @@
 [submodule "ConversationContext"]
 	path = ConversationContext
 	url = git@github.com:vasic-digital/conversation.git
+[submodule "Models"]
+	path = Models
+	url = git@github.com:vasic-digital/Models.git
+[submodule "LLMProvider"]
+	path = LLMProvider
+	url = git@github.com:vasic-digital/LLMProvider.git
