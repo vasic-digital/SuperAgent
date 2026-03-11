@@ -373,3 +373,6 @@
 [submodule "ToolSchema"]
 	path = ToolSchema
 	url = git@github.com:vasic-digital/ToolSchema.git
+[submodule "SkillRegistry"]
+	path = SkillRegistry
+	url = git@github.com:vasic-digital/SkillRegistry.git
