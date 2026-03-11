@@ -115,6 +115,16 @@ case "${PHASE}" in
       "[ -d '${WORKSPACE}/releases/web/sdk/dist/' ] || [ -d '${WORKSPACE}/sdk/web/dist/' ]"
     ;;
 
+  desktop)
+    # Electron build
+    validate "Electron dist exists" \
+      "[ -d '${WORKSPACE}/releases/desktop/electron/dist' ] || find '${WORKSPACE}/desktop/electron/dist/' -type f -name '*.exe' -o -name '*.app' -o -name '*.AppImage' 2>/dev/null | head -1 | grep -q ."
+
+    # Tauri build
+    validate "Tauri artifacts exist" \
+      "find '${WORKSPACE}/releases/desktop/tauri/' -type f \( -name '*.exe' -o -name '*.app' -o -name '*.AppImage' \) 2>/dev/null | head -1 | grep -q ."
+    ;;
+
   *)
     echo "Unknown phase: ${PHASE}"
     exit 1

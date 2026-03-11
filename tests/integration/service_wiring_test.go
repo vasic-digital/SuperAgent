@@ -21,8 +21,8 @@ import (
 	"dev.helix.agent/internal/notifications"
 	"dev.helix.agent/internal/services"
 	"dev.helix.agent/internal/testutil"
-	"dev.helix.agent/internal/tools"
 	"dev.helix.agent/internal/verifier"
+	"digital.vasic.toolschema"
 )
 
 // TestServiceWiring_ProviderServices tests that provider services are properly wired

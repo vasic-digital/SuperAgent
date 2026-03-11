@@ -1,6 +1,6 @@
 # Extracted Modules Catalog
 
-HelixAgent's functionality is decomposed into **28 independent Go modules**, each with its own repository, tests, and documentation. All modules are integrated as git submodules with `replace` directives in the root `go.mod` for local development.
+HelixAgent's functionality is decomposed into **31 independent Go modules**, each with its own repository, tests, and documentation. All modules are integrated as git submodules with `replace` directives in the root `go.mod` for local development.
 
 ## Module Index
 
@@ -12,30 +12,32 @@ HelixAgent's functionality is decomposed into **28 independent Go modules**, eac
 | 4 | Auth | `digital.vasic.auth` | `Auth/` | 5 | Foundation |
 | 5 | Storage | `digital.vasic.storage` | `Storage/` | 4 | Foundation |
 | 6 | Streaming | `digital.vasic.streaming` | `Streaming/` | 6 | Foundation |
-| 7 | Security | `digital.vasic.security` | `Security/` | 5 | Infrastructure |
-| 8 | VectorDB | `digital.vasic.vectordb` | `VectorDB/` | 5 | Infrastructure |
-| 9 | Embeddings | `digital.vasic.embeddings` | `Embeddings/` | 7 | Infrastructure |
-| 10 | Database | `digital.vasic.database` | `Database/` | 7 | Infrastructure |
-| 11 | Cache | `digital.vasic.cache` | `Cache/` | 5 | Infrastructure |
-| 12 | Messaging | `digital.vasic.messaging` | `Messaging/` | 5 | Services |
-| 13 | Formatters | `digital.vasic.formatters` | `Formatters/` | 6 | Services |
-| 14 | MCP | `digital.vasic.mcp` | `MCP_Module/` | 6 | Services |
-| 15 | RAG | `digital.vasic.rag` | `RAG/` | 5 | Integration |
-| 16 | Memory | `digital.vasic.memory` | `Memory/` | 4 | Integration |
-| 17 | Optimization | `digital.vasic.optimization` | `Optimization/` | 6 | Integration |
-| 18 | Plugins | `digital.vasic.plugins` | `Plugins/` | 5 | Integration |
-| 19 | Containers | `digital.vasic.containers` | `Containers/` | 12 | Pre-existing |
-| 20 | Challenges | `digital.vasic.challenges` | `Challenges/` | 15 | Pre-existing |
-| 21 | Agentic | `digital.vasic.agentic` | `Agentic/` | 1 | AI/ML |
-| 22 | LLMOps | `digital.vasic.llmops` | `LLMOps/` | 1 | AI/ML |
-| 23 | SelfImprove | `digital.vasic.selfimprove` | `SelfImprove/` | 1 | AI/ML |
-| 24 | Planning | `digital.vasic.planning` | `Planning/` | 1 | AI/ML |
-| 25 | Benchmark | `digital.vasic.benchmark` | `Benchmark/` | 1 | AI/ML |
-| 26 | HelixMemory | `digital.vasic.helixmemory` | `HelixMemory/` | 12+ | Cognitive |
-| 27 | HelixSpecifier | `digital.vasic.helixspecifier` | `HelixSpecifier/` | 27 | Specification |
-| 28 | BuildCheck | `digital.vasic.buildcheck` | `BuildCheck/` | 1 | Pre-existing |
+| 7 | ToolSchema | `digital.vasic.toolschema` | `ToolSchema/` | 1 | Foundation |
+| 8 | SkillRegistry | `digital.vasic.skillregistry` | `SkillRegistry/` | 1 | Foundation |
+| 9 | Security | `digital.vasic.security` | `Security/` | 5 | Infrastructure |
+| 10 | VectorDB | `digital.vasic.vectordb` | `VectorDB/` | 5 | Infrastructure |
+| 11 | Embeddings | `digital.vasic.embeddings` | `Embeddings/` | 7 | Infrastructure |
+| 12 | Database | `digital.vasic.database` | `Database/` | 7 | Infrastructure |
+| 13 | Cache | `digital.vasic.cache` | `Cache/` | 5 | Infrastructure |
+| 14 | Messaging | `digital.vasic.messaging` | `Messaging/` | 5 | Services |
+| 15 | Formatters | `digital.vasic.formatters` | `Formatters/` | 6 | Services |
+| 16 | MCP | `digital.vasic.mcp` | `MCP_Module/` | 6 | Services |
+| 17 | RAG | `digital.vasic.rag` | `RAG/` | 5 | Integration |
+| 18 | Memory | `digital.vasic.memory` | `Memory/` | 4 | Integration |
+| 19 | Optimization | `digital.vasic.optimization` | `Optimization/` | 6 | Integration |
+| 20 | Plugins | `digital.vasic.plugins` | `Plugins/` | 5 | Integration |
+| 21 | Containers | `digital.vasic.containers` | `Containers/` | 12 | Pre-existing |
+| 22 | Challenges | `digital.vasic.challenges` | `Challenges/` | 15 | Pre-existing |
+| 23 | Agentic | `digital.vasic.agentic` | `Agentic/` | 1 | AI/ML |
+| 24 | LLMOps | `digital.vasic.llmops` | `LLMOps/` | 1 | AI/ML |
+| 25 | SelfImprove | `digital.vasic.selfimprove` | `SelfImprove/` | 1 | AI/ML |
+| 26 | Planning | `digital.vasic.planning` | `Planning/` | 1 | AI/ML |
+| 27 | Benchmark | `digital.vasic.benchmark` | `Benchmark/` | 1 | AI/ML |
+| 28 | HelixMemory | `digital.vasic.helixmemory` | `HelixMemory/` | 12+ | Cognitive |
+| 29 | HelixSpecifier | `digital.vasic.helixspecifier` | `HelixSpecifier/` | 27 | Specification |
+| 30 | BuildCheck | `digital.vasic.buildcheck` | `BuildCheck/` | 1 | Pre-existing |
 
-**Total: 28 modules, 163+ packages**
+**Total: 31 modules, 166+ packages**
 
 ---
 
@@ -272,6 +274,16 @@ Retrieval-Augmented Generation pipeline.
 | `pkg/hybrid` | Hybrid retrieval (semantic + keyword) |
 
 **Patterns**: Facade, Strategy, Template Method, Pipeline
+
+### ConversationContext (`digital.vasic.conversation`)
+
+Conversation context management, compression, and infinite context via event sourcing.
+
+| Package | Purpose |
+|---------|---------|
+| `conversation` | Core types: InfiniteContextEngine, ContextCompressor, ContextCache, event reconstruction, compression strategies |
+
+**Patterns**: Facade, Strategy, Observer, Caching
 
 ### Memory (`digital.vasic.memory`)
 

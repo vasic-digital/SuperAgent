@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-
-	"dev.helix.agent/internal/utils"
 )
 
 // ToolHandler defines the interface for tool execution
@@ -143,7 +141,7 @@ func (h *ReadFileHandler) Execute(ctx context.Context, args map[string]interface
 	}
 
 	// Validate file path
-	if !utils.ValidatePath(filePath) {
+	if !ValidatePath(filePath) {
 		return ToolResult{
 			Success: false,
 			Output:  "",
@@ -295,7 +293,7 @@ func (h *GitHandler) Execute(ctx context.Context, args map[string]interface{}) (
 		workingDir = "."
 	}
 	// Validate working directory path (allow "." for current directory)
-	if workingDir != "." && !utils.ValidatePath(workingDir) {
+	if workingDir != "." && !ValidatePath(workingDir) {
 		return ToolResult{
 			Success: false,
 			Output:  "",
@@ -307,7 +305,7 @@ func (h *GitHandler) Execute(ctx context.Context, args map[string]interface{}) (
 	for _, arg := range arguments {
 		if s, ok := arg.(string); ok {
 			// Validate each argument for shell safety
-			if !utils.ValidateCommandArg(s) {
+			if !ValidateCommandArg(s) {
 				return ToolResult{
 					Success: false,
 					Output:  "",
@@ -523,7 +521,7 @@ func (h *LintHandler) Execute(ctx context.Context, args map[string]interface{}) 
 
 	// Validate path if not a pattern
 	if path != "" && !strings.Contains(path, "...") {
-		if !utils.ValidatePath(path) {
+		if !ValidatePath(path) {
 			return ToolResult{
 				Success: false,
 				Output:  "",
@@ -628,14 +626,14 @@ func (h *DiffHandler) Execute(ctx context.Context, args map[string]interface{}) 
 	contextLines, _ := args["context_lines"].(float64) //nolint:errcheck
 
 	// Validate inputs
-	if filePath != "" && !utils.ValidatePath(filePath) {
+	if filePath != "" && !ValidatePath(filePath) {
 		return ToolResult{
 			Success: false,
 			Output:  "",
 			Error:   fmt.Sprintf("invalid file path: %s", filePath),
 		}, nil
 	}
-	if compareWith != "" && !utils.ValidateGitRef(compareWith) {
+	if compareWith != "" && !ValidateGitRef(compareWith) {
 		return ToolResult{
 			Success: false,
 			Output:  "",
@@ -743,7 +741,7 @@ func (h *TreeViewHandler) Execute(ctx context.Context, args map[string]interface
 	}
 
 	// Validate inputs
-	if path != "." && !utils.ValidatePath(path) {
+	if path != "." && !ValidatePath(path) {
 		return ToolResult{
 			Success: false,
 			Output:  "",
@@ -752,7 +750,7 @@ func (h *TreeViewHandler) Execute(ctx context.Context, args map[string]interface
 	}
 	for _, pattern := range ignorePatterns {
 		if p, ok := pattern.(string); ok {
-			if !utils.ValidateCommandArg(p) {
+			if !ValidateCommandArg(p) {
 				return ToolResult{
 					Success: false,
 					Output:  "",
@@ -945,7 +943,7 @@ func (h *SymbolsHandler) Execute(ctx context.Context, args map[string]interface{
 	recursive, _ := args["recursive"].(bool) //nolint:errcheck // schema validation ensures correct type
 
 	// Validate file path
-	if filePath != "." && !utils.ValidatePath(filePath) {
+	if filePath != "." && !ValidatePath(filePath) {
 		return ToolResult{
 			Success: false,
 			Output:  "",
@@ -1024,7 +1022,7 @@ func (h *ReferencesHandler) Execute(ctx context.Context, args map[string]interfa
 		}, nil
 	}
 	// Validate symbol
-	if !utils.ValidateSymbol(symbol) {
+	if !ValidateSymbol(symbol) {
 		return ToolResult{
 			Success: false,
 			Output:  "",
@@ -1032,7 +1030,7 @@ func (h *ReferencesHandler) Execute(ctx context.Context, args map[string]interfa
 		}, nil
 	}
 	// Validate file path if provided
-	if filePath != "" && !utils.ValidatePath(filePath) {
+	if filePath != "" && !ValidatePath(filePath) {
 		return ToolResult{
 			Success: false,
 			Output:  "",
@@ -1106,7 +1104,7 @@ func (h *DefinitionHandler) Execute(ctx context.Context, args map[string]interfa
 		}, nil
 	}
 	// Validate symbol
-	if !utils.ValidateSymbol(symbol) {
+	if !ValidateSymbol(symbol) {
 		return ToolResult{
 			Success: false,
 			Output:  "",
@@ -1215,21 +1213,21 @@ func (h *PRHandler) Execute(ctx context.Context, args map[string]interface{}) (T
 		}, nil
 	}
 	// Validate inputs
-	if title != "" && !utils.ValidateCommandArg(title) {
+	if title != "" && !ValidateCommandArg(title) {
 		return ToolResult{
 			Success: false,
 			Output:  "",
 			Error:   fmt.Sprintf("invalid title contains dangerous characters: %s", title),
 		}, nil
 	}
-	if body != "" && !utils.ValidateCommandArg(body) {
+	if body != "" && !ValidateCommandArg(body) {
 		return ToolResult{
 			Success: false,
 			Output:  "",
 			Error:   fmt.Sprintf("invalid body contains dangerous characters: %s", body),
 		}, nil
 	}
-	if baseBranch != "" && !utils.ValidateGitRef(baseBranch) {
+	if baseBranch != "" && !ValidateGitRef(baseBranch) {
 		return ToolResult{
 			Success: false,
 			Output:  "",
@@ -1368,14 +1366,14 @@ func (h *IssueHandler) Execute(ctx context.Context, args map[string]interface{})
 		}, nil
 	}
 	// Validate inputs
-	if title != "" && !utils.ValidateCommandArg(title) {
+	if title != "" && !ValidateCommandArg(title) {
 		return ToolResult{
 			Success: false,
 			Output:  "",
 			Error:   fmt.Sprintf("invalid title contains dangerous characters: %s", title),
 		}, nil
 	}
-	if body != "" && !utils.ValidateCommandArg(body) {
+	if body != "" && !ValidateCommandArg(body) {
 		return ToolResult{
 			Success: false,
 			Output:  "",
@@ -1501,14 +1499,14 @@ func (h *WorkflowHandler) Execute(ctx context.Context, args map[string]interface
 		}, nil
 	}
 	// Validate inputs
-	if workflowID != "" && !utils.ValidateCommandArg(workflowID) {
+	if workflowID != "" && !ValidateCommandArg(workflowID) {
 		return ToolResult{
 			Success: false,
 			Output:  "",
 			Error:   fmt.Sprintf("invalid workflow ID contains dangerous characters: %s", workflowID),
 		}, nil
 	}
-	if branch != "" && !utils.ValidateGitRef(branch) {
+	if branch != "" && !ValidateGitRef(branch) {
 		return ToolResult{
 			Success: false,
 			Output:  "",

@@ -4,28 +4,28 @@
     "min_integration_tests": 40,
     "min_e2e_tests": 80,
     "min_security_tests": 200,
-    "min_coverage_percent": 70
+    "min_coverage_percent": 100
   },
   "mobile": {
     "flutter": {
       "min_unit_tests": 5,
       "min_widget_tests": 3,
-      "min_coverage_percent": 80
+      "min_coverage_percent": 100
     },
     "react_native": {
       "min_jest_tests": 5,
-      "min_coverage_percent": 80
+      "min_coverage_percent": 100
     },
     "robolectric": {
       "min_tests": 5,
-      "min_coverage_percent": 80
+      "min_coverage_percent": 100
     }
   },
   "web": {
     "angular": {
       "min_karma_tests": 5,
       "min_e2e_tests": 3,
-      "min_coverage_percent": 80,
+      "min_coverage_percent": 100,
       "lighthouse_min_score": 80
     },
     "website": {
@@ -34,7 +34,22 @@
     },
     "sdk": {
       "min_jest_tests": 5,
-      "min_coverage_percent": 80
+      "min_coverage_percent": 100
     }
+  },
+  "desktop": {
+    "electron": {
+      "min_unit_tests": 10,
+      "min_e2e_tests": 5,
+      "min_coverage_percent": 100
+    },
+    "tauri": {
+      "min_unit_tests": 5,
+      "min_coverage_percent": 100
+    }
+  },
+  "integration": {
+    "min_tests": 100,
+    "min_coverage_percent": 100
   }
 }

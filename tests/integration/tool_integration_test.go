@@ -24,7 +24,7 @@ import (
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/handlers"
 	"dev.helix.agent/internal/services"
-	"dev.helix.agent/internal/tools"
+	"digital.vasic.toolschema"
 )
 
 // ============================================

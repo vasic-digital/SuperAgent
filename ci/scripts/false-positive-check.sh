@@ -83,6 +83,88 @@ validate_coverage() {
   fi
 }
 
+# Validate Flutter LCOV coverage
+validate_flutter_coverage() {
+  local lcov_file="$1"
+  local label="$2"
+  local min_percent="${3:-100}"
+
+  if [ ! -f "${lcov_file}" ]; then
+    add_check "${label}_coverage_exists" "file exists" "missing" "FAIL"
+    return
+  fi
+
+  # Parse LCOV to compute line coverage percentage
+  local lines_found=0
+  local lines_hit=0
+  while IFS= read -r line; do
+    if [[ "${line}" =~ ^LF:([0-9]+)$ ]]; then
+      lines_found=$((lines_found + BASH_REMATCH[1]))
+    elif [[ "${line}" =~ ^LH:([0-9]+)$ ]]; then
+      lines_hit=$((lines_hit + BASH_REMATCH[1]))
+    fi
+  done < <(grep -E '^LF:|^LH:' "${lcov_file}" || true)
+
+  local coverage=0
+  if [ "${lines_found}" -gt 0 ]; then
+    coverage=$(awk "BEGIN { printf \"%.2f\", ${lines_hit} * 100 / ${lines_found} }")
+  fi
+  local coverage_int=${coverage%.*}
+
+  if [ "${coverage_int}" -lt "${min_percent}" ]; then
+    add_check "${label}_coverage" ">=${min_percent}%" "${coverage}%" "FAIL"
+  else
+    add_check "${label}_coverage" ">=${min_percent}%" "${coverage}%" "PASS"
+  fi
+}
+
+# Validate Jest coverage-summary.json
+validate_jest_coverage() {
+  local coverage_json="$1"
+  local label="$2"
+  local min_percent="${3:-100}"
+
+  if [ ! -f "${coverage_json}" ]; then
+    add_check "${label}_coverage_exists" "file exists" "missing" "FAIL"
+    return
+  fi
+
+  local coverage
+  coverage=$(jq -r '.total.lines.pct // 0' "${coverage_json}" 2>/dev/null || echo "0")
+  [ -z "${coverage}" ] && coverage="0"
+  local coverage_int=${coverage%.*}
+
+  if [ "${coverage_int}" -lt "${min_percent}" ]; then
+    add_check "${label}_coverage" ">=${min_percent}%" "${coverage}%" "FAIL"
+  else
+    add_check "${label}_coverage" ">=${min_percent}%" "${coverage}%" "PASS"
+  fi
+}
+
+# Validate Karma coverage JSON (Angular)
+validate_karma_coverage() {
+  local coverage_json="$1"
+  local label="$2"
+  local min_percent="${3:-100}"
+
+  if [ ! -f "${coverage_json}" ]; then
+    add_check "${label}_coverage_exists" "file exists" "missing" "FAIL"
+    return
+  fi
+
+  # Angular coverage JSON structure may vary; attempt to extract line coverage
+  local coverage
+  coverage=$(jq -r '.total.lines.pct // .lines.total.pct // 0' "${coverage_json}" 2>/dev/null || echo "0")
+  [ -z "${coverage}" ] && coverage="0"
+  local coverage_int=${coverage%.*}
+
+  if [ "${coverage_int}" -lt "${min_percent}" ]; then
+    add_check "${label}_coverage" ">=${min_percent}%" "${coverage}%" "FAIL"
+  else
+    add_check "${label}_coverage" ">=${min_percent}%" "${coverage}%" "PASS"
+  fi
+}
+
 # Validate binary artifact exists and has correct properties
 validate_binary() {
   local binary_path="$1"

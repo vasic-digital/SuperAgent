@@ -2,7 +2,7 @@
 
 ## Overview
 
-HelixAgent uses a three-phase CI/CD system where **all builds, tests, and artifact generation run inside Docker/Podman containers**. This ensures reproducible builds, consistent environments, and complete isolation from the host system.
+HelixAgent uses a five-phase CI/CD system where **all builds, tests, and artifact generation run inside Docker/Podman containers**. This ensures reproducible builds, consistent environments, and complete isolation from the host system.
 
 ## Architecture
 
@@ -11,6 +11,8 @@ docker-compose.ci.yml
 ├── Profile: go-ci        Phase 1: Go builds + full test suite
 ├── Profile: mobile-ci    Phase 2: Flutter/RN + Robolectric + emulator
 ├── Profile: web-ci       Phase 3: Angular + Website + Playwright + Lighthouse
+├── Profile: desktop-ci   Phase 4: Electron/Tauri desktop apps
+├── Profile: integration  Phase 5: Full-stack integration tests
 └── Profile: report       Report aggregation
 ```
 
@@ -32,6 +34,8 @@ make ci-all
 make ci-go          # Go builds + tests
 make ci-mobile      # Mobile builds + tests
 make ci-web         # Web builds + tests
+make ci-desktop     # Desktop apps (Electron/Tauri)
+make ci-integration # Full-stack integration tests
 
 # Report only (after phases have run)
 make ci-report
@@ -120,6 +124,33 @@ CI_CPUS=4 CI_MEMORY=8G make ci-go
 - `releases/web/sdk/dist/` - SDK bundles
 - `reports/web/` - Test results, coverage, Lighthouse reports
 
+## Phase 4: Desktop CI
+
+**Container:** `helixagent-ci-desktop` (node:20-bookworm with Rust, Electron, Tauri tooling)
+
+**Pipeline:**
+1. Electron: Jest unit tests, Playwright E2E, production build, optional signing
+2. Tauri: Jest unit tests, production build, optional signing
+
+**Output:**
+- `releases/desktop/electron/dist/` - Electron build output
+- `releases/desktop/tauri/` - Tauri executables (.app, .exe, .AppImage)
+- `reports/desktop/` - Test results, coverage, validation logs
+
+## Phase 5: Integration CI
+
+**Container:** `helixagent-ci-go` (shared with Phase 1)
+
+**Pipeline:**
+1. Wait for all integration services (PostgreSQL, Redis, ChromaDB, Qdrant, Kafka, RabbitMQ, MinIO)
+2. Integration test suites (`./tests/integration/`)
+3. Cross-service orchestration tests (`./tests/orchestration/`)
+4. End-to-end workflow tests (`./tests/workflow/`)
+5. Performance under load tests (`./tests/load/`)
+
+**Output:**
+- `reports/integration/` - Test results, coverage, performance metrics
+
 ## Android Signing
 
 **Default (debug) keystore** at `keys/android/debug.keystore`:
@@ -136,6 +167,8 @@ CI_KEY_ALIAS=release-alias \
 CI_KEY_PASSWORD=secret \
 make ci-mobile
 ```
+
+For iOS, desktop, and web extension signing, see `keys/README.md`.
 
 ## Reports
 
@@ -155,7 +188,9 @@ After `make ci-all` or `make ci-report`:
   "phases": {
     "go": { "status": "pass", "tests": { "total": 500, "failed": 0 }, ... },
     "mobile": { ... },
-    "web": { ... }
+    "web": { ... },
+    "desktop": { ... },
+    "integration": { ... }
   },
   "totals": { "tests_total": 800, "tests_failed": 0, "coverage_avg": 95.5 },
   "false_positive_checks": [ ... ],
@@ -238,6 +273,14 @@ Windows builds fail due to `syscall.Statfs_t` not being available. This is a kno
 1. Add build steps to `ci/scripts/ci-web.sh`
 2. Update thresholds in `ci/thresholds.json`
 
+### New desktop app
+1. Add build steps to `ci/scripts/ci-desktop.sh`
+2. Update thresholds in `ci/thresholds.json`
+
+### New integration tests
+1. Add test directories under `tests/integration/`, `tests/orchestration/`, `tests/workflow/`, or `tests/load/`
+2. Update thresholds in `ci/thresholds.json``
+
 ## File Reference
 
 | File | Purpose |
@@ -247,11 +290,14 @@ Windows builds fail due to `syscall.Statfs_t` not being available. This is a kno
 | `docker/ci/Dockerfile.ci-mobile` | Mobile CI builder image |
 | `docker/ci/Dockerfile.ci-emulator` | Android emulator image |
 | `docker/ci/Dockerfile.ci-web` | Web CI builder image |
+| `docker/ci/Dockerfile.ci-desktop` | Desktop CI builder image (Electron/Tauri) |
 | `docker/ci/Dockerfile.ci-reporter` | Report aggregator image |
 | `ci/scripts/ci-entrypoint.sh` | Resource control entrypoint |
 | `ci/scripts/ci-go.sh` | Phase 1 pipeline |
 | `ci/scripts/ci-mobile.sh` | Phase 2 pipeline |
 | `ci/scripts/ci-web.sh` | Phase 3 pipeline |
+| `ci/scripts/ci-desktop.sh` | Phase 4 pipeline |
+| `ci/scripts/ci-integration.sh` | Phase 5 pipeline |
 | `ci/scripts/ci-report.sh` | Report orchestrator |
 | `ci/scripts/wait-for-services.sh` | Service health gate |
 | `ci/scripts/false-positive-check.sh` | FP validation framework |

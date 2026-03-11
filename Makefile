@@ -114,7 +114,7 @@ release-builder-image:
 # CI/CD CONTAINER BUILD SYSTEM
 # =============================================================================
 
-.PHONY: ci-all ci-go ci-mobile ci-web ci-report ci-build-images ci-clean
+.PHONY: ci-all ci-go ci-mobile ci-web ci-desktop ci-integration ci-report ci-build-images ci-clean
 
 CI_COMPOSE_CMD = $(shell command -v docker >/dev/null 2>&1 && echo "docker compose" || echo "podman-compose")
 CI_IS_DOCKER = $(shell command -v docker >/dev/null 2>&1 && echo "yes" || echo "no")
@@ -142,7 +142,7 @@ endef
 
 ci-build-images: ## Build all CI container images
 	@echo "Building CI container images..."
-	$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile go-ci --profile mobile-ci --profile web-ci --profile report build
+	$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile go-ci --profile mobile-ci --profile web-ci --profile desktop-ci --profile integration --profile report build
 	@echo "CI images ready"
 
 ci-go: ## Phase 1: Go builds + tests + integration services
@@ -157,17 +157,25 @@ ci-web: ## Phase 3: Web builds + Playwright + Lighthouse
 	@echo "=== Phase 3: Web CI ==="
 	$(call run_ci_phase,web-ci,ci-web-builder)
 
+ci-desktop: ## Phase 4: Desktop builds (Electron/Tauri)
+	@echo "=== Phase 4: Desktop CI ==="
+	$(call run_ci_phase,desktop-ci,ci-desktop-builder)
+
+ci-integration: ## Phase 5: Full‑stack integration tests
+	@echo "=== Phase 5: Integration CI ==="
+	$(call run_ci_phase,integration,ci-integration-runner)
+
 ci-report: ## Aggregate reports from all phases
 	@echo "=== CI Report Aggregation ==="
 	$(call run_ci_phase,report,ci-reporter)
 
-ci-all: ci-go ci-mobile ci-web ci-report ## Run all CI phases + report
+ci-all: ci-go ci-mobile ci-web ci-desktop ci-integration ci-report ## Run all CI phases + report
 	@echo "=== CI Complete ==="
 	@echo "Reports: reports/summary.html, reports/results.json"
 	@echo "Releases: releases/"
 
 ci-clean: ## Remove CI containers, networks, volumes
-	$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile go-ci --profile mobile-ci --profile web-ci --profile report down -v --remove-orphans 2>/dev/null || true
+	$(CI_COMPOSE_CMD) -f docker-compose.ci.yml --profile go-ci --profile mobile-ci --profile web-ci --profile desktop-ci --profile integration --profile report down -v --remove-orphans 2>/dev/null || true
 	@echo "CI cleanup complete"
 
 # =============================================================================

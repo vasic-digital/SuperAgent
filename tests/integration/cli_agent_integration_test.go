@@ -17,7 +17,7 @@ import (
 
 	"dev.helix.agent/internal/agents"
 	"dev.helix.agent/internal/services"
-	"dev.helix.agent/internal/tools"
+	"digital.vasic.toolschema"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"

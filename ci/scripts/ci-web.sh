@@ -294,6 +294,78 @@ echo "--- Artifact validation ---"
   PHASE_FAILURES=$((PHASE_FAILURES + 1))
 }
 
+echo ""
+echo "--- False positive validation ---"
+
+# Source the function library
+source /usr/local/bin/false-positive-check.sh
+FP_PHASE="web"
+
+THRESHOLDS="${WORKSPACE}/ci/thresholds.json"
+if [ -f "${THRESHOLDS}" ]; then
+  # Angular Karma tests
+  if [ -f "${REPORTS_DIR}/angular-karma-tests.xml" ]; then
+    validate_junit_xml "${REPORTS_DIR}/angular-karma-tests.xml" "angular_karma" \
+      "$(jq -r '.web.angular.min_karma_tests' "${THRESHOLDS}")"
+  fi
+  # Angular coverage
+  ANGULAR_COVERAGE_JSON=$(find "${REPORTS_DIR}/angular-coverage" -name "coverage-final.json" -o -name "coverage.json" 2>/dev/null | head -1)
+  if [ -n "${ANGULAR_COVERAGE_JSON}" ]; then
+    validate_karma_coverage "${ANGULAR_COVERAGE_JSON}" "angular" \
+      "$(jq -r '.web.angular.min_coverage_percent' "${THRESHOLDS}")"
+  elif [ -f "${REPORTS_DIR}/angular-coverage/lcov.info" ]; then
+    validate_flutter_coverage "${REPORTS_DIR}/angular-coverage/lcov.info" "angular" \
+      "$(jq -r '.web.angular.min_coverage_percent' "${THRESHOLDS}")"
+  else
+    echo "[WARN] Angular coverage file not found"
+  fi
+  # Angular E2E Playwright tests
+  if [ -f "${REPORTS_DIR}/angular-playwright-tests.xml" ]; then
+    validate_junit_xml "${REPORTS_DIR}/angular-playwright-tests.xml" "angular_playwright" \
+      "$(jq -r '.web.angular.min_e2e_tests' "${THRESHOLDS}")"
+  fi
+  # Website Playwright tests
+  if [ -f "${REPORTS_DIR}/website-playwright.log" ]; then
+    # Count tests from log (simplistic)
+    WEBSITE_TESTS=$(grep -c "✓\|passed" "${REPORTS_DIR}/website-playwright.log" 2>/dev/null || echo 0)
+    if [ "${WEBSITE_TESTS}" -lt "$(jq -r '.web.website.min_playwright_tests' "${THRESHOLDS}")" ]; then
+      echo "[FAIL] Website Playwright tests below threshold"
+      PHASE_FAILURES=$((PHASE_FAILURES + 1))
+    fi
+  fi
+  # SDK Jest tests
+  if [ -f "${REPORTS_DIR}/sdk-jest-tests.xml" ]; then
+    validate_junit_xml "${REPORTS_DIR}/sdk-jest-tests.xml" "sdk_jest" \
+      "$(jq -r '.web.sdk.min_jest_tests' "${THRESHOLDS}")"
+  fi
+  # SDK Jest coverage
+  if [ -f "${REPORTS_DIR}/sdk-coverage/coverage-summary.json" ]; then
+    validate_jest_coverage "${REPORTS_DIR}/sdk-coverage/coverage-summary.json" "sdk_jest" \
+      "$(jq -r '.web.sdk.min_coverage_percent' "${THRESHOLDS}")"
+  fi
+  # Lighthouse scores (angular)
+  if [ -f "${REPORTS_DIR}/angular-lighthouse.json" ]; then
+    ANGULAR_SCORE=$(jq -r '.categories.performance.score // 0' "${REPORTS_DIR}/angular-lighthouse.json" 2>/dev/null || echo 0)
+    ANGULAR_SCORE_PCT=$(awk "BEGIN {print ${ANGULAR_SCORE} * 100}")
+    if [ "${ANGULAR_SCORE_PCT%.*}" -lt "$(jq -r '.web.angular.lighthouse_min_score' "${THRESHOLDS}")" ]; then
+      echo "[FAIL] Angular Lighthouse score below threshold"
+      PHASE_FAILURES=$((PHASE_FAILURES + 1))
+    fi
+  fi
+  # Lighthouse scores (website)
+  if [ -f "${REPORTS_DIR}/website-lighthouse.json" ]; then
+    WEBSITE_SCORE=$(jq -r '.categories.performance.score // 0' "${REPORTS_DIR}/website-lighthouse.json" 2>/dev/null || echo 0)
+    WEBSITE_SCORE_PCT=$(awk "BEGIN {print ${WEBSITE_SCORE} * 100}")
+    if [ "${WEBSITE_SCORE_PCT%.*}" -lt "$(jq -r '.web.website.lighthouse_min_score' "${THRESHOLDS}")" ]; then
+      echo "[FAIL] Website Lighthouse score below threshold"
+      PHASE_FAILURES=$((PHASE_FAILURES + 1))
+    fi
+  fi
+fi
+
+write_fp_report "${REPORTS_DIR}/false-positive-checks.json"
+PHASE_FAILURES=$((PHASE_FAILURES + FAILURES))
+
 PHASE_DURATION=$((SECONDS - PHASE_START))
 
 echo ""

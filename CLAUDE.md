@@ -326,20 +326,22 @@ Registry: `internal/agents/registry.go`. Generate configs: `./bin/helixagent --g
 
 ## CI/CD Container Build System
 
-Three-phase CI/CD system running **all builds, tests, and artifact generation inside Docker/Podman containers**. See `docs/CI_BUILD_GUIDE.md` for full documentation.
+Five-phase CI/CD system running **all builds, tests, and artifact generation inside Docker/Podman containers**. See `docs/CI_BUILD_GUIDE.md` for full documentation.
 
 ```bash
-make ci-all              # All three phases + report aggregation
+make ci-all              # All five phases + report aggregation
 make ci-go               # Phase 1: Go builds + all tests + integration services
 make ci-mobile           # Phase 2: Flutter/RN + Robolectric + Android emulator E2E
 make ci-web              # Phase 3: Angular + Website + JS SDK + Playwright + Lighthouse
+make ci-desktop          # Phase 4: Electron/Tauri desktop apps
+make ci-integration      # Phase 5: Full-stack integration tests
 make ci-report           # Aggregate reports into summary.html + results.json
 make ci-build-images     # Build all CI container images
 make ci-clean            # Remove CI containers, networks, volumes
 CI_RESOURCE_LIMIT=medium make ci-all  # Medium resource limits (default: low)
 ```
 
-**Compose file:** `docker-compose.ci.yml` with profiles: `go-ci`, `mobile-ci`, `web-ci`, `report`, `infra`.
+**Compose file:** `docker-compose.ci.yml` with profiles: `go-ci`, `mobile-ci`, `web-ci`, `desktop-ci`, `integration`, `report`, `infra`.
 
 **Integration services** (started automatically): PostgreSQL, Redis, Mock LLM, OAuth Mock, ChromaDB, Qdrant, Kafka, RabbitMQ, MinIO.
 

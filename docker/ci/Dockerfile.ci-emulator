@@ -1,52 +1,88 @@
-# HelixAgent CI - Android Emulator
-# Headless Android emulator with KVM passthrough for E2E tests
+# HelixAgent CI - Android Emulator (Enhanced)
+# Headless Android emulator with KVM/GPU passthrough for E2E tests
+# Supports: API 35, Play Store, Hardware acceleration
 
-FROM ubuntu:22.04
+FROM ubuntu:22.04 AS ci-emulator
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV ANDROID_HOME=/opt/android-sdk
 ENV ANDROID_SDK_ROOT=/opt/android-sdk
+ENV ANDROID_AVD_HOME=/root/.android/avd
+ENV DISPLAY=:99
 ENV PATH="${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/emulator:${PATH}"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget unzip curl \
+    wget \
+    unzip \
+    curl \
     openjdk-17-jre-headless \
-    libpulse0 libgl1 libx11-6 libxext6 \
-    qemu-kvm libvirt-daemon-system \
+    libpulse0 \
+    libgl1 \
+    libglu1-mesa \
+    libx11-6 \
+    libxext6 \
+    libxrender1 \
+    libxtst6 \
+    libxi6 \
+    libfreetype6 \
+    libpng16-16 \
+    libbsd0 \
+    libsm6 \
+    qemu-kvm \
+    libvirt-daemon-system \
+    cpu-checker \
+    x11vnc \
+    xvfb \
+    fluxbox \
     ca-certificates \
+    android-tools-adb \
     && rm -rf /var/lib/apt/lists/*
 
-# Android SDK + emulator
 RUN mkdir -p ${ANDROID_HOME}/cmdline-tools \
     && cd /tmp \
-    && wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip \
-       -O cmdline-tools.zip \
+    && wget -q "https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip" -O cmdline-tools.zip \
     && unzip -q cmdline-tools.zip \
     && mv cmdline-tools ${ANDROID_HOME}/cmdline-tools/latest \
     && rm cmdline-tools.zip
 
 RUN yes | sdkmanager --licenses > /dev/null 2>&1 || true
+RUN sdkmanager --update
 RUN sdkmanager \
     "platform-tools" \
-    "platforms;android-34" \
+    "platforms;android-35" \
+    "build-tools;35.0.0" \
     "emulator" \
-    "system-images;android-34;google_apis;x86_64" \
+    "system-images;android-35;google_apis_playstore;x86_64" \
+    "system-images;android-35;google_apis;x86_64" \
     2>/dev/null
 
-# Create AVD
+RUN mkdir -p ${ANDROID_AVD_HOME}
+
+COPY docker/ci/avd-config.ini /tmp/avd-config.ini
+RUN cat /tmp/avd-config.ini | tee ${ANDROID_AVD_HOME}/ci-device.avd/config.ini > /dev/null \
+    && mkdir -p ${ANDROID_AVD_HOME}/ci-device.avd
+
 RUN echo "no" | avdmanager create avd \
     --name "ci-device" \
+    --package "system-images;android-35;google_apis_playstore;x86_64" \
+    --device "pixel_7_pro" \
+    --force 2>/dev/null || true
+
+RUN echo "no" | avdmanager create avd \
+    --name "ci-device-api34" \
     --package "system-images;android-34;google_apis;x86_64" \
     --device "pixel_6" \
-    --force
+    --force 2>/dev/null || true
 
-# Emulator startup script
 COPY docker/ci/emulator-start.sh /opt/emulator-start.sh
-RUN chmod +x /opt/emulator-start.sh
+COPY docker/ci/emulator-healthcheck.sh /opt/emulator-healthcheck.sh
+RUN chmod +x /opt/emulator-start.sh /opt/emulator-healthcheck.sh
 
-EXPOSE 5555 5554
+RUN mkdir -p /var/log/emulator
 
-HEALTHCHECK --interval=10s --timeout=5s --retries=30 --start-period=60s \
-    CMD adb shell getprop sys.boot_completed 2>/dev/null | grep -q "1" || exit 1
+EXPOSE 5555 5554 5900
+
+HEALTHCHECK --interval=10s --timeout=10s --retries=60 --start-period=120s \
+    CMD /opt/emulator-healthcheck.sh
 
 ENTRYPOINT ["/opt/emulator-start.sh"]

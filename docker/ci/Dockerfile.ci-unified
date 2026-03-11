@@ -1,0 +1,159 @@
+# HelixAgent Unified CI Container
+# Single container with ALL dependencies for Go, Mobile, Web, Desktop builds
+# Supports: Go 1.24+, Flutter, React Native, Angular, Electron, Playwright
+# Testing: Robolectric, Jest, Karma, Cypress, Appium
+# Security: gosec, Snyk, SonarQube, Trivy
+
+FROM ubuntu:22.04 AS ci-unified
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
+ENV GO_VERSION=1.24.3
+ENV NODE_VERSION=20
+ENV FLUTTER_VERSION=stable
+ENV ANDROID_HOME=/opt/android-sdk
+ENV ANDROID_SDK_ROOT=/opt/android-sdk
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+ENV GOPATH=/go
+ENV PATH="${GOPATH}/bin:/usr/local/go/bin:${JAVA_HOME}/bin:${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/build-tools/35.0.0:${ANDROID_HOME}/emulator:/opt/flutter/bin:/opt/kotlinc/bin:/opt/sonar-scanner/bin:${PATH}"
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    wget \
+    git \
+    unzip \
+    xz-utils \
+    zip \
+    jq \
+    file \
+    ca-certificates \
+    gnupg \
+    lsb-release \
+    software-properties-common \
+    netcat-openbsd \
+    postgresql-client \
+    redis-tools \
+    openssh-client \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openjdk-17-jdk-headless \
+    libpulse0 \
+    libgl1 \
+    libx11-6 \
+    libxext6 \
+    libxrender1 \
+    libxtst6 \
+    libxi6 \
+    libfreetype6 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN npm install -g \
+    npm@latest \
+    yarn@latest \
+    pnpm@latest \
+    @angular/cli \
+    @playwright/test \
+    cypress \
+    jest \
+    jest-junit \
+    lighthouse \
+    eslint \
+    prettier \
+    typescript \
+    ts-node \
+    @types/node \
+    appium \
+    @angular-devkit/build-angular \
+    electron-builder
+
+RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null \
+    && apt-get update \
+    && apt-get install -y docker-ce-cli \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -L "https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose \
+    && chmod +x /usr/local/bin/docker-compose
+
+RUN curl -L "https://github.com/containers/podman/releases/download/v5.0.0/podman-remote-static-linux-$(uname -m).tar.gz" | tar -xzf - -C /usr/local/bin --strip-components=1 \
+    && chmod +x /usr/local/bin/podman 2>/dev/null || true
+
+RUN curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" | tar -C /usr/local -xzf -
+
+RUN go install gotest.tools/gotestsum@latest \
+    && go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.62.2 \
+    && go install github.com/securego/gosec/v2/cmd/gosec@latest \
+    && go install golang.org/x/tools/cmd/goimports@latest \
+    && go install github.com/sonatype-nexus-community/nancy@latest \
+    && go install golang.org/x/vuln/cmd/govulncheck@latest \
+    && go install github.com/axw/gocov/gocov@latest \
+    && go install github.com/AlekSi/gocov-xml@latest
+
+RUN mkdir -p ${ANDROID_HOME}/cmdline-tools \
+    && cd /tmp \
+    && wget -q "https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip" -O cmdline-tools.zip \
+    && unzip -q cmdline-tools.zip \
+    && mv cmdline-tools ${ANDROID_HOME}/cmdline-tools/latest \
+    && rm cmdline-tools.zip \
+    && yes | sdkmanager --licenses > /dev/null 2>&1 || true \
+    && sdkmanager --update \
+    && sdkmanager \
+        "platform-tools" \
+        "platforms;android-35" \
+        "build-tools;35.0.0" \
+        "ndk;27.0.12077973" \
+        "emulator" \
+        "system-images;android-35;google_apis;x86_64" \
+    && rm -rf ${ANDROID_HOME}/.temp ${ANDROID_HOME}/.android/cache
+
+RUN git clone --depth 1 --branch ${FLUTTER_VERSION} https://github.com/flutter/flutter.git /opt/flutter \
+    && /opt/flutter/bin/flutter precache --android --universal --web \
+    && /opt/flutter/bin/flutter config --no-analytics \
+    && /opt/flutter/bin/dart --disable-analytics
+
+RUN cd /tmp \
+    && wget -q "https://github.com/JetBrains/kotlin/releases/download/v2.0.21/kotlin-compiler-2.0.21.zip" -O kotlin.zip \
+    && unzip -q kotlin.zip -d /opt \
+    && rm kotlin.zip
+
+RUN wget -q "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1-linux.zip" -O /tmp/sonar.zip \
+    && unzip -q /tmp/sonar.zip -d /opt \
+    && mv /opt/sonar-scanner-* /opt/sonar-scanner \
+    && rm /tmp/sonar.zip
+
+RUN curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin \
+    && curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+
+RUN curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.50.0
+
+RUN mkdir -p /workspace \
+    && mkdir -p /reports \
+    && mkdir -p /releases \
+    && mkdir -p ${GOPATH}/pkg/mod \
+    && mkdir -p /root/.cache/go-build
+
+COPY ci/scripts/*.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/*.sh
+
+WORKDIR /workspace
+
+ENV WORKSPACE=/workspace
+ENV REPORTS_DIR=/reports
+ENV RELEASES_DIR=/releases
+ENV CI=true
+ENV FULL_TEST_MODE=true
+
+VOLUME ["/workspace", "/var/run/docker.sock"]
+
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+    CMD go version && node --version && flutter --version || exit 1
+
+ENTRYPOINT ["/usr/local/bin/ci-entrypoint.sh"]

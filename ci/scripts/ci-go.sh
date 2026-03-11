@@ -280,6 +280,7 @@ if [ -f "${THRESHOLDS}" ]; then
 fi
 
 write_fp_report "${REPORTS_DIR}/false-positive-checks.json"
+PHASE_FAILURES=$((PHASE_FAILURES + FAILURES))
 
 PHASE_DURATION=$((SECONDS - PHASE_START))
 

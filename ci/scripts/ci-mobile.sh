@@ -301,6 +301,57 @@ cat > "${REPORTS_DIR}/signing-verification.json" <<SIGEOF
 }
 SIGEOF
 
+# --- False positive validation ---
+echo ""
+echo "--- False positive validation ---"
+
+# Source the function library
+source /usr/local/bin/false-positive-check.sh
+FP_PHASE="mobile"
+
+THRESHOLDS="${WORKSPACE}/ci/thresholds.json"
+if [ -f "${THRESHOLDS}" ]; then
+  # Flutter unit tests
+  if [ -f "${REPORTS_DIR}/flutter-tests.json" ]; then
+    # parse count from json
+    FLUTTER_TESTS=$(jq -r '.testCount // 0' "${REPORTS_DIR}/flutter-tests.json" 2>/dev/null || echo 0)
+    if [ "${FLUTTER_TESTS}" -lt "$(jq -r '.mobile.flutter.min_unit_tests' "${THRESHOLDS}")" ]; then
+      echo "[FAIL] Flutter unit tests below threshold"
+      PHASE_FAILURES=$((PHASE_FAILURES + 1))
+    fi
+  fi
+  # Flutter coverage
+  if [ -f "${REPORTS_DIR}/flutter-coverage.lcov" ]; then
+    validate_flutter_coverage "${REPORTS_DIR}/flutter-coverage.lcov" "flutter" \
+      "$(jq -r '.mobile.flutter.min_coverage_percent' "${THRESHOLDS}")"
+  fi
+  # React Native Jest tests
+  if [ -f "${REPORTS_DIR}/rn-jest-tests.xml" ]; then
+    validate_junit_xml "${REPORTS_DIR}/rn-jest-tests.xml" "rn_jest" \
+      "$(jq -r '.mobile.react_native.min_jest_tests' "${THRESHOLDS}")"
+  fi
+  # React Native Jest coverage
+  if [ -f "${REPORTS_DIR}/rn-coverage/coverage-summary.json" ]; then
+    validate_jest_coverage "${REPORTS_DIR}/rn-coverage/coverage-summary.json" "rn_jest" \
+      "$(jq -r '.mobile.react_native.min_coverage_percent' "${THRESHOLDS}")"
+  fi
+  # Robolectric tests (flutter)
+  ROBOTEST_FILES=$(find "${REPORTS_DIR}" -name "*.xml" -path "*test-results*" 2>/dev/null | head -1)
+  if [ -n "${ROBOTEST_FILES}" ]; then
+    validate_junit_xml "${ROBOTEST_FILES}" "robolectric" \
+      "$(jq -r '.mobile.robolectric.min_tests' "${THRESHOLDS}")"
+  fi
+  # Robolectric coverage (if available)
+  ROBOTEST_COVERAGE=$(find "${REPORTS_DIR}" -name "coverage*.ec" -o -name "coverage.xml" 2>/dev/null | head -1)
+  if [ -n "${ROBOTEST_COVERAGE}" ]; then
+    # Placeholder: Robolectric coverage validation not yet implemented
+    echo "[INFO] Robolectric coverage file found but validation not implemented"
+  fi
+fi
+
+write_fp_report "${REPORTS_DIR}/false-positive-checks.json"
+PHASE_FAILURES=$((PHASE_FAILURES + FAILURES))
+
 PHASE_DURATION=$((SECONDS - PHASE_START))
 
 echo ""
