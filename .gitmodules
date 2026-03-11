@@ -376,3 +376,6 @@
 [submodule "SkillRegistry"]
 	path = SkillRegistry
 	url = git@github.com:vasic-digital/SkillRegistry.git
+[submodule "ConversationContext"]
+	path = ConversationContext
+	url = git@github.com:vasic-digital/conversation.git
