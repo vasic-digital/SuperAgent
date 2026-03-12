@@ -385,3 +385,6 @@
 [submodule "LLMProvider"]
 	path = LLMProvider
 	url = git@github.com:vasic-digital/LLMProvider.git
+[submodule "DebateOrchestrator"]
+	path = DebateOrchestrator
+	url = git@github.com:vasic-digital/DebateOrchestrator.git

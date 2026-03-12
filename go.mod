@@ -14,11 +14,13 @@ require (
 	digital.vasic.concurrency v0.0.0-00010101000000-000000000000
 	digital.vasic.containers v0.0.0-00010101000000-000000000000
 	digital.vasic.database v0.0.0-00010101000000-000000000000
+	digital.vasic.debate v0.0.0-00010101000000-000000000000
 	digital.vasic.eventbus v0.0.0-00010101000000-000000000000
 	digital.vasic.formatters v0.0.0-00010101000000-000000000000
 	digital.vasic.helixmemory v0.0.0-00010101000000-000000000000
 	digital.vasic.helixspecifier v0.0.0-00010101000000-000000000000
 	digital.vasic.llmops v0.0.0-00010101000000-000000000000
+	digital.vasic.llmprovider v0.0.0
 	digital.vasic.mcp v0.0.0-00010101000000-000000000000
 	digital.vasic.memory v0.0.0-00010101000000-000000000000
 	digital.vasic.messaging v0.0.0-00010101000000-000000000000
@@ -65,8 +67,8 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
 	golang.org/x/crypto v0.48.0
-	golang.org/x/sync v0.19.0
-	golang.org/x/text v0.34.0
+	golang.org/x/sync v0.20.0
+	golang.org/x/text v0.35.0
 	google.golang.org/grpc v1.78.0
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v3 v3.0.1
@@ -138,7 +140,14 @@ replace digital.vasic.skillregistry => ./SkillRegistry
 
 replace digital.vasic.conversation => ./ConversationContext
 
+replace digital.vasic.models => ./Models
+
+replace digital.vasic.llmprovider => ./LLMProvider
+
+replace digital.vasic.debate => ./DebateOrchestrator
+
 require (
+	digital.vasic.models v0.0.0 // indirect
 	github.com/ClickHouse/ch-go v0.69.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
