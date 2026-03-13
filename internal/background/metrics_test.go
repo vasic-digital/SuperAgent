@@ -15,7 +15,7 @@ var (
 
 func getTestMetrics() *WorkerPoolMetrics {
 	testMetricsOnce.Do(func() {
-		testMetrics = NewWorkerPoolMetrics()
+		testMetrics = GetGlobalMetrics()
 	})
 	return testMetrics
 }

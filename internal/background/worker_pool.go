@@ -12,6 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"dev.helix.agent/internal/models"
+	extractedbackground "digital.vasic.background"
 )
 
 // WorkerPoolConfig holds configuration for the worker pool
@@ -70,6 +71,8 @@ type AdaptiveWorkerPool struct {
 
 	scaling int32 // 1 if scaling in progress
 	started bool
+
+	extractedPool *extractedbackground.AdaptiveWorkerPool // delegates to extracted module
 }
 
 // Worker represents a single worker in the pool
@@ -184,6 +187,40 @@ func NewAdaptiveWorkerPool(
 
 	ctx, cancel := context.WithCancel(context.Background())
 
+	// Adapt internal dependencies to extracted module interfaces
+	extractedQueue := NewInternalTaskQueueAdapter(queue)
+	extractedRepository := NewTaskRepositoryAdapter(repository)
+	extractedResourceMonitor := &resourceMonitorAdapter{monitor: resourceMonitor}
+	extractedStuckDetector := &stuckDetectorAdapter{detector: stuckDetector}
+	extractedNotifier := &notificationServiceAdapter{service: notifier}
+
+	// Convert config to extracted config (structs are identical)
+	extractedConfig := &extractedbackground.WorkerPoolConfig{
+		MinWorkers:            config.MinWorkers,
+		MaxWorkers:            config.MaxWorkers,
+		ScaleUpThreshold:      config.ScaleUpThreshold,
+		ScaleDownThreshold:    config.ScaleDownThreshold,
+		ScaleInterval:         config.ScaleInterval,
+		WorkerIdleTimeout:     config.WorkerIdleTimeout,
+		QueuePollInterval:     config.QueuePollInterval,
+		HeartbeatInterval:     config.HeartbeatInterval,
+		ResourceCheckInterval: config.ResourceCheckInterval,
+		MaxCPUPercent:         config.MaxCPUPercent,
+		MaxMemoryPercent:      config.MaxMemoryPercent,
+		GracefulShutdownTime:  config.GracefulShutdownTime,
+	}
+
+	// Create extracted worker pool
+	extractedPool := extractedbackground.NewAdaptiveWorkerPool(
+		extractedConfig,
+		extractedQueue,
+		extractedRepository,
+		extractedResourceMonitor,
+		extractedStuckDetector,
+		extractedNotifier,
+		logger,
+	)
+
 	return &AdaptiveWorkerPool{
 		config:          config,
 		queue:           queue,
@@ -193,10 +230,11 @@ func NewAdaptiveWorkerPool(
 		stuckDetector:   stuckDetector,
 		notifier:        notifier,
 		logger:          logger,
-		metrics:         NewWorkerPoolMetrics(),
+		metrics:         nil, // Use extracted module's metrics instead
 		workers:         make(map[string]*Worker),
 		ctx:             ctx,
 		cancel:          cancel,
+		extractedPool:   extractedPool,
 	}
 }
 
@@ -206,6 +244,12 @@ func (wp *AdaptiveWorkerPool) RegisterExecutor(taskType string, executor TaskExe
 	defer wp.executorsMu.Unlock()
 	wp.executors[taskType] = executor
 	wp.logger.WithField("task_type", taskType).Debug("Registered task executor")
+
+	// Also register with extracted pool
+	if wp.extractedPool != nil {
+		extractedExecutor := &taskExecutorAdapter{executor: executor}
+		wp.extractedPool.RegisterExecutor(taskType, extractedExecutor)
+	}
 }
 
 // Start initializes and starts the worker pool
@@ -219,22 +263,30 @@ func (wp *AdaptiveWorkerPool) Start(ctx context.Context) error {
 		"max_workers": wp.config.MaxWorkers,
 	}).Info("Starting worker pool")
 
-	// Start minimum workers
-	for i := 0; i < wp.config.MinWorkers; i++ {
-		wp.spawnWorker()
+	// Delegate to extracted pool
+	if wp.extractedPool != nil {
+		if err := wp.extractedPool.Start(ctx); err != nil {
+			return err
+		}
+	} else {
+		// Fallback to original implementation (should not happen)
+		// Start minimum workers
+		for i := 0; i < wp.config.MinWorkers; i++ {
+			wp.spawnWorker()
+		}
+
+		// Start scaling monitor
+		wp.wg.Add(1)
+		go wp.scalingLoop()
+
+		// Start stuck detection loop
+		wp.wg.Add(1)
+		go wp.stuckDetectionLoop()
+
+		// Start heartbeat monitor
+		wp.wg.Add(1)
+		go wp.heartbeatMonitorLoop()
 	}
-
-	// Start scaling monitor
-	wp.wg.Add(1)
-	go wp.scalingLoop()
-
-	// Start stuck detection loop
-	wp.wg.Add(1)
-	go wp.stuckDetectionLoop()
-
-	// Start heartbeat monitor
-	wp.wg.Add(1)
-	go wp.heartbeatMonitorLoop()
 
 	wp.started = true
 	return nil
@@ -245,25 +297,33 @@ func (wp *AdaptiveWorkerPool) Stop(gracePeriod time.Duration) error {
 	wp.logger.Info("Stopping worker pool")
 	wp.cancel()
 
-	// Signal all workers to stop (using safe signalStop to prevent double-close panic)
-	wp.workersMu.Lock()
-	for _, worker := range wp.workers {
-		worker.signalStop()
-	}
-	wp.workersMu.Unlock()
+	// Delegate to extracted pool
+	if wp.extractedPool != nil {
+		if err := wp.extractedPool.Stop(gracePeriod); err != nil {
+			return err
+		}
+	} else {
+		// Fallback to original implementation
+		// Signal all workers to stop (using safe signalStop to prevent double-close panic)
+		wp.workersMu.Lock()
+		for _, worker := range wp.workers {
+			worker.signalStop()
+		}
+		wp.workersMu.Unlock()
 
-	// Wait with timeout
-	done := make(chan struct{})
-	go func() {
-		wp.wg.Wait()
-		close(done)
-	}()
+		// Wait with timeout
+		done := make(chan struct{})
+		go func() {
+			wp.wg.Wait()
+			close(done)
+		}()
 
-	select {
-	case <-done:
-		wp.logger.Info("Worker pool stopped gracefully")
-	case <-time.After(gracePeriod):
-		wp.logger.Warn("Worker pool stop timed out")
+		select {
+		case <-done:
+			wp.logger.Info("Worker pool stopped gracefully")
+		case <-time.After(gracePeriod):
+			wp.logger.Warn("Worker pool stop timed out")
+		}
 	}
 
 	wp.started = false
@@ -272,11 +332,17 @@ func (wp *AdaptiveWorkerPool) Stop(gracePeriod time.Duration) error {
 
 // GetWorkerCount returns the current number of workers
 func (wp *AdaptiveWorkerPool) GetWorkerCount() int {
+	if wp.extractedPool != nil {
+		return wp.extractedPool.GetWorkerCount()
+	}
 	return int(atomic.LoadInt32(&wp.activeCount))
 }
 
 // GetActiveTaskCount returns the number of currently executing tasks
 func (wp *AdaptiveWorkerPool) GetActiveTaskCount() int {
+	if wp.extractedPool != nil {
+		return wp.extractedPool.GetActiveTaskCount()
+	}
 	wp.workersMu.RLock()
 	defer wp.workersMu.RUnlock()
 
@@ -292,6 +358,15 @@ func (wp *AdaptiveWorkerPool) GetActiveTaskCount() int {
 
 // GetWorkerStatus returns status information for all workers
 func (wp *AdaptiveWorkerPool) GetWorkerStatus() []WorkerStatus {
+	if wp.extractedPool != nil {
+		extractedStatuses := wp.extractedPool.GetWorkerStatus()
+		statuses := make([]WorkerStatus, len(extractedStatuses))
+		for i, extracted := range extractedStatuses {
+			// Convert extracted WorkerStatus to internal WorkerStatus
+			statuses[i] = *convertToInternalWorkerStatus(&extracted)
+		}
+		return statuses
+	}
 	wp.workersMu.RLock()
 	defer wp.workersMu.RUnlock()
 
@@ -320,6 +395,11 @@ func (wp *AdaptiveWorkerPool) GetWorkerStatus() []WorkerStatus {
 
 // Scale manually adjusts the worker count
 func (wp *AdaptiveWorkerPool) Scale(targetCount int) error {
+	// Delegate to extracted pool if available
+	if wp.extractedPool != nil {
+		return wp.extractedPool.Scale(targetCount)
+	}
+
 	if targetCount < wp.config.MinWorkers {
 		targetCount = wp.config.MinWorkers
 	}
@@ -927,6 +1007,15 @@ var _ TaskWaiter = (*AdaptiveWorkerPool)(nil)
 // WaitForCompletion blocks until the task completes, fails, or times out
 // progressCallback is called with progress updates during execution
 func (wp *AdaptiveWorkerPool) WaitForCompletion(ctx context.Context, taskID string, timeout time.Duration, progressCallback func(progress float64, message string)) (*models.BackgroundTask, error) {
+	// Delegate to extracted pool if available
+	if wp.extractedPool != nil {
+		extractedTask, err := wp.extractedPool.WaitForCompletion(ctx, taskID, timeout, progressCallback)
+		if err != nil {
+			return nil, err
+		}
+		return convertToInternalTask(extractedTask), nil
+	}
+
 	startTime := time.Now()
 
 	// Create a context with timeout
@@ -1005,6 +1094,15 @@ func (wp *AdaptiveWorkerPool) WaitForCompletion(ctx context.Context, taskID stri
 
 // WaitForCompletionWithOutput waits for task completion and returns captured output
 func (wp *AdaptiveWorkerPool) WaitForCompletionWithOutput(ctx context.Context, taskID string, timeout time.Duration) (*models.BackgroundTask, []byte, error) {
+	// Delegate to extracted pool if available
+	if wp.extractedPool != nil {
+		extractedTask, output, err := wp.extractedPool.WaitForCompletionWithOutput(ctx, taskID, timeout)
+		if err != nil {
+			return nil, nil, err
+		}
+		return convertToInternalTask(extractedTask), output, nil
+	}
+
 	task, err := wp.WaitForCompletion(ctx, taskID, timeout, nil)
 	if err != nil {
 		return task, nil, err
