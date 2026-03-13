@@ -388,3 +388,6 @@
 [submodule "DebateOrchestrator"]
 	path = DebateOrchestrator
 	url = git@github.com:vasic-digital/DebateOrchestrator.git
+[submodule "BackgroundTasks"]
+	path = BackgroundTasks
+	url = ./BackgroundTasks

@@ -8,6 +8,7 @@ require (
 	dev.helix.agent/pkg/api v0.0.0-00010101000000-000000000000
 	digital.vasic.agentic v0.0.0-00010101000000-000000000000
 	digital.vasic.auth v0.0.0-00010101000000-000000000000
+	digital.vasic.background v0.0.0
 	digital.vasic.benchmark v0.0.0-00010101000000-000000000000
 	digital.vasic.cache v0.0.0-00010101000000-000000000000
 	digital.vasic.challenges v0.0.0-00010101000000-000000000000
@@ -24,6 +25,7 @@ require (
 	digital.vasic.mcp v0.0.0-00010101000000-000000000000
 	digital.vasic.memory v0.0.0-00010101000000-000000000000
 	digital.vasic.messaging v0.0.0-00010101000000-000000000000
+	digital.vasic.models v0.0.0
 	digital.vasic.optimization v0.0.0-00010101000000-000000000000
 	digital.vasic.planning v0.0.0-00010101000000-000000000000
 	digital.vasic.plugins v0.0.0-00010101000000-000000000000
@@ -142,12 +144,13 @@ replace digital.vasic.conversation => ./ConversationContext
 
 replace digital.vasic.models => ./Models
 
+replace digital.vasic.background => ./BackgroundTasks
+
 replace digital.vasic.llmprovider => ./LLMProvider
 
 replace digital.vasic.debate => ./DebateOrchestrator
 
 require (
-	digital.vasic.models v0.0.0 // indirect
 	github.com/ClickHouse/ch-go v0.69.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect

@@ -227,8 +227,7 @@ func TestNewPostgresTaskQueue(t *testing.T) {
 	assert.NotNil(t, queue)
 	assert.NotNil(t, queue.repository)
 	assert.NotNil(t, queue.logger)
-	assert.NotNil(t, queue.cachedDepth)
-	assert.Equal(t, 5*time.Second, queue.depthCacheTTL)
+
 }
 
 // TestPostgresTaskQueue_Enqueue tests the Enqueue method

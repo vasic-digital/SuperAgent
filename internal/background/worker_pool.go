@@ -60,10 +60,9 @@ type AdaptiveWorkerPool struct {
 	notifier        NotificationService
 	logger          *logrus.Logger
 	metrics         *WorkerPoolMetrics
-
-	workers     map[string]*Worker
-	workersMu   sync.RWMutex
-	activeCount int32
+	workers         map[string]*Worker
+	workersMu       sync.RWMutex
+	activeCount     int32
 
 	ctx    context.Context
 	cancel context.CancelFunc

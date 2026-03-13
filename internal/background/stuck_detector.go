@@ -9,13 +9,16 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"dev.helix.agent/internal/models"
+	extractedbackground "digital.vasic.background"
+	extractedmodels "digital.vasic.models"
 )
 
 // DefaultStuckDetector implements stuck detection algorithms
 type DefaultStuckDetector struct {
-	logger     *logrus.Logger
-	thresholds map[string]time.Duration
-	mu         sync.RWMutex
+	extractedDetector *extractedbackground.DefaultStuckDetector // delegates to extracted module
+	logger            *logrus.Logger
+	thresholds        map[string]time.Duration // kept for backward compatibility
+	mu                sync.RWMutex             // kept for backward compatibility
 }
 
 // StuckDetectorConfig holds configuration for stuck detection
@@ -40,8 +43,10 @@ func DefaultStuckDetectorConfig() *StuckDetectorConfig {
 
 // NewDefaultStuckDetector creates a new stuck detector
 func NewDefaultStuckDetector(logger *logrus.Logger) *DefaultStuckDetector {
+	extractedDetector := extractedbackground.NewDefaultStuckDetector(logger)
 	return &DefaultStuckDetector{
-		logger: logger,
+		extractedDetector: extractedDetector,
+		logger:            logger,
 		thresholds: map[string]time.Duration{
 			"default":   5 * time.Minute,
 			"command":   3 * time.Minute,
@@ -55,72 +60,22 @@ func NewDefaultStuckDetector(logger *logrus.Logger) *DefaultStuckDetector {
 
 // IsStuck determines if a task is stuck based on various criteria
 func (d *DefaultStuckDetector) IsStuck(ctx context.Context, task *models.BackgroundTask, snapshots []*models.ResourceSnapshot) (bool, string) {
-	if task == nil {
-		return false, ""
+	extractedTask := convertToExtractedTask(task)
+	extractedSnapshots := make([]*extractedmodels.ResourceSnapshot, len(snapshots))
+	for i, snapshot := range snapshots {
+		extractedSnapshots[i] = convertToExtractedResourceSnapshot(snapshot)
 	}
-
-	// Endless tasks use different detection
-	if task.Config.Endless {
-		return d.isEndlessTaskStuck(task, snapshots)
-	}
-
-	// Check heartbeat timeout
-	if reason := d.checkHeartbeatTimeout(task); reason != "" {
-		return true, reason
-	}
-
-	// Check deadline exceeded
-	if task.IsOverdue() {
-		return true, "task exceeded deadline"
-	}
-
-	// If we have resource snapshots, perform deeper analysis
-	if len(snapshots) >= 3 {
-		// Check for frozen process (no CPU activity)
-		if d.isProcessFrozen(snapshots) {
-			return true, "process appears frozen (no CPU activity)"
-		}
-
-		// Check for resource exhaustion
-		if reason := d.checkResourceExhaustion(snapshots); reason != "" {
-			return true, reason
-		}
-
-		// Check for I/O starvation
-		if d.isIOStarved(snapshots) {
-			return true, "process appears I/O starved"
-		}
-
-		// Check for network hang
-		if d.isNetworkHung(snapshots) {
-			return true, "process appears hung on network I/O"
-		}
-
-		// Check for memory leak
-		if d.hasMemoryLeak(snapshots) {
-			return true, "potential memory leak detected"
-		}
-	}
-
-	return false, ""
+	return d.extractedDetector.IsStuck(ctx, extractedTask, extractedSnapshots)
 }
 
 // GetStuckThreshold returns the stuck detection threshold for a task type
 func (d *DefaultStuckDetector) GetStuckThreshold(taskType string) time.Duration {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-
-	if threshold, exists := d.thresholds[taskType]; exists {
-		return threshold
-	}
-	return d.thresholds["default"]
+	return d.extractedDetector.GetStuckThreshold(taskType)
 }
 
 // SetThreshold sets a custom threshold for a task type
 func (d *DefaultStuckDetector) SetThreshold(taskType string, threshold time.Duration) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	d.thresholds[taskType] = threshold
+	d.extractedDetector.SetThreshold(taskType, threshold)
 }
 
 // checkHeartbeatTimeout checks if the task has exceeded heartbeat timeout
@@ -357,79 +312,13 @@ type ActivityStatus struct {
 
 // AnalyzeTask performs detailed stuck analysis on a task
 func (d *DefaultStuckDetector) AnalyzeTask(ctx context.Context, task *models.BackgroundTask, snapshots []*models.ResourceSnapshot) *StuckAnalysis {
-	analysis := &StuckAnalysis{
-		Recommendations: make([]string, 0),
+	extractedTask := convertToExtractedTask(task)
+	extractedSnapshots := make([]*extractedmodels.ResourceSnapshot, len(snapshots))
+	for i, snapshot := range snapshots {
+		extractedSnapshots[i] = convertToExtractedResourceSnapshot(snapshot)
 	}
-
-	// Check heartbeat
-	threshold := d.GetStuckThreshold(task.TaskType)
-	analysis.HeartbeatStatus = HeartbeatStatus{
-		LastHeartbeat: task.LastHeartbeat,
-		Threshold:     threshold,
-	}
-
-	if task.LastHeartbeat != nil {
-		analysis.HeartbeatStatus.TimeSinceHeartbeat = time.Since(*task.LastHeartbeat)
-		analysis.HeartbeatStatus.IsStale = task.HasStaleHeartbeat(threshold)
-	} else {
-		analysis.HeartbeatStatus.IsStale = true
-	}
-
-	// Analyze resources if we have snapshots
-	if len(snapshots) > 0 {
-		latest := snapshots[0]
-		analysis.ResourceStatus = ResourceStatus{
-			CPUPercent:    latest.CPUPercent,
-			MemoryPercent: latest.MemoryPercent,
-			MemoryBytes:   latest.MemoryRSSBytes,
-			OpenFDs:       latest.OpenFDs,
-			ThreadCount:   latest.ThreadCount,
-		}
-
-		// Check for exhaustion
-		if latest.MemoryPercent > 90 || latest.OpenFDs > 10000 {
-			analysis.ResourceStatus.IsExhausted = true
-			if latest.MemoryPercent > 90 {
-				analysis.Recommendations = append(analysis.Recommendations, "Consider increasing memory limits")
-			}
-			if latest.OpenFDs > 10000 {
-				analysis.Recommendations = append(analysis.Recommendations, "Check for file descriptor leaks")
-			}
-		}
-
-		// Analyze activity
-		analysis.ActivityStatus = ActivityStatus{
-			HasCPUActivity: latest.CPUPercent > 0.1,
-			IOReadBytes:    latest.IOReadBytes,
-			IOWriteBytes:   latest.IOWriteBytes,
-			NetConnections: latest.NetConnections,
-		}
-
-		if len(snapshots) >= 2 {
-			prev := snapshots[1]
-			analysis.ActivityStatus.HasIOActivity = latest.IOReadBytes != prev.IOReadBytes ||
-				latest.IOWriteBytes != prev.IOWriteBytes
-			analysis.ActivityStatus.HasNetActivity = latest.NetBytesSent != prev.NetBytesSent ||
-				latest.NetBytesRecv != prev.NetBytesRecv
-		}
-	}
-
-	// Determine if stuck
-	isStuck, reason := d.IsStuck(ctx, task, snapshots)
-	analysis.IsStuck = isStuck
-	analysis.Reason = reason
-
-	// Add recommendations
-	if isStuck {
-		if analysis.HeartbeatStatus.IsStale {
-			analysis.Recommendations = append(analysis.Recommendations, "Task may need to be cancelled and restarted")
-		}
-		if !analysis.ActivityStatus.HasCPUActivity && !analysis.ActivityStatus.HasIOActivity {
-			analysis.Recommendations = append(analysis.Recommendations, "Process appears completely idle - check for deadlock")
-		}
-	}
-
-	return analysis
+	extractedAnalysis := d.extractedDetector.AnalyzeTask(ctx, extractedTask, extractedSnapshots)
+	return convertToInternalStuckAnalysis(extractedAnalysis)
 }
 
 func min3(a, b int) int {

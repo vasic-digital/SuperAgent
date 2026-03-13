@@ -789,7 +789,7 @@ func TestDefaultStuckDetector_AnalyzeTask_BasicAnalysis(t *testing.T) {
 	require.NotNil(t, analysis)
 	assert.False(t, analysis.IsStuck)
 	assert.NotNil(t, analysis.Recommendations)
-	assert.Equal(t, freshTime, *analysis.HeartbeatStatus.LastHeartbeat)
+	assert.True(t, freshTime.Equal(*analysis.HeartbeatStatus.LastHeartbeat), "expected %v to equal %v", freshTime, *analysis.HeartbeatStatus.LastHeartbeat)
 	assert.False(t, analysis.HeartbeatStatus.IsStale)
 }
 

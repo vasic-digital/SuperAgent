@@ -12,6 +12,7 @@ import (
 
 	"dev.helix.agent/internal/messaging"
 	"dev.helix.agent/internal/models"
+	extractedbackground "digital.vasic.background"
 )
 
 // Task event topics for the messaging system.
@@ -125,6 +126,106 @@ type BackgroundTaskEvent struct {
 	TraceID string `json:"trace_id,omitempty"`
 }
 
+// logrusLoggerAdapter adapts logrus.Logger to extractedbackground.Logger interface
+type logrusLoggerAdapter struct {
+	logger *logrus.Logger
+}
+
+func (l *logrusLoggerAdapter) Debugf(format string, args ...interface{}) {
+	l.logger.Debugf(format, args...)
+}
+
+func (l *logrusLoggerAdapter) Infof(format string, args ...interface{}) {
+	l.logger.Infof(format, args...)
+}
+
+func (l *logrusLoggerAdapter) Warnf(format string, args ...interface{}) {
+	l.logger.Warnf(format, args...)
+}
+
+func (l *logrusLoggerAdapter) Errorf(format string, args ...interface{}) {
+	l.logger.Errorf(format, args...)
+}
+
+// messagingHubEventPublisher adapts messaging.MessagingHub to extractedbackground.EventPublisher
+type messagingHubEventPublisher struct {
+	hub    *messaging.MessagingHub
+	logger *logrus.Logger
+}
+
+func (m *messagingHubEventPublisher) Publish(ctx context.Context, event *extractedbackground.BackgroundTaskEvent) error {
+	if event == nil || m.hub == nil {
+		return nil
+	}
+
+	// Convert extracted BackgroundTaskEvent to messaging.Event
+	msgEvent := m.convertToMessagingEvent(event)
+	if msgEvent == nil {
+		m.logger.WithField("task_id", event.TaskID).Warn("Failed to convert background task event to messaging event")
+		return nil // Silently ignore conversion errors
+	}
+
+	topic := event.EventType.Topic()
+	if err := m.hub.PublishEvent(ctx, topic, msgEvent); err != nil {
+		m.logger.WithError(err).WithFields(logrus.Fields{
+			"event_type": event.EventType,
+			"task_id":    event.TaskID,
+			"topic":      topic,
+		}).Error("Failed to publish task event to messaging hub")
+		return err
+	}
+
+	m.logger.WithFields(logrus.Fields{
+		"event_type": event.EventType,
+		"task_id":    event.TaskID,
+		"topic":      topic,
+	}).Debug("Published task event to messaging hub")
+
+	return nil
+}
+
+func (m *messagingHubEventPublisher) convertToMessagingEvent(extracted *extractedbackground.BackgroundTaskEvent) *messaging.Event {
+	if extracted == nil {
+		return nil
+	}
+
+	// Marshal the event to JSON for the data field
+	data, err := json.Marshal(extracted)
+	if err != nil {
+		return nil
+	}
+
+	// Create messaging.Event with appropriate fields
+	return &messaging.Event{
+		ID:            extracted.EventID,
+		Type:          messaging.EventType(extracted.EventType),
+		Source:        "helixagent.background",
+		Subject:       extracted.TaskID,
+		Data:          data,
+		DataSchema:    "application/json",
+		Timestamp:     extracted.Timestamp,
+		CorrelationID: extracted.CorrelationID,
+		TraceID:       extracted.TraceID,
+	}
+}
+
+// toExtractedBackgroundTaskEvent converts internal BackgroundTaskEvent to extracted BackgroundTaskEvent
+func toExtractedBackgroundTaskEvent(internal *BackgroundTaskEvent) *extractedbackground.BackgroundTaskEvent {
+	if internal == nil {
+		return nil
+	}
+	// Use JSON marshaling/unmarshaling for conversion since structs are identical
+	data, err := json.Marshal(internal)
+	if err != nil {
+		return nil
+	}
+	var extracted extractedbackground.BackgroundTaskEvent
+	if err := json.Unmarshal(data, &extracted); err != nil {
+		return nil
+	}
+	return &extracted
+}
+
 // NewBackgroundTaskEvent creates a new background task event.
 func NewBackgroundTaskEvent(eventType TaskEventType, task *models.BackgroundTask) *BackgroundTaskEvent {
 	event := &BackgroundTaskEvent{
@@ -185,6 +286,7 @@ type TaskEventPublisher struct {
 	stopCh       chan struct{}
 	wg           sync.WaitGroup
 	mu           sync.RWMutex
+	extracted    *extractedbackground.TaskEventPublisher
 }
 
 // TaskEventPublisherConfig holds configuration for the event publisher.
@@ -215,110 +317,67 @@ func NewTaskEventPublisher(hub *messaging.MessagingHub, logger *logrus.Logger, c
 		logger = logrus.New()
 	}
 
+	// Create adapters for messaging hub and logger
+	eventPublisher := &messagingHubEventPublisher{
+		hub:    hub,
+		logger: logger,
+	}
+	loggerAdapter := &logrusLoggerAdapter{logger: logger}
+
+	// Create extracted task event publisher with same configuration
+	extractedConfig := &extractedbackground.TaskEventPublisherConfig{
+		Enabled:      config.Enabled,
+		AsyncPublish: config.AsyncPublish,
+		BufferSize:   config.BufferSize,
+	}
+	extractedPublisher := extractedbackground.NewTaskEventPublisher(eventPublisher, loggerAdapter, extractedConfig)
+
 	p := &TaskEventPublisher{
 		hub:          hub,
 		logger:       logger,
 		enabled:      config.Enabled,
 		asyncPublish: config.AsyncPublish,
 		stopCh:       make(chan struct{}),
+		extracted:    extractedPublisher,
 	}
 
 	if config.AsyncPublish && config.BufferSize > 0 {
 		p.publishCh = make(chan *BackgroundTaskEvent, config.BufferSize)
 	}
 
+	// Start the extracted publisher if async publishing is enabled
+	extractedPublisher.Start()
+
 	return p
 }
 
 // Start starts the async publish goroutine if enabled.
 func (p *TaskEventPublisher) Start() {
-	if !p.asyncPublish || p.publishCh == nil {
-		return
+	// Delegate to extracted publisher
+	if p.extracted != nil {
+		p.extracted.Start()
 	}
-
-	p.wg.Add(1)
-	go p.asyncPublishLoop()
 }
 
 // Stop stops the event publisher.
 func (p *TaskEventPublisher) Stop() {
-	close(p.stopCh)
-	if p.publishCh != nil {
-		close(p.publishCh)
-	}
-	p.wg.Wait()
-}
-
-// asyncPublishLoop processes async publish events.
-func (p *TaskEventPublisher) asyncPublishLoop() {
-	defer p.wg.Done()
-
-	for {
-		select {
-		case event, ok := <-p.publishCh:
-			if !ok {
-				return
-			}
-			if err := p.doPublish(context.Background(), event); err != nil {
-				p.logger.WithError(err).Debug("Failed to publish event")
-			}
-		case <-p.stopCh:
-			// Drain remaining events
-			for event := range p.publishCh {
-				if err := p.doPublish(context.Background(), event); err != nil {
-					p.logger.WithError(err).Debug("Failed to publish event")
-				}
-			}
-			return
-		}
+	// Delegate to extracted publisher
+	if p.extracted != nil {
+		p.extracted.Stop()
 	}
 }
 
 // Publish publishes a task event.
 func (p *TaskEventPublisher) Publish(ctx context.Context, event *BackgroundTaskEvent) error {
-	if !p.enabled || p.hub == nil {
+	if p.extracted == nil {
 		return nil
 	}
-
-	if p.asyncPublish && p.publishCh != nil {
-		select {
-		case p.publishCh <- event:
-			return nil
-		default:
-			// Buffer full, publish synchronously
-			p.logger.Warn("Event publish buffer full, publishing synchronously")
-			return p.doPublish(ctx, event)
-		}
-	}
-
-	return p.doPublish(ctx, event)
-}
-
-// doPublish performs the actual event publish.
-func (p *TaskEventPublisher) doPublish(ctx context.Context, event *BackgroundTaskEvent) error {
-	if event == nil {
+	// Convert internal event to extracted event
+	extractedEvent := toExtractedBackgroundTaskEvent(event)
+	if extractedEvent == nil {
 		return nil
 	}
-
-	topic := event.EventType.Topic()
-	msgEvent := event.ToMessagingEvent()
-
-	if err := p.hub.PublishEvent(ctx, topic, msgEvent); err != nil {
-		p.logger.WithError(err).WithFields(logrus.Fields{
-			"event_type": event.EventType,
-			"task_id":    event.TaskID,
-			"topic":      topic,
-		}).Error("Failed to publish task event")
-		return err
-	}
-
-	p.logger.WithFields(logrus.Fields{
-		"event_type": event.EventType,
-		"task_id":    event.TaskID,
-		"topic":      topic,
-	}).Debug("Published task event")
-
-	return nil
+	return p.extracted.Publish(ctx, extractedEvent)
 }
 
 // PublishTaskCreated publishes a task created event.
@@ -384,6 +443,9 @@ func (p *TaskEventPublisher) PublishTaskDeadLetter(ctx context.Context, task *mo
 
 // IsEnabled returns true if publishing is enabled.
 func (p *TaskEventPublisher) IsEnabled() bool {
+	if p.extracted != nil {
+		return p.extracted.IsEnabled()
+	}
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	return p.enabled
@@ -391,6 +453,9 @@ func (p *TaskEventPublisher) IsEnabled() bool {
 
 // SetEnabled enables or disables publishing.
 func (p *TaskEventPublisher) SetEnabled(enabled bool) {
+	if p.extracted != nil {
+		p.extracted.SetEnabled(enabled)
+	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.enabled = enabled
