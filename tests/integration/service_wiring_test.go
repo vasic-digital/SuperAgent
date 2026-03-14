@@ -15,13 +15,13 @@ import (
 	"dev.helix.agent/internal/cache"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/database"
-	"dev.helix.agent/internal/debate"
-	"dev.helix.agent/internal/debate/orchestrator"
 	"dev.helix.agent/internal/middleware"
 	"dev.helix.agent/internal/notifications"
 	"dev.helix.agent/internal/services"
 	"dev.helix.agent/internal/testutil"
 	"dev.helix.agent/internal/verifier"
+	"digital.vasic.debate"
+	"digital.vasic.debate/orchestrator"
 	"digital.vasic.toolschema"
 )
 

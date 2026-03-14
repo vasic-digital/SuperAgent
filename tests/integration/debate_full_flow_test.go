@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"dev.helix.agent/internal/debate/orchestrator"
-	"dev.helix.agent/internal/debate/topology"
-	"dev.helix.agent/internal/debate/voting"
 	"dev.helix.agent/internal/testutil"
+	"digital.vasic.debate/orchestrator"
+	"digital.vasic.debate/topology"
+	"digital.vasic.debate/voting"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -7,7 +7,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"dev.helix.agent/internal/debate/comprehensive"
+	"digital.vasic.debate/comprehensive"
 )
 
 // SetComprehensiveIntegration sets the comprehensive debate integration and enables it

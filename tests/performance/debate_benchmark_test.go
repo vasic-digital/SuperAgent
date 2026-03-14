@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"dev.helix.agent/internal/debate/reflexion"
-	"dev.helix.agent/internal/debate/topology"
-	"dev.helix.agent/internal/debate/voting"
+	"digital.vasic.debate/reflexion"
+	"digital.vasic.debate/topology"
+	"digital.vasic.debate/voting"
 )
 
 // =============================================================================

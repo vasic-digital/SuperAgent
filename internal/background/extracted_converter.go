@@ -243,3 +243,37 @@ func convertToExtractedStuckAnalysis(internal *StuckAnalysis) *extractedbackgrou
 	}
 	return extracted
 }
+
+// convertToInternalWorkerStatus converts extracted WorkerStatus to internal WorkerStatus
+func convertToInternalWorkerStatus(extracted *extractedbackground.WorkerStatus) *WorkerStatus {
+	if extracted == nil {
+		return nil
+	}
+	return &WorkerStatus{
+		ID:              extracted.ID,
+		Status:          extracted.Status,
+		CurrentTask:     convertToInternalTask(extracted.CurrentTask),
+		StartedAt:       extracted.StartedAt,
+		LastActivity:    extracted.LastActivity,
+		TasksCompleted:  extracted.TasksCompleted,
+		TasksFailed:     extracted.TasksFailed,
+		AvgTaskDuration: extracted.AvgTaskDuration,
+	}
+}
+
+// convertToExtractedWorkerStatus converts internal WorkerStatus to extracted WorkerStatus
+func convertToExtractedWorkerStatus(internal *WorkerStatus) *extractedbackground.WorkerStatus {
+	if internal == nil {
+		return nil
+	}
+	return &extractedbackground.WorkerStatus{
+		ID:              internal.ID,
+		Status:          internal.Status,
+		CurrentTask:     convertToExtractedTask(internal.CurrentTask),
+		StartedAt:       internal.StartedAt,
+		LastActivity:    internal.LastActivity,
+		TasksCompleted:  internal.TasksCompleted,
+		TasksFailed:     internal.TasksFailed,
+		AvgTaskDuration: internal.AvgTaskDuration,
+	}
+}

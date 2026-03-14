@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"dev.helix.agent/internal/debate/protocol"
-	"dev.helix.agent/internal/debate/topology"
+	"digital.vasic.debate/protocol"
+	"digital.vasic.debate/topology"
 )
 
 // mockInvoker implements protocol.AgentInvoker for integration testing
@@ -109,7 +109,6 @@ func createTestTopology(t *testing.T) topology.Topology {
 // Critique -> Review -> Optimization -> Adversarial -> Convergence.
 func TestDebateFullProtocol_8Phases(t *testing.T) {
 
-
 	topo := createTestTopology(t)
 	defer topo.Close()
 
@@ -180,7 +179,6 @@ func TestDebateFullProtocol_8Phases(t *testing.T) {
 // early when consensus is reached during the convergence phase.
 func TestDebateFullProtocol_EarlyConsensus(t *testing.T) {
 
-
 	topo := createTestTopology(t)
 	defer topo.Close()
 
@@ -225,7 +223,6 @@ func TestDebateFullProtocol_EarlyConsensus(t *testing.T) {
 // configured timeout and terminates gracefully.
 func TestDebateFullProtocol_Timeout(t *testing.T) {
 
-
 	topo := createTestTopology(t)
 	defer topo.Close()
 
@@ -263,7 +260,6 @@ func TestDebateFullProtocol_Timeout(t *testing.T) {
 // TestDebateFullProtocol_ContextCancellation tests that the protocol
 // responds to context cancellation promptly.
 func TestDebateFullProtocol_ContextCancellation(t *testing.T) {
-
 
 	topo := createTestTopology(t)
 	defer topo.Close()
@@ -305,7 +301,6 @@ func TestDebateFullProtocol_ContextCancellation(t *testing.T) {
 // TestDebateFullProtocol_MultipleTopologies verifies that all topology
 // types can be used with the protocol.
 func TestDebateFullProtocol_MultipleTopologies(t *testing.T) {
-
 
 	topoTypes := []topology.TopologyType{
 		topology.TopologyGraphMesh,

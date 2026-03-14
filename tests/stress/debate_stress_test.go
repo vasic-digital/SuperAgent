@@ -12,10 +12,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"dev.helix.agent/internal/debate/protocol"
-	"dev.helix.agent/internal/debate/reflexion"
-	"dev.helix.agent/internal/debate/topology"
-	"dev.helix.agent/internal/debate/voting"
+	"digital.vasic.debate/protocol"
+	"digital.vasic.debate/reflexion"
+	"digital.vasic.debate/topology"
+	"digital.vasic.debate/voting"
 )
 
 // Resource limit per CLAUDE.md rule 15

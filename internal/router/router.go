@@ -12,7 +12,6 @@ import (
 	"dev.helix.agent/internal/cache"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/database"
-	"dev.helix.agent/internal/debate/orchestrator"
 	"dev.helix.agent/internal/features"
 	"dev.helix.agent/internal/formatters"
 	formattersproviders "dev.helix.agent/internal/formatters/providers"
@@ -21,6 +20,7 @@ import (
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/modelsdev"
 	"dev.helix.agent/internal/services"
+	"dev.helix.agent/internal/services/debate_integration"
 	"dev.helix.agent/internal/skills"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -862,7 +862,7 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 		// Wire up the NEW debate orchestrator framework (MANDATORY - per docs/requests/debate)
 		// This implements: 5 positions × 3 LLMs = 15 agents
 		// 8-phase protocol: Dehallucination → SelfEvolvement → Proposal → Critique → Review → Optimization → Adversarial → Convergence
-		orchestratorIntegration := orchestrator.CreateIntegration(providerRegistry, logger)
+		orchestratorIntegration := debate_integration.CreateIntegration(providerRegistry, logger)
 		debateHandler.SetOrchestratorIntegration(orchestratorIntegration)
 
 		// CRITICAL: Also set orchestrator on UnifiedHandler so chat completions use NEW debate system

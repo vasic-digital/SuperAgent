@@ -10,8 +10,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
-	"dev.helix.agent/internal/debate/orchestrator"
 	"dev.helix.agent/internal/services"
+	"dev.helix.agent/internal/services/debate_integration"
 	"dev.helix.agent/internal/skills"
 )
 
@@ -20,7 +20,7 @@ type DebateHandler struct {
 	debateService           *services.DebateService
 	advancedDebate          *services.AdvancedDebateService
 	skillsIntegration       *skills.Integration
-	orchestratorIntegration *orchestrator.ServiceIntegration
+	orchestratorIntegration *debate_integration.ServiceIntegration
 	logger                  *logrus.Logger
 
 	// In-memory storage for active debates (in production, use database)
@@ -70,7 +70,7 @@ func (h *DebateHandler) SetSkillsIntegration(integration *skills.Integration) {
 }
 
 // SetOrchestratorIntegration sets the new debate framework integration
-func (h *DebateHandler) SetOrchestratorIntegration(integration *orchestrator.ServiceIntegration) {
+func (h *DebateHandler) SetOrchestratorIntegration(integration *debate_integration.ServiceIntegration) {
 	h.orchestratorIntegration = integration
 }
 

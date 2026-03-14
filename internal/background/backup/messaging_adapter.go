@@ -9,7 +9,6 @@ import (
 
 	"dev.helix.agent/internal/messaging"
 	"dev.helix.agent/internal/models"
-	extractedbackground "digital.vasic.background"
 )
 
 // MessagingTaskQueue wraps a TaskQueue and publishes events to the messaging system.
@@ -23,10 +22,6 @@ type MessagingTaskQueue struct {
 	hub *messaging.MessagingHub
 	// logger for logging.
 	logger *logrus.Logger
-	// extractedQueue is the messaging task queue from the extracted module.
-	extractedQueue *extractedbackground.MessagingTaskQueue
-	// queueAdapter adapts extractedQueue to internal TaskQueue interface.
-	queueAdapter *TaskQueueAdapter
 }
 
 // MessagingTaskQueueConfig holds configuration for MessagingTaskQueue.
@@ -58,82 +53,42 @@ func NewMessagingTaskQueue(
 
 	publisher := NewTaskEventPublisher(hub, logger, config.PublisherConfig)
 
-	// Create adapters for the extracted module
-	eventPublisher := &messagingHubEventPublisher{
-		hub:    hub,
-		logger: logger,
-	}
-	loggerAdapter := &logrusLoggerAdapter{logger: logger}
-
-	// Adapt internal delegate to extracted TaskQueue
-	extractedDelegate := NewInternalTaskQueueAdapter(delegate)
-
-	// Create extracted messaging task queue with extracted configuration
-	extractedConfig := &extractedbackground.MessagingTaskQueueConfig{
-		PublisherConfig: &extractedbackground.TaskEventPublisherConfig{
-			Enabled:      config.PublisherConfig.Enabled,
-			AsyncPublish: config.PublisherConfig.AsyncPublish,
-			BufferSize:   config.PublisherConfig.BufferSize,
-		},
-	}
-	extractedQueue := extractedbackground.NewMessagingTaskQueue(
-		extractedDelegate,
-		eventPublisher,
-		loggerAdapter,
-		extractedConfig,
-	)
-
-	// Create adapter for extracted queue to internal TaskQueue interface
-	queueAdapter := NewTaskQueueAdapter(extractedQueue)
-
 	return &MessagingTaskQueue{
-		delegate:       delegate,
-		publisher:      publisher,
-		hub:            hub,
-		logger:         logger,
-		extractedQueue: extractedQueue,
-		queueAdapter:   queueAdapter,
+		delegate:  delegate,
+		publisher: publisher,
+		hub:       hub,
+		logger:    logger,
 	}
 }
 
 // Start starts the messaging task queue.
 func (q *MessagingTaskQueue) Start() {
-	if q.extractedQueue != nil {
-		q.extractedQueue.Start()
-	}
 	q.publisher.Start()
 }
 
 // Stop stops the messaging task queue.
 func (q *MessagingTaskQueue) Stop() {
-	if q.extractedQueue != nil {
-		q.extractedQueue.Stop()
-	}
 	q.publisher.Stop()
 }
 
 // Enqueue adds a task to the queue and publishes a created event.
 func (q *MessagingTaskQueue) Enqueue(ctx context.Context, task *models.BackgroundTask) error {
-	if q.queueAdapter != nil {
-		return q.queueAdapter.Enqueue(ctx, task)
-	}
-	// Fallback to original implementation if queueAdapter is nil
+	// Enqueue to the delegate
 	if err := q.delegate.Enqueue(ctx, task); err != nil {
 		return err
 	}
+
+	// Publish created event
 	if err := q.publisher.PublishTaskCreated(ctx, task); err != nil {
 		q.logger.WithError(err).WithField("task_id", task.ID).
 			Warn("Failed to publish task created event")
 	}
+
 	return nil
 }
 
 // Dequeue retrieves and claims a task, publishing a started event.
 func (q *MessagingTaskQueue) Dequeue(ctx context.Context, workerID string, requirements ResourceRequirements) (*models.BackgroundTask, error) {
-	if q.queueAdapter != nil {
-		return q.queueAdapter.Dequeue(ctx, workerID, requirements)
-	}
-	// Fallback
 	task, err := q.delegate.Dequeue(ctx, workerID, requirements)
 	if err != nil {
 		return nil, err
@@ -141,27 +96,24 @@ func (q *MessagingTaskQueue) Dequeue(ctx context.Context, workerID string, requi
 	if task == nil {
 		return nil, nil
 	}
+
+	// Publish started event
 	if err := q.publisher.PublishTaskStarted(ctx, task); err != nil {
 		q.logger.WithError(err).WithField("task_id", task.ID).
 			Warn("Failed to publish task started event")
 	}
+
 	return task, nil
 }
 
 // Peek returns tasks without claiming them (no event published).
 func (q *MessagingTaskQueue) Peek(ctx context.Context, count int) ([]*models.BackgroundTask, error) {
-	if q.queueAdapter != nil {
-		return q.queueAdapter.Peek(ctx, count)
-	}
 	return q.delegate.Peek(ctx, count)
 }
 
 // Requeue returns a task to the queue and publishes a retrying event.
 func (q *MessagingTaskQueue) Requeue(ctx context.Context, taskID string, delay time.Duration) error {
-	if q.queueAdapter != nil {
-		return q.queueAdapter.Requeue(ctx, taskID, delay)
-	}
-	// Fallback
+	// First get the task for the event
 	var task *models.BackgroundTask
 	if pg, ok := q.delegate.(*PostgresTaskQueue); ok {
 		var err error
@@ -171,24 +123,26 @@ func (q *MessagingTaskQueue) Requeue(ctx context.Context, taskID string, delay t
 				Debug("Could not get task for requeue event")
 		}
 	}
+
+	// Requeue to the delegate
 	if err := q.delegate.Requeue(ctx, taskID, delay); err != nil {
 		return err
 	}
+
+	// Publish retrying event
 	if task != nil {
 		if err := q.publisher.PublishTaskRetrying(ctx, task, delay); err != nil {
 			q.logger.WithError(err).WithField("task_id", taskID).
 				Warn("Failed to publish task retrying event")
 		}
 	}
+
 	return nil
 }
 
 // MoveToDeadLetter moves a failed task and publishes a dead letter event.
 func (q *MessagingTaskQueue) MoveToDeadLetter(ctx context.Context, taskID string, reason string) error {
-	if q.queueAdapter != nil {
-		return q.queueAdapter.MoveToDeadLetter(ctx, taskID, reason)
-	}
-	// Fallback
+	// First get the task for the event
 	var task *models.BackgroundTask
 	if pg, ok := q.delegate.(*PostgresTaskQueue); ok {
 		var err error
@@ -198,39 +152,35 @@ func (q *MessagingTaskQueue) MoveToDeadLetter(ctx context.Context, taskID string
 				Debug("Could not get task for dead letter event")
 		}
 	}
+
+	// Move to dead letter
 	if err := q.delegate.MoveToDeadLetter(ctx, taskID, reason); err != nil {
 		return err
 	}
+
+	// Publish dead letter event
 	if task != nil {
 		if err := q.publisher.PublishTaskDeadLetter(ctx, task, reason); err != nil {
 			q.logger.WithError(err).WithField("task_id", taskID).
 				Warn("Failed to publish task dead letter event")
 		}
 	}
+
 	return nil
 }
 
 // GetPendingCount returns the number of pending tasks.
 func (q *MessagingTaskQueue) GetPendingCount(ctx context.Context) (int64, error) {
-	if q.queueAdapter != nil {
-		return q.queueAdapter.GetPendingCount(ctx)
-	}
 	return q.delegate.GetPendingCount(ctx)
 }
 
 // GetRunningCount returns the number of running tasks.
 func (q *MessagingTaskQueue) GetRunningCount(ctx context.Context) (int64, error) {
-	if q.queueAdapter != nil {
-		return q.queueAdapter.GetRunningCount(ctx)
-	}
 	return q.delegate.GetRunningCount(ctx)
 }
 
 // GetQueueDepth returns counts by priority.
 func (q *MessagingTaskQueue) GetQueueDepth(ctx context.Context) (map[models.TaskPriority]int64, error) {
-	if q.queueAdapter != nil {
-		return q.queueAdapter.GetQueueDepth(ctx)
-	}
 	return q.delegate.GetQueueDepth(ctx)
 }
 

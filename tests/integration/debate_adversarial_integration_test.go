@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"dev.helix.agent/internal/debate/agents"
+	"digital.vasic.debate/agents"
 )
 
 // mockAdversarialLLM implements agents.AdversarialLLMClient for integration
@@ -57,7 +57,6 @@ func containsStr(s, sub string) bool {
 // TestAdversarial_AttackDefendCycle verifies the complete red team attack
 // and blue team defense cycle using the adversarial protocol.
 func TestAdversarial_AttackDefendCycle(t *testing.T) {
-
 
 	llm := &mockAdversarialLLM{
 		attackResponses: []string{
@@ -173,7 +172,6 @@ func TestAdversarial_AttackDefendCycle(t *testing.T) {
 // uses deterministic fallback when the LLM is unavailable.
 func TestAdversarial_FallbackMode(t *testing.T) {
 
-
 	// LLM client that always fails
 	failingLLM := &failingAdversarialLLM{}
 
@@ -215,7 +213,6 @@ func TestAdversarial_FallbackMode(t *testing.T) {
 // TestAdversarial_CleanCodeTerminatesEarly verifies that the adversarial
 // protocol terminates when no significant vulnerabilities are found.
 func TestAdversarial_CleanCodeTerminatesEarly(t *testing.T) {
-
 
 	// LLM that returns no vulnerabilities
 	cleanLLM := &mockAdversarialLLM{

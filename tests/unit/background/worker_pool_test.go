@@ -2,6 +2,8 @@ package background_test
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -37,17 +39,30 @@ func TestMain(m *testing.M) {
 	testLogger = logrus.New()
 	testLogger.SetLevel(logrus.ErrorLevel)
 
-	// goleak.VerifyTestMain runs m.Run() internally, then checks for goroutine leaks.
-	// Worker pool goroutines winding down after Stop() are ignored.
-	goleak.VerifyTestMain(m,
-		goleak.IgnoreTopFunction("dev.helix.agent/internal/background.(*AdaptiveWorkerPool).workerLoop"),
-		goleak.IgnoreTopFunction("dev.helix.agent/internal/background.(*AdaptiveWorkerPool).scaleLoop"),
-	)
+	// Run all tests
+	code := m.Run()
 
 	// Clean up
 	if testPool != nil && testPoolStarted {
 		testPool.Stop(time.Second)
 	}
+
+	// Check for goroutine leaks after cleanup
+	if code == 0 {
+		if err := goleak.Find(
+			goleak.IgnoreTopFunction("dev.helix.agent/internal/background.(*AdaptiveWorkerPool).workerLoop"),
+			goleak.IgnoreTopFunction("dev.helix.agent/internal/background.(*AdaptiveWorkerPool).scaleLoop"),
+			goleak.IgnoreTopFunction("digital.vasic.background.(*AdaptiveWorkerPool).workerLoop"),
+			goleak.IgnoreTopFunction("digital.vasic.background.(*AdaptiveWorkerPool).scalingLoop"),
+			goleak.IgnoreTopFunction("digital.vasic.background.(*AdaptiveWorkerPool).stuckDetectionLoop"),
+			goleak.IgnoreTopFunction("digital.vasic.background.(*AdaptiveWorkerPool).heartbeatMonitorLoop"),
+		); err != nil {
+			fmt.Fprintf(os.Stderr, "goleak: %v\n", err)
+			code = 1
+		}
+	}
+
+	os.Exit(code)
 }
 
 // getTestPool returns a shared worker pool for tests

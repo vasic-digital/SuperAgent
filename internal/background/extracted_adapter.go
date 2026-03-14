@@ -297,3 +297,445 @@ func (a *TaskQueueAdapter) GetQueueDepth(ctx context.Context) (map[models.TaskPr
 	}
 	return depth, nil
 }
+
+// =============================================================================
+// InternalTaskQueueAdapter - Adapts internal TaskQueue to extracted TaskQueue interface
+// =============================================================================
+
+// InternalTaskQueueAdapter wraps an internal TaskQueue to implement extracted TaskQueue interface
+type InternalTaskQueueAdapter struct {
+	queue TaskQueue
+}
+
+// NewInternalTaskQueueAdapter creates a new adapter wrapping an internal TaskQueue
+func NewInternalTaskQueueAdapter(queue TaskQueue) *InternalTaskQueueAdapter {
+	return &InternalTaskQueueAdapter{queue: queue}
+}
+
+// Enqueue adds a task to the queue
+func (a *InternalTaskQueueAdapter) Enqueue(ctx context.Context, task *extractedmodels.BackgroundTask) error {
+	internalTask := convertToInternalTask(task)
+	err := a.queue.Enqueue(ctx, internalTask)
+	if err != nil {
+		return err
+	}
+	// Copy back fields that may have been set by the internal queue
+	if internalTask.ID != "" {
+		task.ID = internalTask.ID
+	}
+	if internalTask.Status != "" {
+		task.Status = extractedmodels.TaskStatus(internalTask.Status)
+	}
+	if internalTask.Priority != "" {
+		task.Priority = extractedmodels.TaskPriority(internalTask.Priority)
+	}
+	if !internalTask.ScheduledAt.IsZero() {
+		task.ScheduledAt = internalTask.ScheduledAt
+	}
+	if !internalTask.CreatedAt.IsZero() {
+		task.CreatedAt = internalTask.CreatedAt
+	}
+	if !internalTask.UpdatedAt.IsZero() {
+		task.UpdatedAt = internalTask.UpdatedAt
+	}
+	return nil
+}
+
+// Dequeue atomically retrieves and claims a task from the queue
+func (a *InternalTaskQueueAdapter) Dequeue(ctx context.Context, workerID string, requirements extractedbackground.ResourceRequirements) (*extractedmodels.BackgroundTask, error) {
+	internalRequirements := ResourceRequirements{
+		CPUCores: requirements.CPUCores,
+		MemoryMB: requirements.MemoryMB,
+		DiskMB:   requirements.DiskMB,
+		GPUCount: requirements.GPUCount,
+		Priority: models.TaskPriority(requirements.Priority),
+	}
+	internalTask, err := a.queue.Dequeue(ctx, workerID, internalRequirements)
+	if err != nil {
+		return nil, err
+	}
+	return convertToExtractedTask(internalTask), nil
+}
+
+// Peek returns tasks without claiming them
+func (a *InternalTaskQueueAdapter) Peek(ctx context.Context, count int) ([]*extractedmodels.BackgroundTask, error) {
+	internalTasks, err := a.queue.Peek(ctx, count)
+	if err != nil {
+		return nil, err
+	}
+	return convertToExtractedTasks(internalTasks), nil
+}
+
+// Requeue returns a task to the queue with optional delay
+func (a *InternalTaskQueueAdapter) Requeue(ctx context.Context, taskID string, delay time.Duration) error {
+	return a.queue.Requeue(ctx, taskID, delay)
+}
+
+// MoveToDeadLetter moves a failed task to dead-letter queue
+func (a *InternalTaskQueueAdapter) MoveToDeadLetter(ctx context.Context, taskID string, reason string) error {
+	return a.queue.MoveToDeadLetter(ctx, taskID, reason)
+}
+
+// GetPendingCount returns the number of pending tasks
+func (a *InternalTaskQueueAdapter) GetPendingCount(ctx context.Context) (int64, error) {
+	return a.queue.GetPendingCount(ctx)
+}
+
+// GetRunningCount returns the number of running tasks
+func (a *InternalTaskQueueAdapter) GetRunningCount(ctx context.Context) (int64, error) {
+	return a.queue.GetRunningCount(ctx)
+}
+
+// GetQueueDepth returns counts by priority
+func (a *InternalTaskQueueAdapter) GetQueueDepth(ctx context.Context) (map[extractedmodels.TaskPriority]int64, error) {
+	internalDepth, err := a.queue.GetQueueDepth(ctx)
+	if err != nil {
+		return nil, err
+	}
+	depth := make(map[extractedmodels.TaskPriority]int64)
+	for priority, count := range internalDepth {
+		depth[extractedmodels.TaskPriority(priority)] = count
+	}
+	return depth, nil
+}
+
+// =============================================================================
+// WorkerPool Adapter - Adapts extracted WorkerPool to internal WorkerPool interface
+// =============================================================================
+
+// WorkerPoolAdapter wraps the extracted WorkerPool to implement internal WorkerPool interface
+type WorkerPoolAdapter struct {
+	pool extractedbackground.WorkerPool
+}
+
+// NewWorkerPoolAdapter creates a new adapter wrapping an extracted WorkerPool
+func NewWorkerPoolAdapter(pool extractedbackground.WorkerPool) *WorkerPoolAdapter {
+	return &WorkerPoolAdapter{pool: pool}
+}
+
+// Start initializes and starts the worker pool
+func (a *WorkerPoolAdapter) Start(ctx context.Context) error {
+	return a.pool.Start(ctx)
+}
+
+// Stop gracefully stops the worker pool
+func (a *WorkerPoolAdapter) Stop(gracePeriod time.Duration) error {
+	return a.pool.Stop(gracePeriod)
+}
+
+// RegisterExecutor registers a task executor for a task type
+func (a *WorkerPoolAdapter) RegisterExecutor(taskType string, executor TaskExecutor) {
+	// Adapt internal TaskExecutor to extracted TaskExecutor
+	// We need to create an adapter that implements extractedbackground.TaskExecutor
+	// For now, we can use TaskExecutorAdapter (which adapts internal to extracted)
+	// but that adapter is in internal/adapters/background. We'll create a simple one here.
+	extractedExecutor := &taskExecutorAdapter{executor: executor}
+	a.pool.RegisterExecutor(taskType, extractedExecutor)
+}
+
+// GetWorkerCount returns the current number of workers
+func (a *WorkerPoolAdapter) GetWorkerCount() int {
+	return a.pool.GetWorkerCount()
+}
+
+// GetActiveTaskCount returns the number of currently executing tasks
+func (a *WorkerPoolAdapter) GetActiveTaskCount() int {
+	return a.pool.GetActiveTaskCount()
+}
+
+// GetWorkerStatus returns status information for all workers
+func (a *WorkerPoolAdapter) GetWorkerStatus() []WorkerStatus {
+	extractedStatus := a.pool.GetWorkerStatus()
+	status := make([]WorkerStatus, len(extractedStatus))
+	for i, s := range extractedStatus {
+		status[i] = *convertToInternalWorkerStatus(&s)
+	}
+	return status
+}
+
+// Scale manually adjusts the worker count
+func (a *WorkerPoolAdapter) Scale(targetCount int) error {
+	return a.pool.Scale(targetCount)
+}
+
+// =============================================================================
+// taskExecutorAdapter - Adapts internal TaskExecutor to extracted TaskExecutor (helper)
+// =============================================================================
+
+type taskExecutorAdapter struct {
+	executor TaskExecutor
+}
+
+func (a *taskExecutorAdapter) Execute(ctx context.Context, task *extractedmodels.BackgroundTask, reporter extractedbackground.ProgressReporter) error {
+	internalTask := convertToInternalTask(task)
+	internalReporter := &progressReporterAdapter{reporter: reporter}
+	return a.executor.Execute(ctx, internalTask, internalReporter)
+}
+
+func (a *taskExecutorAdapter) CanPause() bool {
+	return a.executor.CanPause()
+}
+
+func (a *taskExecutorAdapter) Pause(ctx context.Context, task *extractedmodels.BackgroundTask) ([]byte, error) {
+	internalTask := convertToInternalTask(task)
+	return a.executor.Pause(ctx, internalTask)
+}
+
+func (a *taskExecutorAdapter) Resume(ctx context.Context, task *extractedmodels.BackgroundTask, checkpoint []byte) error {
+	internalTask := convertToInternalTask(task)
+	return a.executor.Resume(ctx, internalTask, checkpoint)
+}
+
+func (a *taskExecutorAdapter) Cancel(ctx context.Context, task *extractedmodels.BackgroundTask) error {
+	internalTask := convertToInternalTask(task)
+	return a.executor.Cancel(ctx, internalTask)
+}
+
+func (a *taskExecutorAdapter) GetResourceRequirements() extractedbackground.ResourceRequirements {
+	internalReq := a.executor.GetResourceRequirements()
+	return convertToExtractedResourceRequirements(internalReq)
+}
+
+// =============================================================================
+// progressReporterAdapter - Adapts extracted ProgressReporter to internal ProgressReporter (helper)
+// =============================================================================
+
+type progressReporterAdapter struct {
+	reporter extractedbackground.ProgressReporter
+}
+
+func (a *progressReporterAdapter) ReportProgress(percent float64, message string) error {
+	return a.reporter.ReportProgress(percent, message)
+}
+
+func (a *progressReporterAdapter) ReportHeartbeat() error {
+	return a.reporter.ReportHeartbeat()
+}
+
+func (a *progressReporterAdapter) ReportCheckpoint(data []byte) error {
+	return a.reporter.ReportCheckpoint(data)
+}
+
+func (a *progressReporterAdapter) ReportMetrics(metrics map[string]interface{}) error {
+	return a.reporter.ReportMetrics(metrics)
+}
+
+func (a *progressReporterAdapter) ReportLog(level, message string, fields map[string]interface{}) error {
+	return a.reporter.ReportLog(level, message, fields)
+}
+
+// =============================================================================
+// ResourceMonitor Adapter - Adapts internal ResourceMonitor to extracted ResourceMonitor
+// =============================================================================
+
+type resourceMonitorAdapter struct {
+	monitor ResourceMonitor
+}
+
+func (a *resourceMonitorAdapter) GetSystemResources() (*extractedbackground.SystemResources, error) {
+	if a.monitor == nil {
+		// Return default system resources with high limits
+		return &extractedbackground.SystemResources{
+			TotalCPUCores:     64,
+			AvailableCPUCores: 64,
+			TotalMemoryMB:     1 << 30, // 1 TB in MB
+			AvailableMemoryMB: 1 << 30,
+			CPULoadPercent:    0.0,
+			MemoryUsedPercent: 0.0,
+			DiskUsedPercent:   0.0,
+			LoadAvg1:          0.0,
+			LoadAvg5:          0.0,
+			LoadAvg15:         0.0,
+		}, nil
+	}
+	internalResources, err := a.monitor.GetSystemResources()
+	if err != nil {
+		return nil, err
+	}
+	return convertToExtractedSystemResources(internalResources), nil
+}
+
+func (a *resourceMonitorAdapter) GetProcessResources(pid int) (*extractedmodels.ResourceSnapshot, error) {
+	if a.monitor == nil {
+		// Return empty snapshot
+		return &extractedmodels.ResourceSnapshot{
+			ID:             "",
+			TaskID:         "",
+			CPUPercent:     0.0,
+			CPUUserTime:    0.0,
+			CPUSystemTime:  0.0,
+			MemoryRSSBytes: 0,
+			MemoryVMSBytes: 0,
+			MemoryPercent:  0.0,
+			IOReadBytes:    0,
+			IOWriteBytes:   0,
+			IOReadCount:    0,
+			IOWriteCount:   0,
+			NetBytesSent:   0,
+			NetBytesRecv:   0,
+			NetConnections: 0,
+			OpenFiles:      0,
+			OpenFDs:        0,
+		}, nil
+	}
+	internalSnapshot, err := a.monitor.GetProcessResources(pid)
+	if err != nil {
+		return nil, err
+	}
+	return convertToExtractedResourceSnapshot(internalSnapshot), nil
+}
+
+func (a *resourceMonitorAdapter) StartMonitoring(taskID string, pid int, interval time.Duration) error {
+	if a.monitor == nil {
+		return nil
+	}
+	return a.monitor.StartMonitoring(taskID, pid, interval)
+}
+
+func (a *resourceMonitorAdapter) StopMonitoring(taskID string) error {
+	if a.monitor == nil {
+		return nil
+	}
+	return a.monitor.StopMonitoring(taskID)
+}
+
+func (a *resourceMonitorAdapter) GetLatestSnapshot(taskID string) (*extractedmodels.ResourceSnapshot, error) {
+	if a.monitor == nil {
+		// Return empty snapshot
+		return &extractedmodels.ResourceSnapshot{
+			ID:             "",
+			TaskID:         taskID,
+			CPUPercent:     0.0,
+			CPUUserTime:    0.0,
+			CPUSystemTime:  0.0,
+			MemoryRSSBytes: 0,
+			MemoryVMSBytes: 0,
+			MemoryPercent:  0.0,
+			IOReadBytes:    0,
+			IOWriteBytes:   0,
+			IOReadCount:    0,
+			IOWriteCount:   0,
+			NetBytesSent:   0,
+			NetBytesRecv:   0,
+			NetConnections: 0,
+			OpenFiles:      0,
+			OpenFDs:        0,
+		}, nil
+	}
+	internalSnapshot, err := a.monitor.GetLatestSnapshot(taskID)
+	if err != nil {
+		return nil, err
+	}
+	return convertToExtractedResourceSnapshot(internalSnapshot), nil
+}
+
+func (a *resourceMonitorAdapter) IsResourceAvailable(requirements extractedbackground.ResourceRequirements) bool {
+	if a.monitor == nil {
+		// If no monitor, assume resources available
+		return true
+	}
+	internalReq := convertToInternalResourceRequirements(requirements)
+	return a.monitor.IsResourceAvailable(internalReq)
+}
+
+// =============================================================================
+// StuckDetector Adapter - Adapts internal StuckDetector to extracted StuckDetector
+// =============================================================================
+
+type stuckDetectorAdapter struct {
+	detector StuckDetector
+}
+
+func (a *stuckDetectorAdapter) IsStuck(ctx context.Context, task *extractedmodels.BackgroundTask, snapshots []*extractedmodels.ResourceSnapshot) (bool, string) {
+	if a.detector == nil {
+		return false, ""
+	}
+	internalTask := convertToInternalTask(task)
+	internalSnapshots := make([]*models.ResourceSnapshot, len(snapshots))
+	for i, snapshot := range snapshots {
+		internalSnapshots[i] = convertToInternalResourceSnapshot(snapshot)
+	}
+	return a.detector.IsStuck(ctx, internalTask, internalSnapshots)
+}
+
+func (a *stuckDetectorAdapter) GetStuckThreshold(taskType string) time.Duration {
+	if a.detector == nil {
+		return 5 * time.Minute // default threshold
+	}
+	return a.detector.GetStuckThreshold(taskType)
+}
+
+func (a *stuckDetectorAdapter) SetThreshold(taskType string, threshold time.Duration) {
+	if a.detector == nil {
+		return
+	}
+	a.detector.SetThreshold(taskType, threshold)
+}
+
+// =============================================================================
+// NotificationService Adapter - Adapts internal NotificationService to extracted NotificationService
+// =============================================================================
+
+type notificationServiceAdapter struct {
+	service NotificationService
+}
+
+func (a *notificationServiceAdapter) NotifyTaskEvent(ctx context.Context, task *extractedmodels.BackgroundTask, event string, data map[string]interface{}) error {
+	if a.service == nil {
+		return nil
+	}
+	internalTask := convertToInternalTask(task)
+	return a.service.NotifyTaskEvent(ctx, internalTask, event, data)
+}
+
+func (a *notificationServiceAdapter) RegisterSSEClient(ctx context.Context, taskID string, client chan<- []byte) error {
+	if a.service == nil {
+		return nil
+	}
+	return a.service.RegisterSSEClient(ctx, taskID, client)
+}
+
+func (a *notificationServiceAdapter) UnregisterSSEClient(ctx context.Context, taskID string, client chan<- []byte) error {
+	if a.service == nil {
+		return nil
+	}
+	return a.service.UnregisterSSEClient(ctx, taskID, client)
+}
+
+func (a *notificationServiceAdapter) RegisterWebSocketClient(ctx context.Context, taskID string, client extractedbackground.WebSocketClient) error {
+	if a.service == nil {
+		return nil
+	}
+	// Adapt extracted WebSocketClient to internal WebSocketClient
+	// For now, we can create a wrapper or use a generic adapter.
+	// Since WebSocketClient interface is small, we can create an adapter.
+	// However, to keep things simple, we'll assume the internal NotificationService
+	// can handle extracted WebSocketClient via an adapter.
+	// We'll create a simple adapter:
+	internalClient := &webSocketClientAdapter{client: client}
+	return a.service.RegisterWebSocketClient(ctx, taskID, internalClient)
+}
+
+func (a *notificationServiceAdapter) BroadcastToTask(ctx context.Context, taskID string, message []byte) error {
+	if a.service == nil {
+		return nil
+	}
+	return a.service.BroadcastToTask(ctx, taskID, message)
+}
+
+// webSocketClientAdapter adapts extracted WebSocketClient to internal WebSocketClient
+type webSocketClientAdapter struct {
+	client extractedbackground.WebSocketClient
+}
+
+func (a *webSocketClientAdapter) Send(message []byte) error {
+	return a.client.Send(message)
+}
+
+func (a *webSocketClientAdapter) Close() error {
+	return a.client.Close()
+}
+
+func (a *webSocketClientAdapter) ID() string {
+	return a.client.ID()
+}

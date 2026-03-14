@@ -16,13 +16,14 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"dev.helix.agent/internal/config"
-	"dev.helix.agent/internal/debate/comprehensive"
-	"dev.helix.agent/internal/debate/orchestrator"
 	"dev.helix.agent/internal/llm"
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/services"
+	"dev.helix.agent/internal/services/debate_integration"
 	"dev.helix.agent/internal/skills"
 	"dev.helix.agent/internal/utils"
+	"digital.vasic.debate/comprehensive"
+	"digital.vasic.debate/orchestrator"
 )
 
 // UnifiedHandler provides 100% OpenAI-compatible API with automatic ensemble support
@@ -33,7 +34,7 @@ type UnifiedHandler struct {
 	debateTeamConfig        *services.DebateTeamConfig
 	skillsIntegration       *skills.Integration
 	intentRouter            *services.IntentBasedRouter
-	orchestratorIntegration *orchestrator.ServiceIntegration
+	orchestratorIntegration *debate_integration.ServiceIntegration
 	debateService           *services.DebateService
 	showDebateDialogue      bool
 	reportGenerator         *services.VerificationReportGenerator
@@ -103,7 +104,7 @@ func (h *UnifiedHandler) SetDebateService(debateService *services.DebateService)
 
 // SetOrchestratorIntegration sets the NEW debate orchestrator integration
 // This enables the 8-phase debate protocol (Dehallucination → SelfEvolvement → Proposal → Critique → Review → Optimization → Adversarial → Convergence)
-func (h *UnifiedHandler) SetOrchestratorIntegration(integration *orchestrator.ServiceIntegration) {
+func (h *UnifiedHandler) SetOrchestratorIntegration(integration *debate_integration.ServiceIntegration) {
 	h.orchestratorIntegration = integration
 	if integration != nil {
 		logrus.WithFields(logrus.Fields{

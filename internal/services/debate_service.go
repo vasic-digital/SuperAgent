@@ -23,14 +23,14 @@ import (
 	"dev.helix.agent/internal/models"
 
 	// NEW: Integrated AI Debate Features
-	"dev.helix.agent/internal/debate/audit"
-	"dev.helix.agent/internal/debate/comprehensive" // Comprehensive Multi-Agent Debate System
-	"dev.helix.agent/internal/debate/evaluation"
-	"dev.helix.agent/internal/debate/gates"
-	"dev.helix.agent/internal/debate/reflexion"
-	"dev.helix.agent/internal/debate/testing"
-	"dev.helix.agent/internal/debate/tools"
-	"dev.helix.agent/internal/debate/validation"
+	"digital.vasic.debate/audit"
+	"digital.vasic.debate/comprehensive" // Comprehensive Multi-Agent Debate System
+	"digital.vasic.debate/evaluation"
+	"digital.vasic.debate/gates"
+	"digital.vasic.debate/reflexion"
+	"digital.vasic.debate/testing"
+	"digital.vasic.debate/tools"
+	"digital.vasic.debate/validation"
 	// Note: orchestrator is integrated at the router/handler level (internal/router/router.go)
 	// to avoid import cycle. The orchestrator.ServiceIntegration bridges to this service.
 )

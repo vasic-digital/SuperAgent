@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"dev.helix.agent/internal/debate/reflexion"
+	"digital.vasic.debate/reflexion"
 )
 
 // mockTestExecutor implements reflexion.TestExecutor for integration testing.
@@ -63,7 +63,6 @@ func (m *mockLLMClient) Complete(ctx context.Context, prompt string) (string, er
 // TestReflexion_FailReflectRetrySuccess verifies the full reflexion cycle:
 // first attempt fails, reflection is generated, second attempt succeeds.
 func TestReflexion_FailReflectRetrySuccess(t *testing.T) {
-
 
 	// Test executor: passes on attempt 2
 	executor := &mockTestExecutor{passOnAttempt: 2}
@@ -136,7 +135,6 @@ func TestReflexion_FailReflectRetrySuccess(t *testing.T) {
 // TestReflexion_AccumulatedWisdom verifies that episodes are stored and
 // wisdom can be extracted from patterns across multiple sessions.
 func TestReflexion_AccumulatedWisdom(t *testing.T) {
-
 
 	memory := reflexion.NewEpisodicMemoryBuffer(1000)
 	wisdom := reflexion.NewAccumulatedWisdom()
@@ -237,7 +235,6 @@ func TestReflexion_AccumulatedWisdom(t *testing.T) {
 // memory buffer respects its maximum size via FIFO eviction.
 func TestReflexion_EpisodicMemory_BoundedCapacity(t *testing.T) {
 
-
 	maxSize := 50
 	memory := reflexion.NewEpisodicMemoryBuffer(maxSize)
 
@@ -275,7 +272,6 @@ func TestReflexion_EpisodicMemory_BoundedCapacity(t *testing.T) {
 // reflection generator falls back to deterministic analysis when the
 // LLM is unavailable.
 func TestReflexion_ReflectionGenerator_FallbackMode(t *testing.T) {
-
 
 	// LLM client that always fails
 	failingClient := &mockLLMClient{
