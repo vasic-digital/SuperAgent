@@ -1,0 +1,46 @@
+@startuml goroutine-lifecycle
+!theme plain
+skinparam sequenceArrowThickness 2
+skinparam sequenceParticipantBorderColor #555555
+skinparam sequenceLifeLineBorderColor #888888
+skinparam defaultFontName Helvetica
+
+title Goroutine Lifecycle Management Pattern
+
+participant "Handler" as H
+participant "WaitGroup" as WG
+participant "Goroutine" as G
+participant "Context" as C
+
+== Startup ==
+
+H -> WG : Add(1)
+H -> G : go func()
+activate G
+G -> G : defer wg.Done()
+G -> C : select ctx.Done()
+note right: Goroutine listens\nfor cancellation
+
+...time passes...
+
+== Shutdown ==
+
+H -> C : cancel()
+C --> G : ctx.Done() fires
+G -> G : cleanup
+G -> WG : Done()
+deactivate G
+H -> WG : Wait()
+note right: Shutdown() blocks\nuntil goroutine exits
+
+== Applied In ==
+
+note over H, C
+  SSE streaming handlers
+  Cache invalidation loops
+  Model refresh deduplication
+  Debate log lifecycle tracking
+  ACP graceful shutdown
+end note
+
+@enduml
