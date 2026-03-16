@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"dev.helix.agent/internal/mcp/adapters"
+	"dev.helix.agent/internal/services/debate_integration"
 	"dev.helix.agent/internal/verifier"
-	"digital.vasic.debate/orchestrator"
 	"llm-verifier/pkg/cliagents"
 )
 
@@ -102,7 +102,7 @@ func TestCLIMCPConfigCompliance(t *testing.T) {
 
 // TestDebateFrameworkCompliance verifies new debate framework is enabled
 func TestDebateFrameworkCompliance(t *testing.T) {
-	config := orchestrator.DefaultServiceIntegrationConfig()
+	config := debate_integration.DefaultServiceIntegrationConfig()
 
 	t.Logf("New debate framework enabled: %v", config.EnableNewFramework)
 	t.Logf("Fallback to legacy: %v", config.FallbackToLegacy)
@@ -111,12 +111,12 @@ func TestDebateFrameworkCompliance(t *testing.T) {
 
 	if !config.EnableNewFramework {
 		t.Error("COMPLIANCE FAILED: New debate framework is not enabled by default")
-		t.Fatal("Set EnableNewFramework to true in orchestrator.DefaultServiceIntegrationConfig()")
+		t.Fatal("Set EnableNewFramework to true in debate_integration.DefaultServiceIntegrationConfig()")
 	}
 
 	if !config.EnableLearning {
 		t.Error("COMPLIANCE FAILED: Learning is not enabled by default")
-		t.Fatal("Set EnableLearning to true in orchestrator.DefaultServiceIntegrationConfig()")
+		t.Fatal("Set EnableLearning to true in debate_integration.DefaultServiceIntegrationConfig()")
 	}
 }
 
