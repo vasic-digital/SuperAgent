@@ -46,6 +46,7 @@ type ExpirationManager struct {
 	metrics     *ExpirationMetrics
 	ctx         context.Context
 	cancel      context.CancelFunc
+	wg          sync.WaitGroup
 }
 
 // ExpirationMetrics tracks expiration manager statistics
@@ -81,15 +82,24 @@ func NewExpirationManager(cache *TieredCache, config *ExpirationConfig) *Expirat
 
 // Start starts the background cleanup and validation goroutines
 func (m *ExpirationManager) Start() {
-	go m.cleanupLoop()
+	m.wg.Add(1)
+	go func() {
+		defer m.wg.Done()
+		m.cleanupLoop()
+	}()
 	if m.config.EnableValidation {
-		go m.validationLoop()
+		m.wg.Add(1)
+		go func() {
+			defer m.wg.Done()
+			m.validationLoop()
+		}()
 	}
 }
 
-// Stop stops the expiration manager
+// Stop stops the expiration manager and waits for goroutines to exit
 func (m *ExpirationManager) Stop() {
 	m.cancel()
+	m.wg.Wait()
 }
 
 // RegisterValidator adds a custom validator for keys matching a pattern
