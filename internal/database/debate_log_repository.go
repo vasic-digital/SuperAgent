@@ -3,6 +3,8 @@ package database
 import (
 	"context"
 	"fmt"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -60,6 +62,8 @@ type DebateLogRepository struct {
 	pool            *pgxpool.Pool
 	log             *logrus.Logger
 	retentionPolicy LogRetentionPolicy
+	cleanupWg       sync.WaitGroup
+	cleanupRunning  atomic.Bool
 }
 
 // NewDebateLogRepository creates a new debate log repository
@@ -415,9 +419,18 @@ func (r *DebateLogRepository) scanRows(rows pgx.Rows) ([]DebateLogEntry, error) 
 	return entries, nil
 }
 
-// StartCleanupWorker starts a background worker that periodically cleans up expired logs
+// StartCleanupWorker starts a background worker that periodically cleans up expired logs.
+// It is safe to call multiple times; duplicate calls are ignored.
 func (r *DebateLogRepository) StartCleanupWorker(ctx context.Context, interval time.Duration) {
+	if !r.cleanupRunning.CompareAndSwap(false, true) {
+		return
+	}
+
+	r.cleanupWg.Add(1)
 	go func() {
+		defer r.cleanupWg.Done()
+		defer r.cleanupRunning.Store(false)
+
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 
@@ -442,4 +455,10 @@ func (r *DebateLogRepository) StartCleanupWorker(ctx context.Context, interval t
 			}
 		}
 	}()
+}
+
+// StopCleanupWorker waits for the cleanup worker goroutine to exit.
+// The caller must cancel the context passed to StartCleanupWorker first.
+func (r *DebateLogRepository) StopCleanupWorker() {
+	r.cleanupWg.Wait()
 }
