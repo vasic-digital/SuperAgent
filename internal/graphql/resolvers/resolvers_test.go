@@ -264,7 +264,8 @@ func TestResolveProvider_NoContext(t *testing.T) {
 	}
 	result, err := ResolveProvider(params)
 
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "provider service unavailable")
 	assert.Nil(t, result)
 }
 
@@ -487,7 +488,8 @@ func TestResolveCreateDebate_NoContext(t *testing.T) {
 	}
 	result, err := ResolveCreateDebate(params)
 
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "debate service unavailable")
 	assert.Nil(t, result)
 }
 

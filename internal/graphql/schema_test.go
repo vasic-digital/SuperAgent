@@ -125,8 +125,8 @@ func TestExecuteQuery_WithVariables(t *testing.T) {
 	}
 	result := ExecuteQuery(query, variables)
 
-	// Result may be nil since resolver returns nil, but no errors
-	assert.Empty(t, result.Errors)
+	// Resolver returns "provider service unavailable" error when no service is configured
+	assert.NotEmpty(t, result.Errors)
 }
 
 func TestExecuteQuery_InvalidQuery(t *testing.T) {
@@ -155,8 +155,9 @@ func TestResolveProvider(t *testing.T) {
 	}
 	result, err := ResolveProvider(params)
 
-	assert.NoError(t, err)
-	assert.Nil(t, result) // Placeholder returns nil
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "provider service unavailable")
+	assert.Nil(t, result)
 }
 
 func TestResolveDebates(t *testing.T) {
@@ -175,8 +176,9 @@ func TestResolveDebate(t *testing.T) {
 	}
 	result, err := ResolveDebate(params)
 
-	assert.NoError(t, err)
-	assert.Nil(t, result) // Placeholder returns nil
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "debate service unavailable")
+	assert.Nil(t, result)
 }
 
 func TestResolveTasks(t *testing.T) {
@@ -225,8 +227,9 @@ func TestResolveCreateDebate(t *testing.T) {
 	}
 	result, err := ResolveCreateDebate(params)
 
-	assert.NoError(t, err)
-	assert.Nil(t, result) // Placeholder returns nil
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "debate service unavailable")
+	assert.Nil(t, result)
 }
 
 func TestResolveSubmitDebateResponse(t *testing.T) {
@@ -241,8 +244,9 @@ func TestResolveSubmitDebateResponse(t *testing.T) {
 	}
 	result, err := ResolveSubmitDebateResponse(params)
 
-	assert.NoError(t, err)
-	assert.Nil(t, result) // Placeholder returns nil
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "debate service unavailable")
+	assert.Nil(t, result)
 }
 
 func TestResolveCreateTask(t *testing.T) {
@@ -256,8 +260,9 @@ func TestResolveCreateTask(t *testing.T) {
 	}
 	result, err := ResolveCreateTask(params)
 
-	assert.NoError(t, err)
-	assert.Nil(t, result) // Placeholder returns nil
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "task service unavailable")
+	assert.Nil(t, result)
 }
 
 func TestResolveCancelTask(t *testing.T) {
@@ -268,8 +273,9 @@ func TestResolveCancelTask(t *testing.T) {
 	}
 	result, err := ResolveCancelTask(params)
 
-	assert.NoError(t, err)
-	assert.Nil(t, result) // Placeholder returns nil
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "task service unavailable")
+	assert.Nil(t, result)
 }
 
 func TestResolveRefreshProvider(t *testing.T) {
@@ -280,8 +286,9 @@ func TestResolveRefreshProvider(t *testing.T) {
 	}
 	result, err := ResolveRefreshProvider(params)
 
-	assert.NoError(t, err)
-	assert.Nil(t, result) // Placeholder returns nil
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "provider service unavailable")
+	assert.Nil(t, result)
 }
 
 func TestProviderType_Fields(t *testing.T) {
