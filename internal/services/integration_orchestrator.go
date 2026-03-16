@@ -4,11 +4,19 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"runtime"
 	"sync"
 	"time"
 
+	"golang.org/x/sync/semaphore"
+
 	"dev.helix.agent/internal/models"
 )
+
+// maxParallelOperations limits the number of concurrent operations in
+// ExecuteParallelOperations to avoid unbounded goroutine growth.
+// Capped at 2*NumCPU or 16, whichever is smaller.
+var maxParallelOperations = int64(min(2*runtime.NumCPU(), 16))
 
 // IntegrationOrchestrator coordinates MCP, LSP, and tool execution
 type IntegrationOrchestrator struct {
@@ -145,18 +153,29 @@ func (io *IntegrationOrchestrator) ExecuteToolChain(ctx context.Context, toolCha
 	return workflow.Results, nil
 }
 
-// ExecuteParallelOperations executes multiple operations in parallel
+// ExecuteParallelOperations executes multiple operations in parallel.
+// Concurrency is bounded by maxParallelOperations to prevent unbounded
+// goroutine growth when the caller supplies a large operation list.
 func (io *IntegrationOrchestrator) ExecuteParallelOperations(ctx context.Context, operations []Operation) (map[string]interface{}, error) {
 	results := make(map[string]interface{})
 	errors := make([]error, 0)
+
+	sem := semaphore.NewWeighted(maxParallelOperations)
 
 	var wg sync.WaitGroup
 	resultChan := make(chan OperationResult, len(operations))
 
 	for _, op := range operations {
+		// Acquire a semaphore slot before launching the goroutine so that
+		// we never have more than maxParallelOperations in flight.
+		if err := sem.Acquire(ctx, 1); err != nil {
+			// Context cancelled or expired — stop scheduling.
+			break
+		}
 		wg.Add(1)
 		go func(operation Operation) {
 			defer wg.Done()
+			defer sem.Release(1)
 			result := io.executeOperation(ctx, operation)
 			resultChan <- result
 		}(op)
@@ -225,9 +244,13 @@ func (io *IntegrationOrchestrator) executeWorkflow(ctx context.Context, workflow
 			return fmt.Errorf("workflow deadlock or circular dependency detected")
 		}
 
-		// Execute steps in parallel
+		// Execute steps in parallel, bounded by maxParallelOperations
+		stepSem := semaphore.NewWeighted(maxParallelOperations)
 		var wg sync.WaitGroup
 		for _, step := range executable {
+			if err := stepSem.Acquire(ctx, 1); err != nil {
+				break // context cancelled
+			}
 			wg.Add(1)
 			mu.Lock()
 			running[step.ID] = true
@@ -235,6 +258,7 @@ func (io *IntegrationOrchestrator) executeWorkflow(ctx context.Context, workflow
 
 			go func(s WorkflowStep) {
 				defer wg.Done()
+				defer stepSem.Release(1)
 				defer func() {
 					mu.Lock()
 					delete(running, s.ID)
