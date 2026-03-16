@@ -3,7 +3,6 @@ package messaging
 import (
 	"context"
 	"encoding/json"
-	"strings"
 	"time"
 )
 
@@ -527,31 +526,6 @@ func (b *EventBuffer) Flush() error {
 	return b.flushFn(events)
 }
 
-// Start starts the background flusher.
-func (b *EventBuffer) Start() {
-	go func() {
-		ticker := time.NewTicker(b.interval)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ticker.C:
-				_ = b.Flush()
-			case <-b.flushCh:
-				_ = b.Flush()
-			case <-b.stopCh:
-				_ = b.Flush()
-				return
-			}
-		}
-	}()
-}
-
-// Stop stops the background flusher.
-func (b *EventBuffer) Stop() {
-	close(b.stopCh)
-}
-
 // ============================================================================
 // Fallback Event Data Types
 // ============================================================================
@@ -616,84 +590,3 @@ const (
 	FallbackErrorUnknown     FallbackErrorCategory = "unknown"
 )
 
-// CategorizeError categorizes an error message into a FallbackErrorCategory
-func CategorizeError(errorMsg string) FallbackErrorCategory {
-	if errorMsg == "" {
-		return FallbackErrorUnknown
-	}
-
-	lowerErr := strings.ToLower(errorMsg)
-
-	switch {
-	case strings.Contains(lowerErr, "rate limit") || strings.Contains(lowerErr, "ratelimit"):
-		return FallbackErrorRateLimit
-	case strings.Contains(lowerErr, "timeout") || strings.Contains(lowerErr, "timed out"):
-		return FallbackErrorTimeout
-	case strings.Contains(lowerErr, "auth") || strings.Contains(lowerErr, "unauthorized") ||
-		strings.Contains(lowerErr, "invalid api key") || strings.Contains(lowerErr, "401"):
-		return FallbackErrorAuth
-	case strings.Contains(lowerErr, "quota") || strings.Contains(lowerErr, "exceeded"):
-		return FallbackErrorQuota
-	case strings.Contains(lowerErr, "connection") || strings.Contains(lowerErr, "network") ||
-		strings.Contains(lowerErr, "dial") || strings.Contains(lowerErr, "refused"):
-		return FallbackErrorConnection
-	case strings.Contains(lowerErr, "unavailable") || strings.Contains(lowerErr, "503") ||
-		strings.Contains(lowerErr, "service temporarily"):
-		return FallbackErrorUnavailable
-	case strings.Contains(lowerErr, "overloaded") || strings.Contains(lowerErr, "capacity") ||
-		strings.Contains(lowerErr, "busy"):
-		return FallbackErrorOverloaded
-	case strings.Contains(lowerErr, "invalid") || strings.Contains(lowerErr, "400") ||
-		strings.Contains(lowerErr, "bad request"):
-		return FallbackErrorInvalid
-	case strings.Contains(lowerErr, "empty") || strings.Contains(lowerErr, "no content") ||
-		strings.Contains(lowerErr, "no response"):
-		return FallbackErrorEmpty
-	default:
-		return FallbackErrorUnknown
-	}
-}
-
-// FallbackEventIcon returns an appropriate icon for the fallback event type
-func FallbackEventIcon(eventType EventType) string {
-	switch eventType {
-	case EventTypeFallbackTriggered:
-		return "⚡" // Lightning - fallback triggered
-	case EventTypeFallbackSuccess:
-		return "✅" // Check - fallback succeeded
-	case EventTypeFallbackFailed:
-		return "❌" // Cross - fallback failed
-	case EventTypeFallbackExhausted:
-		return "💀" // Skull - all fallbacks exhausted
-	case EventTypeFallbackChain:
-		return "🔗" // Chain - complete chain summary
-	default:
-		return "⚠️" // Warning - unknown
-	}
-}
-
-// FallbackCategoryIcon returns an icon for the error category
-func FallbackCategoryIcon(category FallbackErrorCategory) string {
-	switch category {
-	case FallbackErrorRateLimit:
-		return "🚦" // Traffic light - rate limit
-	case FallbackErrorTimeout:
-		return "⏱️" // Timer - timeout
-	case FallbackErrorAuth:
-		return "🔑" // Key - auth error
-	case FallbackErrorQuota:
-		return "📊" // Chart - quota exceeded
-	case FallbackErrorConnection:
-		return "🔌" // Plug - connection error
-	case FallbackErrorUnavailable:
-		return "🚫" // No entry - unavailable
-	case FallbackErrorOverloaded:
-		return "🔥" // Fire - overloaded
-	case FallbackErrorInvalid:
-		return "⚠️" // Warning - invalid request
-	case FallbackErrorEmpty:
-		return "📭" // Empty mailbox - empty response
-	default:
-		return "❓" // Question - unknown
-	}
-}
