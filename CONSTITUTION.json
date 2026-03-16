@@ -3,7 +3,7 @@
   "project_name": "HelixAgent",
   "summary": "Constitution with 26 rules (26 mandatory) across categories: Quality: 2, Safety: 1, Security: 1, Performance: 2, Containerization: 3, Configuration: 1, Testing: 4, Documentation: 2, Principles: 2, Stability: 1, Observability: 1, GitOps: 2, CI/CD: 1, Architecture: 1, Networking: 1, Resource Management: 1",
   "created_at": "2026-02-10T00:18:38.71286699+03:00",
-  "updated_at": "2026-02-21T16:30:00.000000000+03:00",
+  "updated_at": "2026-03-16T00:00:00.000000000+03:00",
   "rules": [
     {
       "id": "CONST-001",
@@ -244,6 +244,46 @@
       "priority": 1,
       "added_at": "2026-02-17T12:00:00.000000000+03:00",
       "updated_at": "2026-02-17T12:00:00.000000000+03:00"
+    },
+    {
+      "id": "CONST-015b",
+      "category": "Containerization",
+      "title": "Mandatory Container Rebuild",
+      "description": "All running containers on local host or remote distributed machines MUST be rebuilt and redeployed if code was changed affecting any of them. After any code changes to services, handlers, MCPs, formatters, or any containerized component: (1) Rebuild affected images with `make docker-build` or `make container-build`, (2) Restart containers with `make docker-run` or `make container-start`, (3) If using remote distribution, re-run distribution with `CONTAINERS_REMOTE_ENABLED=true`. Failure to rebuild containers after code changes will result in outdated code running in production.",
+      "mandatory": true,
+      "priority": 1,
+      "added_at": "2026-03-16T00:00:00.000000000+03:00",
+      "updated_at": "2026-03-16T00:00:00.000000000+03:00"
+    },
+    {
+      "id": "CONST-023",
+      "category": "Networking",
+      "title": "HTTP/3 (QUIC) with Brotli Compression",
+      "description": "ALL HTTP communication MUST use HTTP/3 (QUIC) as primary transport with Brotli compression. HTTP/2 only as fallback when HTTP/3 is unavailable. Compression priority: Brotli (primary) then gzip (fallback). All HTTP clients and servers MUST prefer HTTP/3. Use `quic-go/quic-go` for transport and `andybalholm/brotli` for compression.",
+      "mandatory": true,
+      "priority": 1,
+      "added_at": "2026-03-16T00:00:00.000000000+03:00",
+      "updated_at": "2026-03-16T00:00:00.000000000+03:00"
+    },
+    {
+      "id": "CONST-024",
+      "category": "Resource Management",
+      "title": "Test and Challenge Resource Limits",
+      "description": "ALL test and challenge execution MUST be strictly limited to 30-40% of host system resources. Use GOMAXPROCS=2, nice -n 19, ionice -c 3, and -p 1 for go test. Container limits required. Host machine runs mission-critical processes; exceeding limits has caused system crashes and forced resets.",
+      "mandatory": true,
+      "priority": 1,
+      "added_at": "2026-03-16T00:00:00.000000000+03:00",
+      "updated_at": "2026-03-16T00:00:00.000000000+03:00"
+    },
+    {
+      "id": "CONST-016a",
+      "category": "Configuration",
+      "title": "Non-Interactive Execution",
+      "description": "ALL commands MUST be fully non-interactive and automatable via command pipelines. NEVER prompt for passwords, passphrases, or any user input interactively. SSH connections MUST use key-based authentication with SSH agent (ssh-add) or password provided via environment variables/sshpass. Container distribution to remote hosts MUST be fully automated through the Containers module's SSH executor with pre-configured credentials. All secrets (API keys, passwords, SSH keys) MUST be provided via environment variables or .env files, never via interactive prompts.",
+      "mandatory": true,
+      "priority": 1,
+      "added_at": "2026-03-16T00:00:00.000000000+03:00",
+      "updated_at": "2026-03-16T00:00:00.000000000+03:00"
     }
   ]
 }
