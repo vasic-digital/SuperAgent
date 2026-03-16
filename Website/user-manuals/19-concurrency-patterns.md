@@ -601,10 +601,119 @@ func TestWorkerPool_Shutdown(t *testing.T) {
 2. Ensure the receiving side is always active or the channel is properly drained
 3. Use `select` with a timeout or context cancellation as a safety valve
 
+## WaitGroup Lifecycle Pattern for Handlers
+
+All HTTP handlers and background services in HelixAgent that launch goroutines must implement the WaitGroup lifecycle pattern for graceful shutdown. This pattern was applied across 9 components during the v1.3.1 remediation.
+
+### Pattern Structure
+
+```go
+type Service struct {
+    wg     sync.WaitGroup
+    ctx    context.Context
+    cancel context.CancelFunc
+}
+
+func NewService() *Service {
+    ctx, cancel := context.WithCancel(context.Background())
+    return &Service{ctx: ctx, cancel: cancel}
+}
+
+func (s *Service) Start() {
+    s.wg.Add(1)           // MUST be before go func()
+    go func() {
+        defer s.wg.Done() // Signals completion
+        for {
+            select {
+            case <-s.ctx.Done():
+                return    // Exit on cancellation
+            case work := <-s.workCh:
+                s.process(work)
+            }
+        }
+    }()
+}
+
+func (s *Service) Shutdown() {
+    s.cancel()   // Signal goroutine to stop
+    s.wg.Wait()  // Block until goroutine exits
+}
+```
+
+### Where This Pattern Is Applied
+
+| Component | File | Goroutine Purpose |
+|---|---|---|
+| SSE Handler | `internal/handlers/sse_handler.go` | Event broadcasting |
+| Cache Invalidation | `internal/cache/invalidation.go` | Periodic cache cleanup |
+| Model Refresh | `internal/llm/discovery/` | Background model list refresh |
+| Debate Log Tracker | `internal/services/debate_service.go` | Debate round logging |
+| ACP Shutdown | `internal/handlers/acp_handler.go` | Graceful connection draining |
+
+### Rules
+
+1. `wg.Add(1)` MUST be called before `go func()`, never inside it
+2. `defer wg.Done()` MUST be the first line inside the goroutine
+3. The goroutine MUST listen on `ctx.Done()` in a `select` statement
+4. `Shutdown()` MUST call `cancel()` before `wg.Wait()` to avoid deadlock
+
+## Deduplication Pattern
+
+The deduplication pattern prevents multiple goroutines from performing the same background operation simultaneously. This is used for model refresh and cache warming.
+
+```go
+type Deduplicator struct {
+    mu      sync.Mutex
+    running bool
+    wg      sync.WaitGroup
+}
+
+func (d *Deduplicator) TryStart() bool {
+    d.mu.Lock()
+    defer d.mu.Unlock()
+    if d.running {
+        return false // Already in progress
+    }
+    d.running = true
+    d.wg.Add(1)
+    return true
+}
+
+func (d *Deduplicator) Finish() {
+    d.mu.Lock()
+    d.running = false
+    d.mu.Unlock()
+    d.wg.Done()
+}
+
+func (d *Deduplicator) Wait() {
+    d.wg.Wait()
+}
+```
+
+Usage: call `TryStart()` before launching a refresh goroutine. If it returns `false`, another refresh is already in flight -- skip silently. The caller goroutine calls `defer d.Finish()` when done.
+
+## SpecAdapter No-Op Pattern
+
+When an extracted module (e.g., HelixSpecifier) may not be compiled in (build tag `nohelixspecifier`), the adapter must handle nil receivers safely:
+
+```go
+func (a *SpecAdapter) ProcessRequest(ctx context.Context, req *Request) (*Response, error) {
+    if a == nil || a.engine == nil {
+        return nil, nil // No-op when module not available
+    }
+    return a.engine.Process(ctx, req)
+}
+```
+
+All adapter methods must check for nil before delegating to the underlying module.
+
 ## Related Resources
 
 - [User Manual 18: Performance Monitoring](18-performance-monitoring.md) -- Monitoring goroutine and pool metrics
 - [User Manual 20: Testing Strategies](20-testing-strategies.md) -- Race detection and stress testing
+- [Video Course 61: Goroutine Safety](../video-courses/video-course-61-goroutine-safety.md) -- Deep dive on lifecycle patterns
+- Goroutine lifecycle diagram: `docs/diagrams/src/goroutine-lifecycle.puml`
 - Concurrency module source: `Concurrency/`
 - Debate performance optimizer: `internal/services/debate_performance_optimizer.go`
 - Background task system: `internal/background/`

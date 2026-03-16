@@ -513,11 +513,158 @@ challenges/scripts/       # Shell-based challenge scripts
 2. Use `-coverprofile=coverage.out` explicitly
 3. Check that tests are not all skipped (look for `t.Skip` calls)
 
+## Monitoring Metrics Test Patterns
+
+Monitoring tests validate that Prometheus metrics are registered, exposed, and updated correctly during system operation.
+
+### Prometheus Metric Validation
+
+```go
+func TestMetrics_ProviderRequestCounter(t *testing.T) {
+    // Send a request to trigger metric updates
+    resp, err := http.Post(baseURL+"/v1/chat/completions",
+        "application/json", strings.NewReader(requestBody))
+    require.NoError(t, err)
+    resp.Body.Close()
+
+    // Fetch Prometheus metrics endpoint
+    metricsResp, err := http.Get(baseURL + "/metrics")
+    require.NoError(t, err)
+    defer metricsResp.Body.Close()
+
+    body, _ := io.ReadAll(metricsResp.Body)
+    metrics := string(body)
+
+    // Validate expected metrics exist
+    assert.Contains(t, metrics, "helixagent_http_requests_total")
+    assert.Contains(t, metrics, "helixagent_provider_latency_seconds")
+    assert.Contains(t, metrics, "helixagent_goroutines")
+}
+```
+
+### Health Check Validation
+
+```go
+func TestHealth_EndpointResponds(t *testing.T) {
+    resp, err := http.Get(baseURL + "/v1/health")
+    require.NoError(t, err)
+    defer resp.Body.Close()
+
+    assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+    var health map[string]interface{}
+    json.NewDecoder(resp.Body).Decode(&health)
+    assert.Equal(t, "healthy", health["status"])
+}
+```
+
+## Chaos Engineering Test Approach
+
+Chaos tests inject controlled failures to verify system resilience. HelixAgent's chaos tests cover 6 scenarios:
+
+### Test Categories
+
+| Test | What It Does | Expected Behavior |
+|---|---|---|
+| Cascade Failure | Disable providers one by one | Graceful degradation, fallback to remaining |
+| Memory Pressure | Allocate memory under constrained limits | OOM protection, no crash |
+| Timeout Escalation | Progressively increase provider latency | Circuit breaker opens, fast fallback |
+| Concurrent Chaos | Inject failures under high concurrency | No data corruption, clean recovery |
+| Recovery Test | Fail then restore all providers | Full recovery within threshold |
+| Split Brain | Network partition between services | Consistent state after partition heals |
+
+### Implementation Pattern
+
+```go
+func TestChaos_ProviderCascadeFailure(t *testing.T) {
+    providers := setupProviders(t)
+
+    // Phase 1: All providers healthy
+    resp1, err := sendRequest()
+    require.NoError(t, err)
+    assert.Equal(t, http.StatusOK, resp1.StatusCode)
+
+    // Phase 2: Fail providers one by one
+    for i, p := range providers {
+        p.InjectFailure("timeout", 30*time.Second)
+
+        if i < len(providers)-1 {
+            resp, err := sendRequest()
+            require.NoError(t, err, "should still work with %d/%d providers", len(providers)-i-1, len(providers))
+        }
+    }
+
+    // Phase 3: Restore and verify recovery
+    for _, p := range providers {
+        p.ClearFailures()
+    }
+
+    require.Eventually(t, func() bool {
+        resp, err := sendRequest()
+        return err == nil && resp.StatusCode == http.StatusOK
+    }, 30*time.Second, time.Second)
+}
+```
+
+## Extreme Stress Test Design
+
+Extreme stress tests push the system to 10x normal load to establish performance baselines and verify stability under pressure.
+
+### Key Metrics to Capture
+
+- **P99 latency**: The 99th percentile response time under load
+- **Error rate**: Percentage of failed requests
+- **Goroutine count**: Should remain stable (no leaks under load)
+- **Memory usage**: Should plateau, not grow unbounded
+
+### Resource-Limited Execution
+
+All stress tests must respect the 30-40% resource limit:
+
+```bash
+GOMAXPROCS=2 nice -n 19 ionice -c 3 go test -v -p 1 \
+  -timeout 10m -run TestStress ./tests/stress/...
+```
+
+### Goroutine Stability Test
+
+```go
+func TestStress_GoroutineStability(t *testing.T) {
+    baseline := runtime.NumGoroutine()
+
+    // Generate sustained load
+    const duration = 60 * time.Second
+    const concurrency = 50
+    ctx, cancel := context.WithTimeout(context.Background(), duration)
+    defer cancel()
+
+    var wg sync.WaitGroup
+    for i := 0; i < concurrency; i++ {
+        wg.Add(1)
+        go func() {
+            defer wg.Done()
+            for ctx.Err() == nil {
+                sendRequest()
+            }
+        }()
+    }
+    wg.Wait()
+
+    // Goroutine count should return near baseline after load stops
+    require.Eventually(t, func() bool {
+        current := runtime.NumGoroutine()
+        return current <= baseline+10
+    }, 30*time.Second, time.Second,
+        "goroutine count should stabilize after load")
+}
+```
+
 ## Related Resources
 
 - [User Manual 21: Challenge Development](21-challenge-development.md) -- Creating new challenge tests
-- [User Manual 19: Concurrency Patterns](19-concurrency-patterns.md) -- Testing concurrent code
+- [User Manual 19: Concurrency Patterns](19-concurrency-patterns.md) -- Testing concurrent code, WaitGroup lifecycle pattern
 - [User Manual 18: Performance Monitoring](18-performance-monitoring.md) -- Benchmark result analysis
+- [Video Course 61: Goroutine Safety](../video-courses/video-course-61-goroutine-safety.md) -- Lifecycle management deep dive
 - Test infrastructure: `docker/test/docker-compose.test.yml`
 - Challenges framework: `Challenges/`
 - Go testing documentation: https://pkg.go.dev/testing
