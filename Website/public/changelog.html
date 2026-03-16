@@ -40,6 +40,44 @@
         <p class="lead">All notable changes to HelixAgent are documented here.</p>
 
         <div class="changelog-entry">
+            <h2><span class="version-badge">v1.3.1</span> <span class="date-badge">March 2026</span></h2>
+            <p>Complete remediation release covering goroutine safety, dead code removal, test coverage expansion, security scanning, performance optimization, and chaos engineering.</p>
+
+            <div class="change-type fixed">Fixed</div>
+            <ul class="changes-list">
+                <li>Fixed 9 goroutine lifecycle safety issues across handlers, cache, and database (WaitGroup patterns)</li>
+                <li>Removed 981 lines of dead code across 19 files</li>
+                <li>Applied 22 security fixes from gosec scan (19 file permissions, 3 unhandled errors)</li>
+                <li>Constitution synchronized to v1.2.0 with 26 rules</li>
+            </ul>
+
+            <div class="change-type added">Added</div>
+            <ul class="changes-list">
+                <li>Expanded test coverage for 9 packages including internal/adapters/background (0% to 52.8%)</li>
+                <li>3 new challenge scripts: goroutine_lifecycle, adapter_coverage, race_condition</li>
+                <li>12 new extreme stress and chaos engineering tests (10x load, cascade failure, memory pressure, P99 baseline)</li>
+                <li>New monitoring and metrics validation tests (Prometheus, OpenTelemetry, health checks)</li>
+                <li>New Video Course 61: Goroutine Safety &amp; Lifecycle Management</li>
+                <li>Goroutine lifecycle PlantUML diagram</li>
+                <li>Updated user manuals 17 (security), 19 (concurrency), 20 (testing)</li>
+            </ul>
+
+            <div class="change-type improved">Improved</div>
+            <ul class="changes-list">
+                <li>Lazy loading audit and semaphore expansion for performance optimization</li>
+                <li>HTTP/3 (QUIC) transport verification</li>
+                <li>Benchmark baseline capture for performance regression detection</li>
+            </ul>
+
+            <div class="change-type security">Security</div>
+            <ul class="changes-list">
+                <li>Gosec scan: 568 findings analyzed, 22 actionable fixes applied</li>
+                <li>File permissions hardened to 0o600/0o750 across 19 files</li>
+                <li>Security scan reports generated to reports/security/</li>
+            </ul>
+        </div>
+
+        <div class="changelog-entry">
             <h2><span class="version-badge">v1.1.0</span> <span class="date-badge">February 2026</span></h2>
             <p>Major quality improvements with comprehensive test coverage expansion, performance optimizations, and security enhancements.</p>
 

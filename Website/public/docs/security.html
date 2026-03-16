@@ -270,6 +270,37 @@ chmod +x .git/hooks/pre-commit
 # Now gosec runs automatically on every commit</code></pre>
             </section>
 
+            <section id="scan-results">
+                <h2>Security Scan Results (v1.3.1)</h2>
+                <p>The v1.3.1 remediation release included a comprehensive gosec scan across the entire codebase. Results summary:</p>
+
+                <h3>Findings Overview</h3>
+                <ul>
+                    <li><strong>Total findings:</strong> 568</li>
+                    <li><strong>Fixes applied:</strong> 22 (19 file permissions + 3 unhandled errors)</li>
+                    <li><strong>False positives:</strong> 546 (primarily G101 hardcoded credential name patterns)</li>
+                </ul>
+
+                <h3>Key Remediations</h3>
+                <ul>
+                    <li><strong>G306 (File Permissions):</strong> 19 files hardened from <code>0o644</code>/<code>0o755</code> to <code>0o600</code>/<code>0o750</code> for sensitive configs, reports, and data directories</li>
+                    <li><strong>G104 (Unhandled Errors):</strong> 3 instances of silently discarded error return values fixed with proper error handling</li>
+                    <li><strong>G101 (Credentials):</strong> ~500 findings reviewed and confirmed as false positives (variable naming patterns, not actual credentials)</li>
+                </ul>
+
+                <h3>Running Security Scans</h3>
+                <pre><code># Quick gosec scan
+make security-scan
+
+# Full scan with report generation
+gosec -fmt=json -out=reports/security/gosec-report.json ./...
+
+# Comprehensive multi-tool scan
+./scripts/security-scan-full.sh all</code></pre>
+
+                <p>Security scan reports are generated to <code>reports/security/</code> with timestamped filenames for audit trail purposes.</p>
+            </section>
+
             <div class="cta-box">
                 <h3>Security Best Practices</h3>
                 <ul>

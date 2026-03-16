@@ -188,6 +188,62 @@ export PROVIDER_TIMEOUT=10s
                 </div>
             </div>
 
+            <!-- Goroutine Leaks -->
+            <div class="doc-section">
+                <h2 id="goroutine-leaks">Goroutine Leak Troubleshooting</h2>
+
+                <div class="troubleshoot-item">
+                    <h3>Goroutine Count Increasing Over Time</h3>
+                    <p><strong>Symptoms:</strong> The <code>helixagent_goroutines</code> Prometheus metric grows steadily without decreasing. Memory usage increases over time.</p>
+                    <p><strong>Diagnosis:</strong></p>
+                    <pre><code># Check current goroutine count
+curl -s http://localhost:7061/metrics | grep helixagent_goroutines
+
+# Get full goroutine dump
+curl -s http://localhost:7061/debug/pprof/goroutine?debug=2 > goroutines.txt
+
+# Analyze goroutine profile
+go tool pprof http://localhost:7061/debug/pprof/goroutine</code></pre>
+                    <p><strong>Common Causes:</strong></p>
+                    <ul>
+                        <li>SSE handlers without WaitGroup lifecycle tracking (fixed in v1.3.1)</li>
+                        <li>Background goroutines missing context cancellation</li>
+                        <li>Channel sends that block when the receiver has exited</li>
+                        <li>Duplicate model refresh goroutines without deduplication</li>
+                    </ul>
+                    <p><strong>Solution:</strong> All handlers and background services must implement the WaitGroup lifecycle pattern: <code>wg.Add(1)</code> before goroutine, <code>defer wg.Done()</code> inside, and <code>Shutdown()</code> calling <code>cancel()</code> + <code>wg.Wait()</code>.</p>
+                </div>
+
+                <div class="troubleshoot-item">
+                    <h3>Race Conditions Under Load</h3>
+                    <p><strong>Symptoms:</strong> Intermittent panics, corrupted data, or unexpected values under concurrent load.</p>
+                    <p><strong>Diagnosis:</strong></p>
+                    <pre><code># Run tests with race detector
+go test -race -v ./internal/...
+
+# Run specific package
+go test -race -v -run TestName ./internal/services/...</code></pre>
+                    <p><strong>Solution:</strong> Add proper synchronization (<code>sync.Mutex</code>, <code>sync.RWMutex</code>, or <code>atomic</code> operations) to shared state accessed from multiple goroutines.</p>
+                </div>
+
+                <div class="troubleshoot-item">
+                    <h3>Shutdown Hangs</h3>
+                    <p><strong>Symptoms:</strong> HelixAgent does not exit cleanly on SIGTERM/SIGINT. Process must be killed with SIGKILL.</p>
+                    <p><strong>Diagnosis:</strong></p>
+                    <pre><code># Send SIGQUIT for goroutine dump
+kill -QUIT $(pgrep helixagent)
+
+# Check for blocked goroutines in the dump output</code></pre>
+                    <p><strong>Common Causes:</strong></p>
+                    <ul>
+                        <li>WaitGroup.Wait() called without corresponding Done()</li>
+                        <li>Context not cancelled before Wait()</li>
+                        <li>Goroutine blocked on channel operation with no timeout</li>
+                    </ul>
+                    <p><strong>Solution:</strong> Ensure all <code>Shutdown()</code> methods call <code>cancel()</code> before <code>wg.Wait()</code>. Add timeouts to shutdown sequences as a safety net.</p>
+                </div>
+            </div>
+
             <!-- Error Codes -->
             <div class="doc-section">
                 <h2 id="error-codes">Error Codes</h2>
