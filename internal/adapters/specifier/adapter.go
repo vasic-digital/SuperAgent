@@ -2,6 +2,7 @@ package specifier
 
 import (
 	"context"
+	"fmt"
 
 	helixspec "digital.vasic.helixspecifier/pkg/types"
 )
@@ -12,10 +13,8 @@ type SpecAdapter struct {
 }
 
 // NewSpecAdapter creates a new spec adapter wrapping a SpecEngine.
+// Always returns a non-nil adapter; methods return errors if engine is nil.
 func NewSpecAdapter(engine helixspec.SpecEngine) *SpecAdapter {
-	if engine == nil {
-		return nil
-	}
 	return &SpecAdapter{engine: engine}
 }
 
@@ -24,6 +23,9 @@ func (a *SpecAdapter) ClassifyEffort(
 	ctx context.Context,
 	request string,
 ) (*helixspec.EffortClassification, error) {
+	if a.engine == nil {
+		return nil, fmt.Errorf("spec engine not initialized")
+	}
 	return a.engine.ClassifyEffort(ctx, request)
 }
 
@@ -33,6 +35,9 @@ func (a *SpecAdapter) ExecuteFlow(
 	request string,
 	classification *helixspec.EffortClassification,
 ) (*helixspec.FlowResult, error) {
+	if a.engine == nil {
+		return nil, fmt.Errorf("spec engine not initialized")
+	}
 	return a.engine.ExecuteFlow(ctx, request, classification)
 }
 
@@ -42,6 +47,9 @@ func (a *SpecAdapter) ResumeFlow(
 	flowID string,
 	request string,
 ) (*helixspec.FlowResult, error) {
+	if a.engine == nil {
+		return nil, fmt.Errorf("spec engine not initialized")
+	}
 	return a.engine.ResumeFlow(ctx, flowID, request)
 }
 
@@ -49,21 +57,33 @@ func (a *SpecAdapter) ResumeFlow(
 func (a *SpecAdapter) GetFlowStatus(
 	flowID string,
 ) (*helixspec.FlowResult, error) {
+	if a.engine == nil {
+		return nil, fmt.Errorf("spec engine not initialized")
+	}
 	return a.engine.GetFlowStatus(flowID)
 }
 
 // Health returns engine health.
 func (a *SpecAdapter) Health(ctx context.Context) error {
+	if a.engine == nil {
+		return fmt.Errorf("spec engine not initialized")
+	}
 	return a.engine.Health(ctx)
 }
 
 // Name returns the engine name.
 func (a *SpecAdapter) Name() string {
+	if a.engine == nil {
+		return ""
+	}
 	return a.engine.Name()
 }
 
 // Version returns the engine version.
 func (a *SpecAdapter) Version() string {
+	if a.engine == nil {
+		return ""
+	}
 	return a.engine.Version()
 }
 
@@ -77,6 +97,9 @@ func (a *SpecAdapter) IsReady() bool {
 func (a *SpecAdapter) SetDebateFunc(
 	fn helixspec.DebateFunc,
 ) bool {
+	if a.engine == nil {
+		return false
+	}
 	if setter, ok := a.engine.(helixspec.DebateFuncSetter); ok {
 		setter.SetDebateFunc(fn)
 		return true

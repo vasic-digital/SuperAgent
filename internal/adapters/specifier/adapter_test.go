@@ -67,7 +67,19 @@ func TestHelixSpecifierIsDefault(t *testing.T) {
 
 func TestSpecAdapter_NilEngine(t *testing.T) {
 	sa := adapter.NewSpecAdapter(nil)
-	assert.Nil(t, sa)
+	assert.NotNil(t, sa, "NewSpecAdapter should return a no-op adapter, never nil")
+	assert.False(t, sa.IsReady())
+	assert.Equal(t, "", sa.Name())
+	assert.Equal(t, "", sa.Version())
+
+	_, err := sa.ClassifyEffort(context.Background(), "test")
+	assert.Error(t, err)
+
+	err = sa.Health(context.Background())
+	assert.Error(t, err)
+
+	ok := sa.SetDebateFunc(nil)
+	assert.False(t, ok)
 }
 
 func TestSpecAdapter_Health(t *testing.T) {
