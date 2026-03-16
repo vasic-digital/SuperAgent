@@ -526,6 +526,118 @@ jobs:
 
 ---
 
+## Module 9: Monitoring Metrics Tests
+
+### Video 9.1: Prometheus Metric Validation (20 min)
+
+**Topics:**
+- Querying Prometheus metric endpoints in tests
+- Validating metric registration (counters, gauges, histograms)
+- Asserting metric label cardinality
+- Testing metric values after operations
+
+**Code Example:**
+```go
+func TestMetrics_RequestCounter(t *testing.T) {
+    // Make a request that should increment the counter
+    resp, err := http.Post(baseURL+"/v1/chat/completions", "application/json", payload)
+    require.NoError(t, err)
+    resp.Body.Close()
+
+    // Query Prometheus metrics endpoint
+    metricsResp, err := http.Get(baseURL + "/metrics")
+    require.NoError(t, err)
+    defer metricsResp.Body.Close()
+
+    body, _ := io.ReadAll(metricsResp.Body)
+    assert.Contains(t, string(body), "helixagent_http_requests_total")
+}
+```
+
+### Video 9.2: Chaos Engineering Tests (20 min)
+
+**Topics:**
+- Cascade failure injection
+- Memory pressure simulation
+- Provider timeout escalation
+- Recovery time measurement
+
+**Code Example:**
+```go
+func TestChaos_CascadeFailure(t *testing.T) {
+    // Fail providers one by one
+    for i, provider := range providers {
+        provider.SetFailing(true)
+        resp, err := sendRequest()
+        if i < len(providers)-1 {
+            require.NoError(t, err, "should fallback while providers remain")
+        }
+    }
+
+    // Recover and verify system resumes
+    for _, provider := range providers {
+        provider.SetFailing(false)
+    }
+    resp, err := sendRequest()
+    require.NoError(t, err, "should recover after providers restored")
+}
+```
+
+### Video 9.3: Race Condition Detection Tests (15 min)
+
+**Topics:**
+- Running tests with `-race` flag
+- Concurrent handler tests that expose races
+- Validating thread-safe map access
+- Testing atomic counter operations
+
+**Commands:**
+```bash
+# Run all tests with race detection
+make test-race
+
+# Target specific package
+go test -race -v -count=1 ./internal/services/...
+```
+
+### Video 9.4: Extreme Stress Test Patterns (15 min)
+
+**Topics:**
+- 10x normal load testing
+- P99 latency baseline capture
+- Memory pressure with constrained `GOMAXPROCS`
+- Goroutine count stability under load
+
+**Code Example:**
+```go
+func TestStress_10xLoad(t *testing.T) {
+    const workers = 100
+    const requestsPerWorker = 50
+
+    var wg sync.WaitGroup
+    var p99Latencies []time.Duration
+
+    for i := 0; i < workers; i++ {
+        wg.Add(1)
+        go func() {
+            defer wg.Done()
+            for j := 0; j < requestsPerWorker; j++ {
+                start := time.Now()
+                resp, err := sendChatRequest(baseURL)
+                if err == nil {
+                    resp.Body.Close()
+                }
+                p99Latencies = append(p99Latencies, time.Since(start))
+            }
+        }()
+    }
+    wg.Wait()
+    // Analyze P99 latency
+}
+```
+
+---
+
 ## Hands-on Labs
 
 ### Lab 1: Unit Test Suite

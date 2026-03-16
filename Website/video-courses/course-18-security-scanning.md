@@ -269,6 +269,65 @@ if err != nil {
 
 ---
 
+## Module 7: Gosec In-Depth (10 min)
+
+### Running Gosec Against HelixAgent
+
+```bash
+# Full gosec scan with JSON output
+gosec -fmt=json -out=reports/security/gosec-report.json ./...
+
+# Scan with severity filter
+gosec -severity=high -confidence=medium ./...
+
+# Scan specific packages
+gosec ./internal/services/... ./internal/handlers/...
+```
+
+### Common Gosec Finding Categories
+
+| Rule | Description | Typical Fix |
+|------|-------------|-------------|
+| **G101** | Hardcoded credentials (variable names like `password`, `secret`) | Use `os.Getenv()` or config files |
+| **G304** | File path from variable (potential path traversal) | Validate and sanitize file paths |
+| **G306** | File created with overly broad permissions (e.g., 0o777) | Use `0o600` for sensitive files, `0o750` for directories |
+| **G110** | Potential denial of service via decompression bomb | Limit reader size with `io.LimitReader` |
+| **G204** | Subprocess with variable arguments | Validate command arguments, use allowlists |
+
+### Analyzing Gosec Results
+
+A typical HelixAgent scan produces findings across several categories. The remediation priority is:
+
+1. **G101 (credentials)** -- Review each finding; most are false positives from variable naming. Suppress with `// #nosec G101` after manual verification.
+2. **G304 (file paths)** -- Add path sanitization where user input influences file access.
+3. **G306 (permissions)** -- Change `os.WriteFile(path, data, 0o644)` to `os.WriteFile(path, data, 0o600)` for sensitive files. Use `0o750` for directories instead of `0o755`.
+
+### File Permission Hardening
+
+```go
+// BAD: overly permissive
+os.WriteFile("config.json", data, 0o644) // World-readable
+os.MkdirAll("data/", 0o755)             // World-executable
+
+// GOOD: minimal permissions
+os.WriteFile("config.json", data, 0o600) // Owner read/write only
+os.MkdirAll("data/", 0o750)             // Owner full, group read/exec
+```
+
+### Security Scan Report Format
+
+Reports are generated to `reports/security/` with timestamps:
+
+```
+reports/security/
+  gosec-report-YYYYMMDD_HHMMSS.json     # Full findings in JSON
+  security-summary-YYYYMMDD_HHMMSS.md   # Human-readable summary
+```
+
+The summary groups findings by severity (Critical/High/Medium/Low) and includes remediation guidance for each category.
+
+---
+
 ## Hands-on Lab
 
 ### Exercise 1: Full Security Audit
