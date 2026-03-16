@@ -1,56 +1,44 @@
 # HelixAgent Constitution
 
-**Version:** 1.0.0
+**Version:** 1.2.0
 **Created:** 2026-02-10
-**Updated:** 2026-02-10
+**Updated:** 2026-03-16
 
-Constitution with 20 rules (20 mandatory) across categories: Quality: 2, Safety: 1, Security: 1, Performance: 2, Containerization: 1, Configuration: 1, Testing: 3, Documentation: 2, Principles: 2, Stability: 1, Observability: 1, GitOps: 1, CI/CD: 1, Architecture: 1
+Constitution with 26 rules (26 mandatory) across categories: Quality: 2, Safety: 1, Security: 1, Performance: 2, Containerization: 3, Configuration: 1, Testing: 4, Documentation: 2, Principles: 2, Stability: 1, Observability: 1, GitOps: 2, CI/CD: 1, Architecture: 1, Networking: 1, Resource Management: 1
 
-## Performance
+## Architecture
 
-### Monitoring and Metrics **[MANDATORY]** (Priority: 2)
+### Comprehensive Decoupling **[MANDATORY]** (Priority: 1)
 
-**ID:** CONST-009
+**ID:** CONST-001
 
-Create tests that run and perform monitoring and metrics collection. Use collected data for proper optimizations.
+Identify all parts and functionalities that can be extracted as separate modules (libraries) and reused in various projects. Perform additional work to make each module fully decoupled and independent. Each module must be a separate project with its own CLAUDE.md, AGENTS.md, README.md, docs/, tests, and challenges.
 
-### Lazy Loading and Non-Blocking **[MANDATORY]** (Priority: 2)
+## Testing
 
-**ID:** CONST-010
+### 100% Test Coverage **[MANDATORY]** (Priority: 1)
 
-Implement lazy loading and lazy initialization wherever possible. Introduce semaphore mechanisms and non-blocking mechanisms to ensure flawless responsiveness.
+**ID:** CONST-002
 
-## Configuration
+Every component MUST have 100% test coverage across ALL test types: unit, integration, E2E, security, stress, chaos, automation, and benchmark tests. No false positives. Use real data and live services (mocks only in unit tests).
 
-### Unified Configuration **[MANDATORY]** (Priority: 2)
+### Comprehensive Challenges **[MANDATORY]** (Priority: 1)
 
-**ID:** CONST-016
+**ID:** CONST-003
 
-CLI agent config export uses only HelixAgent + LLMsVerifier's unified generator. No third-party scripts.
+Every component MUST have Challenge scripts validating real-life use cases. No false success - validate actual behavior, not return codes.
 
-## Observability
+### Stress and Integration Tests **[MANDATORY]** (Priority: 2)
 
-### Health and Monitoring **[MANDATORY]** (Priority: 2)
+**ID:** CONST-014
 
-**ID:** CONST-017
+Introduce comprehensive stress and integration tests validating that the system is responsive and not possible to overload or break.
 
-Every service MUST expose health endpoints. Circuit breakers for all external dependencies. Prometheus/OpenTelemetry integration.
+### Infrastructure Before Tests **[MANDATORY]** (Priority: 1)
 
-## GitOps
+**ID:** CONST-022
 
-### GitSpec Compliance **[MANDATORY]** (Priority: 2)
-
-**ID:** CONST-018
-
-Follow GitSpec constitution and all constraints from AGENTS.md and CLAUDE.md.
-
-## CI/CD
-
-### Manual CI/CD Only **[MANDATORY]** (Priority: 1)
-
-**ID:** CONST-019
-
-NO GitHub Actions enabled. All CI/CD workflows and pipelines must be executed manually only.
+ALL infrastructure containers (PostgreSQL, Redis, Mock LLM) MUST be running before executing tests or challenges. Use `make test-infra-start` or `make test-infra-direct-start` (Podman fallback with `--userns=host`). Tests and challenges that require infrastructure WILL FAIL without running containers.
 
 ## Documentation
 
@@ -96,6 +84,20 @@ Perform comprehensive research for memory leaks, deadlocks, and race conditions.
 
 Execute Snyk and SonarQube scanning. Analyze findings in depth and resolve everything. Ensure scanning infrastructure is accessible via containerization (Docker/Podman).
 
+## Performance
+
+### Monitoring and Metrics **[MANDATORY]** (Priority: 2)
+
+**ID:** CONST-009
+
+Create tests that run and perform monitoring and metrics collection. Use collected data for proper optimizations.
+
+### Lazy Loading and Non-Blocking **[MANDATORY]** (Priority: 2)
+
+**ID:** CONST-010
+
+Implement lazy loading and lazy initialization wherever possible. Introduce semaphore mechanisms and non-blocking mechanisms to ensure flawless responsiveness.
+
 ## Principles
 
 ### Software Principles **[MANDATORY]** (Priority: 2)
@@ -126,31 +128,68 @@ All changes must be safe, non-error-prone, and MUST NOT BREAK any existing worki
 
 All services MUST run in containers (Docker/Podman/K8s). Support local default execution AND remote configuration. Services must auto-boot before HelixAgent is ready.
 
-## Architecture
+### Mandatory Container Orchestration Flow **[MANDATORY]** (Priority: 1)
 
-### Comprehensive Decoupling **[MANDATORY]** (Priority: 1)
+**ID:** CONST-015a
 
-**ID:** CONST-001
+The ONLY acceptable container orchestration flow: (1) HelixAgent boots and initializes Containers module adapter, (2) Adapter reads Containers/.env file (NOT project root .env), (3) Based on CONTAINERS_REMOTE_ENABLED: true=ALL containers to remote hosts via CONTAINERS_REMOTE_HOST_* vars, false/missing=ALL containers locally, (4) Health checks against configured endpoints, (5) Required services failing health check cause boot failure. Rules: NO manual container starts, NO mixed mode, tests use tests/precondition/containers_boot_test.go, challenges verify container placement. Key files: Containers/.env, internal/config/config.go:isContainersRemoteEnabled(), internal/services/boot_manager.go, tests/precondition/containers_boot_test.go.
 
-Identify all parts and functionalities that can be extracted as separate modules (libraries) and reused in various projects. Perform additional work to make each module fully decoupled and independent. Each module must be a separate project with its own CLAUDE.md, AGENTS.md, README.md, docs/, tests, and challenges.
+### Container-Based Builds **[MANDATORY]** (Priority: 1)
 
-## Testing
+**ID:** CONST-021
 
-### 100% Test Coverage **[MANDATORY]** (Priority: 1)
+ALL release builds MUST be performed inside Docker/Podman containers for reproducibility. Use `make release` / `make release-all`. Version info injected via `-ldflags -X`. No release binaries should be built directly on the host unless container build is unavailable.
 
-**ID:** CONST-002
+## Configuration
 
-Every component MUST have 100% test coverage across ALL test types: unit, integration, E2E, security, stress, chaos, automation, and benchmark tests. No false positives. Use real data and live services (mocks only in unit tests).
+### Unified Configuration **[MANDATORY]** (Priority: 1)
 
-### Comprehensive Challenges **[MANDATORY]** (Priority: 1)
+**ID:** CONST-016
 
-**ID:** CONST-003
+**CLI agent configs MUST ONLY be generated using the HelixAgent binary** (`./bin/helixagent --generate-agent-config=<agent>` or `go run ./cmd/helixagent --generate-agent-config=<agent>`). **NEVER create, write, or modify CLI agent config files manually or via scripts.** The HelixAgent binary is the sole authority for config generation. Config generation uses LLMsVerifier's unified generator (`pkg/cliagents/`). No third-party scripts or manual edits. This ensures schema compliance, API key injection, MCP endpoint consistency, and validation for all 48 supported CLI agents.
 
-Every component MUST have Challenge scripts validating real-life use cases. No false success - validate actual behavior, not return codes.
+## Observability
 
-### Stress and Integration Tests **[MANDATORY]** (Priority: 2)
+### Health and Monitoring **[MANDATORY]** (Priority: 2)
 
-**ID:** CONST-014
+**ID:** CONST-017
 
-Introduce comprehensive stress and integration tests validating that the system is responsive and not possible to overload or break.
+Every service MUST expose health endpoints. Circuit breakers for all external dependencies. Prometheus/OpenTelemetry integration.
 
+## GitOps
+
+### GitSpec Compliance **[MANDATORY]** (Priority: 2)
+
+**ID:** CONST-018
+
+Follow GitSpec constitution and all constraints from AGENTS.md and CLAUDE.md.
+
+### SSH Only for Git Operations **[MANDATORY]** (Priority: 1)
+
+**ID:** CONST-018a
+
+MANDATORY: NEVER use HTTPS for any Git service operations. All cloning, fetching, pushing, and submodule operations MUST use SSH URLs (git@github.com:org/repo.git). HTTPS is STRICTLY FORBIDDEN even for public repositories. SSH keys are already configured on all Git services (GitHub, GitLab, etc.).
+
+## CI/CD
+
+### Manual CI/CD Only **[MANDATORY]** (Priority: 1)
+
+**ID:** CONST-019
+
+NO GitHub Actions enabled. All CI/CD workflows and pipelines must be executed manually only.
+
+## Networking
+
+### HTTP/3 (QUIC) with Brotli Compression **[MANDATORY]** (Priority: 1)
+
+**ID:** CONST-023
+
+ALL HTTP communication MUST use HTTP/3 (QUIC) as primary transport with Brotli compression. HTTP/2 only as fallback when HTTP/3 is unavailable. Compression priority: Brotli (primary) then gzip (fallback). All HTTP clients and servers MUST prefer HTTP/3. Use `quic-go/quic-go` for transport and `andybalholm/brotli` for compression.
+
+## Resource Management
+
+### Test and Challenge Resource Limits **[MANDATORY]** (Priority: 1)
+
+**ID:** CONST-024
+
+ALL test and challenge execution MUST be strictly limited to 30-40% of host system resources. Use GOMAXPROCS=2, nice -n 19, ionice -c 3, and -p 1 for go test. Container limits required. Host machine runs mission-critical processes; exceeding limits has caused system crashes and forced resets.
