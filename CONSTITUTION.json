@@ -1,7 +1,7 @@
 {
   "version": "1.2.0",
   "project_name": "HelixAgent",
-  "summary": "Constitution with 26 rules (26 mandatory) across categories: Quality: 2, Safety: 1, Security: 1, Performance: 2, Containerization: 3, Configuration: 1, Testing: 4, Documentation: 2, Principles: 2, Stability: 1, Observability: 1, GitOps: 2, CI/CD: 1, Architecture: 1, Networking: 1, Resource Management: 1",
+  "summary": "Constitution with 28 rules (28 mandatory) across categories: Quality: 2, Safety: 1, Security: 1, Performance: 2, Containerization: 4, Configuration: 2, Testing: 4, Documentation: 2, Principles: 2, Stability: 1, Observability: 1, GitOps: 2, CI/CD: 1, Architecture: 1, Networking: 1, Resource Management: 1",
   "created_at": "2026-02-10T00:18:38.71286699+03:00",
   "updated_at": "2026-03-16T00:00:00.000000000+03:00",
   "rules": [

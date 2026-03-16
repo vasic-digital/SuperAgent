@@ -4,7 +4,7 @@
 **Created:** 2026-02-10
 **Updated:** 2026-03-16
 
-Constitution with 26 rules (26 mandatory) across categories: Quality: 2, Safety: 1, Security: 1, Performance: 2, Containerization: 3, Configuration: 1, Testing: 4, Documentation: 2, Principles: 2, Stability: 1, Observability: 1, GitOps: 2, CI/CD: 1, Architecture: 1, Networking: 1, Resource Management: 1
+Constitution with 28 rules (28 mandatory) across categories: Quality: 2, Safety: 1, Security: 1, Performance: 2, Containerization: 4, Configuration: 2, Testing: 4, Documentation: 2, Principles: 2, Stability: 1, Observability: 1, GitOps: 2, CI/CD: 1, Architecture: 1, Networking: 1, Resource Management: 1
 
 ## Architecture
 
@@ -140,6 +140,12 @@ The ONLY acceptable container orchestration flow: (1) HelixAgent boots and initi
 
 ALL release builds MUST be performed inside Docker/Podman containers for reproducibility. Use `make release` / `make release-all`. Version info injected via `-ldflags -X`. No release binaries should be built directly on the host unless container build is unavailable.
 
+### Mandatory Container Rebuild **[MANDATORY]** (Priority: 1)
+
+**ID:** CONST-015b
+
+All running containers on local host or remote distributed machines MUST be rebuilt and redeployed if code was changed affecting any of them. After code changes to services, handlers, MCPs, formatters, or any containerized component: rebuild affected images, restart containers, re-run distribution if using remote hosts.
+
 ## Configuration
 
 ### Unified Configuration **[MANDATORY]** (Priority: 1)
@@ -147,6 +153,12 @@ ALL release builds MUST be performed inside Docker/Podman containers for reprodu
 **ID:** CONST-016
 
 **CLI agent configs MUST ONLY be generated using the HelixAgent binary** (`./bin/helixagent --generate-agent-config=<agent>` or `go run ./cmd/helixagent --generate-agent-config=<agent>`). **NEVER create, write, or modify CLI agent config files manually or via scripts.** The HelixAgent binary is the sole authority for config generation. Config generation uses LLMsVerifier's unified generator (`pkg/cliagents/`). No third-party scripts or manual edits. This ensures schema compliance, API key injection, MCP endpoint consistency, and validation for all 48 supported CLI agents.
+
+### Non-Interactive Execution **[MANDATORY]** (Priority: 1)
+
+**ID:** CONST-016a
+
+ALL commands MUST be fully non-interactive and automatable via command pipelines. NEVER prompt for passwords, passphrases, or any user input interactively. SSH connections MUST use key-based authentication. All secrets MUST be provided via environment variables or .env files, never via interactive prompts.
 
 ## Observability
 
