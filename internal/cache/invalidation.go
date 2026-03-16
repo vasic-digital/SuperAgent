@@ -196,6 +196,7 @@ type EventDrivenInvalidation struct {
 	metrics  *InvalidationMetrics
 	ctx      context.Context
 	cancel   context.CancelFunc
+	wg       sync.WaitGroup
 }
 
 // NewEventDrivenInvalidation creates a new event-driven invalidation strategy
@@ -226,7 +227,9 @@ func (i *EventDrivenInvalidation) Start() {
 	// Subscribe to all events
 	ch := i.eventBus.SubscribeAll()
 
+	i.wg.Add(1)
 	go func() {
+		defer i.wg.Done()
 		for {
 			select {
 			case <-i.ctx.Done():
@@ -241,9 +244,10 @@ func (i *EventDrivenInvalidation) Start() {
 	}()
 }
 
-// Stop stops the event listener
+// Stop stops the event listener and waits for the goroutine to exit
 func (i *EventDrivenInvalidation) Stop() {
 	i.cancel()
+	i.wg.Wait()
 }
 
 // AddRule adds an invalidation rule
