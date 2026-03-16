@@ -223,6 +223,9 @@ Each module is an independent Go module with its own go.mod, tests, CLAUDE.md, A
 - `PluginRegistry`/`PluginLoader` — Plugin system | `TaskExecutor`/`TaskQueue` — Background tasks
 - `Formatter` — Code formatter interface | Vector stores: `Connect`, `Upsert`, `Search`, `Delete`, `Get`
 
+### Goroutine Lifecycle Safety
+All HTTP handlers with background goroutines implement graceful shutdown via `sync.WaitGroup` lifecycle tracking. Key pattern: `WaitGroup.Add(1)` before goroutine launch, `defer WaitGroup.Done()` inside the goroutine, `Shutdown()`/`Stop()` calls `cancel()` + `WaitGroup.Wait()`. This pattern prevents goroutine leaks and ensures all background work completes before process exit. Applied across SSE handlers, cache invalidation, model refresh, debate log tracking, and ACP shutdown. Diagram: `docs/diagrams/src/goroutine-lifecycle.puml`.
+
 ### Release Build System
 - **Version Package**: `internal/version/` — single source of truth, set via `-ldflags -X` at build time
 - **Container Builds**: All release builds run inside `helixagent-builder` container (golang:1.24-alpine)
@@ -399,6 +402,9 @@ CI_RESOURCE_LIMIT=medium make ci-all  # Medium resource limits (default: low)
 ./challenges/scripts/helixspecifier_challenge.sh                # 138 tests
 ./challenges/scripts/userflow_comprehensive_challenge.sh        # 30+ tests (shell)
 ./challenges/scripts/ci_container_build_challenge.sh            # 87 tests
+./challenges/scripts/goroutine_lifecycle_challenge.sh           # Goroutine lifecycle validation
+./challenges/scripts/adapter_coverage_challenge.sh              # Adapter test coverage validation
+./challenges/scripts/race_condition_challenge.sh                # Race condition detection
 # Go-native userflow challenges (22): run with --run-challenges=userflow
 ```
 
