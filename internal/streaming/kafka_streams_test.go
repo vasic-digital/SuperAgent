@@ -29,12 +29,16 @@ func TestConversationStreamProcessor_New(t *testing.T) {
 }
 
 func TestConversationStreamProcessor_NewWithRedis(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping Redis-dependent test in short mode")
+	}
 	testutil.RequireRedis(t)
 
+	infraCfg := testutil.DefaultInfraConfig()
 	config := DefaultStreamProcessorConfig()
 	config.StateStoreType = "redis"
-	config.RedisHost = "localhost"
-	config.RedisPort = "6379"
+	config.RedisHost = infraCfg.RedisHost
+	config.RedisPort = infraCfg.RedisPort
 
 	processor, err := NewConversationStreamProcessor(config, nil, zap.NewNop())
 	require.NoError(t, err)
