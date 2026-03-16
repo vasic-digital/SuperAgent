@@ -169,19 +169,6 @@ func FormatRequestIndicatorMarkdown(role services.DebateRole, provider, model st
 	return fmt.Sprintf("**[%s]** _Requesting %s (%s)..._\n\n", roleName, model, provider)
 }
 
-// FormatResponseIndicatorMarkdown formats a response indicator in Markdown
-func FormatResponseIndicatorMarkdown(role services.DebateRole, provider, model string, duration time.Duration) string {
-	roleName := getRoleName(role)
-	return fmt.Sprintf("**[%s]** Response from %s (%s) in %s\n\n",
-		roleName, model, provider, formatDuration(duration))
-}
-
-// FormatFallbackIndicatorMarkdown formats a fallback indicator in Markdown
-func FormatFallbackIndicatorMarkdown(fromProvider, fromModel, toProvider, toModel, reason string) string {
-	return fmt.Sprintf("⚠️ **Fallback:** %s → %s (%s)\n\n",
-		formatModelRef(fromProvider, fromModel), formatModelRef(toProvider, toModel), reason)
-}
-
 // FormatFallbackTriggeredMarkdown formats a detailed fallback triggered indicator
 // Includes exact error cause and category icon for CLI agent plugins
 func FormatFallbackTriggeredMarkdown(role, primaryProvider, primaryModel, fallbackProvider, fallbackModel, errorMsg, errorCategory string, duration time.Duration) string {
@@ -305,11 +292,6 @@ func categorizeErrorString(errorMsg string) string {
 	}
 }
 
-// FormatPhaseFooterMarkdown formats a phase footer in Markdown
-func FormatPhaseFooterMarkdown(duration time.Duration) string {
-	return fmt.Sprintf("\n_Phase completed in %s_\n\n---\n", formatDuration(duration))
-}
-
 // ============================================================================
 // Plain Text Formatting Functions (No Formatting At All)
 // ============================================================================
@@ -383,20 +365,6 @@ func FormatDebateTeamIntroductionForFormat(format OutputFormat, topic string, me
 		return FormatDebateTeamIntroductionPlain(topic, members)
 	default:
 		return FormatDebateTeamIntroductionMarkdown(topic, members)
-	}
-}
-
-// FormatPhaseHeaderForFormat formats a phase header for the specified format
-func FormatPhaseHeaderForFormat(format OutputFormat, phase services.ValidationPhase, phaseNum int) string {
-	switch format {
-	case OutputFormatANSI:
-		return FormatPhaseHeader(phase, phaseNum)
-	case OutputFormatMarkdown:
-		return FormatPhaseHeaderMarkdown(phase, phaseNum)
-	case OutputFormatPlain:
-		return FormatPhaseHeaderPlain(phase, phaseNum)
-	default:
-		return FormatPhaseHeaderMarkdown(phase, phaseNum)
 	}
 }
 

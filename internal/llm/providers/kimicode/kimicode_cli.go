@@ -526,14 +526,6 @@ func IsInsideKimiCodeSession() bool {
 	return false
 }
 
-func GetKimiCodePath() (string, error) {
-	path, err := exec.LookPath("kimi")
-	if err != nil {
-		return "", fmt.Errorf("kimi command not found in PATH: %w", err)
-	}
-	return path, nil
-}
-
 func IsKimiCodeAuthenticated() bool {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -563,26 +555,6 @@ func IsKimiCodeAuthenticated() bool {
 	}
 
 	return true
-}
-
-func GetKimiCodeCredential() (*kimiCodeCredential, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get home directory: %w", err)
-	}
-
-	credPath := filepath.Join(homeDir, KimiCodeCredentialPath)
-	data, err := os.ReadFile(credPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read credentials: %w", err)
-	}
-
-	var creds kimiCodeCredential
-	if err := json.Unmarshal(data, &creds); err != nil {
-		return nil, fmt.Errorf("failed to parse credentials: %w", err)
-	}
-
-	return &creds, nil
 }
 
 func CanUseKimiCodeCLI() bool {

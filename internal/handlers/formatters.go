@@ -1323,28 +1323,6 @@ func FormatPhaseHeaderForAllFormats(format OutputFormat, phase services.Validati
 	return FormatPhaseHeaderMarkdown(phase, phaseNum)
 }
 
-// FormatPhaseContentForAllFormats formats phase content for any format
-func FormatPhaseContentForAllFormats(format OutputFormat, content string) string {
-	// Handle existing formats
-	switch format {
-	case OutputFormatANSI:
-		return FormatPhaseContent(content)
-	case OutputFormatMarkdown:
-		return FormatPhaseContentMarkdown(content)
-	case OutputFormatPlain:
-		return content
-	}
-
-	// Handle new formats via registry
-	formatter := GetFormatterForFormat(format)
-	if formatter != nil {
-		return formatter.FormatPhaseContent(content)
-	}
-
-	// Default to content as-is
-	return content
-}
-
 // FormatFinalResponseForAllFormats formats the final response for any format
 func FormatFinalResponseForAllFormats(format OutputFormat, content string) string {
 	// Handle existing formats

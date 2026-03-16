@@ -2,7 +2,6 @@ package observability
 
 import (
 	"context"
-	"sync"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -554,36 +553,7 @@ var (
 	globalMemoryMetrics    *MemoryMetrics
 	globalStreamingMetrics *StreamingMetrics
 	globalProtocolMetrics  *ProtocolMetrics
-	extendedMetricsOnce    sync.Once
 )
-
-func InitExtendedMetrics(serviceName string) error {
-	var initErr error
-	extendedMetricsOnce.Do(func() {
-		globalMCPMetrics, initErr = NewMCPMetrics(serviceName)
-		if initErr != nil {
-			return
-		}
-		globalEmbeddingMetrics, initErr = NewEmbeddingMetrics(serviceName)
-		if initErr != nil {
-			return
-		}
-		globalVectorDBMetrics, initErr = NewVectorDBMetrics(serviceName)
-		if initErr != nil {
-			return
-		}
-		globalMemoryMetrics, initErr = NewMemoryMetrics(serviceName)
-		if initErr != nil {
-			return
-		}
-		globalStreamingMetrics, initErr = NewStreamingMetrics(serviceName)
-		if initErr != nil {
-			return
-		}
-		globalProtocolMetrics, initErr = NewProtocolMetrics(serviceName)
-	})
-	return initErr
-}
 
 func GetMCPMetrics() *MCPMetrics {
 	if globalMCPMetrics == nil {

@@ -24,13 +24,6 @@ func NewAgentFactory() *AgentFactory {
 	}
 }
 
-// NewAgentFactoryWithRegistry creates a factory with a custom registry.
-func NewAgentFactoryWithRegistry(registry *TemplateRegistry) *AgentFactory {
-	return &AgentFactory{
-		templateRegistry: registry,
-	}
-}
-
 // SetCapabilityDiscoverer sets the capability discoverer for runtime discovery.
 func (f *AgentFactory) SetCapabilityDiscoverer(discoverer CapabilityDiscoverer) {
 	f.mu.Lock()

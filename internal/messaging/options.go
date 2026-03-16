@@ -539,13 +539,6 @@ func WithMaxPriority(max int) QueueOption {
 	}
 }
 
-// WithHandlerTimeout sets the message handler timeout.
-func WithHandlerTimeout(timeout time.Duration) SubscribeOption {
-	return func(o *SubscribeOptions) {
-		o.Timeout = timeout
-	}
-}
-
 // StreamOptions holds options for streaming messages (Kafka).
 type StreamOptions struct {
 	// StartOffset is the starting offset.

@@ -649,35 +649,3 @@ func (p *QwenCLIProvider) GetBestAvailableModel() string {
 	}
 	return "qwen-plus"
 }
-
-// GetKnownQwenModels returns the list of known Qwen models (static fallback)
-func GetKnownQwenModels() []string {
-	return knownQwenModels
-}
-
-// DiscoverQwenModels is a standalone function to discover models without creating a provider
-func DiscoverQwenModels() ([]string, error) {
-	if !IsQwenCodeInstalled() {
-		return knownQwenModels, fmt.Errorf("qwen CLI not installed, returning known models")
-	}
-
-	path, err := GetQwenCodePath()
-	if err != nil {
-		return knownQwenModels, err
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-
-	// Try the models command
-	cmd := exec.CommandContext(ctx, path, "models") // #nosec G204
-	output, err := cmd.CombinedOutput()
-	if err == nil {
-		models := parseQwenModelsOutput(string(output))
-		if len(models) > 0 {
-			return models, nil
-		}
-	}
-
-	return knownQwenModels, fmt.Errorf("could not discover models from CLI, returning known models")
-}

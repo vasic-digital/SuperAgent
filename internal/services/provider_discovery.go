@@ -279,14 +279,6 @@ func NewProviderDiscovery(log *logrus.Logger, verifyOnStartup bool) *ProviderDis
 	}
 }
 
-// NewProviderDiscoveryWithVerifier creates a provider discovery with LLMsVerifier integration
-func NewProviderDiscoveryWithVerifier(log *logrus.Logger, verifyOnStartup bool, verifierScores LLMsVerifierScoreProvider) *ProviderDiscovery {
-	pd := NewProviderDiscovery(log, verifyOnStartup)
-	pd.verifierScores = verifierScores
-	pd.useDynamicScoring = verifierScores != nil
-	return pd
-}
-
 // SetVerifierScoreProvider sets the LLMsVerifier score provider for dynamic scoring
 func (pd *ProviderDiscovery) SetVerifierScoreProvider(provider LLMsVerifierScoreProvider) {
 	pd.mu.Lock()

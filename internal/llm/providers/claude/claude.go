@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"math/rand"
@@ -892,10 +891,4 @@ type OAuthRestrictionErr struct {
 
 func (e *OAuthRestrictionErr) Error() string {
 	return e.Message
-}
-
-// IsOAuthRestrictionError checks if an error is an OAuth restriction error
-func IsOAuthRestrictionError(err error) bool {
-	var oauthErr *OAuthRestrictionErr
-	return errors.As(err, &oauthErr)
 }

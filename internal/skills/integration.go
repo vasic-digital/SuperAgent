@@ -218,12 +218,6 @@ func (d *DebateIntegration) ProcessDebateRound(ctx context.Context, debateID, ro
 	return d.integration.ProcessRequest(ctx, requestID, topic)
 }
 
-// CompleteDebateRound marks a debate round's skill executions as complete.
-func (d *DebateIntegration) CompleteDebateRound(debateID, roundNum int, success bool) []SkillUsage {
-	requestID := generateDebateRequestID(debateID, roundNum)
-	return d.integration.CompleteRequest(requestID, success, "")
-}
-
 // generateDebateRequestID generates a unique request ID for a debate round.
 func generateDebateRequestID(debateID, roundNum int) string {
 	return "debate-" + string(rune(debateID)) + "-round-" + string(rune(roundNum))

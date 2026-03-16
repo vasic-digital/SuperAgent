@@ -589,4 +589,3 @@ const (
 	FallbackErrorEmpty       FallbackErrorCategory = "empty_response"
 	FallbackErrorUnknown     FallbackErrorCategory = "unknown"
 )
-

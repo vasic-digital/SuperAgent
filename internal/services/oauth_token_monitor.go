@@ -474,13 +474,3 @@ func (otm *OAuthTokenMonitor) RefreshToken(provider string) error {
 		return nil
 	}
 }
-
-// RefreshQwenTokenViaCLI is a helper function that wraps the CLI refresh
-func RefreshQwenTokenViaCLI() error {
-	refresher := oauth_credentials.GetGlobalCLIRefresher()
-	if refresher == nil {
-		return nil
-	}
-	_, err := refresher.RefreshQwenToken(context.Background())
-	return err
-}
