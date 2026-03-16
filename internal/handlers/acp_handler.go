@@ -109,6 +109,7 @@ type ACPHandler struct {
 	agentsMu         sync.RWMutex
 	sessionsMu       sync.RWMutex
 	stopCleanup      chan struct{}
+	cleanupWg        sync.WaitGroup
 }
 
 // NewACPHandler creates a new ACP handler
@@ -124,10 +125,20 @@ func NewACPHandler(providerRegistry *services.ProviderRegistry, logger *logrus.L
 	// Initialize built-in agents
 	h.initializeAgents()
 
-	// Start session cleanup worker
-	go h.sessionCleanupWorker()
+	// Start session cleanup worker with lifecycle tracking
+	h.cleanupWg.Add(1)
+	go func() {
+		defer h.cleanupWg.Done()
+		h.sessionCleanupWorker()
+	}()
 
 	return h
+}
+
+// Shutdown gracefully stops the ACP handler's background goroutines.
+func (h *ACPHandler) Shutdown() {
+	close(h.stopCleanup)
+	h.cleanupWg.Wait()
 }
 
 // initializeAgents sets up the built-in ACP agents
