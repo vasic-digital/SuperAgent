@@ -241,7 +241,7 @@ func (d *DemoApplication) demoMonitoringAndMetrics() {
 		}
 
 		start := time.Now()
-		d.manager.ExecuteRequest(ctx, req)
+		_, _ = d.manager.ExecuteRequest(ctx, req) // #nosec G104 -- demo code, error intentionally ignored
 		duration := time.Since(start)
 
 		// Record metrics (success varies for demo)

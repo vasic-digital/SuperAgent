@@ -294,7 +294,7 @@ func (g *VerificationReportGenerator) saveReport(content string) error {
 		return fmt.Errorf("failed to create report directory: %w", err)
 	}
 
-	if err := os.WriteFile(g.reportPath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(g.reportPath, []byte(content), 0600); err != nil { // #nosec G306
 		return fmt.Errorf("failed to write report file: %w", err)
 	}
 

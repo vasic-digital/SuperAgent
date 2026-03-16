@@ -822,6 +822,7 @@ func (b *SSEBridge) handleSSE(w http.ResponseWriter, r *http.Request) {
 	flusher.Flush()
 
 	// Send the endpoint information (MCP SSE standard)
+	// #nosec G705 -- SSE data is not rendered as HTML; r.Host is used per MCP SSE protocol spec
 	messageEndpoint := fmt.Sprintf("http://%s/message", r.Host)
 	_, _ = fmt.Fprintf(w, "event: endpoint\ndata: %s\n\n", messageEndpoint)
 	flusher.Flush()

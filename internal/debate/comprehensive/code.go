@@ -284,12 +284,12 @@ func (t *CodeTool) readFile(path string) (*ToolResult, error) {
 func (t *CodeTool) writeFile(path string, content string) (*ToolResult, error) {
 	// Ensure directory exists
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0750); err != nil { // #nosec G301 -- directory needs exec bit for traversal
 		return NewToolError(fmt.Sprintf("failed to create directory: %v", err)), nil
 	}
 
 	// Write file
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil { // #nosec G306
 		return NewToolError(fmt.Sprintf("failed to write file: %v", err)), nil
 	}
 
@@ -313,14 +313,14 @@ func (t *CodeTool) updateFile(path string, content string) (*ToolResult, error) 
 		return NewToolError(fmt.Sprintf("failed to read existing file: %v", err)), nil
 	}
 
-	if err := os.WriteFile(backupPath, data, 0644); err != nil {
+	if err := os.WriteFile(backupPath, data, 0600); err != nil { // #nosec G306 -- backup file
 		return NewToolError(fmt.Sprintf("failed to create backup: %v", err)), nil
 	}
 
 	// Write new content
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil { // #nosec G306
 		// Restore backup on failure
-		if err2 := os.WriteFile(path, data, 0644); err2 != nil {
+		if err2 := os.WriteFile(path, data, 0600); err2 != nil { // #nosec G306
 			t.logger.Errorf("failed to restore backup after update failure: %v", err2)
 		}
 		return NewToolError(fmt.Sprintf("failed to update file: %v", err)), nil
@@ -342,7 +342,7 @@ func (t *CodeTool) deleteFile(path string) (*ToolResult, error) {
 
 	// Move to trash instead of permanent deletion
 	trashDir := filepath.Join(t.basePath, ".trash")
-	if err := os.MkdirAll(trashDir, 0755); err != nil {
+	if err := os.MkdirAll(trashDir, 0750); err != nil { // #nosec G301 -- trash directory needs exec bit
 		t.logger.Errorf("failed to create trash directory: %v", err)
 	}
 

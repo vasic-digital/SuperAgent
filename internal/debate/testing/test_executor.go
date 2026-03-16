@@ -436,7 +436,7 @@ func (s *ContainerSandbox) cleanupContainer(name string) {
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, s.runtime, "rm", "-f", name)
-	cmd.Run() //nolint:errcheck
+	_ = cmd.Run() //nolint:errcheck // #nosec G104 -- best-effort container cleanup
 }
 
 // SandboxedExecutionRequest is a JSON-serializable request for remote execution.

@@ -91,7 +91,7 @@ func NewGitTool(config GitToolConfig) (*GitTool, error) {
 	}
 
 	// Create the worktree base directory if it does not exist.
-	if err := os.MkdirAll(worktreeDir, 0o755); err != nil {
+	if err := os.MkdirAll(worktreeDir, 0o750); err != nil { // #nosec G301 -- worktree dir needs exec bit for traversal
 		return nil, fmt.Errorf("failed to create worktree dir: %w", err)
 	}
 
@@ -173,14 +173,14 @@ func (g *GitTool) CommitSnapshot(
 	// Ensure parent directories for the file exist within the worktree.
 	filePath := filepath.Join(worktreeDir, filename)
 	fileDir := filepath.Dir(filePath)
-	if err := os.MkdirAll(fileDir, 0o755); err != nil {
+	if err := os.MkdirAll(fileDir, 0o750); err != nil { // #nosec G301 -- directory needs exec bit for traversal
 		return nil, fmt.Errorf(
 			"failed to create directories for %s: %w", filename, err,
 		)
 	}
 
 	// Write the code to the file.
-	if err := os.WriteFile(filePath, []byte(code), 0o644); err != nil {
+	if err := os.WriteFile(filePath, []byte(code), 0o600); err != nil { // #nosec G306 -- source code in worktree
 		return nil, fmt.Errorf("failed to write file %s: %w", filename, err)
 	}
 

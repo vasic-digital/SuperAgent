@@ -34,7 +34,7 @@ func (r *Reporter) WriteResults(
 		r.baseDir,
 		now.Format("2006-01-02_150405"),
 	)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0750); err != nil { // #nosec G301 -- challenge results directory
 		return fmt.Errorf("create results dir: %w", err)
 	}
 
@@ -45,7 +45,7 @@ func (r *Reporter) WriteResults(
 		return fmt.Errorf("marshal summary: %w", err)
 	}
 	summaryPath := filepath.Join(dir, "summary.json")
-	if err := os.WriteFile(summaryPath, data, 0644); err != nil {
+	if err := os.WriteFile(summaryPath, data, 0600); err != nil { // #nosec G306 -- challenge summary
 		return fmt.Errorf("write summary: %w", err)
 	}
 
@@ -65,7 +65,7 @@ func (r *Reporter) WriteResults(
 			continue
 		}
 		if wErr := os.WriteFile(
-			resultPath, resultData, 0644,
+			resultPath, resultData, 0600, // #nosec G306 -- challenge result file
 		); wErr != nil {
 			fmt.Fprintf(os.Stderr,
 				"warning: write result %s: %v\n",
@@ -76,7 +76,7 @@ func (r *Reporter) WriteResults(
 
 	// Update latest symlink (best-effort).
 	latestPath := filepath.Join(r.baseDir, "latest")
-	os.Remove(latestPath)
+	_ = os.Remove(latestPath) // #nosec G104 -- best-effort removal of old symlink
 	if sErr := os.Symlink(dir, latestPath); sErr != nil {
 		fmt.Fprintf(os.Stderr,
 			"warning: symlink latest: %v\n", sErr,
