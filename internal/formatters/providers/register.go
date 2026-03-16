@@ -62,8 +62,8 @@ func RegisterAllFormatters(registry *formatters.FormatterRegistry, logger *logru
 		},
 		&formatters.FormatterMetadata{
 			Name: "prettier", Type: formatters.FormatterTypeUnified, Version: "3.4.2",
-			Languages:   []string{"javascript", "typescript", "json", "html", "css", "scss", "markdown", "yaml", "graphql"},
-			Performance: "medium",
+			Languages:     []string{"javascript", "typescript", "json", "html", "css", "scss", "markdown", "yaml", "graphql"},
+			Performance:   "medium",
 			SupportsStdin: true, SupportsInPlace: true, SupportsCheck: true,
 			SupportsConfig: true,
 		},
@@ -75,8 +75,8 @@ func RegisterAllFormatters(registry *formatters.FormatterRegistry, logger *logru
 		},
 		&formatters.FormatterMetadata{
 			Name: "biome", Type: formatters.FormatterTypeNative, Version: "1.9.4",
-			Languages:   []string{"javascript", "typescript", "json", "jsx", "tsx"},
-			Performance: "very_fast",
+			Languages:     []string{"javascript", "typescript", "json", "jsx", "tsx"},
+			Performance:   "very_fast",
 			SupportsStdin: true, SupportsInPlace: true, SupportsCheck: true,
 			SupportsConfig: true,
 		},
@@ -113,8 +113,8 @@ func RegisterAllFormatters(registry *formatters.FormatterRegistry, logger *logru
 		},
 		&formatters.FormatterMetadata{
 			Name: "clang-format", Type: formatters.FormatterTypeNative, Version: "19.1.8",
-			Languages:   []string{"c", "cpp", "java", "javascript", "objectivec", "protobuf"},
-			Performance: "fast",
+			Languages:     []string{"c", "cpp", "java", "javascript", "objectivec", "protobuf"},
+			Performance:   "fast",
 			SupportsStdin: true, SupportsInPlace: true, SupportsCheck: false,
 			SupportsConfig: true,
 		},

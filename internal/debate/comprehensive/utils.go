@@ -9,8 +9,8 @@ import (
 
 // Pre-compiled regexes for parsing utilities
 var (
-	codeBlockRegex     = regexp.MustCompile("(?s)```(\\w+)?\\n(.*?)```")
-	thoughtPatterns    = []*regexp.Regexp{
+	codeBlockRegex  = regexp.MustCompile("(?s)```(\\w+)?\\n(.*?)```")
+	thoughtPatterns = []*regexp.Regexp{
 		regexp.MustCompile(`(?i)Thinking:\s*(.+?)(?:\n\n|\n*$)`),
 		regexp.MustCompile(`(?i)Reasoning:\s*(.+?)(?:\n\n|\n*$)`),
 		regexp.MustCompile(`(?i)Analysis:\s*(.+?)(?:\n\n|\n*$)`),
@@ -20,8 +20,8 @@ var (
 		regexp.MustCompile(`(?i)confidence[:\s]+(\d+(?:\.\d+)?)\s*%?`),
 		regexp.MustCompile(`(?i)(\d+(?:\.\d+)?)\s*%\s+confident`),
 	}
-	keyPointsRegex     = regexp.MustCompile(`(?m)^\s*(?:[-*•]|\d+\.)\s+(.+)$`)
-	whitespaceRegex    = regexp.MustCompile(`\s+`)
+	keyPointsRegex  = regexp.MustCompile(`(?m)^\s*(?:[-*•]|\d+\.)\s+(.+)$`)
+	whitespaceRegex = regexp.MustCompile(`\s+`)
 )
 
 // PromptBuilder helps construct prompts for agents

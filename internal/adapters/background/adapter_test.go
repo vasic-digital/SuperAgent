@@ -20,14 +20,14 @@ import (
 
 // mockExtractedTaskQueue implements extractedbackground.TaskQueue
 type mockExtractedTaskQueue struct {
-	enqueueFn        func(ctx context.Context, task *extractedmodels.BackgroundTask) error
-	dequeueFn        func(ctx context.Context, workerID string, req extractedbackground.ResourceRequirements) (*extractedmodels.BackgroundTask, error)
-	peekFn           func(ctx context.Context, count int) ([]*extractedmodels.BackgroundTask, error)
-	requeueFn        func(ctx context.Context, taskID string, delay time.Duration) error
-	moveToDeadFn     func(ctx context.Context, taskID string, reason string) error
-	getPendingFn     func(ctx context.Context) (int64, error)
-	getRunningFn     func(ctx context.Context) (int64, error)
-	getQueueDepthFn  func(ctx context.Context) (map[extractedmodels.TaskPriority]int64, error)
+	enqueueFn       func(ctx context.Context, task *extractedmodels.BackgroundTask) error
+	dequeueFn       func(ctx context.Context, workerID string, req extractedbackground.ResourceRequirements) (*extractedmodels.BackgroundTask, error)
+	peekFn          func(ctx context.Context, count int) ([]*extractedmodels.BackgroundTask, error)
+	requeueFn       func(ctx context.Context, taskID string, delay time.Duration) error
+	moveToDeadFn    func(ctx context.Context, taskID string, reason string) error
+	getPendingFn    func(ctx context.Context) (int64, error)
+	getRunningFn    func(ctx context.Context) (int64, error)
+	getQueueDepthFn func(ctx context.Context) (map[extractedmodels.TaskPriority]int64, error)
 }
 
 func (m *mockExtractedTaskQueue) Enqueue(ctx context.Context, task *extractedmodels.BackgroundTask) error {
@@ -158,12 +158,12 @@ func (m *mockExtractedWorkerPool) Scale(targetCount int) error {
 
 // mockInternalTaskExecutor implements internalbackground.TaskExecutor
 type mockInternalTaskExecutor struct {
-	executeFn   func(ctx context.Context, task *internalmodels.BackgroundTask, reporter internalbackground.ProgressReporter) error
-	canPauseFn  func() bool
-	pauseFn     func(ctx context.Context, task *internalmodels.BackgroundTask) ([]byte, error)
-	resumeFn    func(ctx context.Context, task *internalmodels.BackgroundTask, checkpoint []byte) error
-	cancelFn    func(ctx context.Context, task *internalmodels.BackgroundTask) error
-	getReqFn    func() internalbackground.ResourceRequirements
+	executeFn  func(ctx context.Context, task *internalmodels.BackgroundTask, reporter internalbackground.ProgressReporter) error
+	canPauseFn func() bool
+	pauseFn    func(ctx context.Context, task *internalmodels.BackgroundTask) ([]byte, error)
+	resumeFn   func(ctx context.Context, task *internalmodels.BackgroundTask, checkpoint []byte) error
+	cancelFn   func(ctx context.Context, task *internalmodels.BackgroundTask) error
+	getReqFn   func() internalbackground.ResourceRequirements
 }
 
 func (m *mockInternalTaskExecutor) Execute(ctx context.Context, task *internalmodels.BackgroundTask, reporter internalbackground.ProgressReporter) error {
@@ -346,11 +346,11 @@ func (m *mockExtractedStuckDetector) SetThreshold(taskType string, threshold tim
 
 // mockInternalNotificationService implements internalbackground.NotificationService
 type mockInternalNotificationService struct {
-	notifyFn       func(ctx context.Context, task *internalmodels.BackgroundTask, event string, data map[string]interface{}) error
-	registerSSEFn  func(ctx context.Context, taskID string, client chan<- []byte) error
-	unregisterFn   func(ctx context.Context, taskID string, client chan<- []byte) error
-	registerWSFn   func(ctx context.Context, taskID string, client internalbackground.WebSocketClient) error
-	broadcastFn    func(ctx context.Context, taskID string, message []byte) error
+	notifyFn      func(ctx context.Context, task *internalmodels.BackgroundTask, event string, data map[string]interface{}) error
+	registerSSEFn func(ctx context.Context, taskID string, client chan<- []byte) error
+	unregisterFn  func(ctx context.Context, taskID string, client chan<- []byte) error
+	registerWSFn  func(ctx context.Context, taskID string, client internalbackground.WebSocketClient) error
+	broadcastFn   func(ctx context.Context, taskID string, message []byte) error
 }
 
 func (m *mockInternalNotificationService) NotifyTaskEvent(ctx context.Context, task *internalmodels.BackgroundTask, event string, data map[string]interface{}) error {

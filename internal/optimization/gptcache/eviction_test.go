@@ -349,8 +349,8 @@ func TestRelevanceEviction_Add_WithEviction(t *testing.T) {
 func TestRelevanceEviction_UpdateAccess(t *testing.T) {
 	e := NewRelevanceEviction(3, 0.9)
 
-	e.Add("key1") // score = 1.0
-	e.Add("key2") // score = 1.0
+	e.Add("key1")          // score = 1.0
+	e.Add("key2")          // score = 1.0
 	e.UpdateAccess("key1") // score = 2.0
 
 	score := e.GetScore("key1")

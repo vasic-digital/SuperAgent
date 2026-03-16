@@ -72,11 +72,11 @@ func TestACPServer_Fields(t *testing.T) {
 func TestEmbeddingConfig_APIKeyHidden(t *testing.T) {
 	apiKey := "secret-key"
 	config := EmbeddingConfig{
-		ID:       1,
-		Provider: "openai",
-		Model:    "text-embedding-3-small",
+		ID:        1,
+		Provider:  "openai",
+		Model:     "text-embedding-3-small",
 		Dimension: 1536,
-		APIKey:   &apiKey,
+		APIKey:    &apiKey,
 	}
 
 	data, err := json.Marshal(config)
