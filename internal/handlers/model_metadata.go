@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"dev.helix.agent/internal/database"
@@ -13,13 +14,33 @@ import (
 )
 
 type ModelMetadataHandler struct {
-	service *services.ModelMetadataService
+	service           *services.ModelMetadataService
+	refreshMu         sync.Mutex
+	refreshInProgress bool
 }
 
 func NewModelMetadataHandler(service *services.ModelMetadataService) *ModelMetadataHandler {
 	return &ModelMetadataHandler{
 		service: service,
 	}
+}
+
+// tryStartRefresh attempts to start a refresh, returning false if one is already in progress.
+func (h *ModelMetadataHandler) tryStartRefresh() bool {
+	h.refreshMu.Lock()
+	defer h.refreshMu.Unlock()
+	if h.refreshInProgress {
+		return false
+	}
+	h.refreshInProgress = true
+	return true
+}
+
+// finishRefresh marks the refresh as complete.
+func (h *ModelMetadataHandler) finishRefresh() {
+	h.refreshMu.Lock()
+	defer h.refreshMu.Unlock()
+	h.refreshInProgress = false
 }
 
 type ListModelsRequest struct {
@@ -202,7 +223,16 @@ func (h *ModelMetadataHandler) RefreshModels(c *gin.Context) {
 		return
 	}
 
+	if !h.tryStartRefresh() {
+		c.JSON(http.StatusAccepted, RefreshResponse{
+			Status:  "already_running",
+			Message: "Full models refresh is already in progress",
+		})
+		return
+	}
+
 	go func() {
+		defer h.finishRefresh()
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 		defer cancel()
 		if err := h.service.RefreshModels(ctx); err != nil {
