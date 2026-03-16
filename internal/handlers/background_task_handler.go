@@ -411,8 +411,19 @@ func (h *BackgroundTaskHandler) GetTaskEvents(c *gin.Context) {
 
 	// Register client
 	if h.sseManager != nil {
-		_ = h.sseManager.RegisterClient(taskID, clientChan)                      //nolint:errcheck
-		defer func() { _ = h.sseManager.UnregisterClient(taskID, clientChan) }() //nolint:errcheck
+		_ = h.sseManager.RegisterClient(taskID, clientChan) //nolint:errcheck
+		defer func() {
+			_ = h.sseManager.UnregisterClient(taskID, clientChan) //nolint:errcheck
+			// Drain remaining messages to prevent goroutine leaks in senders.
+			// After unregistering, no new sends will occur so this terminates.
+			for {
+				select {
+				case <-clientChan:
+				default:
+					return
+				}
+			}
+		}()
 	}
 
 	// Stream events
@@ -1015,8 +1026,19 @@ func (h *BackgroundTaskHandler) streamAllEvents(c *gin.Context) {
 	clientChan := make(chan []byte, 100)
 
 	if h.sseManager != nil {
-		_ = h.sseManager.RegisterGlobalClient(clientChan)                      //nolint:errcheck
-		defer func() { _ = h.sseManager.UnregisterGlobalClient(clientChan) }() //nolint:errcheck
+		_ = h.sseManager.RegisterGlobalClient(clientChan) //nolint:errcheck
+		defer func() {
+			_ = h.sseManager.UnregisterGlobalClient(clientChan) //nolint:errcheck
+			// Drain remaining messages to prevent goroutine leaks in senders.
+			// After unregistering, no new sends will occur so this terminates.
+			for {
+				select {
+				case <-clientChan:
+				default:
+					return
+				}
+			}
+		}()
 	}
 
 	c.Stream(func(w io.Writer) bool {
