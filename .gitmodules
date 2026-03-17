@@ -391,3 +391,6 @@
 [submodule "BackgroundTasks"]
 	path = BackgroundTasks
 	url = git@github.com:vasic-digital/BackgroundTasks.git
+[submodule "cli_agents/junie"]
+	path = cli_agents/junie
+	url = git@github.com:JetBrains/junie.git
