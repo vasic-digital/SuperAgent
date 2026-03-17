@@ -18,6 +18,55 @@ import (
 	"dev.helix.agent/internal/utils"
 )
 
+// findGeminiBinary locates the gemini binary by first trying exec.LookPath,
+// then checking common npm global install locations when PATH lookup fails.
+func findGeminiBinary() (string, error) {
+	// First try standard PATH lookup
+	path, err := exec.LookPath("gemini")
+	if err == nil {
+		return path, nil
+	}
+
+	// Get home directory for fallback paths
+	homeDir, homeErr := os.UserHomeDir()
+	if homeErr != nil {
+		return "", fmt.Errorf(
+			"gemini not found in PATH and cannot determine home directory: %w",
+			err,
+		)
+	}
+
+	// Check common npm global install locations
+	candidatePaths := []string{
+		filepath.Join(homeDir, ".npm-global", "bin", "gemini"),
+		filepath.Join(homeDir, ".local", "bin", "gemini"),
+		"/usr/local/bin/gemini",
+		filepath.Join(homeDir, "node_modules", ".bin", "gemini"),
+	}
+
+	for _, candidate := range candidatePaths {
+		if info, statErr := os.Stat(candidate); statErr == nil &&
+			!info.IsDir() {
+			return candidate, nil
+		}
+	}
+
+	// Check nvm versions directory (glob for any node version)
+	nvmPattern := filepath.Join(
+		homeDir, ".nvm", "versions", "node", "*", "bin", "gemini",
+	)
+	matches, globErr := filepath.Glob(nvmPattern)
+	if globErr == nil && len(matches) > 0 {
+		// Return the last match (typically the newest version)
+		return matches[len(matches)-1], nil
+	}
+
+	return "", fmt.Errorf(
+		"gemini command not found in PATH or common install locations: %w",
+		err,
+	)
+}
+
 // GeminiCLIProvider implements the LLMProvider interface using Gemini CLI
 // from Google. This is used when Gemini CLI is installed and authenticated.
 //
@@ -134,10 +183,10 @@ func NewGeminiCLIProviderWithModel(model string) *GeminiCLIProvider {
 // IsCLIAvailable checks if Gemini CLI is installed and available
 func (p *GeminiCLIProvider) IsCLIAvailable() bool {
 	p.cliCheckOnce.Do(func() {
-		path, err := exec.LookPath("gemini")
+		path, err := findGeminiBinary()
 		if err != nil {
 			p.cliCheckErr = fmt.Errorf(
-				"gemini command not found in PATH: %w", err,
+				"gemini command not found: %w", err,
 			)
 			p.cliAvailable = false
 			return
@@ -593,7 +642,7 @@ func (p *GeminiCLIProvider) SetModel(model string) {
 
 // IsGeminiCLIInstalled checks if Gemini CLI is installed
 func IsGeminiCLIInstalled() bool {
-	_, err := exec.LookPath("gemini")
+	_, err := findGeminiBinary()
 	return err == nil
 }
 
@@ -630,10 +679,10 @@ func IsGeminiCLIAuthenticated() bool {
 
 // GetGeminiCLIPath returns the path to gemini command if installed
 func GetGeminiCLIPath() (string, error) {
-	path, err := exec.LookPath("gemini")
+	path, err := findGeminiBinary()
 	if err != nil {
 		return "", fmt.Errorf(
-			"gemini command not found in PATH: %w", err,
+			"gemini command not found: %w", err,
 		)
 	}
 	return path, nil
