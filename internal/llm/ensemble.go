@@ -6,6 +6,8 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"golang.org/x/sync/semaphore"
+
 	"dev.helix.agent/internal/models"
 )
 
@@ -60,7 +62,7 @@ func RunEnsembleWithProviders(ctx context.Context, req *models.LLMRequest, provi
 	}
 
 	maxConcurrent := GetMaxConcurrentProviders()
-	sem := make(chan struct{}, maxConcurrent)
+	sem := semaphore.NewWeighted(int64(maxConcurrent))
 
 	var wg sync.WaitGroup
 	respCh := make(chan *models.LLMResponse, len(providers))
@@ -70,9 +72,12 @@ func RunEnsembleWithProviders(ctx context.Context, req *models.LLMRequest, provi
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			// Acquire semaphore slot to limit concurrency
-			sem <- struct{}{}
-			defer func() { <-sem }()
+			// Acquire semaphore slot; respects context cancellation
+			// while waiting for a slot.
+			if err := sem.Acquire(ctx, 1); err != nil {
+				return
+			}
+			defer sem.Release(1)
 
 			r, err := pp.Complete(ctx, req)
 			if err == nil && r != nil {
