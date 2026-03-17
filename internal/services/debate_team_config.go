@@ -127,7 +127,7 @@ var LLMsVerifierModels = struct {
 	DeepSeek: "deepseek-chat",
 	Gemini:   "gemini-2.5-flash",
 	Mistral:  "mistral-large-latest",
-	Groq:     "llama-3.1-70b-versatile",
+	Groq:     "llama-4-maverick-17b-128e-instruct",
 	Cerebras: "llama-3.3-70b",
 	ZAI:      "glm-4.7",
 	Chutes:   "deepseek-ai/DeepSeek-V3",

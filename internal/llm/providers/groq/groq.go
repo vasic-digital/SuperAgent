@@ -201,30 +201,23 @@ func NewProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig
 		ModelsDevID:    "groq",
 		APIKey:         apiKey,
 		FallbackModels: []string{
-			// Llama models
+			// Llama 4 (newest)
+			"llama-4-maverick-17b-128e-instruct",
+			"llama-4-scout-17b-16e-instruct",
+			// Llama 3.x models
 			"llama-3.3-70b-versatile",
-			"llama-3.3-70b-specdec",
-			"llama-3.2-90b-vision-preview",
-			"llama-3.2-11b-vision-preview",
-			"llama-3.2-3b-preview",
-			"llama-3.2-1b-preview",
 			"llama-3.1-70b-versatile",
 			"llama-3.1-8b-instant",
-			"llama3-70b-8192",
-			"llama3-8b-8192",
-			// Llama 4
-			"llama-4-scout-17b-16e-instruct",
-			"llama-4-maverick-17b-128e-instruct",
+			// DeepSeek reasoning
+			"deepseek-r1-distill-llama-70b",
 			// Mixtral
 			"mixtral-8x7b-32768",
 			// Gemma
-			"gemma-7b-it",
 			"gemma2-9b-it",
 			// Qwen
-			"qwen-qwq-32b",
 			"qwen-2.5-coder-32b",
-			"qwen-2.5-32b",
-			// Whisper
+			"qwen-qwq-32b",
+			// Whisper (audio)
 			"whisper-large-v3",
 			"whisper-large-v3-turbo",
 			"distil-whisper-large-v3-en",

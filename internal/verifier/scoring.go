@@ -377,12 +377,17 @@ func DefaultWeights() *ScoreWeights {
 func (s *ScoringService) calculateSpeedScore(modelID string) float64 {
 	// Fast models known for speed
 	fastModels := map[string]float64{
-		"groq":           9.0,
-		"gpt-3.5":        8.0,
-		"claude-3-haiku": 8.5,
-		"gemini-2.5-flash": 9.0,
-		"gemini-2.0-flash": 8.5,
-		"gemini-flash":     8.5,
+		"groq":                                9.0,
+		"llama-4-maverick-17b-128e-instruct":  9.5,
+		"llama-4-scout-17b-16e-instruct":      9.5,
+		"llama-3.3-70b-versatile":             9.0,
+		"llama-3.1-8b-instant":                9.8,
+		"deepseek-r1-distill-llama-70b":       7.5,
+		"gpt-3.5":                             8.0,
+		"claude-3-haiku":                      8.5,
+		"gemini-2.5-flash":                    9.0,
+		"gemini-2.0-flash":                    8.5,
+		"gemini-flash":                        8.5,
 	}
 
 	// Standard speed models
@@ -413,12 +418,13 @@ func (s *ScoringService) calculateSpeedScore(modelID string) float64 {
 func (s *ScoringService) calculateEfficiencyScore(modelID string) float64 {
 	// Efficient models
 	efficientModels := map[string]float64{
-		"gpt-4o":          9.0,
-		"claude-3.5":      9.0,
-		"gemini-2.5":      9.0,
-		"gemini-2.0":      8.5,
-		"gemini-pro":      8.0,
-		"llama":           7.5,
+		"gpt-4o":     9.0,
+		"claude-3.5": 9.0,
+		"gemini-2.5": 9.0,
+		"gemini-2.0": 8.5,
+		"gemini-pro": 8.0,
+		"groq":       9.5,
+		"llama":      7.5,
 	}
 
 	for pattern, score := range efficientModels {
@@ -437,6 +443,7 @@ func (s *ScoringService) calculateCostScore(modelID string) float64 {
 	cheapModels := map[string]float64{
 		"llama":          9.0,
 		"ollama":         10.0,
+		"groq":           9.0,
 		"gpt-3.5":        8.0,
 		"claude-3-haiku": 8.0,
 	}
@@ -469,22 +476,26 @@ func (s *ScoringService) calculateCostScore(modelID string) float64 {
 func (s *ScoringService) calculateCapabilityScore(modelID string) float64 {
 	// High capability models
 	highCapModels := map[string]float64{
-		"gpt-4":           9.5,
-		"gpt-4o":          9.5,
-		"claude-3-opus":   9.5,
-		"claude-3.5":      9.0,
-		"gemini-2.5-pro":  9.5,
-		"gemini-2.5-flash": 9.0,
-		"gemini-ultra":    9.0,
+		"gpt-4":                              9.5,
+		"gpt-4o":                             9.5,
+		"claude-3-opus":                      9.5,
+		"claude-3.5":                         9.0,
+		"gemini-2.5-pro":                     9.5,
+		"gemini-2.5-flash":                   9.0,
+		"gemini-ultra":                       9.0,
+		"llama-4-maverick-17b-128e-instruct": 8.5,
+		"deepseek-r1-distill-llama-70b":      8.5,
 	}
 
 	// Medium capability models
 	medCapModels := map[string]float64{
-		"gpt-3.5":         7.0,
-		"claude-3-sonnet": 8.0,
-		"gemini-2.0-flash": 8.5,
-		"gemini-pro":      8.0,
-		"llama-3":         7.5,
+		"gpt-3.5":                       7.0,
+		"claude-3-sonnet":               8.0,
+		"gemini-2.0-flash":              8.5,
+		"gemini-pro":                    8.0,
+		"llama-3":                       7.5,
+		"llama-3.3-70b-versatile":       8.0,
+		"qwen-qwq-32b":                 8.0,
 	}
 
 	for pattern, score := range highCapModels {
@@ -507,12 +518,16 @@ func (s *ScoringService) calculateCapabilityScore(modelID string) float64 {
 func (s *ScoringService) calculateRecencyScore(modelID string) float64 {
 	// Recent models
 	recentModels := map[string]float64{
-		"gpt-4o":        9.5,
-		"gpt-4-turbo":   9.0,
-		"claude-3.5":    9.0,
-		"gemini-2.5":    9.5,
-		"gemini-2.0":    9.0,
-		"gemini-1.5":    8.0,
+		"gpt-4o":                             9.5,
+		"gpt-4-turbo":                        9.0,
+		"claude-3.5":                         9.0,
+		"gemini-2.5":                         9.5,
+		"gemini-2.0":                         9.0,
+		"gemini-1.5":                         8.0,
+		"llama-4-maverick-17b-128e-instruct": 9.5,
+		"llama-4-scout-17b-16e-instruct":     9.5,
+		"llama-3.3-70b-versatile":            9.0,
+		"deepseek-r1-distill-llama-70b":      9.0,
 	}
 
 	// Older models
