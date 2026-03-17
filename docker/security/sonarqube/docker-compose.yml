@@ -5,7 +5,7 @@ version: '3.8'
 
 services:
   sonarqube:
-    image: sonarqube:community
+    image: sonarqube:10.7-community
     container_name: helixagent-sonarqube
     depends_on:
       - postgres
@@ -61,7 +61,7 @@ services:
 
   # Sonar Scanner service for automated scanning
   sonar-scanner:
-    image: sonarsource/sonar-scanner-cli:latest
+    image: sonarsource/sonar-scanner-cli:5.0
     container_name: helixagent-sonar-scanner
     environment:
       SONAR_HOST_URL: http://sonarqube:9000
