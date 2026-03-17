@@ -695,4 +695,160 @@ When creating files or directories in Go, use the minimum permissions required:
 
 ---
 
+---
+
+## Automated Containerized Security Scanning
+
+HelixAgent provides fully containerized, automated security scanning pipelines for Snyk and SonarQube. These pipelines run inside Docker/Podman containers for reproducibility and require no local tool installation.
+
+### Containerized Snyk Scanning
+
+The Snyk scanning pipeline runs all scans inside a container with pre-configured profiles.
+
+**Docker Compose Setup:**
+
+```bash
+# Full Snyk scan (dependency + code + container)
+docker compose -f docker/security/snyk/docker-compose.yml \
+  --profile full run --rm snyk-full
+
+# Dependency-only scan
+docker compose -f docker/security/snyk/docker-compose.yml \
+  --profile deps run --rm snyk-deps
+
+# Code analysis only
+docker compose -f docker/security/snyk/docker-compose.yml \
+  --profile code run --rm snyk-code
+
+# Container image scan
+docker compose -f docker/security/snyk/docker-compose.yml \
+  --profile container run --rm snyk-container
+```
+
+**Environment Variables:**
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `SNYK_TOKEN` | Yes | Snyk API token from snyk.io |
+| `SNYK_ORG` | No | Organization ID for team scans |
+| `SNYK_SEVERITY_THRESHOLD` | No | Minimum severity: `low`, `medium`, `high`, `critical` |
+
+**Automated Challenge Validation:**
+
+The Snyk scanning challenge (`challenges/scripts/snyk_automated_scanning_challenge.sh`) validates 38 test points:
+
+- Container image availability and pull
+- Authentication with Snyk API
+- Dependency vulnerability scanning
+- Code analysis scanning
+- Container image scanning
+- Report generation and format validation
+- Severity threshold enforcement
+- Exit code correctness for CI/CD gating
+
+```bash
+./challenges/scripts/snyk_automated_scanning_challenge.sh
+```
+
+### Containerized SonarQube Scanning
+
+SonarQube runs as a persistent container with automated project configuration and analysis.
+
+**Docker Compose Setup:**
+
+```bash
+# Start SonarQube server
+docker compose -f docker/security/sonarqube/docker-compose.yml up -d sonarqube
+
+# Wait for SonarQube to be ready (may take 60-90 seconds on first start)
+until curl -s http://localhost:9000/api/system/status | grep -q '"status":"UP"'; do
+  sleep 5
+done
+
+# Run analysis
+docker compose -f docker/security/sonarqube/docker-compose.yml \
+  run --rm sonar-scanner
+```
+
+**Configuration Files:**
+
+- `docker/security/sonarqube/sonar-project.properties` -- Project analysis configuration
+- `docker/security/sonarqube/docker-compose.yml` -- Container orchestration
+- `docker/security/sonarqube/quality-gate.json` -- Custom quality gate rules
+
+**Quality Gate Enforcement:**
+
+SonarQube quality gates block builds when thresholds are exceeded:
+
+| Metric | Threshold | Action |
+|--------|-----------|--------|
+| Critical vulnerabilities | 0 | Block |
+| Blocker issues | 0 | Block |
+| Code coverage | > 80% | Warn |
+| Duplicated lines | < 3% | Warn |
+| Security hotspots reviewed | 100% | Block |
+
+**Automated Challenge Validation:**
+
+The SonarQube scanning challenge (`challenges/scripts/sonarqube_automated_scanning_challenge.sh`) validates 45 test points:
+
+- SonarQube container startup and health
+- Project creation and configuration
+- Scanner execution and analysis completion
+- Quality gate evaluation
+- Report export (JSON, HTML)
+- Metrics API querying
+- Issue categorization and severity mapping
+- Custom rule validation
+
+```bash
+./challenges/scripts/sonarqube_automated_scanning_challenge.sh
+```
+
+### Integrating Automated Scanning into CI/CD
+
+Both scanning pipelines can be integrated into the manual CI/CD workflow:
+
+```bash
+# Run both scanners as part of CI validation
+make ci-security-scan
+
+# Or individually
+make ci-snyk-scan
+make ci-sonarqube-scan
+
+# Check results and fail if critical issues found
+make ci-security-gate
+```
+
+**Resource Limits:**
+
+All scanning containers respect the 30-40% host resource limit:
+
+```yaml
+deploy:
+  resources:
+    limits:
+      cpus: '2'
+      memory: 4G
+```
+
+### Scan Result Aggregation
+
+Security scan results from all tools are aggregated into a unified report:
+
+```bash
+# Generate aggregated security report
+./scripts/security-aggregate-report.sh
+
+# Output
+reports/security/
+  aggregated-summary.md      # Human-readable summary
+  aggregated-results.json    # Machine-readable results
+  snyk-report.json          # Raw Snyk results
+  sonarqube-report.json     # Raw SonarQube results
+```
+
+---
+
 **Next Manual:** User Manual 18 - Performance Monitoring

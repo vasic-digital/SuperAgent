@@ -659,6 +659,97 @@ func TestStress_GoroutineStability(t *testing.T) {
 }
 ```
 
+## Fuzz Testing
+
+Go 1.18+ includes native fuzz testing support. Fuzz tests generate random inputs to discover edge cases, panics, and unexpected behavior that deterministic tests miss. HelixAgent uses fuzz tests to validate parsing robustness across API boundaries.
+
+### What is Fuzz Testing?
+
+Fuzz testing (fuzzing) feeds semi-random, mutated inputs to functions to find crashes, panics, hangs, and logic errors. Unlike unit tests that verify expected behavior with known inputs, fuzz tests discover *unexpected* behavior with inputs you never thought to test.
+
+Go's native fuzzer uses coverage-guided mutation: it tracks which code paths each input exercises and mutates inputs to maximize coverage. Interesting inputs are saved to a corpus for future runs.
+
+### Writing a Fuzz Test
+
+Fuzz tests follow the `Fuzz` prefix convention and accept `*testing.F`:
+
+```go
+func FuzzJSONRequestParsing(f *testing.F) {
+    // Seed corpus: known-good inputs the fuzzer will mutate
+    f.Add([]byte(`{"model":"test","messages":[{"role":"user","content":"hello"}]}`))
+    f.Add([]byte(`{}`))
+    f.Add([]byte(`{"model":"","messages":[]}`))
+    f.Add([]byte(`not json at all`))
+
+    f.Fuzz(func(t *testing.T, data []byte) {
+        // This function must not panic for any input
+        var req ChatCompletionRequest
+        err := json.Unmarshal(data, &req)
+        if err != nil {
+            return // Invalid JSON is expected, just don't panic
+        }
+
+        // If parsing succeeds, validate the result
+        _ = req.Validate()
+    })
+}
+```
+
+### Running Fuzz Tests
+
+```bash
+# Run a specific fuzz target for 30 seconds
+go test -fuzz=FuzzJSONRequestParsing -fuzztime=30s ./path/to/package/
+
+# Run with resource limits (recommended)
+GOMAXPROCS=2 nice -n 19 ionice -c 3 \
+  go test -fuzz=FuzzJSONRequestParsing -fuzztime=60s -p 1 ./path/to/package/
+
+# Run all fuzz tests as regular tests (uses seed corpus only)
+go test -run=Fuzz ./path/to/package/
+
+# Run with verbose output to see discovered inputs
+go test -fuzz=FuzzJSONRequestParsing -fuzztime=30s -v ./path/to/package/
+```
+
+### Interpreting Results
+
+When the fuzzer finds a crash, it saves the failing input to `testdata/fuzz/<FuzzTestName>/`:
+
+```
+--- FAIL: FuzzJSONRequestParsing (0.52s)
+    --- FAIL: FuzzJSONRequestParsing/abc123 (0.00s)
+        panic: runtime error: index out of range [5] with length 3
+```
+
+The failing input is saved as a file that becomes part of the test corpus. Future `go test` runs (without `-fuzz`) will replay this input as a regression test.
+
+To fix:
+1. Read the failing input from `testdata/fuzz/<FuzzTestName>/`
+2. Write a deterministic unit test reproducing the crash
+3. Fix the underlying bug (bounds check, nil check, etc.)
+4. Run `go test` to verify the corpus input no longer crashes
+
+### Available Fuzz Targets
+
+| Target | Package | What It Tests |
+|--------|---------|---------------|
+| `FuzzJSONRequestParsing` | `tests/fuzz/` | Chat completion request JSON parsing robustness |
+| `FuzzToolSchemaValidation` | `tests/fuzz/` | Tool schema JSON parsing and validation |
+| `FuzzSSEParsing` | `tests/fuzz/` | Server-Sent Events stream parsing |
+| `FuzzModelIDParsing` | `tests/fuzz/` | Model ID format parsing (provider/model) |
+| `FuzzHTTPHeaderParsing` | `tests/fuzz/` | HTTP header parsing for auth and content type |
+| `FuzzTokenBucket` | `Toolkit/` | Rate limiter token bucket algorithm |
+| `FuzzDefaultCategoryInferrer` | `Toolkit/` | Model category inference logic |
+
+### Best Practices
+
+1. **Seed with realistic data**: Add known-good and known-bad inputs to the seed corpus
+2. **Never ignore panics**: If the fuzzer finds a panic, it is always a bug
+3. **Keep fuzz functions fast**: The fuzzer runs millions of iterations; expensive operations slow it down
+4. **Run overnight for thorough coverage**: `-fuzztime=8h` discovers rare edge cases
+5. **Commit corpus files**: The `testdata/fuzz/` directory should be committed to version control so discoveries become regression tests
+
 ## Related Resources
 
 - [User Manual 21: Challenge Development](21-challenge-development.md) -- Creating new challenge tests
