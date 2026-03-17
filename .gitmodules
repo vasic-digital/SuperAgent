@@ -69,16 +69,16 @@
 	url = git@github.com:vasic-digital/Chutes-Toolkit.git
 [submodule "LLMsVerifier"]
 	path = LLMsVerifier
-	url = https://github.com/vasic-digital/LLMsVerifier.git
+	url = git@github.com:vasic-digital/LLMsVerifier.git
 [submodule "external/mcp-servers/servers"]
 	path = external/mcp-servers/servers
-	url = https://github.com/modelcontextprotocol/servers.git
+	url = git@github.com:modelcontextprotocol/servers.git
 [submodule "external/mcp-servers/servers-archived"]
 	path = external/mcp-servers/servers-archived
-	url = https://github.com/modelcontextprotocol/servers-archived.git
+	url = git@github.com:modelcontextprotocol/servers-archived.git
 [submodule "MCP-Servers"]
 	path = MCP-Servers
-	url = https://github.com/modelcontextprotocol/servers.git
+	url = git@github.com:modelcontextprotocol/servers.git
 [submodule "MCP/submodules/microsoft-mcp"]
 	path = MCP/submodules/microsoft-mcp
 	url = git@github.com:microsoft/mcp.git
@@ -213,49 +213,49 @@
 	url = git@github.com:RohitKrish46/docs-mcp-server.git
 [submodule "cli_agents/cline"]
 	path = cli_agents/cline
-	url = https://github.com/cline/cline.git
+	url = git@github.com:cline/cline.git
 [submodule "cli_agents/claude-squad"]
 	path = cli_agents/claude-squad
-	url = https://github.com/smtg-ai/claude-squad.git
+	url = git@github.com:smtg-ai/claude-squad.git
 [submodule "cli_agents/gemini-cli"]
 	path = cli_agents/gemini-cli
-	url = https://github.com/google-gemini/gemini-cli.git
+	url = git@github.com:google-gemini/gemini-cli.git
 [submodule "cli_agents/fauxpilot"]
 	path = cli_agents/fauxpilot
-	url = https://github.com/fauxpilot/fauxpilot.git
+	url = git@github.com:fauxpilot/fauxpilot.git
 [submodule "cli_agents/codex"]
 	path = cli_agents/codex
-	url = https://github.com/openai/codex.git
+	url = git@github.com:openai/codex.git
 [submodule "cli_agents/aider"]
 	path = cli_agents/aider
-	url = https://github.com/Aider-AI/aider.git
+	url = git@github.com:Aider-AI/aider.git
 [submodule "cli_agents/conduit"]
 	path = cli_agents/conduit
-	url = https://github.com/lostintangent/conduit-release.git
+	url = git@github.com:lostintangent/conduit-release.git
 [submodule "cli_agents/claude-code"]
 	path = cli_agents/claude-code
-	url = https://github.com/anthropics/claude-code.git
+	url = git@github.com:anthropics/claude-code.git
 [submodule "cli_agents/codename-goose"]
 	path = cli_agents/codename-goose
-	url = https://github.com/jgenerali/codename-goose.git
+	url = git@github.com:jgenerali/codename-goose.git
 [submodule "cli_agents/amazon-q"]
 	path = cli_agents/amazon-q
-	url = https://github.com/aws/amazon-q-developer-cli.git
+	url = git@github.com:aws/amazon-q-developer-cli.git
 [submodule "cli_agents/forge"]
 	path = cli_agents/forge
-	url = https://github.com/antinomyhq/forge.git
+	url = git@github.com:antinomyhq/forge.git
 [submodule "cli_agents/noi"]
 	path = cli_agents/noi
-	url = https://github.com/lencx/Noi.git
+	url = git@github.com:lencx/Noi.git
 [submodule "cli_agents/kilo-code"]
 	path = cli_agents/kilo-code
-	url = https://github.com/Kilo-Org/kilocode.git
+	url = git@github.com:Kilo-Org/kilocode.git
 [submodule "cli_agents/octogen"]
 	path = cli_agents/octogen
-	url = https://github.com/dbpunk-labs/octogen.git
+	url = git@github.com:dbpunk-labs/octogen.git
 [submodule "cli_agents/ollama-code"]
 	path = cli_agents/ollama-code
-	url = https://github.com/tcsenpai/ollama-code.git
+	url = git@github.com:tcsenpai/ollama-code.git
 [submodule "cli_agents/plandex"]
 	path = cli_agents/plandex
 	url = git@github.com:plandex-ai/plandex.git
@@ -342,10 +342,10 @@
 	url = git@github.com:github/spec-kit.git
 [submodule "external/cognee"]
 	path = external/cognee
-	url = https://github.com/topoteretes/cognee.git
+	url = git@github.com:topoteretes/cognee.git
 [submodule "cli_agents/opencode-cli"]
 	path = cli_agents/opencode-cli
-	url = https://github.com/anomalyco/opencode
+	url = git@github.com:anomalyco/opencode.git
 [submodule "HelixMemory"]
 	path = HelixMemory
 	url = git@github.com:HelixDevelopment/HelixMemory.git
@@ -390,4 +390,4 @@
 	url = git@github.com:vasic-digital/DebateOrchestrator.git
 [submodule "BackgroundTasks"]
 	path = BackgroundTasks
-	url = ./BackgroundTasks
+	url = git@github.com:vasic-digital/BackgroundTasks.git
