@@ -146,7 +146,7 @@ make monitoring-reset-circuits / force-health-check
 - `cmd/helixagent/` — Main app | `cmd/api/` — API server | `cmd/grpc-server/` — gRPC
 
 ### Core Packages (`internal/`)
-- `llm/providers/` — 22 dedicated LLM providers (claude, chutes, deepseek, gemini, mistral, openrouter, qwen, zai, zen, cerebras, ollama, ai21, anthropic, cohere, fireworks, groq, huggingface, openai, perplexity, replicate, together, xai) + generic OpenAI-compatible provider for 17+ additional providers (nvidia, sambanova, hyperbolic, novita, siliconflow, kimi, upstage, etc.)
+- `llm/providers/` — 23 dedicated LLM providers (claude, chutes, deepseek, gemini, mistral, openrouter, qwen, zai, zen, cerebras, ollama, ai21, anthropic, cohere, fireworks, groq, huggingface, openai, perplexity, replicate, together, xai, junie) + generic OpenAI-compatible provider for 17+ additional providers (nvidia, sambanova, hyperbolic, novita, siliconflow, kimi, upstage, etc.)
 - `llm/providers/generic/` — Generic OpenAI-compatible provider for verification of providers without dedicated implementations
 - `llm/discovery/` — 3-tier dynamic model discovery (Provider API → models.dev → hardcoded fallback)
 - `llm/ensemble.go` — Ensemble orchestration
@@ -277,8 +277,9 @@ OAuth/free providers use CLI proxies when direct API access is restricted:
 - **Claude**: `claude -p --output-format json` (session continuity) — `internal/llm/providers/claude/claude_cli.go`
 - **Qwen**: ACP via `qwen --acp` (JSON-RPC 2.0), fallback CLI — `internal/llm/providers/qwen/qwen_acp.go`
 - **Zen**: HTTP server `opencode serve :4096`, fallback CLI — `internal/llm/providers/zen/zen_http.go`
+- **Junie**: CLI mode with `--output-format json` and ACP mode via `junie --acp` — `internal/llm/providers/junie/junie_cli.go`
 
-Triggered when: `*_USE_OAUTH_CREDENTIALS=true` + no API key, or no `OPENCODE_API_KEY` for Zen.
+Triggered when: `*_USE_OAUTH_CREDENTIALS=true` + no API key, or no `OPENCODE_API_KEY` for Zen, or `JUNIE_API_KEY` for Junie.
 
 **OAuth limitation**: CLI OAuth tokens are product-restricted (cannot use for general API). Get proper API keys from console.anthropic.com / dashscope.aliyuncs.com, or use CLI proxy.
 

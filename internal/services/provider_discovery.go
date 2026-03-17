@@ -22,6 +22,7 @@ import (
 	"dev.helix.agent/internal/llm/providers/gemini"
 	"dev.helix.agent/internal/llm/providers/groq"
 	"dev.helix.agent/internal/llm/providers/huggingface"
+	"dev.helix.agent/internal/llm/providers/junie"
 	"dev.helix.agent/internal/llm/providers/mistral"
 	"dev.helix.agent/internal/llm/providers/ollama"
 	"dev.helix.agent/internal/llm/providers/openai"
@@ -31,7 +32,6 @@ import (
 	"dev.helix.agent/internal/llm/providers/replicate"
 	"dev.helix.agent/internal/llm/providers/together"
 	"dev.helix.agent/internal/llm/providers/xai"
-	"dev.helix.agent/internal/llm/providers/zai"
 	"dev.helix.agent/internal/llm/providers/zen"
 	"dev.helix.agent/internal/models"
 	"github.com/sirupsen/logrus"
@@ -256,6 +256,10 @@ var providerMappings = []ProviderMapping{
 	// Tier 7.5: OpenCode Zen (free models gateway)
 	{EnvVar: "OPENCODE_API_KEY", ProviderType: "zen", ProviderName: "zen", BaseURL: "https://opencode.ai/zen/v1/chat/completions", DefaultModel: "big-pickle", Priority: 4},
 	{EnvVar: "ZEN_API_KEY", ProviderType: "zen", ProviderName: "zen", BaseURL: "https://opencode.ai/zen/v1/chat/completions", DefaultModel: "big-pickle", Priority: 4},
+
+	// Tier 7.6: Junie (JetBrains AI coding agent)
+	{EnvVar: "JUNIE_API_KEY", ProviderType: "junie", ProviderName: "junie", BaseURL: "", DefaultModel: "sonnet", Priority: 2},
+	{EnvVar: "ApiKey_Junie", ProviderType: "junie", ProviderName: "junie", BaseURL: "", DefaultModel: "sonnet", Priority: 2},
 
 	// Tier 8: Self-hosted (local)
 	// Ollama - Multiple configuration options
@@ -658,15 +662,17 @@ func (pd *ProviderDiscovery) createProvider(mapping ProviderMapping, apiKey stri
 		}
 		return xai.NewProvider(apiKey, baseURL, mapping.DefaultModel), nil
 
-	case "zai":
-		// Use native ZAI provider for Zhipu/GLM models
-		baseURL := mapping.BaseURL
-		if baseURL == "" {
-			baseURL = "https://api.z.ai/api/paas/v4/chat/completions"
+	case "junie":
+		if junie.CanUseJunieCLI() {
+			logrus.Info("Creating Junie provider with CLI mode (JetBrains Junie)")
+			config := junie.DefaultJunieConfig()
+			if apiKey != "" {
+				config.APIKey = apiKey
+			}
+			return junie.NewJunieProvider(config), nil
 		}
-		return zai.NewZAIProvider(apiKey, baseURL, mapping.DefaultModel), nil
-
-	case "groq":
+		logrus.Warn("Junie CLI not available: ", apiKey)
+		return nil, fmt.Errorf("junie CLI not installed or not authenticated")
 		// Use native Groq provider for fast inference
 		baseURL := mapping.BaseURL
 		if baseURL == "" {

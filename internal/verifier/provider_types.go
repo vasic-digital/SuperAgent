@@ -836,6 +836,21 @@ var SupportedProviders = map[string]*ProviderTypeInfo{
 		Models:      []string{"codestral-latest", "codestral-mamba-latest"},
 		Free:        false,
 	},
+
+	// Junie (JetBrains) - CLI agent with BYOK support for multiple LLM providers
+	"junie": {
+		Type:        "junie",
+		DisplayName: "Junie (JetBrains)",
+		AuthType:    AuthTypeAPIKey,
+		Tier:        2,
+		Priority:    2,
+		EnvVars:     []string{"JUNIE_API_KEY", "JUNIE_ANTHROPIC_API_KEY", "JUNIE_OPENAI_API_KEY", "JUNIE_GOOGLE_API_KEY", "JUNIE_GROK_API_KEY", "JUNIE_OPENROUTER_API_KEY"},
+		BaseURL:     "",
+		Models: []string{
+			"sonnet", "opus", "gpt", "gpt-codex", "gemini-pro", "gemini-flash", "grok", "Default",
+		},
+		Free: false,
+	},
 }
 
 // GetProviderInfo returns info for a provider type

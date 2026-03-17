@@ -346,6 +346,7 @@ LLMsVerifier is the single source of truth. On startup: discover → verify (8-t
 - **Claude**: `claude -p --output-format json` (CLI proxy)
 - **Qwen**: `qwen --acp` (JSON-RPC 2.0)
 - **Zen**: HTTP server `opencode serve :4096`
+- **Junie**: CLI mode with `--output-format json` and ACP mode via `junie --acp`
 
 ## CLI Agents (46)
 

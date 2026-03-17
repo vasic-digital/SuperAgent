@@ -29,6 +29,7 @@ import (
 	"dev.helix.agent/internal/llm/providers/groq"
 	"dev.helix.agent/internal/llm/providers/huggingface"
 	"dev.helix.agent/internal/llm/providers/hyperbolic"
+	"dev.helix.agent/internal/llm/providers/junie"
 	"dev.helix.agent/internal/llm/providers/kilo"
 	"dev.helix.agent/internal/llm/providers/kimi"
 	"dev.helix.agent/internal/llm/providers/kimicode"
@@ -1808,6 +1809,22 @@ func (r *ProviderRegistry) createProviderFromConfig(cfg ProviderConfig) (llm.LLM
 			return novita.NewNovitaProvider(cfg.APIKey, baseURL, model), nil
 		}
 		return nil, fmt.Errorf("Novita provider not available: API key missing or disabled")
+
+	case "junie":
+		if cfg.Enabled {
+			junieConfig := junie.DefaultJunieConfig()
+			if cfg.APIKey != "" {
+				junieConfig.APIKey = cfg.APIKey
+			}
+			if model != "" {
+				junieConfig.Model = model
+			}
+			if baseURL != "" {
+				junieConfig.PreferredMethod = baseURL
+			}
+			return junie.NewJunieProvider(junieConfig), nil
+		}
+		return nil, fmt.Errorf("Junie provider not available: disabled")
 
 	default:
 		return nil, fmt.Errorf("unsupported provider type: %s", cfg.Type)
