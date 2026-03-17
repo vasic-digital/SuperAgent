@@ -16,6 +16,7 @@ import (
 	"dev.helix.agent/internal/auth/oauth_credentials"
 	"dev.helix.agent/internal/llm"
 	"dev.helix.agent/internal/llm/providers/claude"
+	"dev.helix.agent/internal/llm/providers/junie"
 	"dev.helix.agent/internal/llm/providers/qwen"
 	"dev.helix.agent/internal/llm/providers/zen"
 	"github.com/HelixDevelopment/HelixAgent/Toolkit/Providers/Chutes"
@@ -778,6 +779,18 @@ func (sv *StartupVerifier) createOAuthProviderInstance(providerType, defaultMode
 		}
 		sv.log.Warn("Qwen CLI/ACP not available - cannot create provider instance")
 		return nil
+
+	case "zen":
+		// Create Zen HTTP provider (uses OpenCode HTTP server)
+		httpProvider := zen.NewZenHTTPProviderWithModel(defaultModel)
+		sv.log.WithField("provider", "zen").Debug("Zen HTTP provider created successfully")
+		return httpProvider
+
+	case "junie":
+		// Create Junie provider (uses CLI or ACP)
+		junieProvider := junie.NewJunieProviderWithModel(defaultModel)
+		sv.log.WithField("provider", "junie").Debug("Junie provider created successfully")
+		return junieProvider
 
 	default:
 		sv.log.WithField("provider", providerType).Warn("Unknown OAuth provider type - cannot create instance")

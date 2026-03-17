@@ -255,6 +255,13 @@ func (p *ZenHTTPProvider) createSession(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("failed to create session: %s - %s", resp.Status, string(body))
 	}
 
+	// Validate Content-Type before JSON decoding to catch HTML error pages
+	contentType := resp.Header.Get("Content-Type")
+	if contentType != "" && !strings.Contains(contentType, "application/json") {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("unexpected response Content-Type: %s (expected JSON, body prefix: %.200s)", contentType, string(body))
+	}
+
 	var session sessionResponse
 	if err := json.NewDecoder(resp.Body).Decode(&session); err != nil {
 		return "", fmt.Errorf("failed to decode session response: %w", err)
@@ -282,6 +289,13 @@ func (p *ZenHTTPProvider) sendMessage(ctx context.Context, sessionID, content st
 			return nil, fmt.Errorf("failed to send message: %s, failed to read body: %v", resp.Status, err)
 		}
 		return nil, fmt.Errorf("failed to send message: %s - %s", resp.Status, string(body))
+	}
+
+	// Validate Content-Type before JSON decoding to catch HTML error pages
+	contentType := resp.Header.Get("Content-Type")
+	if contentType != "" && !strings.Contains(contentType, "application/json") {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("unexpected response Content-Type: %s (expected JSON, body prefix: %.200s)", contentType, string(body))
 	}
 
 	var msg messageResponse

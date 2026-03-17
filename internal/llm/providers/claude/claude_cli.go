@@ -116,8 +116,14 @@ func NewClaudeCLIProviderWithModel(model string) *ClaudeCLIProvider {
 // NOTE: Claude Code CLI doesn't have an "auth status" command, so we check
 // credential files directly to verify authentication
 func (p *ClaudeCLIProvider) IsCLIAvailable() bool {
-	// Check if we're inside a Claude Code session first (not cacheable via sync.Once)
-	if IsInsideClaudeCodeSession() {
+	// Allow CLI usage when running as HelixAgent server (non-interactive).
+	// The nested session check only matters for interactive CLI-to-CLI calls
+	// where launching claude inside claude would cause recursion.
+	// When running as an HTTP server, we're a separate process that can safely
+	// invoke claude CLI even if the server was started from a Claude Code session.
+	if os.Getenv("HELIXAGENT_SERVER_MODE") != "" || os.Getenv("GIN_MODE") != "" {
+		// Server mode — skip nested session check
+	} else if IsInsideClaudeCodeSession() {
 		p.cliCheckErr = fmt.Errorf("Claude Code CLI not available: cannot run inside another Claude Code session")
 		p.cliAvailable = false
 		return false
