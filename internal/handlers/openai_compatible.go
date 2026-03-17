@@ -1980,13 +1980,24 @@ func (h *UnifiedHandler) processWithOrchestrator(ctx context.Context, req *model
 
 	logrus.Info("[CODE PATH] Using DebateService with configured team (25 LLMs)")
 
-	// Configure debate with the working team
+	// Get participants from the verified debate team — NOT empty!
+	// This ensures the debate uses the highest-scored, verified LLMs
+	var participants []services.ParticipantConfig
+	if h.debateTeamConfig != nil {
+		participants = h.debateTeamConfig.GetParticipantConfigs()
+		logrus.WithField("participant_count", len(participants)).Info("[CODE PATH] Populated participants from verified debate team")
+	}
+	if len(participants) == 0 {
+		logrus.Warn("[CODE PATH] No participants from debate team config — debate service will use its own selection")
+	}
+
+	// Configure debate with the verified team participants
 	debateConfig := services.DebateConfig{
 		Topic:        req.Prompt,
 		MaxRounds:    3,
 		EnableCognee: false,
 		Strategy:     "collaborative",
-		Participants: []services.ParticipantConfig{},
+		Participants: participants,
 	}
 
 	// Run the debate using the debate service (uses the configured 25 LLM team)
