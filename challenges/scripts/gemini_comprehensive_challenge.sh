@@ -256,24 +256,24 @@ else
 fi
 
 # Test 4.3: CLI provider tests exist
-if grep -q 'TestGeminiCLIProvider' "$GEMINI_DIR/gemini_test.go" 2>/dev/null; then
+if grep -rq 'TestGeminiCLIProvider' "$GEMINI_DIR/"*_test.go 2>/dev/null; then
     pass "CLI provider tests exist (TestGeminiCLIProvider)"
 else
     fail "CLI provider tests NOT found (TestGeminiCLIProvider)"
 fi
 
 # Test 4.4: ACP provider tests exist
-if grep -q 'TestGeminiACPProvider' "$GEMINI_DIR/gemini_test.go" 2>/dev/null; then
+if grep -rq 'TestGeminiACPProvider' "$GEMINI_DIR/"*_test.go 2>/dev/null; then
     pass "ACP provider tests exist (TestGeminiACPProvider)"
 else
     fail "ACP provider tests NOT found (TestGeminiACPProvider)"
 fi
 
 # Test 4.5: Benchmark tests exist
-if grep -q 'func Benchmark' "$GEMINI_DIR/gemini_test.go" 2>/dev/null; then
-    pass "Benchmark tests exist in gemini_test.go"
+if grep -rq 'func Benchmark' "$GEMINI_DIR/"*_test.go 2>/dev/null; then
+    pass "Benchmark tests exist in gemini test files"
 else
-    fail "Benchmark tests NOT found in gemini_test.go"
+    fail "Benchmark tests NOT found in gemini test files"
 fi
 
 # Test 4.6: go vet passes on gemini package
@@ -330,12 +330,20 @@ else
 fi
 
 # Test 5.5: Test function count >= 40
-TEST_FUNC_COUNT=$(grep -c '^func Test' "$GEMINI_DIR/gemini_test.go" 2>/dev/null || echo "0")
-TEST_FUNC_COUNT=${TEST_FUNC_COUNT//[^0-9]/}
-TEST_FUNC_COUNT=${TEST_FUNC_COUNT:-0}
-BENCH_FUNC_COUNT=$(grep -c '^func Benchmark' "$GEMINI_DIR/gemini_test.go" 2>/dev/null || echo "0")
-BENCH_FUNC_COUNT=${BENCH_FUNC_COUNT//[^0-9]/}
-BENCH_FUNC_COUNT=${BENCH_FUNC_COUNT:-0}
+TEST_FUNC_COUNT=0
+for f in "$GEMINI_DIR"/*_test.go; do
+    COUNT=$(grep -c '^func Test' "$f" 2>/dev/null || echo "0")
+    COUNT=${COUNT//[^0-9]/}
+    COUNT=${COUNT:-0}
+    TEST_FUNC_COUNT=$((TEST_FUNC_COUNT + COUNT))
+done
+BENCH_FUNC_COUNT=0
+for f in "$GEMINI_DIR"/*_test.go; do
+    COUNT=$(grep -c '^func Benchmark' "$f" 2>/dev/null || echo "0")
+    COUNT=${COUNT//[^0-9]/}
+    COUNT=${COUNT:-0}
+    BENCH_FUNC_COUNT=$((BENCH_FUNC_COUNT + COUNT))
+done
 TOTAL_FUNCS=$((TEST_FUNC_COUNT + BENCH_FUNC_COUNT))
 if [ "$TOTAL_FUNCS" -ge 40 ]; then
     pass "Test function count >= 40 (found $TOTAL_FUNCS: $TEST_FUNC_COUNT tests + $BENCH_FUNC_COUNT benchmarks)"
