@@ -381,3 +381,48 @@ replace digital.vasic.challenges => ./Challenges
 - `go.mod` - Module dependencies
 - `docs/MODULES.md` - Extracted modules catalog (27 modules)
 - `.env.example` - Environment variable templates
+
+## API Endpoints (New in WS1)
+
+Five handler groups connected to the router:
+
+| Endpoint Group | Base Path | Purpose |
+|---------------|-----------|---------|
+| Background Tasks | `/v1/tasks` | Async task lifecycle (create, pause, resume, cancel, WebSocket updates) |
+| Model Discovery | `/v1/discovery` | 3-tier model discovery (Provider API, models.dev, hardcoded fallback) |
+| Model Scoring | `/v1/scoring` | 5-component weighted scoring (speed, cost, efficiency, capability, recency) |
+| Provider Verification | `/v1/verification` | 8-test verification pipeline for provider health |
+| Provider Health | `/v1/health` | Real-time provider health, latency, circuit breaker states |
+
+Protocol Endpoints: MCP `/v1/mcp` | ACP `/v1/acp` | LSP `/v1/lsp` | Embeddings `/v1/embeddings` | Vision `/v1/vision` | Cognee `/v1/cognee` | Startup `/v1/startup/verification` | BigData `/v1/bigdata/health` | Tasks `/v1/tasks` | Discovery `/v1/discovery` | Scoring `/v1/scoring` | Verification `/v1/verification` | Health `/v1/health`
+
+## Additional Testing
+
+### Fuzz Testing
+
+Go native fuzz tests validate parsing robustness:
+
+```bash
+# Run fuzz corpus as regression tests
+go test -run=Fuzz ./tests/fuzz/
+
+# Run active fuzzing for 30 seconds
+GOMAXPROCS=2 nice -n 19 ionice -c 3 \
+  go test -fuzz=FuzzJSONRequestParsing -fuzztime=30s -p 1 ./tests/fuzz/
+```
+
+Available targets: FuzzJSONRequestParsing, FuzzToolSchemaValidation, FuzzSSEParsing, FuzzModelIDParsing, FuzzHTTPHeaderParsing.
+
+## Additional Challenges (WS1-WS7)
+
+```bash
+./challenges/scripts/router_completeness_challenge.sh           # Router handler registration
+./challenges/scripts/resource_limits_challenge.sh               # Test resource limit enforcement
+./challenges/scripts/documentation_completeness_challenge.sh    # Documentation sync
+./challenges/scripts/snyk_automated_scanning_challenge.sh       # 38 tests - Snyk scanning
+./challenges/scripts/sonarqube_automated_scanning_challenge.sh  # 45 tests - SonarQube scanning
+./challenges/scripts/pprof_memory_profiling_challenge.sh        # Memory leak detection
+./challenges/scripts/coverage_gate_challenge.sh                 # Coverage thresholds
+./challenges/scripts/lazy_loading_validation_challenge.sh       # sync.Once validation
+./challenges/scripts/monitoring_dashboard_challenge.sh          # Prometheus metrics
+```

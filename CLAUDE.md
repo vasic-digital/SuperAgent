@@ -99,6 +99,7 @@ make test-security        # Security tests (./tests/security)
 make test-stress          # Stress tests (./tests/stress)
 make test-chaos           # Challenge tests (./tests/challenge)
 make test-bench           # Benchmarks
+make test-fuzz            # Fuzz tests (corpus replay)
 make test-race            # Race detection
 make test-coverage        # Coverage with HTML report
 ```
@@ -150,7 +151,7 @@ make monitoring-reset-circuits / force-health-check
 - `llm/discovery/` — 3-tier dynamic model discovery (Provider API → models.dev → hardcoded fallback)
 - `llm/ensemble.go` — Ensemble orchestration
 - `services/` — Business logic: provider_registry, ensemble, debate_service, debate_team_config, llm_intent_classifier, context_manager, mcp_client, lsp_manager, plugin_system
-- `handlers/` — HTTP handlers | `middleware/` — Auth, rate limiting, CORS
+- `handlers/` — HTTP handlers (BackgroundTask, Discovery, Scoring, Verification, Health + core) | `middleware/` — Auth, rate limiting, CORS
 - `background/` — Task queue, worker pool, resource monitor | `notifications/` — SSE, WebSocket, Webhooks
 - `cache/` — Redis + in-memory | `database/` — PostgreSQL/pgx | `models/` — Data models/enums
 - `debate/` — Orchestrator framework: agents, topology, protocol, voting, cognitive, knowledge, reflexion, gates, evaluation, audit, tools (13 packages)
@@ -405,6 +406,15 @@ CI_RESOURCE_LIMIT=medium make ci-all  # Medium resource limits (default: low)
 ./challenges/scripts/goroutine_lifecycle_challenge.sh           # Goroutine lifecycle validation
 ./challenges/scripts/adapter_coverage_challenge.sh              # Adapter test coverage validation
 ./challenges/scripts/race_condition_challenge.sh                # Race condition detection
+./challenges/scripts/router_completeness_challenge.sh           # Router handler registration validation
+./challenges/scripts/resource_limits_challenge.sh               # Test resource limit enforcement
+./challenges/scripts/documentation_completeness_challenge.sh    # Documentation sync validation
+./challenges/scripts/snyk_automated_scanning_challenge.sh       # 38 tests - Snyk containerized scanning
+./challenges/scripts/sonarqube_automated_scanning_challenge.sh  # 45 tests - SonarQube containerized scanning
+./challenges/scripts/pprof_memory_profiling_challenge.sh        # Memory leak detection via pprof
+./challenges/scripts/coverage_gate_challenge.sh                 # Coverage threshold enforcement
+./challenges/scripts/lazy_loading_validation_challenge.sh       # sync.Once lazy loading validation
+./challenges/scripts/monitoring_dashboard_challenge.sh          # Prometheus metrics and dashboard validation
 # Go-native userflow challenges (22): run with --run-challenges=userflow
 ```
 
@@ -417,7 +427,7 @@ make verifier-verify MODEL=gpt-4 PROVIDER=openai
 
 ## Protocol Endpoints
 
-MCP `/v1/mcp` | ACP `/v1/acp` | LSP `/v1/lsp` | Embeddings `/v1/embeddings` | Vision `/v1/vision` | Cognee `/v1/cognee` (optional) | Startup `/v1/startup/verification` | BigData `/v1/bigdata/health`
+MCP `/v1/mcp` | ACP `/v1/acp` | LSP `/v1/lsp` | Embeddings `/v1/embeddings` | Vision `/v1/vision` | Cognee `/v1/cognee` (optional) | Startup `/v1/startup/verification` | BigData `/v1/bigdata/health` | Tasks `/v1/tasks` | Discovery `/v1/discovery` | Scoring `/v1/scoring` | Verification `/v1/verification` | Health `/v1/health`
 
 Fallback: routes to strongest LLM by score, falls back on failure.
 
