@@ -12,14 +12,21 @@ import (
 )
 
 // Infrastructure availability cache — checked once per test run.
+// The map is lazily initialized via sync.Once to avoid eager work
+// at package import time.
 var (
-	infraOnce    sync.Once
-	infraResults map[string]bool
-	infraMu      sync.RWMutex
+	infraOnce      sync.Once
+	infraResults   map[string]bool
+	infraResultsMu sync.Once
+	infraMu        sync.RWMutex
 )
 
-func init() {
-	infraResults = make(map[string]bool)
+// getInfraResults returns the lazily initialized infrastructure results map.
+func getInfraResults() map[string]bool {
+	infraResultsMu.Do(func() {
+		infraResults = make(map[string]bool)
+	})
+	return infraResults
 }
 
 // InfraConfig holds connection details for test infrastructure.
@@ -79,8 +86,10 @@ func checkHTTP(url string, timeout time.Duration) bool {
 
 // cachedCheck performs a check once and caches the result.
 func cachedCheck(key string, checker func() bool) bool {
+	results := getInfraResults()
+
 	infraMu.RLock()
-	if result, ok := infraResults[key]; ok {
+	if result, ok := results[key]; ok {
 		infraMu.RUnlock()
 		return result
 	}
@@ -89,7 +98,7 @@ func cachedCheck(key string, checker func() bool) bool {
 	result := checker()
 
 	infraMu.Lock()
-	infraResults[key] = result
+	results[key] = result
 	infraMu.Unlock()
 
 	return result

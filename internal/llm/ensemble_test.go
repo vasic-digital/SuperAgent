@@ -374,6 +374,42 @@ func TestEnsembleConcurrency(t *testing.T) {
 	})
 }
 
+// TestEnsembleSemaphore_ContextCancellation verifies that the weighted semaphore
+// respects context cancellation so providers blocked on semaphore acquisition
+// are released promptly when the context is cancelled.
+func TestEnsembleSemaphore_ContextCancellation(t *testing.T) {
+	// Use a very low concurrency limit so most goroutines have to wait.
+	oldMax := GetMaxConcurrentProviders()
+	SetMaxConcurrentProviders(1)
+	defer SetMaxConcurrentProviders(oldMax)
+
+	// Create many slow providers
+	var providers []LLMProvider
+	for i := 0; i < 20; i++ {
+		providers = append(providers, &ensembleMockProvider{
+			delay: 5 * time.Second, // intentionally long
+			response: &models.LLMResponse{
+				Content:    "slow",
+				Confidence: 0.5,
+			},
+		})
+	}
+
+	// Cancel context quickly
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	req := &models.LLMRequest{Prompt: "cancel test"}
+	start := time.Now()
+	_, _, _ = RunEnsembleWithProviders(ctx, req, providers)
+	duration := time.Since(start)
+
+	// Should complete much faster than 20*5s (serial) because context
+	// cancellation aborts semaphore acquisition.
+	assert.Less(t, duration, 2*time.Second,
+		"Should abort quickly on context cancellation")
+}
+
 // Ensure ensembleMockProvider implements LLMProvider
 var _ LLMProvider = (*ensembleMockProvider)(nil)
 
