@@ -767,7 +767,7 @@ func TestReliableAPIProvidersCollection(t *testing.T) {
 	})
 
 	t.Run("Gemini model ID is correct", func(t *testing.T) {
-		assert.Equal(t, "gemini-2.0-flash", LLMsVerifierModels.Gemini, "Gemini should use gemini-2.0-flash")
+		assert.Equal(t, "gemini-2.5-flash", LLMsVerifierModels.Gemini, "Gemini should use gemini-2.5-flash")
 	})
 }
 
