@@ -302,8 +302,9 @@ func (s *HealthService) performHealthCheck(providerName string) bool {
 		"deepseek":   "https://api.deepseek.com/v1/models",
 		"ollama":     "http://localhost:11434/api/tags",
 		"openrouter": "https://openrouter.ai/api/v1/models",
-		"xai":        "https://api.x.ai/v1/models",
-		"cerebras":   "https://api.cerebras.ai/v1/models",
+		"xai":           "https://api.x.ai/v1/models",
+		"cerebras":      "https://api.cerebras.ai/v1/models",
+		"github-models": "https://models.github.ai/inference/models",
 	}
 
 	endpoint, ok := endpoints[providerName]

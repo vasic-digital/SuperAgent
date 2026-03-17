@@ -20,6 +20,7 @@ import (
 	"dev.helix.agent/internal/llm/providers/deepseek"
 	"dev.helix.agent/internal/llm/providers/fireworks"
 	"dev.helix.agent/internal/llm/providers/gemini"
+	"dev.helix.agent/internal/llm/providers/githubmodels"
 	"dev.helix.agent/internal/llm/providers/groq"
 	"dev.helix.agent/internal/llm/providers/huggingface"
 	"dev.helix.agent/internal/llm/providers/junie"
@@ -162,6 +163,10 @@ var providerMappings = []ProviderMapping{
 	{EnvVar: "ZHIPU_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://api.z.ai/api/paas/v4", DefaultModel: "glm-4.7", Priority: 3},
 	{EnvVar: "GLM_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://api.z.ai/api/paas/v4", DefaultModel: "glm-4.7", Priority: 3},
 	{EnvVar: "BIGMODEL_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://api.z.ai/api/paas/v4", DefaultModel: "glm-4.7", Priority: 3},
+
+	// GitHub Models - GitHub's model inference API
+	{EnvVar: "GITHUB_MODELS_API_KEY", ProviderType: "github-models", ProviderName: "github-models", BaseURL: "https://models.github.ai/inference/chat/completions", DefaultModel: "openai/gpt-4.1", Priority: 3},
+	{EnvVar: "GITHUB_TOKEN", ProviderType: "github-models", ProviderName: "github-models", BaseURL: "https://models.github.ai/inference/chat/completions", DefaultModel: "openai/gpt-4.1", Priority: 8},
 
 	// Cohere - Multiple key name variations
 	{EnvVar: "COHERE_API_KEY", ProviderType: "cohere", ProviderName: "cohere", BaseURL: "https://api.cohere.com/v2", DefaultModel: "command-a-03-2025", Priority: 4},
@@ -751,6 +756,14 @@ func (pd *ProviderDiscovery) createProvider(mapping ProviderMapping, apiKey stri
 			baseURL = "https://llm.chutes.ai/v1/chat/completions"
 		}
 		return chutes.NewProvider(apiKey, baseURL, mapping.DefaultModel), nil
+
+	case "github-models":
+		// Use native GitHub Models provider for GitHub's inference API
+		baseURL := mapping.BaseURL
+		if baseURL == "" {
+			baseURL = "https://models.github.ai/inference/chat/completions"
+		}
+		return githubmodels.NewGitHubModelsProvider(apiKey, baseURL, mapping.DefaultModel), nil
 
 	// For providers without native implementations, use OpenRouter as a proxy
 	case "hyperbolic", "sambanova", "siliconflow", "cloudflare", "nvidia",

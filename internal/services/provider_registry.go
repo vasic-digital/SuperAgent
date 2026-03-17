@@ -26,6 +26,7 @@ import (
 	"dev.helix.agent/internal/llm/providers/deepseek"
 	"dev.helix.agent/internal/llm/providers/fireworks"
 	"dev.helix.agent/internal/llm/providers/gemini"
+	"dev.helix.agent/internal/llm/providers/githubmodels"
 	"dev.helix.agent/internal/llm/providers/groq"
 	"dev.helix.agent/internal/llm/providers/huggingface"
 	"dev.helix.agent/internal/llm/providers/hyperbolic"
@@ -1731,6 +1732,12 @@ func (r *ProviderRegistry) createProviderFromConfig(cfg ProviderConfig) (llm.LLM
 		}
 		return nil, fmt.Errorf("Chutes provider not available: API key missing or disabled")
 
+	case "github-models":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return githubmodels.NewGitHubModelsProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("GitHub Models provider not available: API key missing or disabled")
+
 	case "cloudflare":
 		if cfg.Enabled && cfg.APIKey != "" {
 			accountID := os.Getenv("CLOUDFLARE_ACCOUNT_ID")
@@ -1869,6 +1876,8 @@ func (r *ProviderRegistry) RegisterProviderFromConfig(cfg ProviderConfig) error 
 		provider = qwen.NewQwenProvider(cfg.APIKey, baseURL, model)
 	case "openrouter":
 		provider = openrouter.NewSimpleOpenRouterProviderWithBaseURL(cfg.APIKey, baseURL)
+	case "github-models":
+		provider = githubmodels.NewGitHubModelsProvider(cfg.APIKey, baseURL, model)
 	default:
 		return fmt.Errorf("unsupported provider type: %s", cfg.Type)
 	}

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-HelixAgent is an AI-powered ensemble LLM service written in Go that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports 41 LLM providers (Claude, Chutes, DeepSeek, Gemini, Mistral, OpenRouter, Qwen, ZAI, Zen, Cerebras, Ollama, AI21, Anthropic, Cohere, Fireworks, Groq, HuggingFace, OpenAI, Perplexity, Replicate, Together, xAI, Junie, Cloudflare, Codestral, Hyperbolic, Kilo, Kimi, KimiCode, Modal, Nia, NLPCloud, Novita, Nvidia, PublicAI, SambaNova, Sarvam, SiliconFlow, Upstage, VulaVula, Zhipu) with **dynamic provider selection** based on LLMsVerifier verification scores.
+HelixAgent is an AI-powered ensemble LLM service written in Go that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports 42 LLM providers (Claude, Chutes, DeepSeek, Gemini, Mistral, OpenRouter, Qwen, ZAI, Zen, Cerebras, Ollama, AI21, Anthropic, Cohere, Fireworks, GitHub Models, Groq, HuggingFace, OpenAI, Perplexity, Replicate, Together, xAI, Junie, Cloudflare, Codestral, Hyperbolic, Kilo, Kimi, KimiCode, Modal, Nia, NLPCloud, Novita, Nvidia, PublicAI, SambaNova, Sarvam, SiliconFlow, Upstage, VulaVula, Zhipu) with **dynamic provider selection** based on LLMsVerifier verification scores.
 
 **Module**: `dev.helix.agent` (Go 1.25.3)
 
@@ -148,7 +148,7 @@ make monitoring-reset-circuits / force-health-check
 - `cmd/mcp-bridge/` — MCP bridge | `cmd/generate-constitution/` — Constitution generator
 
 ### Core Packages (`internal/`)
-- `llm/providers/` — 41 dedicated LLM providers (ai21, anthropic, cerebras, chutes, claude, cloudflare, codestral, cohere, deepseek, fireworks, gemini (unified: API+CLI+ACP), groq, huggingface, hyperbolic, junie, kilo, kimi, kimicode, mistral, modal, nia, nlpcloud, novita, nvidia, ollama, openai, openrouter, perplexity, publicai, qwen, replicate, sambanova, sarvam, siliconflow, together, upstage, vulavula, xai, zai, zen, zhipu) + generic OpenAI-compatible provider
+- `llm/providers/` — 42 dedicated LLM providers (ai21, anthropic, cerebras, chutes, claude, cloudflare, codestral, cohere, deepseek, fireworks, gemini (unified: API+CLI+ACP), githubmodels, groq, huggingface, hyperbolic, junie, kilo, kimi, kimicode, mistral, modal, nia, nlpcloud, novita, nvidia, ollama, openai, openrouter, perplexity, publicai, qwen, replicate, sambanova, sarvam, siliconflow, together, upstage, vulavula, xai, zai, zen, zhipu) + generic OpenAI-compatible provider
 - `llm/providers/generic/` — Generic OpenAI-compatible provider for verification of providers without dedicated implementations
 - `llm/discovery/` — 3-tier dynamic model discovery (Provider API → models.dev → hardcoded fallback)
 - `llm/ensemble.go` — Ensemble orchestration

@@ -851,6 +851,19 @@ var SupportedProviders = map[string]*ProviderTypeInfo{
 		Free:        false,
 	},
 
+	// GitHub Models - GitHub's model inference API with generous free tier
+	"github-models": {
+		Type:        "github-models",
+		DisplayName: "GitHub Models",
+		AuthType:    AuthTypeAPIKey,
+		Tier:        1,
+		Priority:    2,
+		EnvVars:     []string{"GITHUB_MODELS_API_KEY", "GITHUB_TOKEN"},
+		BaseURL:     "https://models.github.ai/inference/chat/completions",
+		Models:      []string{"openai/gpt-5", "openai/gpt-4.1", "openai/gpt-4o", "DeepSeek/DeepSeek-V3-0324", "Meta/Llama-4-Scout-17B-16E-Instruct", "Microsoft/Phi-4-reasoning"},
+		Free:        false,
+	},
+
 	// Junie (JetBrains) - CLI agent with BYOK support for multiple LLM providers
 	"junie": {
 		Type:        "junie",
