@@ -4,27 +4,63 @@ Guidance for AI coding agents working in the HelixAgent repository.
 
 ## Project Overview
 
-HelixAgent is an AI-powered ensemble LLM service in Go (1.24+) that aggregates responses from multiple language models. It provides OpenAI-compatible APIs with 22+ LLM providers, debate orchestration, MCP adapters, and containerized infrastructure.
+HelixAgent is an AI-powered ensemble LLM service in Go (1.24+, toolchain go1.24.11) that aggregates responses from multiple language models. It provides OpenAI-compatible APIs with 22+ LLM providers, debate orchestration, MCP adapters, and containerized infrastructure.
+
+**Module**: `dev.helix.agent`
+
+**Subprojects**: Toolkit (`Toolkit/`) — Go library for AI apps. LLMsVerifier (`LLMsVerifier/`) — provider accuracy verification. **27 extracted modules** (see below).
+
+## Mandatory Development Standards (NON-NEGOTIABLE)
+
+1. **100% Test Coverage** — Unit, integration, E2E, security, stress, chaos, automation, benchmark tests. Mocks ONLY in unit tests.
+2. **Challenge Coverage** — Every component MUST have Challenge scripts (`./challenges/scripts/`).
+3. **Containerization** — All services in containers. Auto boot-up via HelixAgent binary.
+4. **Centralized Container Management** — ALL container ops via `internal/adapters/containers/adapter.go`. No direct `docker`/`podman` commands.
+5. **Configuration via HelixAgent Only** — CLI agent configs generated ONLY by `./bin/helixagent --generate-agent-config=<name>`.
+6. **Real Data** — Beyond unit tests, use actual API calls, real databases, live services.
+7. **Health & Observability** — Health endpoints, circuit breakers, Prometheus/OpenTelemetry.
+8. **Documentation & Quality** — Update CLAUDE.md, AGENTS.md. Pass `make fmt vet lint security-scan`.
+9. **No Mocks in Production** — Mocks, stubs, TODO implementations FORBIDDEN in production.
+10. **Third-Party Submodules** — `cli_agents/` and `MCP/` are read-only. Use `git submodule update --remote`.
+11. **Container-Based Builds** — ALL release builds inside Docker/Podman. `make release` / `make release-all`.
+12. **Mandatory Container Rebuild** — Rebuild containers after code changes: `make docker-build && make docker-run`.
+13. **Infrastructure Before Tests** — Start containers before tests: `make test-infra-start`.
+14. **HTTP/3 (QUIC) with Brotli** — Primary transport. HTTP/2 fallback. Brotli → gzip compression.
+15. **Resource Limits** — ALL tests limited to 30-40% host resources: `GOMAXPROCS=2 nice -n 19 ionice -c 3`.
 
 ## Build Commands
 
 ```bash
 make build              # Build binary (output in bin/)
 make build-debug        # Build with debug symbols
-make build-all          # Build for all platforms (Linux, macOS, Windows)
+make build-all          # Build for all platforms
 make run                # Run locally
 make run-dev            # Development mode (GIN_MODE=debug)
 make docker-build       # Build Docker image
 make docker-run         # Start services with Docker Compose
 ```
 
+### Release Builds (Container-Based)
+
+```bash
+make release              # Build helixagent for all platforms
+make release-all          # Build ALL 7 apps for all platforms
+make release-<app>        # Build specific app
+make release-force        # Force rebuild (ignore change detection)
+make release-info         # Show version codes and source hashes
+make release-clean        # Clean release artifacts
+```
+
 ## Linting & Formatting
 
 ```bash
 make fmt                # Format with go fmt
-make vet                # Run go vet static analysis
-make lint               # Run golangci-lint (install: make install-deps)
-make security-scan      # Run gosec security scanner
+make vet                # Run go vet
+make lint               # Run golangci-lint
+make security-scan      # Run gosec
+make ci-validate-all    # All validation checks
+make ci-pre-commit      # Pre-commit (fmt, vet)
+make ci-pre-push        # Pre-push (includes unit tests)
 ```
 
 **Always run `make fmt vet lint` before committing.**
@@ -36,58 +72,54 @@ make security-scan      # Run gosec security scanner
 ```bash
 make test               # All tests (verbose)
 make test-unit          # Unit tests only (./internal/... -short)
-make test-integration   # Integration tests with Docker deps
+make test-integration   # Integration tests
 make test-e2e           # End-to-end tests
-make test-coverage      # Tests with HTML coverage report
+make test-security      # Security tests
+make test-stress        # Stress tests
+make test-chaos         # Challenge tests
 make test-bench         # Benchmark tests
-make test-race          # Tests with race detection
+make test-fuzz          # Fuzz tests (corpus replay)
+make test-race          # Race detection
+make test-coverage      # Coverage with HTML report
 ```
 
 ### Running a Single Test
 
 ```bash
-# Run specific test function
 go test -v -run TestFunctionName ./path/to/package
-
-# Run all tests in a package
 go test -v ./internal/llm
-
-# Run tests matching pattern
 go test -v -run "Test.*Integration" ./...
 
-# With coverage for single package
-go test -v -coverprofile=coverage.out ./internal/llm
-go tool cover -html=coverage.out
-
-# Resource-limited test (CRITICAL for host stability)
-GOMAXPROCS=2 go test -v -p 1 -run TestName ./path/to/package
+# Resource-limited (CRITICAL)
+GOMAXPROCS=2 nice -n 19 ionice -c 3 go test -v -p 1 -run TestName ./path/to/package
 ```
 
 ### Test Infrastructure
 
-**IMPORTANT: Container infrastructure is handled AUTOMATICALLY by HelixAgent during boot.**
-
-The HelixAgent binary (`./bin/helixagent`) orchestrates ALL containers based on `Containers/.env`. There is NO need to manually start test infrastructure.
-
-If you need containers for tests:
-1. Run `./bin/helixagent` first - it will deploy containers to local or remote hosts
-2. Then run your tests against the running containers
-
-**Legacy commands (may not work without manual container setup):**
 ```bash
-make test-infra-start   # Start PostgreSQL, Redis, Mock LLM containers (DEPRECATED)
+make test-infra-start   # Start PostgreSQL, Redis, Mock LLM containers
 make test-infra-stop    # Stop test infrastructure
-make test-with-infra    # Run tests with Docker infrastructure
+make test-with-infra    # Run tests with Docker infra
 ```
 
-**Prefer:** Run `./bin/helixagent` and then execute tests against the running service.
+**IMPORTANT:** Containers MUST be running before tests/challenges.
+
+## Infrastructure & Monitoring
+
+```bash
+make infra-start        # Start ALL infra (auto-detects Docker/Podman)
+make infra-stop / restart / status
+make infra-core         # Core: PostgreSQL, Redis, ChromaDB, Cognee
+make monitoring-status / circuit-breakers / provider-health / fallback-chain
+make monitoring-reset-circuits / force-health-check
+```
 
 ## Code Style Guidelines
 
 ### Formatting & Imports
-- Use `gofmt` / `goimports` for formatting
-- Imports grouped: standard library, third-party, internal (blank line separated)
-- Line length: ≤ 100 characters (readability first)
+- Use `gofmt` / `goimports`
+- Imports grouped: stdlib, third-party, internal (blank line separated)
+- Line length: ≤ 100 characters
 
 ### Naming Conventions
 - `camelCase`: local variables, private functions
@@ -98,17 +130,10 @@ make test-with-infra    # Run tests with Docker infrastructure
 
 ### Error Handling
 ```go
-// Always check errors
-if err != nil {
-    return err
-}
-
-// Wrap with context
 if err != nil {
     return fmt.Errorf("operation failed: %w", err)
 }
 
-// Use defer for cleanup
 f, err := os.Open(path)
 if err != nil {
     return err
@@ -118,109 +143,80 @@ defer f.Close()
 
 ### Types & Interfaces
 - Use `interface` to define behavior, not data
-- Prefer small, focused interfaces (`io.Reader`, `io.Writer`)
-- Use struct tags for JSON, YAML, database mapping
-- Avoid `any`/`interface{}`; use generics or specific types
+- Prefer small, focused interfaces
+- Avoid `any`/`interface{}`; use generics
 
 ### Concurrency
-- Always use `context.Context` for cancellation/timeout
+- Always use `context.Context`
 - Protect shared data with `sync.Mutex` or `sync.RWMutex`
 - Use `sync.WaitGroup` for goroutine coordination
 
 ### Testing Patterns
 - Write table-driven tests
 - Use `testify` assertion library
-- Place test files in same package with `_test.go` suffix
-- Use `testdata/` directories for fixtures
-- Mocks/stubs ONLY in unit tests; integration tests use real services
+- Mocks/stubs ONLY in unit tests
 
 ## Key Conventions
 
 ### Tool Schema
-All tool parameters use **snake_case** (e.g., `file_path`, `old_string`). See `internal/tools/schema.go`.
+All tool parameters use **snake_case**. See `internal/tools/schema.go`.
 
 ### No Comments
-**DO NOT ADD COMMENTS** in code unless explicitly requested.
+**DO NOT ADD COMMENTS** unless explicitly requested.
 
 ### Git Operations
-- **SSH ONLY** for all Git operations - HTTPS is forbidden
+- **SSH ONLY** — HTTPS is forbidden
 - Branch naming: `feat/`, `fix/`, `chore/`, `docs/`, `refactor/`, `test/` + description
 - Commits: Conventional Commits (`feat(scope): description`)
 - Run `make fmt vet lint` before committing
 
 ### Containerization
 
-**CRITICAL: ALL container orchestration is handled AUTOMATICALLY by the HelixAgent binary during its boot process.**
+**CRITICAL: ALL container orchestration handled AUTOMATICALLY by HelixAgent binary.**
 
-- **DO NOT** manually start, stop, or manage containers via `docker` or `podman` commands
-- **DO NOT** run `make test-infra-start` or similar manual container orchestration commands
-- **DO NOT** attempt to deploy containers to remote hosts manually via SSH
+**FORBIDDEN:**
+- Manual `docker`/`podman` commands
+- `make test-infra-start` (use HelixAgent binary)
+- Manual SSH for container deployment
 
-**The ONLY correct workflow is:**
-1. Build the binary: `make build`
-2. Run the binary: `./bin/helixagent` (it handles ALL container orchestration automatically)
-3. The binary reads `Containers/.env` and orchestrates containers locally OR remotely based on configuration
-
-**Container Orchestration Flow (handled by HelixAgent):**
-1. HelixAgent boots and initializes Containers module adapter
-2. Adapter reads `Containers/.env` file (NOT project root `.env`)
-3. Based on `Containers/.env`:
-   - `CONTAINERS_REMOTE_ENABLED=true` → ALL containers to remote host(s) via `CONTAINERS_REMOTE_HOST_*` vars
-   - `CONTAINERS_REMOTE_ENABLED=false` → ALL containers locally
-4. Health checks performed against configured endpoints
-5. Required services failing health check cause boot failure in strict mode
+**ONLY ACCEPTABLE WORKFLOW:**
+1. `make build` — Build binary
+2. `./bin/helixagent` — Run (orchestrates containers automatically)
+3. Binary reads `Containers/.env` and orchestrates everything
 
 **Key Files:**
-- `Containers/.env` - Container orchestration configuration
-- `internal/services/boot_manager.go` - Boot orchestration logic
-- `tests/precondition/containers_boot_test.go` - Precondition tests for container state
-
-**If you need to run tests that require containers:**
-- Simply run `./bin/helixagent` first - it will start all required containers
-- Or run tests that use the HelixAgent binary's built-in container management
-
-**Rebuild containers only after code changes:**
-```bash
-make docker-build && make docker-run  # Only if you changed containerized code
-```
+- `Containers/.env` — Container orchestration config
+- `internal/services/boot_manager.go` — Boot orchestration
+- `tests/precondition/containers_boot_test.go` — Precondition tests
 
 ## Resource Limits (CRITICAL)
 
-**ALL test execution MUST be limited to 30-40% of host resources:**
-
+ALL test/challenge execution limited to 30-40% host resources:
 ```bash
-# Pattern for resource-limited execution
 GOMAXPROCS=2 nice -n 19 ionice -c 3 go test -v -p 1 ./...
 ```
-
-Host runs mission-critical processes; exceeding limits has caused system crashes.
 
 ## Quick Reference
 
 | Task | Command |
 |------|---------|
 | Build | `make build` |
-| Run (starts containers automatically) | `./bin/helixagent` |
+| Run | `./bin/helixagent` |
 | Format | `make fmt` |
 | Lint | `make lint` |
 | All tests | `make test` |
 | Single test | `go test -v -run TestName ./path/to/pkg` |
 | Pre-commit | `make fmt vet lint` |
-
-**NOTE:** Container orchestration is AUTOMATIC. Do NOT run manual container commands.
+| Release | `make release` |
 
 ## Extracted Modules (27 Submodules)
 
-HelixAgent's functionality is decomposed into **27 independent Go modules**, each with its own `go.mod`, tests, `CLAUDE.md`, `AGENTS.md`, `README.md`, and `docs/`. All modules are integrated as git submodules with `replace` directives in the root `go.mod` for local development.
+Each module is independent with its own `go.mod`, tests, `CLAUDE.md`, `AGENTS.md`, `README.md`, `docs/`.
 
-### Building and Testing Any Module
+### Building and Testing Modules
 
 ```bash
-# Build a module
-cd <ModuleDir> && go build ./...
-
-# Test a module (resource-limited, with race detection)
-cd <ModuleDir> && GOMAXPROCS=2 go test ./... -count=1 -race
+cd <ModuleDir> && go build ./... && GOMAXPROCS=2 go test ./... -count=1 -race
 
 # Test all modules
 for mod in EventBus Concurrency Observability Auth Storage Streaming \
@@ -228,201 +224,222 @@ for mod in EventBus Concurrency Observability Auth Storage Streaming \
            Messaging Formatters MCP_Module RAG Memory Optimization Plugins \
            Agentic LLMOps SelfImprove Planning Benchmark HelixMemory \
            HelixSpecifier Containers Challenges; do
-  echo "Testing $mod..."
   (cd $mod && go test ./... -count=1 -race -short)
 done
 ```
 
-### Phase 1: Foundation (Zero Dependencies)
+### Phase 1: Foundation
 
-| Module | Go Module Path | Directory | Description |
-|--------|---------------|-----------|-------------|
-| EventBus | `digital.vasic.eventbus` | `EventBus/` | Pub/sub event system with synchronous/async dispatch, topic filtering, and middleware chain. 4 packages. |
-| Concurrency | `digital.vasic.concurrency` | `Concurrency/` | Worker pools, priority queues, rate limiters (token bucket/sliding window), circuit breakers, semaphores, resource monitoring. 6 packages. |
-| Observability | `digital.vasic.observability` | `Observability/` | OpenTelemetry tracing, Prometheus metrics, structured logging, health checks, ClickHouse analytics. 5 packages. |
-| Auth | `digital.vasic.auth` | `Auth/` | JWT, API key, OAuth authentication; HTTP middleware; token management. 5 packages. |
-| Storage | `digital.vasic.storage` | `Storage/` | Object storage abstraction: S3/MinIO, local filesystem, cloud providers. 4 packages. |
-| Streaming | `digital.vasic.streaming` | `Streaming/` | SSE, WebSocket, gRPC streaming, webhooks, HTTP client, transport abstraction. 6 packages. |
+| Module | Path | Description |
+|--------|------|-------------|
+| EventBus | `EventBus/` | Pub/sub, topic filtering, middleware |
+| Concurrency | `Concurrency/` | Worker pools, rate limiters, circuit breakers |
+| Observability | `Observability/` | OpenTelemetry, Prometheus, logging |
+| Auth | `Auth/` | JWT, API key, OAuth, middleware |
+| Storage | `Storage/` | S3/MinIO, local, cloud abstraction |
+| Streaming | `Streaming/` | SSE, WebSocket, gRPC, webhooks |
 
-```bash
-# Example: build and test EventBus
-cd EventBus && go build ./... && go test ./... -count=1 -race
-```
+### Phase 2: Infrastructure
 
-### Phase 2: Infrastructure (Zero Module Dependencies, Complex)
-
-| Module | Go Module Path | Directory | Description |
-|--------|---------------|-----------|-------------|
-| Security | `digital.vasic.security` | `Security/` | Guardrails engine, PII detection/redaction, content filtering, policy enforcement, vulnerability scanning. 5 packages. |
-| VectorDB | `digital.vasic.vectordb` | `VectorDB/` | Unified vector store: Qdrant, Pinecone, Milvus, pgvector adapters; similarity search, collection management. 5 packages. |
-| Embeddings | `digital.vasic.embeddings` | `Embeddings/` | 6 embedding providers (OpenAI, Cohere, Voyage, Jina, Google, Bedrock); batch embedding. 7 packages. |
-| Database | `digital.vasic.database` | `Database/` | PostgreSQL (pgx), SQLite, connection pooling, migrations, repository pattern, query builder. 7 packages. |
-| Cache | `digital.vasic.cache` | `Cache/` | Redis + in-memory caching, distributed cache, TTL policies (fixed, sliding, adaptive), cache warming. 5 packages. |
-
-```bash
-# Example: build and test Database
-cd Database && go build ./... && go test ./... -count=1 -race
-```
+| Module | Path | Description |
+|--------|------|-------------|
+| Security | `Security/` | Guardrails, PII detection, filtering |
+| VectorDB | `VectorDB/` | Qdrant, Pinecone, Milvus, pgvector |
+| Embeddings | `Embeddings/` | 6 providers, batch embedding |
+| Database | `Database/` | PostgreSQL/pgx, SQLite, migrations |
+| Cache | `Cache/` | Redis + in-memory, distributed cache |
 
 ### Phase 3: Services
 
-| Module | Go Module Path | Directory | Description |
-|--------|---------------|-----------|-------------|
-| Messaging | `digital.vasic.messaging` | `Messaging/` | Kafka + RabbitMQ: unified broker, producer/consumer, dead letter queues, retry policies. 5 packages. |
-| Formatters | `digital.vasic.formatters` | `Formatters/` | Code formatter framework: native/service/built-in formatters, registry, executor, caching. 6 packages. |
-| MCP | `digital.vasic.mcp` | `MCP_Module/` | Model Context Protocol: adapter framework, client/server, config generation, registry, JSON-RPC protocol. 6 packages. |
-
-```bash
-# Example: build and test Formatters
-cd Formatters && go build ./... && go test ./... -count=1 -race
-```
+| Module | Path | Description |
+|--------|------|-------------|
+| Messaging | `Messaging/` | Kafka + RabbitMQ unified broker |
+| Formatters | `Formatters/` | 32+ code formatters |
+| MCP | `MCP_Module/` | Model Context Protocol framework |
 
 ### Phase 4: Integration
 
-| Module | Go Module Path | Directory | Description |
-|--------|---------------|-----------|-------------|
-| RAG | `digital.vasic.rag` | `RAG/` | Retrieval-Augmented Generation: chunking, retrieval, reranking, hybrid search, pipeline composition. 5 packages. |
-| Memory | `digital.vasic.memory` | `Memory/` | Mem0-style memory: entity graph, semantic search, memory scopes, consolidation. 4 packages. |
-| Optimization | `digital.vasic.optimization` | `Optimization/` | GPT-Cache, Outlines structured output, streaming optimization, SGLang, prompt optimization. 6 packages. |
-| Plugins | `digital.vasic.plugins` | `Plugins/` | Plugin system: interface + lifecycle, registry, dynamic loading, sandboxing, structured output parsing. 5 packages. |
-
-```bash
-# Example: build and test RAG
-cd RAG && go build ./... && go test ./... -count=1 -race
-```
+| Module | Path | Description |
+|--------|------|-------------|
+| RAG | `RAG/` | Chunking, retrieval, reranking |
+| Memory | `Memory/` | Mem0-style with entity graphs |
+| Optimization | `Optimization/` | GPT-Cache, Outlines, SGLang |
+| Plugins | `Plugins/` | Plugin lifecycle, sandboxing |
 
 ### Phase 5: AI/ML
 
-| Module | Go Module Path | Directory | Description |
-|--------|---------------|-----------|-------------|
-| Agentic | `digital.vasic.agentic` | `Agentic/` | Graph-based agentic workflow orchestration: multi-step execution, conditional branching, state management. 1 package. |
-| LLMOps | `digital.vasic.llmops` | `LLMOps/` | LLM operations: continuous evaluation, A/B experiment management, dataset management, prompt versioning. 1 package (5 files). |
-| SelfImprove | `digital.vasic.selfimprove` | `SelfImprove/` | AI self-improvement: reward modelling, RLHF feedback integration, optimizer, dimension-weighted scoring. 1 package (5 files). |
-| Planning | `digital.vasic.planning` | `Planning/` | AI planning algorithms: hierarchical planning (HiPlan), Monte Carlo Tree Search (MCTS), Tree of Thoughts. 1 package (3 files). |
-| Benchmark | `digital.vasic.benchmark` | `Benchmark/` | LLM benchmarking: SWE-bench, HumanEval, MMLU and custom benchmarks; leaderboard, provider comparison. 1 package (3 files). |
-
-```bash
-# Example: build and test Planning
-cd Planning && go build ./... && go test ./... -count=1 -race
-```
+| Module | Path | Description |
+|--------|------|-------------|
+| Agentic | `Agentic/` | Graph-based workflow orchestration |
+| LLMOps | `LLMOps/` | Evaluation, A/B testing, prompt versioning |
+| SelfImprove | `SelfImprove/` | RLHF, reward modeling |
+| Planning | `Planning/` | HiPlan, MCTS, Tree of Thoughts |
+| Benchmark | `Benchmark/` | SWE-bench, HumanEval, MMLU |
 
 ### Phase 6: Cognitive
 
-| Module | Go Module Path | Directory | Description |
-|--------|---------------|-----------|-------------|
-| HelixMemory | `digital.vasic.helixmemory` | `HelixMemory/` | Unified cognitive memory engine for HelixAgent and AI debate ensemble. Orchestrates Mem0, Cognee, Letta, Graphiti through 3-stage fusion pipeline. 12 power features, circuit breakers, Prometheus metrics. Active by default; opt out with `-tags nohelixmemory`. 12+ packages. |
-
-```bash
-# Example: build and test HelixMemory
-cd HelixMemory && go build ./... && go test ./... -count=1 -race
-```
+| Module | Path | Description |
+|--------|------|-------------|
+| HelixMemory | `HelixMemory/` | Unified memory engine (Mem0, Cognee, Letta, Graphiti fusion). Active by default. |
 
 ### Phase 7: Specification
 
-| Module | Go Module Path | Directory | Description |
-|--------|---------------|-----------|-------------|
-| HelixSpecifier | `digital.vasic.helixspecifier` | `HelixSpecifier/` | Spec-Driven Development Fusion Engine: 3-pillar architecture (SpecKit + Superpowers + GSD), adaptive ceremony scaling, effort classification, CLI agent adapters, 10 power features, spec memory, DebateFunc injection. Active by default; opt out with `-tags nohelixspecifier`. 27 packages. |
+| Module | Path | Description |
+|--------|------|-------------|
+| HelixSpecifier | `HelixSpecifier/` | Spec-Driven Development Engine (SpecKit + Superpowers + GSD). Active by default. |
+
+### Pre-existing
+
+| Module | Path | Description |
+|--------|------|-------------|
+| Containers | `Containers/` | Docker/Podman/K8s orchestration |
+| Challenges | `Challenges/` | Challenge framework, 19 evaluators, userflow testing |
+
+## Architecture
+
+### Entry Points
+- `cmd/helixagent/` — Main app
+- `cmd/api/` — API server
+- `cmd/grpc-server/` — gRPC
+
+### Core Packages (`internal/`)
+- `llm/providers/` — 22+ dedicated providers + generic OpenAI-compatible
+- `llm/discovery/` — 3-tier model discovery
+- `llm/ensemble.go` — Ensemble orchestration
+- `services/` — Business logic (provider_registry, debate_service, etc.)
+- `handlers/` — HTTP handlers (BackgroundTask, Discovery, Scoring, Verification, Health)
+- `debate/` — 13 packages (agents, topology, voting, reflexion, gates, etc.)
+- `formatters/` — 32+ code formatters
+- `tools/` — Tool schema registry (21 tools)
+- `agents/` — CLI agent registry (46 agents)
+- `mcp/adapters/` — 45+ MCP adapters
+- `verifier/` — Startup verification
+- `adapters/` — Bridge to extracted modules (20+ files)
+
+### Key Interfaces
+- `LLMProvider` — Complete, CompleteStream, HealthCheck, GetCapabilities
+- `VotingStrategy` — Ensemble voting
+- `Formatter` — Code formatter
+- Vector stores: Connect, Upsert, Search, Delete, Get
+
+### Goroutine Lifecycle Safety
+All handlers with background goroutines use `sync.WaitGroup` lifecycle tracking. Pattern: `WaitGroup.Add(1)` before launch, `defer WaitGroup.Done()`, `Shutdown()` calls `cancel()` + `WaitGroup.Wait()`.
+
+### Architectural Patterns
+- **Provider Registry** — Multi-provider interface with credentials
+- **Ensemble Strategy** — Confidence-weighted voting, parallel execution
+- **AI Debate** — Multi-round, 5 positions × 5 LLMs, 8-phase protocol
+- **Debate Voting** — 6 methods (Weighted, Majority, Borda, Condorcet, Plurality, Unanimous)
+- **Circuit Breaker** — Fault tolerance for providers
+- **Dynamic Model Discovery** — 3-tier (API → models.dev → fallback)
+
+## Startup Verification Pipeline
+
+LLMsVerifier is the single source of truth. On startup: discover → verify (8-test pipeline) → score → rank → select debate team → start.
+
+**Provider types**: API Key, OAuth, Free
+
+**Scoring**: ResponseSpeed 25%, CostEffectiveness 25%, ModelEfficiency 20%, Capability 20%, Recency 10%
+
+## Provider Access Mechanisms
+
+- **Claude**: `claude -p --output-format json` (CLI proxy)
+- **Qwen**: `qwen --acp` (JSON-RPC 2.0)
+- **Zen**: HTTP server `opencode serve :4096`
+
+## CLI Agents (46)
+
+Registry: `internal/agents/registry.go`
+
+Generate configs: `./bin/helixagent --generate-agent-config=<name>`
+
+### CLI Agent Config Rules (MANDATORY)
+
+1. **Config filenames**: `opencode.json` (NO leading dot)
+2. **No env var syntax**: Real API key values, not `{env:VAR_NAME}`
+3. **Two versions**: Repo examples use placeholder, installed use real keys
+4. **Config locations**: `~/.config/opencode/opencode.json`
+5. **Model ID format**: `helixagent/helixagent-debate`
+6. **15+ MCP servers**: 6 HelixAgent remote + 3 extended + 6 local + 3 free remote
+7. **10+ Plugins**: helixagent-mcp, helixagent-lsp, helixagent-acp, etc.
+8. **Extensions**: LSP, ACP, Embeddings, RAG, 8+ Skills
+
+## Code Formatters
+
+32+ formatters (11 native, 14 service, 7 built-in) for 19 languages.
+
+REST API: `POST /v1/format`, `GET /v1/formatters`
+
+## MCP Adapters
+
+45+ adapters in `internal/mcp/adapters/`. 65+ containerized MCP servers (ports 9101-9999).
+
+## CI/CD Container Build System
+
+Five-phase system running inside Docker/Podman:
 
 ```bash
-# Example: build and test HelixSpecifier
-cd HelixSpecifier && go build ./... && go test ./... -count=1 -race
+make ci-all              # All five phases + report
+make ci-go               # Phase 1: Go builds + tests
+make ci-mobile           # Phase 2: Flutter/RN
+make ci-web              # Phase 3: Angular + Playwright
+make ci-desktop          # Phase 4: Electron/Tauri
+make ci-integration      # Phase 5: Full-stack integration
+make ci-report           # Aggregate reports
+CI_RESOURCE_LIMIT=medium make ci-all
 ```
 
-### Pre-existing Modules
-
-| Module | Go Module Path | Directory | Description |
-|--------|---------------|-----------|-------------|
-| Containers | `digital.vasic.containers` | `Containers/` | Generic container orchestration: runtime abstraction (Docker/Podman/K8s), health checking, compose orchestration, lifecycle management. 12 packages. |
-| Challenges | `digital.vasic.challenges` | `Challenges/` | Generic challenge framework: assertion engine (19 evaluators), registry, runner, reporting, monitoring, metrics, plugin system v2.0.0, userflow testing, Panoptic vision/recorder/testgen/error-analyzer adapters, AI test generation challenges. 15 packages. |
+## Challenges
 
 ```bash
-# Example: build and test Containers
-cd Containers && go build ./... && go test ./... -count=1 -race
+./challenges/scripts/run_all_challenges.sh                       # All challenges
+./challenges/scripts/release_build_challenge.sh                  # 25 tests
+./challenges/scripts/debate_orchestrator_challenge.sh            # 61 tests
+./challenges/scripts/helixmemory_challenge.sh                    # 80+ tests
+./challenges/scripts/helixspecifier_challenge.sh                 # 138 tests
+./challenges/scripts/cli_agent_config_challenge.sh               # 60 tests
+./challenges/scripts/all_agents_e2e_challenge.sh                 # 102 tests
+./challenges/scripts/full_system_boot_challenge.sh               # 53 tests
+./challenges/scripts/ci_container_build_challenge.sh             # 87 tests
+./challenges/scripts/snyk_automated_scanning_challenge.sh        # 38 tests
+./challenges/scripts/sonarqube_automated_scanning_challenge.sh   # 45 tests
+# ... and 460+ more challenge scripts
 ```
 
-### Module Dependencies in go.mod
+**IMPORTANT:** Start containers before challenges with `make test-infra-start`.
 
-All modules use `replace` directives for local development:
+## LLMsVerifier
 
-```go
-replace digital.vasic.eventbus => ./EventBus
-replace digital.vasic.concurrency => ./Concurrency
-replace digital.vasic.observability => ./Observability
-replace digital.vasic.auth => ./Auth
-replace digital.vasic.storage => ./Storage
-replace digital.vasic.streaming => ./Streaming
-replace digital.vasic.security => ./Security
-replace digital.vasic.vectordb => ./VectorDB
-replace digital.vasic.embeddings => ./Embeddings
-replace digital.vasic.database => ./Database
-replace digital.vasic.cache => ./Cache
-replace digital.vasic.messaging => ./Messaging
-replace digital.vasic.formatters => ./Formatters
-replace digital.vasic.mcp => ./MCP_Module
-replace digital.vasic.rag => ./RAG
-replace digital.vasic.memory => ./Memory
-replace digital.vasic.optimization => ./Optimization
-replace digital.vasic.plugins => ./Plugins
-replace digital.vasic.agentic => ./Agentic
-replace digital.vasic.llmops => ./LLMOps
-replace digital.vasic.selfimprove => ./SelfImprove
-replace digital.vasic.planning => ./Planning
-replace digital.vasic.benchmark => ./Benchmark
-replace digital.vasic.helixmemory => ./HelixMemory
-replace digital.vasic.helixspecifier => ./HelixSpecifier
-replace digital.vasic.containers => ./Containers
-replace digital.vasic.challenges => ./Challenges
+```bash
+make verifier-init / verifier-build / verifier-test
+make verifier-verify MODEL=gpt-4 PROVIDER=openai
 ```
+
+## Protocol Endpoints
+
+MCP `/v1/mcp` | ACP `/v1/acp` | LSP `/v1/lsp` | Embeddings `/v1/embeddings` | Vision `/v1/vision` | Cognee `/v1/cognee` | Startup `/v1/startup/verification` | BigData `/v1/bigdata/health` | Tasks `/v1/tasks` | Discovery `/v1/discovery` | Scoring `/v1/scoring` | Verification `/v1/verification` | Health `/v1/health`
+
+## Configuration
+
+Env vars in `.env.example`: `PORT`, `GIN_MODE`, `JWT_SECRET`, `DB_*`, `REDIS_*`, `*_API_KEY`, `*_USE_OAUTH_CREDENTIALS`, `COGNEE_ENABLED`, `CONSTITUTION_WATCHER_ENABLED`.
+
+Service overrides: `SVC_<SERVICE>_<FIELD>` (e.g., `SVC_POSTGRESQL_HOST`).
+
+## Technology Stack
+
+Gin v1.11.0, PostgreSQL 15 (pgx/v5), Redis 7, testify v1.11.1, Prometheus/Grafana, OpenTelemetry. Docker and Podman support.
 
 ## Key Files
 
-- `CLAUDE.md` - Detailed project architecture
-- `Makefile` - All available commands
-- `go.mod` - Module dependencies
-- `docs/MODULES.md` - Extracted modules catalog (27 modules)
-- `.env.example` - Environment variable templates
+- `CLAUDE.md` — Detailed architecture
+- `Makefile` — All commands
+- `go.mod` — Module dependencies
+- `docs/MODULES.md` — Modules catalog
+- `.env.example` — Environment templates
 
-## API Endpoints (New in WS1)
+## Adding a New LLM Provider
 
-Five handler groups connected to the router:
-
-| Endpoint Group | Base Path | Purpose |
-|---------------|-----------|---------|
-| Background Tasks | `/v1/tasks` | Async task lifecycle (create, pause, resume, cancel, WebSocket updates) |
-| Model Discovery | `/v1/discovery` | 3-tier model discovery (Provider API, models.dev, hardcoded fallback) |
-| Model Scoring | `/v1/scoring` | 5-component weighted scoring (speed, cost, efficiency, capability, recency) |
-| Provider Verification | `/v1/verification` | 8-test verification pipeline for provider health |
-| Provider Health | `/v1/health` | Real-time provider health, latency, circuit breaker states |
-
-Protocol Endpoints: MCP `/v1/mcp` | ACP `/v1/acp` | LSP `/v1/lsp` | Embeddings `/v1/embeddings` | Vision `/v1/vision` | Cognee `/v1/cognee` | Startup `/v1/startup/verification` | BigData `/v1/bigdata/health` | Tasks `/v1/tasks` | Discovery `/v1/discovery` | Scoring `/v1/scoring` | Verification `/v1/verification` | Health `/v1/health`
-
-## Additional Testing
-
-### Fuzz Testing
-
-Go native fuzz tests validate parsing robustness:
-
-```bash
-# Run fuzz corpus as regression tests
-go test -run=Fuzz ./tests/fuzz/
-
-# Run active fuzzing for 30 seconds
-GOMAXPROCS=2 nice -n 19 ionice -c 3 \
-  go test -fuzz=FuzzJSONRequestParsing -fuzztime=30s -p 1 ./tests/fuzz/
-```
-
-Available targets: FuzzJSONRequestParsing, FuzzToolSchemaValidation, FuzzSSEParsing, FuzzModelIDParsing, FuzzHTTPHeaderParsing.
-
-## Additional Challenges (WS1-WS7)
-
-```bash
-./challenges/scripts/router_completeness_challenge.sh           # Router handler registration
-./challenges/scripts/resource_limits_challenge.sh               # Test resource limit enforcement
-./challenges/scripts/documentation_completeness_challenge.sh    # Documentation sync
-./challenges/scripts/snyk_automated_scanning_challenge.sh       # 38 tests - Snyk scanning
-./challenges/scripts/sonarqube_automated_scanning_challenge.sh  # 45 tests - SonarQube scanning
-./challenges/scripts/pprof_memory_profiling_challenge.sh        # Memory leak detection
-./challenges/scripts/coverage_gate_challenge.sh                 # Coverage thresholds
-./challenges/scripts/lazy_loading_validation_challenge.sh       # sync.Once validation
-./challenges/scripts/monitoring_dashboard_challenge.sh          # Prometheus metrics
-```
+1. Create `internal/llm/providers/<name>/<name>.go` implementing `LLMProvider`
+2. Add tool support if applicable (`SupportsTools: true`)
+3. Register in `internal/services/provider_registry.go`
+4. Add env vars to `.env.example`, tests in `internal/llm/providers/<name>/<name>_test.go`
