@@ -1085,47 +1085,75 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 		// These endpoints handle SSE connections for CLI agent protocols (OpenCode, Crush, HelixCode)
 		protocolSSEHandler.RegisterSSERoutes(protected)
 
-		// Background Task endpoints (minimal implementation for API compatibility)
-		tasksGroup := protected.Group("/tasks")
+		// Background Task endpoints (full handler with task queue, webhooks, WebSocket, SSE)
+		backgroundTaskHandler := handlers.NewBackgroundTaskHandler(
+			nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, logger,
+		)
+		backgroundTaskHandler.RegisterRoutes(protected)
+		logger.Info("Background task endpoints registered at /v1/tasks/*")
+
+		// Discovery endpoints (model discovery from configured providers)
+		discoveryHandler := handlers.NewDiscoveryHandler(nil)
+		discoveryGroup := protected.Group("/discovery")
 		{
-			// Create task
-			tasksGroup.POST("", func(c *gin.Context) {
-				var req map[string]interface{}
-				if err := c.ShouldBindJSON(&req); err != nil {
-					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-					return
-				}
-				taskID := "task-" + time.Now().Format("20060102150405")
-				c.JSON(http.StatusAccepted, gin.H{
-					"id":         taskID,
-					"status":     "pending",
-					"created_at": time.Now().Unix(),
-				})
-			})
-			// List tasks
-			tasksGroup.GET("", func(c *gin.Context) {
-				c.JSON(http.StatusOK, gin.H{
-					"tasks":         []interface{}{},
-					"count":         0,
-					"pending_count": 0,
-				})
-			})
-			// Get task status
-			tasksGroup.GET("/:id/status", func(c *gin.Context) {
-				c.JSON(http.StatusOK, gin.H{
-					"id":     c.Param("id"),
-					"status": "pending",
-				})
-			})
-			// Get queue stats
-			tasksGroup.GET("/queue/stats", func(c *gin.Context) {
-				c.JSON(http.StatusOK, gin.H{
-					"pending_count":  0,
-					"running_count":  0,
-					"workers_active": 4,
-				})
-			})
+			discoveryGroup.GET("/models", discoveryHandler.GetDiscoveredModels)
+			discoveryGroup.GET("/models/selected", discoveryHandler.GetSelectedModels)
+			discoveryGroup.GET("/stats", discoveryHandler.GetDiscoveryStats)
+			discoveryGroup.POST("/trigger", discoveryHandler.TriggerDiscovery)
+			discoveryGroup.GET("/ensemble", discoveryHandler.GetEnsembleModels)
+			discoveryGroup.GET("/debate-model", discoveryHandler.GetModelForDebate)
 		}
+		logger.Info("Discovery endpoints registered at /v1/discovery/*")
+
+		// Scoring endpoints (model scoring and ranking)
+		scoringHandler := handlers.NewScoringHandler(nil)
+		scoringGroup := protected.Group("/scoring")
+		{
+			scoringGroup.GET("/model/:model_id", scoringHandler.GetModelScore)
+			scoringGroup.POST("/batch", scoringHandler.BatchCalculateScores)
+			scoringGroup.GET("/top", scoringHandler.GetTopModels)
+			scoringGroup.GET("/range", scoringHandler.GetModelsByScoreRange)
+			scoringGroup.GET("/weights", scoringHandler.GetScoringWeights)
+			scoringGroup.PUT("/weights", scoringHandler.UpdateScoringWeights)
+			scoringGroup.GET("/model/:model_id/detail", scoringHandler.GetModelNameWithScore)
+			scoringGroup.POST("/cache/invalidate", scoringHandler.InvalidateCache)
+			scoringGroup.POST("/compare", scoringHandler.CompareModels)
+		}
+		logger.Info("Scoring endpoints registered at /v1/scoring/*")
+
+		// Verification endpoints (model verification via LLMsVerifier)
+		verificationHandler := handlers.NewVerificationHandler(nil, nil, nil, nil)
+		verificationGroup := protected.Group("/verification")
+		{
+			verificationGroup.POST("/model", verificationHandler.VerifyModel)
+			verificationGroup.POST("/batch", verificationHandler.BatchVerify)
+			verificationGroup.GET("/status", verificationHandler.GetVerificationStatus)
+			verificationGroup.GET("/models", verificationHandler.GetVerifiedModels)
+			verificationGroup.POST("/model/:model_id/reverify", verificationHandler.ReVerifyModel)
+			verificationGroup.GET("/tests", verificationHandler.GetVerificationTests)
+			verificationGroup.GET("/health", verificationHandler.GetVerificationHealth)
+			verificationGroup.POST("/code-visibility", verificationHandler.TestCodeVisibility)
+		}
+		logger.Info("Verification endpoints registered at /v1/verification/*")
+
+		// Health monitoring endpoints (provider health, circuit breakers, latency)
+		healthHandler := handlers.NewHealthHandler(nil)
+		healthGroup := protected.Group("/health")
+		{
+			healthGroup.GET("/providers", healthHandler.GetAllProvidersHealth)
+			healthGroup.GET("/providers/healthy", healthHandler.GetHealthyProviders)
+			healthGroup.GET("/providers/fastest", healthHandler.GetFastestProvider)
+			healthGroup.GET("/provider/:provider_id", healthHandler.GetProviderHealth)
+			healthGroup.GET("/provider/:provider_id/latency", healthHandler.GetProviderLatency)
+			healthGroup.GET("/provider/:provider_id/available", healthHandler.IsProviderAvailable)
+			healthGroup.GET("/circuit-breakers", healthHandler.GetCircuitBreakerStatus)
+			healthGroup.POST("/provider/:provider_id/success", healthHandler.RecordSuccess)
+			healthGroup.POST("/provider/:provider_id/failure", healthHandler.RecordFailure)
+			healthGroup.POST("/provider", healthHandler.AddProvider)
+			healthGroup.DELETE("/provider/:provider_id", healthHandler.RemoveProvider)
+			healthGroup.GET("/status", healthHandler.GetHealthServiceStatus)
+		}
+		logger.Info("Health monitoring endpoints registered at /v1/health/*")
 
 		// Admin endpoints
 		admin := protected.Group("/admin")
