@@ -4,6 +4,11 @@ EXCLUDE_DIRS := cli_agents MCP MCP-Servers
 
 TEST_PACKAGES := ./cmd/... ./internal/... ./pkg/... ./tests/... ./challenges/...
 
+# Resource limits per Constitution Rule 15 (30-40% host resources)
+RESOURCE_PREFIX := nice -n 19 ionice -c 3
+GO_TEST_FLAGS := -p 1
+export GOMAXPROCS := 2
+
 all: fmt vet lint test build
 
 # =============================================================================
@@ -201,12 +206,12 @@ test:
 		DB_HOST=localhost DB_PORT=$${POSTGRES_PORT:-15432} DB_USER=helixagent DB_PASSWORD=helixagent123 DB_NAME=helixagent_db \
 		DATABASE_URL="postgres://helixagent:helixagent123@localhost:$${POSTGRES_PORT:-15432}/helixagent_db?sslmode=disable" \
 		REDIS_HOST=localhost REDIS_PORT=$${REDIS_PORT:-16379} REDIS_PASSWORD=helixagent123 \
-		go test -v $(TEST_PACKAGES); \
+		$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) $(TEST_PACKAGES); \
 	else \
 		echo "⚠️  Infrastructure not available - running unit tests only"; \
 		echo "   Run './bin/helixagent' first for proper container orchestration"; \
 		echo ""; \
-		go test -v -short $(TEST_PACKAGES); \
+		$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) -short $(TEST_PACKAGES); \
 	fi
 
 # Auto-start infrastructure if not running (supports Docker and Podman)
@@ -317,14 +322,14 @@ test-infra-direct-stop:
 
 test-coverage:
 	@echo "📊 Running tests with coverage..."
-	go test -v -race -coverprofile=coverage.out ./...
+	$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) -race -coverprofile=coverage.out ./...
 	go tool cover -func=coverage.out
 	go tool cover -html=coverage.out -o coverage.html
 	@echo "📈 Coverage report generated: coverage.html"
 
 test-coverage-100:
 	@echo "📊 Running tests with 100% coverage requirement..."
-	@go test -v -race -coverprofile=coverage.out ./...
+	@$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) -race -coverprofile=coverage.out ./...
 	@coverage=$$(go tool cover -func=coverage.out | grep total | awk '{print $$3}' | sed 's/%//'); \
 	if [ $$(echo "$$coverage < 100" | bc -l) -eq 1 ]; then \
 		echo "❌ Coverage is $$coverage%, required 100%"; \
@@ -347,7 +352,7 @@ test-no-skip:
 
 test-all-must-pass:
 	@echo "🧪 Running all tests (none can fail)..."
-	@go test -v -failfast $(TEST_PACKAGES) 2>&1 | tee test_output.log; \
+	@$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) -failfast $(TEST_PACKAGES) 2>&1 | tee test_output.log; \
 	if grep -q "FAIL" test_output.log; then \
 		echo "❌ Some tests failed"; \
 		rm -f test_output.log; \
@@ -358,17 +363,17 @@ test-all-must-pass:
 
 test-performance:
 	@echo "🏃 Running performance tests..."
-	@go test -v -timeout 180s ./tests/unit/concurrency/...
-	@go test -v -timeout 180s ./tests/unit/events/...
-	@go test -v -timeout 180s ./tests/unit/cache/...
-	@go test -v -timeout 180s ./tests/unit/http/...
+	@$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) -timeout 180s ./tests/unit/concurrency/...
+	@$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) -timeout 180s ./tests/unit/events/...
+	@$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) -timeout 180s ./tests/unit/cache/...
+	@$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) -timeout 180s ./tests/unit/http/...
 	@echo "✅ Performance tests completed"
 
 test-performance-bench:
 	@echo "📊 Running performance benchmarks..."
-	@go test -bench=. -benchmem ./internal/concurrency/...
-	@go test -bench=. -benchmem ./internal/events/...
-	@go test -bench=. -benchmem ./internal/cache/...
+	@$(RESOURCE_PREFIX) go test $(GO_TEST_FLAGS) -bench=. -benchmem ./internal/concurrency/...
+	@$(RESOURCE_PREFIX) go test $(GO_TEST_FLAGS) -bench=. -benchmem ./internal/events/...
+	@$(RESOURCE_PREFIX) go test $(GO_TEST_FLAGS) -bench=. -benchmem ./internal/cache/...
 	@echo "✅ Performance benchmarks completed"
 
 test-challenges:
@@ -383,7 +388,7 @@ test-challenges:
 
 test-unit:
 	@echo "🧪 Running unit tests..."
-	go test -v ./internal/... -short
+	$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) ./internal/... -short
 
 test-integration:
 	@echo "🧪 Running integration tests with Docker dependencies..."
@@ -519,7 +524,7 @@ test-with-full-infra:
 		OLLAMA_BASE_URL=http://localhost:$${MOCK_LLM_PORT:-18081} \
 		JWT_SECRET=test-jwt-secret-key-for-testing \
 		CI=true FULL_TEST_MODE=true \
-		go test -v ./... -timeout 600s -cover
+		$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) ./... -timeout 600s -cover
 	@echo ""
 	@echo "✅ Tests completed with FULL infrastructure!"
 
@@ -528,7 +533,7 @@ test-integration-full:
 	@$(MAKE) test-infra-full-start
 	@echo ""
 	@source .env.test 2>/dev/null || true && \
-		go test -v ./tests/integration/... -timeout 600s
+		$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) ./tests/integration/... -timeout 600s
 	@echo ""
 	@echo "✅ Integration tests completed!"
 
@@ -550,7 +555,7 @@ test-with-infra:
 		OLLAMA_BASE_URL=http://localhost:$${MOCK_LLM_PORT:-18081} \
 		JWT_SECRET=test-jwt-secret-key-for-testing \
 		CI=true FULL_TEST_MODE=true \
-		go test -v ./... -timeout 300s -cover
+		$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) ./... -timeout 300s -cover
 	@echo ""
 	@echo "✅ Tests completed!"
 
@@ -568,7 +573,7 @@ test-all-docker:
 		QWEN_API_KEY=mock QWEN_BASE_URL=http://localhost:8081/v1 \
 		ZAI_API_KEY=mock ZAI_BASE_URL=http://localhost:8081/v1 \
 		OLLAMA_BASE_URL=http://localhost:8081 \
-		CI=true go test -v ./... -timeout 300s
+		CI=true $(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) ./... -timeout 300s
 	@docker compose -f docker-compose.test.yml down
 
 test-integration-coverage:
@@ -585,31 +590,31 @@ test-integration-all:
 
 test-integration-old:
 	@echo "🧪 Running legacy integration tests..."
-	go test -v ./tests/integration
+	$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) ./tests/integration
 
 test-e2e:
 	@echo "🧪 Running end-to-end tests..."
-	go test -v ./tests/e2e
+	$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) ./tests/e2e
 
 test-security:
 	@echo "🔒 Running security tests..."
-	go test -v ./tests/security
+	$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) ./tests/security
 
 test-pentest:
 	@echo "🔓 Running penetration tests..."
-	go test -v -tags pentest ./tests/pentest/...
+	$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) -tags pentest ./tests/pentest/...
 
 test-performance-full:
 	@echo "📊 Running performance benchmarks and load tests..."
-	go test -v -tags performance -bench=. -benchmem ./tests/performance/...
+	$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) -tags performance -bench=. -benchmem ./tests/performance/...
 
 test-stress:
 	@echo "⚡ Running stress tests..."
-	go test -v ./tests/stress
+	$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) ./tests/stress
 
 test-chaos:
 	@echo "🌀 Running chaos tests..."
-	go test -v ./tests/challenge
+	$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) ./tests/challenge
 
 test-all-types:
 	@echo "🧪 Running all 6 test types with full infrastructure..."
@@ -646,15 +651,15 @@ test-type-chaos:
 
 test-bench:
 	@echo "⚡ Running benchmark tests..."
-	go test -bench=. -benchmem ./...
+	$(RESOURCE_PREFIX) go test $(GO_TEST_FLAGS) -bench=. -benchmem ./...
 
 test-race:
 	@echo "🏃 Running race condition tests..."
-	go test -race ./...
+	$(RESOURCE_PREFIX) go test $(GO_TEST_FLAGS) -race ./...
 
 test-automation:
 	@echo "🤖 Running full automation test suite..."
-	go test -v -timeout 600s ./tests/automation/...
+	$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) -timeout 600s ./tests/automation/...
 
 test-automation-verbose:
 	@echo "🤖 Running full automation test suite (verbose)..."
@@ -994,7 +999,7 @@ test-with-full-auto:
 		COGNEE_URL=http://localhost:8000 CHROMADB_URL=http://localhost:8001 \
 		HELIXAGENT_URL=http://localhost:7061 \
 		CI=true FULL_TEST_MODE=true \
-		go test -v ./... -timeout 900s -cover
+		$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) ./... -timeout 900s -cover
 	@echo ""
 	@echo "✅ Tests completed with full infrastructure!"
 
@@ -1285,7 +1290,7 @@ ci-validate-fallback:
 
 ci-validate-monitoring:
 	@echo "🔍 CI/CD: Validating monitoring systems..."
-	@go test -v -run "TestCircuitBreakerMonitor|TestOAuthTokenMonitor|TestProviderHealthMonitor|TestFallbackChainValidator" ./internal/services/... || { echo "❌ Monitoring validation failed!"; exit 1; }
+	@$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) -run "TestCircuitBreakerMonitor|TestOAuthTokenMonitor|TestProviderHealthMonitor|TestFallbackChainValidator" ./internal/services/... || { echo "❌ Monitoring validation failed!"; exit 1; }
 	@echo "✅ Monitoring systems validated"
 
 # Constitution Validation
@@ -1339,7 +1344,7 @@ ci-pre-commit:
 	@$(MAKE) fmt
 	@$(MAKE) vet
 	@$(MAKE) ci-validate-fallback
-	@go test -run "TestReliableAPIProvidersCollection|TestFallbackChainIncludesWorkingProviders" ./internal/services/...
+	@$(RESOURCE_PREFIX) go test $(GO_TEST_FLAGS) -run "TestReliableAPIProvidersCollection|TestFallbackChainIncludesWorkingProviders" ./internal/services/...
 	@echo "✅ Pre-commit validation passed"
 
 ci-pre-push:
@@ -1404,65 +1409,65 @@ verifier-build:
 
 verifier-test:
 	@echo "🧪 Running verifier tests..."
-	go test -v ./internal/verifier/... -cover
+	$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) ./internal/verifier/... -cover
 	@echo "✅ Verifier tests completed"
 
 verifier-test-unit:
 	@echo "🧪 Running verifier unit tests..."
-	go test -v ./tests/unit/verifier/... -short
+	$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) ./tests/unit/verifier/... -short
 	@echo "✅ Verifier unit tests completed"
 
 verifier-test-integration:
 	@echo "🧪 Running verifier integration tests..."
-	go test -v ./tests/integration/verifier/... -timeout 300s
+	$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) ./tests/integration/verifier/... -timeout 300s
 	@echo "✅ Verifier integration tests completed"
 
 verifier-test-e2e:
 	@echo "🧪 Running verifier E2E tests..."
-	go test -v ./tests/e2e/verifier/... -timeout 600s
+	$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) ./tests/e2e/verifier/... -timeout 600s
 	@echo "✅ Verifier E2E tests completed"
 
 verifier-test-security:
 	@echo "🔒 Running verifier security tests..."
-	go test -v ./tests/security/verifier/...
+	$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) ./tests/security/verifier/...
 	@echo "✅ Verifier security tests completed"
 
 verifier-test-stress:
 	@echo "⚡ Running verifier stress tests..."
-	go test -v ./tests/stress/verifier/... -timeout 900s
+	$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) ./tests/stress/verifier/... -timeout 900s
 	@echo "✅ Verifier stress tests completed"
 
 verifier-test-chaos:
 	@echo "🌀 Running verifier chaos tests..."
-	go test -v ./tests/chaos/verifier/... -timeout 600s
+	$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) ./tests/chaos/verifier/... -timeout 600s
 	@echo "✅ Verifier chaos tests completed"
 
 verifier-test-all:
 	@echo "🧪 Running ALL verifier tests (6 types)..."
 	@echo "1. Unit tests..."
-	go test -v ./tests/unit/verifier/... -short
+	$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) ./tests/unit/verifier/... -short
 	@echo "2. Integration tests..."
-	go test -v ./tests/integration/verifier/... -timeout 300s
+	$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) ./tests/integration/verifier/... -timeout 300s
 	@echo "3. E2E tests..."
-	go test -v ./tests/e2e/verifier/... -timeout 600s
+	$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) ./tests/e2e/verifier/... -timeout 600s
 	@echo "4. Security tests..."
-	go test -v ./tests/security/verifier/...
+	$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) ./tests/security/verifier/...
 	@echo "5. Stress tests..."
-	go test -v ./tests/stress/verifier/... -timeout 900s
+	$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) ./tests/stress/verifier/... -timeout 900s
 	@echo "6. Chaos tests..."
-	go test -v ./tests/chaos/verifier/... -timeout 600s
+	$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) ./tests/chaos/verifier/... -timeout 600s
 	@echo "✅ All verifier tests completed"
 
 verifier-test-coverage:
 	@echo "📊 Running verifier tests with coverage..."
-	go test -v -race -coverprofile=verifier-coverage.out ./internal/verifier/... ./tests/unit/verifier/...
+	$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) -race -coverprofile=verifier-coverage.out ./internal/verifier/... ./tests/unit/verifier/...
 	go tool cover -func=verifier-coverage.out
 	go tool cover -html=verifier-coverage.out -o verifier-coverage.html
 	@echo "📈 Verifier coverage report: verifier-coverage.html"
 
 verifier-test-coverage-100:
 	@echo "📊 Checking verifier 100% test coverage..."
-	@go test -v -race -coverprofile=verifier-coverage.out ./internal/verifier/... ./tests/unit/verifier/...
+	@$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) -race -coverprofile=verifier-coverage.out ./internal/verifier/... ./tests/unit/verifier/...
 	@coverage=$$(go tool cover -func=verifier-coverage.out | grep total | awk '{print $$3}' | sed 's/%//'); \
 	if [ $$(echo "$$coverage < 100" | bc -l) -eq 1 ]; then \
 		echo "❌ Verifier coverage is $$coverage%, required 100%"; \
@@ -1572,7 +1577,7 @@ verifier-docs:
 
 verifier-benchmark:
 	@echo "⚡ Running verifier benchmarks..."
-	go test -bench=. -benchmem ./internal/verifier/...
+	$(RESOURCE_PREFIX) go test $(GO_TEST_FLAGS) -bench=. -benchmem ./internal/verifier/...
 	@echo "✅ Verifier benchmarks completed"
 
 # =============================================================================
