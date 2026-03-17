@@ -215,8 +215,8 @@ var providerMappings = []ProviderMapping{
 	{EnvVar: "ApiKey_SiliconFlow", ProviderType: "siliconflow", ProviderName: "siliconflow", BaseURL: "https://api.siliconflow.cn/v1", DefaultModel: "Qwen/Qwen2.5-72B-Instruct", Priority: 7},
 
 	// Cloudflare
-	{EnvVar: "CLOUDFLARE_API_KEY", ProviderType: "cloudflare", ProviderName: "cloudflare", BaseURL: "https://api.cloudflare.com/client/v4", DefaultModel: "@cf/meta/llama-3.1-70b-instruct", Priority: 7},
-	{EnvVar: "CF_API_KEY", ProviderType: "cloudflare", ProviderName: "cloudflare", BaseURL: "https://api.cloudflare.com/client/v4", DefaultModel: "@cf/meta/llama-3.1-70b-instruct", Priority: 7},
+	{EnvVar: "CLOUDFLARE_API_KEY", ProviderType: "cloudflare", ProviderName: "cloudflare", BaseURL: "https://api.cloudflare.com/client/v4", DefaultModel: "@cf/meta/llama-3.3-70b-instruct-fp8-fast", Priority: 7},
+	{EnvVar: "CF_API_KEY", ProviderType: "cloudflare", ProviderName: "cloudflare", BaseURL: "https://api.cloudflare.com/client/v4", DefaultModel: "@cf/meta/llama-3.3-70b-instruct-fp8-fast", Priority: 7},
 
 	// NVIDIA
 	{EnvVar: "NVIDIA_API_KEY", ProviderType: "nvidia", ProviderName: "nvidia", BaseURL: "https://integrate.api.nvidia.com/v1", DefaultModel: "meta/llama-3.1-70b-instruct", Priority: 7},

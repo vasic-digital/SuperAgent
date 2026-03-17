@@ -18,10 +18,10 @@ import (
 
 const (
 	CloudflareAPIURL     = "https://api.cloudflare.com/client/v4/accounts/%s/ai/v1/chat/completions"
-	CloudflareModel      = "@cf/meta/llama-3.1-8b-instruct"
+	CloudflareModel      = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
 	CloudflareModelsURL  = "https://api.cloudflare.com/client/v4/accounts/%s/ai/models"
-	CloudflareMaxContext = 8192
-	CloudflareMaxOutput  = 4096
+	CloudflareMaxContext = 131072
+	CloudflareMaxOutput  = 8192
 )
 
 type CloudflareProvider struct {
@@ -125,10 +125,26 @@ func NewCloudflareProviderWithRetry(apiKey, accountID, baseURL, model string, re
 			ModelsDevID:    "cloudflare",
 			APIKey:         apiKey,
 			FallbackModels: []string{
-				"@cf/meta/llama-3.1-8b-instruct",
+				"@cf/meta/llama-4-scout-17b-16e-instruct",
+				"@cf/meta/llama-3.3-70b-instruct-fp8-fast",
 				"@cf/meta/llama-3.1-70b-instruct",
+				"@cf/meta/llama-3.1-8b-instruct-fast",
+				"@cf/meta/llama-3.1-8b-instruct",
+				"@cf/meta/llama-3.2-3b-instruct",
+				"@cf/meta/llama-3.2-1b-instruct",
+				"@cf/meta/llama-guard-3-8b",
+				"@cf/nvidia/nemotron-3-120b-a12b",
+				"@cf/openai/gpt-oss-120b",
+				"@cf/openai/gpt-oss-20b",
+				"@cf/mistral/mistral-small-3.1-24b-instruct",
 				"@cf/mistral/mistral-7b-instruct",
-				"@cf/qwen/qwen1.5-14b-chat-awq",
+				"@cf/google/gemma-3-12b-it",
+				"@cf/qwen/qwen3-30b-a3b-fp8",
+				"@cf/qwen/qwq-32b",
+				"@cf/qwen/qwen2.5-coder-32b-instruct",
+				"@cf/deepseek/deepseek-r1-distill-qwen-32b",
+				"@cf/ibm/granite-4.0-h-micro",
+				"@cf/zai/glm-4.7-flash",
 			},
 		})
 	}
@@ -408,12 +424,12 @@ func (p *CloudflareProvider) GetCapabilities() *models.ProviderCapabilities {
 
 	return &models.ProviderCapabilities{
 		SupportedModels:        supportedModels,
-		SupportedFeatures:      []string{"text_completion", "chat", "streaming", "code_completion"},
+		SupportedFeatures:      []string{"text_completion", "chat", "streaming", "code_completion", "reasoning"},
 		SupportsStreaming:      true,
 		SupportsCodeCompletion: true,
 		SupportsCodeAnalysis:   true,
 		Limits: models.ModelLimits{
-			MaxTokens:       CloudflareMaxOutput,
+			MaxTokens:       CloudflareMaxContext,
 			MaxInputLength:  CloudflareMaxContext,
 			MaxOutputLength: CloudflareMaxOutput,
 		},

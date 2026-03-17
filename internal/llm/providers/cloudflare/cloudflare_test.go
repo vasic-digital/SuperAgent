@@ -57,14 +57,14 @@ func TestComplete(t *testing.T) {
 		var req CloudflareRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		require.NoError(t, err)
-		assert.Equal(t, "@cf/meta/llama-3.1-8b-instruct", req.Model)
+		assert.Equal(t, "@cf/meta/llama-3.3-70b-instruct-fp8-fast", req.Model)
 
 		resp := CloudflareResponse{
 			Success: true,
 			Result: CloudflareResult{
 				Response: "Hello! I'm an AI assistant.",
 				ID:       "resp_123",
-				Model:    "@cf/meta/llama-3.1-8b-instruct",
+				Model:    "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
 				Usage: CloudflareUsage{
 					PromptTokens:     10,
 					CompletionTokens: 8,
@@ -130,9 +130,9 @@ func TestCompleteStream(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 
 		chunks := []string{
-			`{"response":"Hello","id":"stream-1","model":"@cf/meta/llama-3.1-8b-instruct"}`,
-			`{"response":" there","id":"stream-2","model":"@cf/meta/llama-3.1-8b-instruct"}`,
-			`{"response":"!","id":"stream-3","model":"@cf/meta/llama-3.1-8b-instruct","done":true}`,
+			`{"response":"Hello","id":"stream-1","model":"@cf/meta/llama-3.3-70b-instruct-fp8-fast"}`,
+			`{"response":" there","id":"stream-2","model":"@cf/meta/llama-3.3-70b-instruct-fp8-fast"}`,
+			`{"response":"!","id":"stream-3","model":"@cf/meta/llama-3.3-70b-instruct-fp8-fast","done":true}`,
 		}
 
 		for _, chunk := range chunks {
@@ -168,7 +168,7 @@ func TestGetCapabilities(t *testing.T) {
 	assert.Contains(t, caps.SupportedFeatures, "text_completion")
 	assert.Contains(t, caps.SupportedFeatures, "streaming")
 	assert.True(t, caps.SupportsStreaming)
-	assert.Equal(t, CloudflareMaxOutput, caps.Limits.MaxTokens)
+	assert.Equal(t, CloudflareMaxContext, caps.Limits.MaxTokens)
 	assert.Equal(t, CloudflareMaxContext, caps.Limits.MaxInputLength)
 }
 
@@ -273,7 +273,7 @@ func TestConvertResponse(t *testing.T) {
 		Result: CloudflareResult{
 			Response: "Test response",
 			ID:       "resp-123",
-			Model:    "@cf/meta/llama-3.1-8b-instruct",
+			Model:    "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
 			Usage: CloudflareUsage{
 				PromptTokens:     10,
 				CompletionTokens: 5,
