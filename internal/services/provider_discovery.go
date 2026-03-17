@@ -164,9 +164,9 @@ var providerMappings = []ProviderMapping{
 	{EnvVar: "BIGMODEL_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://api.z.ai/api/paas/v4", DefaultModel: "glm-4.7", Priority: 3},
 
 	// Cohere - Multiple key name variations
-	{EnvVar: "COHERE_API_KEY", ProviderType: "cohere", ProviderName: "cohere", BaseURL: "https://api.cohere.com/v2", DefaultModel: "command-r-plus", Priority: 4},
-	{EnvVar: "CO_API_KEY", ProviderType: "cohere", ProviderName: "cohere", BaseURL: "https://api.cohere.com/v2", DefaultModel: "command-r-plus", Priority: 4},
-	{EnvVar: "ApiKey_Cohere", ProviderType: "cohere", ProviderName: "cohere", BaseURL: "https://api.cohere.com/v2", DefaultModel: "command-r-plus", Priority: 4},
+	{EnvVar: "COHERE_API_KEY", ProviderType: "cohere", ProviderName: "cohere", BaseURL: "https://api.cohere.com/v2", DefaultModel: "command-a-03-2025", Priority: 4},
+	{EnvVar: "CO_API_KEY", ProviderType: "cohere", ProviderName: "cohere", BaseURL: "https://api.cohere.com/v2", DefaultModel: "command-a-03-2025", Priority: 4},
+	{EnvVar: "ApiKey_Cohere", ProviderType: "cohere", ProviderName: "cohere", BaseURL: "https://api.cohere.com/v2", DefaultModel: "command-a-03-2025", Priority: 4},
 
 	// Perplexity - Multiple key name variations
 	{EnvVar: "PERPLEXITY_API_KEY", ProviderType: "perplexity", ProviderName: "perplexity", BaseURL: "https://api.perplexity.ai", DefaultModel: "llama-3.1-sonar-large-128k-online", Priority: 4},

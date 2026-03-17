@@ -394,10 +394,12 @@ func (s *ScoringService) calculateSpeedScore(modelID string) float64 {
 
 	// Standard speed models
 	standardModels := map[string]float64{
-		"gpt-4":        7.5,
-		"claude-3":     7.5,
-		"gemini-2.5-pro": 7.5,
-		"gemini":       7.0,
+		"gpt-4":            7.5,
+		"claude-3":         7.5,
+		"gemini-2.5-pro":   7.5,
+		"gemini":           7.0,
+		"command-a":        8.0,
+		"command-r7b":      9.0,
 	}
 
 	for pattern, score := range fastModels {
@@ -428,6 +430,7 @@ func (s *ScoringService) calculateEfficiencyScore(modelID string) float64 {
 		"groq":       9.5,
 		"cloudflare": 8.5,
 		"llama":      7.5,
+		"cohere":     8.0,
 	}
 
 	for pattern, score := range efficientModels {
@@ -458,6 +461,7 @@ func (s *ScoringService) calculateCostScore(modelID string) float64 {
 		"claude-3-opus": 4.0,
 		"gemini-ultra":  4.5,
 		"gemini-2.5-pro": 5.5,
+		"cohere":        7.5,
 	}
 
 	for pattern, score := range cheapModels {
@@ -493,6 +497,9 @@ func (s *ScoringService) calculateCapabilityScore(modelID string) float64 {
 		"nemotron-3-120b":                    8.5,
 		"deepseek-r1-distill-llama-70b":      8.5,
 		"deepseek-r1-distill-qwen":           8.0,
+		"command-a-03-2025":                  9.0,
+		"command-a-reasoning":                9.0,
+		"command-a-vision":                   8.5,
 	}
 
 	// Medium capability models
@@ -505,6 +512,7 @@ func (s *ScoringService) calculateCapabilityScore(modelID string) float64 {
 		"llama-3.3-70b-versatile":       8.0,
 		"qwen-qwq-32b":                 8.0,
 		"qwq-32b":                       8.0,
+		"command-r-plus":                8.0,
 	}
 
 	for pattern, score := range highCapModels {
@@ -540,6 +548,9 @@ func (s *ScoringService) calculateRecencyScore(modelID string) float64 {
 		"llama-3.3-70b-versatile":            9.0,
 		"deepseek-r1-distill-llama-70b":      9.0,
 		"mistral-small-3.1":                  9.0,
+		"command-a-03-2025":                  9.5,
+		"command-a-reasoning":                9.5,
+		"command-a-vision":                   9.5,
 	}
 
 	// Older models

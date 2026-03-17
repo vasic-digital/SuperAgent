@@ -243,7 +243,7 @@ var ZenModels = struct {
 	O3Mini       string
 	O1Mini       string
 	GPT4O        string
-	CommandRPlus string
+	CommandA string
 }{
 	BigPickle:      "big-pickle",
 	GPT5Nano:       "gpt-5-nano",
@@ -272,7 +272,7 @@ var ZenModels = struct {
 	O3Mini:         "o3-mini",
 	O1Mini:         "o1-mini",
 	GPT4O:          "gpt-4o",
-	CommandRPlus:   "command-r-plus",
+	CommandA:       "command-a-03-2025",
 }
 
 // VerifiedLLM represents a verified LLM from LLMsVerifier
@@ -1469,7 +1469,7 @@ func (dtc *DebateTeamConfig) GetTeamSummary() map[string]interface{} {
 			"o3_mini":        ZenModels.O3Mini,
 			"o1_mini":        ZenModels.O1Mini,
 			"gpt_4o":         ZenModels.GPT4O,
-			"command_r_plus": ZenModels.CommandRPlus,
+			"command_a": ZenModels.CommandA,
 		},
 		"zen_models_count":    dtc.countZenModels(),
 		"total_zen_available": 29, // Total number of Zen models to evaluate

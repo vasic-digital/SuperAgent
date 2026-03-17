@@ -22,7 +22,7 @@ const (
 	// CohereModelsURL is the URL for listing models
 	CohereModelsURL = "https://api.cohere.com/v1/models"
 	// DefaultModel is the default Cohere model
-	DefaultModel = "command-r-plus"
+	DefaultModel = "command-a-03-2025"
 )
 
 // Provider implements the LLMProvider interface for Cohere
@@ -236,11 +236,17 @@ func NewProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig
 		APIKey:         apiKey,
 		ResponseParser: discovery.ParseCohereModelsResponse,
 		FallbackModels: []string{
-			"command-r-plus", "command-r-plus-08-2024",
-			"command-r", "command-r-08-2024",
-			"command", "command-light",
-			"command-nightly", "command-light-nightly",
-			"c4ai-aya-expanse-8b", "c4ai-aya-expanse-32b",
+			"command-a-03-2025",
+			"command-a-reasoning-08-2025",
+			"command-a-vision-07-2025",
+			"command-a-translate-08-2025",
+			"command-r7b-12-2024",
+			"command-r-plus-08-2024",
+			"command-r-08-2024",
+			"c4ai-aya-expanse-32b",
+			"c4ai-aya-vision-32b",
+			"c4ai-aya-expanse-8b",
+			"c4ai-aya-vision-8b",
 		},
 	})
 
@@ -403,19 +409,20 @@ func (p *Provider) GetCapabilities() *models.ProviderCapabilities {
 		SupportedFeatures: []string{
 			"chat", "streaming", "tools", "rag", "embeddings",
 			"rerank", "classify", "summarize", "json_mode",
+			"vision", "reasoning",
 		},
 		SupportedRequestTypes:   []string{"chat", "completion", "embed", "rerank"},
 		SupportsStreaming:       true,
 		SupportsFunctionCalling: true,
-		SupportsVision:          false,
+		SupportsVision:          true,
 		SupportsTools:           true,
 		SupportsReasoning:       true,
 		SupportsCodeCompletion:  true,
 		SupportsCodeAnalysis:    true,
 		Limits: models.ModelLimits{
-			MaxTokens:             128000,
-			MaxInputLength:        128000,
-			MaxOutputLength:       4096,
+			MaxTokens:             256000,
+			MaxInputLength:        256000,
+			MaxOutputLength:       8192,
 			MaxConcurrentRequests: 100,
 		},
 		Metadata: map[string]string{

@@ -556,7 +556,7 @@ var SupportedProviders = map[string]*ProviderTypeInfo{
 		Priority:    3,
 		EnvVars:     []string{"COHERE_API_KEY", "CO_API_KEY"},
 		BaseURL:     "https://api.cohere.com/v2/chat",
-		Models:      []string{"command-r-plus", "command-r", "command", "command-light"},
+		Models:      []string{"command-a-03-2025", "command-a-reasoning-08-2025", "command-r7b-12-2024", "command-r-plus-08-2024", "command-r-08-2024"},
 		Free:        false,
 	},
 	"ai21": {
