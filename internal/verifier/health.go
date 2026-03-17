@@ -305,6 +305,7 @@ func (s *HealthService) performHealthCheck(providerName string) bool {
 		"xai":           "https://api.x.ai/v1/models",
 		"cerebras":      "https://api.cerebras.ai/v1/models",
 		"github-models": "https://models.github.ai/inference/models",
+		"venice":        "https://api.venice.ai/api/v1/models",
 	}
 
 	endpoint, ok := endpoints[providerName]

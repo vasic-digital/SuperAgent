@@ -247,6 +247,7 @@ func (s *ModelDiscoveryService) getDiscoveryEndpoint(cred ProviderCredentials) s
 		"xai":           "https://api.x.ai/v1/models",
 		"cerebras":      "https://api.cerebras.ai/v1/models",
 		"github-models": "https://models.github.ai/inference/models",
+		"venice":        "https://api.venice.ai/api/v1/models",
 	}
 
 	if baseURL != "" {
@@ -520,7 +521,7 @@ func DefaultDiscoveryConfig() *DiscoveryConfig {
 		RequireDiversity:      true,
 		ProviderPriority: []string{
 			"openai", "anthropic", "gemini", "github-models", "groq", "together",
-			"mistral", "deepseek", "ollama", "openrouter",
+			"mistral", "deepseek", "ollama", "openrouter", "venice",
 		},
 	}
 }

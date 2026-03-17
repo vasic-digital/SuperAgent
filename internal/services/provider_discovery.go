@@ -32,6 +32,7 @@ import (
 	"dev.helix.agent/internal/llm/providers/qwen"
 	"dev.helix.agent/internal/llm/providers/replicate"
 	"dev.helix.agent/internal/llm/providers/together"
+	"dev.helix.agent/internal/llm/providers/venice"
 	"dev.helix.agent/internal/llm/providers/xai"
 	"dev.helix.agent/internal/llm/providers/zen"
 	"dev.helix.agent/internal/models"
@@ -252,6 +253,10 @@ var providerMappings = []ProviderMapping{
 	// Chutes - NOTE: inference API uses llm.chutes.ai, NOT api.chutes.ai
 	{EnvVar: "CHUTES_API_KEY", ProviderType: "chutes", ProviderName: "chutes", BaseURL: "https://llm.chutes.ai/v1/chat/completions", DefaultModel: "deepseek-ai/DeepSeek-V3", Priority: 8},
 	{EnvVar: "ApiKey_Chutes", ProviderType: "chutes", ProviderName: "chutes", BaseURL: "https://llm.chutes.ai/v1/chat/completions", DefaultModel: "deepseek-ai/DeepSeek-V3", Priority: 8},
+
+	// Venice AI
+	{EnvVar: "VENICE_API_KEY", ProviderType: "venice", ProviderName: "venice", BaseURL: "https://api.venice.ai/api/v1/chat/completions", DefaultModel: "llama-3.3-70b", Priority: 4},
+	{EnvVar: "ApiKey_Venice", ProviderType: "venice", ProviderName: "venice", BaseURL: "https://api.venice.ai/api/v1/chat/completions", DefaultModel: "llama-3.3-70b", Priority: 4},
 
 	// Tier 7: Aggregators (use as fallback)
 	// OpenRouter - Multiple key name variations
@@ -764,6 +769,14 @@ func (pd *ProviderDiscovery) createProvider(mapping ProviderMapping, apiKey stri
 			baseURL = "https://models.github.ai/inference/chat/completions"
 		}
 		return githubmodels.NewGitHubModelsProvider(apiKey, baseURL, mapping.DefaultModel), nil
+
+	case "venice":
+		// Use native Venice AI provider
+		baseURL := mapping.BaseURL
+		if baseURL == "" {
+			baseURL = "https://api.venice.ai/api/v1/chat/completions"
+		}
+		return venice.NewProvider(apiKey, baseURL, mapping.DefaultModel), nil
 
 	// For providers without native implementations, use OpenRouter as a proxy
 	case "hyperbolic", "sambanova", "siliconflow", "cloudflare", "nvidia",

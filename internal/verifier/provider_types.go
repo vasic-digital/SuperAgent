@@ -864,6 +864,19 @@ var SupportedProviders = map[string]*ProviderTypeInfo{
 		Free:        false,
 	},
 
+	// Venice AI - Privacy-focused OpenAI-compatible inference
+	"venice": {
+		Type:        "venice",
+		DisplayName: "Venice AI",
+		AuthType:    AuthTypeAPIKey,
+		Tier:        3,
+		Priority:    4,
+		EnvVars:     []string{"VENICE_API_KEY", "ApiKey_Venice"},
+		BaseURL:     "https://api.venice.ai/api/v1/chat/completions",
+		Models:      []string{"llama-3.3-70b", "llama-3.1-405b", "deepseek-r1-671b", "venice-uncensored", "qwen3-vl-235b-a22b", "qwen-2.5-vl", "zai-org-glm-4.7"},
+		Free:        false,
+	},
+
 	// Junie (JetBrains) - CLI agent with BYOK support for multiple LLM providers
 	"junie": {
 		Type:        "junie",

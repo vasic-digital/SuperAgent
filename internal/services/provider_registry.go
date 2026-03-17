@@ -52,6 +52,7 @@ import (
 	"dev.helix.agent/internal/llm/providers/siliconflow"
 	"dev.helix.agent/internal/llm/providers/together"
 	"dev.helix.agent/internal/llm/providers/upstage"
+	"dev.helix.agent/internal/llm/providers/venice"
 	"dev.helix.agent/internal/llm/providers/vulavula"
 	"dev.helix.agent/internal/llm/providers/xai"
 	"dev.helix.agent/internal/llm/providers/zai"
@@ -1848,6 +1849,12 @@ func (r *ProviderRegistry) createProviderFromConfig(cfg ProviderConfig) (llm.LLM
 			return junie.NewJunieProvider(junieConfig), nil
 		}
 		return nil, fmt.Errorf("Junie provider not available: disabled")
+
+	case "venice":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return venice.NewProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("Venice provider not available: API key missing or disabled")
 
 	default:
 		return nil, fmt.Errorf("unsupported provider type: %s", cfg.Type)
