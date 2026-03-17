@@ -1548,10 +1548,26 @@ func (r *ProviderRegistry) createProviderFromConfig(cfg ProviderConfig) (llm.LLM
 		return nil, fmt.Errorf("DeepSeek provider not available: API key missing or disabled")
 
 	case "gemini":
-		if cfg.Enabled && cfg.APIKey != "" {
-			return gemini.NewGeminiProvider(cfg.APIKey, baseURL, model), nil
+		if cfg.Enabled {
+			config := gemini.DefaultGeminiUnifiedConfig()
+			if cfg.APIKey != "" {
+				config.APIKey = cfg.APIKey
+			}
+			if model != "" {
+				config.Model = model
+			}
+			if baseURL != "" {
+				config.BaseURL = baseURL
+			}
+			provider := gemini.NewGeminiUnifiedProvider(config)
+			if config.APIKey != "" {
+				logrus.WithField("provider", cfg.Name).Info("Created Gemini provider with API key (direct API access)")
+			} else if gemini.IsGeminiCLIInstalled() {
+				logrus.WithField("provider", cfg.Name).Info("Created Gemini provider with CLI proxy")
+			}
+			return provider, nil
 		}
-		return nil, fmt.Errorf("Gemini provider not available: API key missing or disabled")
+		return nil, fmt.Errorf("Gemini provider not available: disabled")
 
 	case "qwen":
 		// Try API key first (direct API access), then ACP, then CLI proxy for OAuth

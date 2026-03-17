@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-HelixAgent is an AI-powered ensemble LLM service written in Go that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports 22 LLM providers (Claude, Chutes, DeepSeek, Gemini, Mistral, OpenRouter, Qwen, ZAI, Zen, Cerebras, Ollama, AI21, Anthropic, Cohere, Fireworks, Groq, HuggingFace, OpenAI, Perplexity, Replicate, Together, xAI) with **dynamic provider selection** based on LLMsVerifier verification scores.
+HelixAgent is an AI-powered ensemble LLM service written in Go that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports 41 LLM providers (Claude, Chutes, DeepSeek, Gemini, Mistral, OpenRouter, Qwen, ZAI, Zen, Cerebras, Ollama, AI21, Anthropic, Cohere, Fireworks, Groq, HuggingFace, OpenAI, Perplexity, Replicate, Together, xAI, Junie, Cloudflare, Codestral, Hyperbolic, Kilo, Kimi, KimiCode, Modal, Nia, NLPCloud, Novita, Nvidia, PublicAI, SambaNova, Sarvam, SiliconFlow, Upstage, VulaVula, Zhipu) with **dynamic provider selection** based on LLMsVerifier verification scores.
 
-**Module**: `dev.helix.agent` (Go 1.24+, toolchain go1.24.11)
+**Module**: `dev.helix.agent` (Go 1.25.3)
 
-Subprojects: **Toolkit** (`Toolkit/`) — Go library for AI apps. **LLMsVerifier** (`LLMsVerifier/`) — provider accuracy verification. Plus **27 extracted modules** (see [Extracted Modules](#extracted-modules-submodules) below) covering containers, challenges, concurrency, observability, auth, storage, streaming, security, vector databases, embeddings, database, cache, messaging, formatters, MCP, RAG, memory, optimization, plugins, event bus, agentic workflows, LLM operations, self-improvement, planning algorithms, benchmarking, **HelixMemory** (unified cognitive memory engine), and **HelixSpecifier** (spec-driven development fusion engine).
+Subprojects: **Toolkit** (`Toolkit/`) — Go library for AI apps. **LLMsVerifier** (`LLMsVerifier/`) — provider accuracy verification. Plus **35 extracted modules** (see [Extracted Modules](#extracted-modules-submodules) below) covering containers, challenges, concurrency, observability, auth, storage, streaming, security, vector databases, embeddings, database, cache, messaging, formatters, MCP, RAG, memory, optimization, plugins, event bus, agentic workflows, LLM operations, self-improvement, planning algorithms, benchmarking, background tasks, build checks, conversation context, debate orchestration, LLM provider interface, data models, skill registry, tool schemas, **HelixMemory** (unified cognitive memory engine), and **HelixSpecifier** (spec-driven development fusion engine).
 
 ## Mandatory Development Standards
 
@@ -142,11 +142,13 @@ make monitoring-reset-circuits / force-health-check
 
 ## Architecture
 
-### Entry Points
+### Entry Points (7 apps)
 - `cmd/helixagent/` — Main app | `cmd/api/` — API server | `cmd/grpc-server/` — gRPC
+- `cmd/cognee-mock/` — Cognee mock server | `cmd/sanity-check/` — Sanity checker
+- `cmd/mcp-bridge/` — MCP bridge | `cmd/generate-constitution/` — Constitution generator
 
 ### Core Packages (`internal/`)
-- `llm/providers/` — 23 dedicated LLM providers (claude, chutes, deepseek, gemini, mistral, openrouter, qwen, zai, zen, cerebras, ollama, ai21, anthropic, cohere, fireworks, groq, huggingface, openai, perplexity, replicate, together, xai, junie) + generic OpenAI-compatible provider for 17+ additional providers (nvidia, sambanova, hyperbolic, novita, siliconflow, kimi, upstage, etc.)
+- `llm/providers/` — 41 dedicated LLM providers (ai21, anthropic, cerebras, chutes, claude, cloudflare, codestral, cohere, deepseek, fireworks, gemini (unified: API+CLI+ACP), groq, huggingface, hyperbolic, junie, kilo, kimi, kimicode, mistral, modal, nia, nlpcloud, novita, nvidia, ollama, openai, openrouter, perplexity, publicai, qwen, replicate, sambanova, sarvam, siliconflow, together, upstage, vulavula, xai, zai, zen, zhipu) + generic OpenAI-compatible provider
 - `llm/providers/generic/` — Generic OpenAI-compatible provider for verification of providers without dedicated implementations
 - `llm/discovery/` — 3-tier dynamic model discovery (Provider API → models.dev → hardcoded fallback)
 - `llm/ensemble.go` — Ensemble orchestration
@@ -214,6 +216,16 @@ Each module is an independent Go module with its own go.mod, tests, CLAUDE.md, A
 **Specification (Phase 7 — spec-driven development):**
 - **HelixSpecifier** (`HelixSpecifier/`, `digital.vasic.helixspecifier`) — Spec-Driven Development Fusion Engine: 3-pillar architecture (SpecKit 7-phase SDD, Superpowers TDD/subagents, GSD milestones), adaptive ceremony scaling, effort classification, CLI agent adapters, 10 power features, spec memory, DebateFunc injection for real multi-LLM debate, 3-pillar fusion (SpecKit + Superpowers + GSD), intent classifier. 27 packages (21 core + 6 test suites). 835+ tests (unit, integration, E2E, security, stress, benchmark, automation). Active by default; opt out with `-tags nohelixspecifier`.
 
+**Core Abstractions (Phase 8 — shared types and interfaces):**
+- **LLMProvider** (`LLMProvider/`, `digital.vasic.llmprovider`) — Core LLM provider interface and utilities: circuit breakers, health monitoring, retry logic, lazy loading patterns.
+- **Models** (`Models/`, `digital.vasic.models`) — Core data types and structures for AI/LLM applications, agent systems, and related services.
+- **ToolSchema** (`ToolSchema/`, `digital.vasic.toolschema`) — Tool schema definition, validation, and execution: unified interface for AI agent tool systems with safety and validation.
+- **SkillRegistry** (`SkillRegistry/`, `digital.vasic.skillregistry`) — CLI agent skill registration and management: skill definitions, capabilities, configuration templates, multi-agent coordination.
+- **BackgroundTasks** (`BackgroundTasks/`, `digital.vasic.background`) — Background task processing: persistence, resource monitoring, stuck detection, event publishing.
+- **ConversationContext** (`ConversationContext/`, `digital.vasic.conversation`) — Conversation context management: compression, infinite context via event sourcing, Kafka replay, LLM-based summarization.
+- **DebateOrchestrator** (`DebateOrchestrator/`, `digital.vasic.debate`) — Multi-agent AI debate framework: consensus-building, Reflexion, adversarial dynamics, dehallucination, self-evolvement, 8-phase protocol.
+- **BuildCheck** (`BuildCheck/`, `digital.vasic.buildcheck`) — Content-based change detection for container image builds: SHA256 hash comparison, rebuild determination.
+
 **Pre-existing:**
 - **Containers** (`Containers/`, `digital.vasic.containers`) — Generic container orchestration: runtime abstraction (Docker/Podman/K8s), health checking, compose orchestration, lifecycle management. 12 packages.
 - **Challenges** (`Challenges/`, `digital.vasic.challenges`) — Generic challenge framework: assertion engine (19 evaluators), registry, runner, reporting, monitoring, metrics, plugin system v2.0.0, userflow testing (21 adapters across 8 interfaces: browser/mobile/desktop/API/gRPC/WebSocket/build), Panoptic vision/recorder/testgen/error-analyzer adapters, AI test generation challenges. 16 packages.
@@ -277,9 +289,10 @@ OAuth/free providers use CLI proxies when direct API access is restricted:
 - **Claude**: `claude -p --output-format json` (session continuity) — `internal/llm/providers/claude/claude_cli.go`
 - **Qwen**: ACP via `qwen --acp` (JSON-RPC 2.0), fallback CLI — `internal/llm/providers/qwen/qwen_acp.go`
 - **Zen**: HTTP server `opencode serve :4096`, fallback CLI — `internal/llm/providers/zen/zen_http.go`
+- **Gemini**: `gemini -p --output-format json` (headless mode), ACP via `gemini --experimental-acp` — `internal/llm/providers/gemini/gemini_cli.go`
 - **Junie**: CLI mode with `--output-format json` and ACP mode via `junie --acp` — `internal/llm/providers/junie/junie_cli.go`
 
-Triggered when: `*_USE_OAUTH_CREDENTIALS=true` + no API key, or no `OPENCODE_API_KEY` for Zen, or `JUNIE_API_KEY` for Junie.
+Triggered when: `*_USE_OAUTH_CREDENTIALS=true` + no API key, or no `OPENCODE_API_KEY` for Zen, or `JUNIE_API_KEY` for Junie, or no `GEMINI_API_KEY` for Gemini CLI/ACP.
 
 **OAuth limitation**: CLI OAuth tokens are product-restricted (cannot use for general API). Get proper API keys from console.anthropic.com / dashscope.aliyuncs.com, or use CLI proxy.
 
@@ -434,7 +447,7 @@ Fallback: routes to strongest LLM by score, falls back on failure.
 
 ## Technology Stack
 
-Gin v1.11.0, PostgreSQL 15 (pgx/v5), Redis 7, testify v1.11.1, Prometheus/Grafana, OpenTelemetry. Supports Docker and Podman (`./scripts/container-runtime.sh`).
+Gin v1.12.0, PostgreSQL 15 (pgx/v5), Redis 7, testify v1.11.1, Prometheus/Grafana, OpenTelemetry. Supports Docker and Podman (`./scripts/container-runtime.sh`).
 
 ## Unified Service Management
 

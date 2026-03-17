@@ -380,14 +380,17 @@ func (s *ScoringService) calculateSpeedScore(modelID string) float64 {
 		"groq":           9.0,
 		"gpt-3.5":        8.0,
 		"claude-3-haiku": 8.5,
-		"gemini-flash":   8.5,
+		"gemini-2.5-flash": 9.0,
+		"gemini-2.0-flash": 8.5,
+		"gemini-flash":     8.5,
 	}
 
 	// Standard speed models
 	standardModels := map[string]float64{
-		"gpt-4":    7.5,
-		"claude-3": 7.5,
-		"gemini":   7.0,
+		"gpt-4":        7.5,
+		"claude-3":     7.5,
+		"gemini-2.5-pro": 7.5,
+		"gemini":       7.0,
 	}
 
 	for pattern, score := range fastModels {
@@ -410,10 +413,12 @@ func (s *ScoringService) calculateSpeedScore(modelID string) float64 {
 func (s *ScoringService) calculateEfficiencyScore(modelID string) float64 {
 	// Efficient models
 	efficientModels := map[string]float64{
-		"gpt-4o":     9.0,
-		"claude-3.5": 9.0,
-		"gemini-pro": 8.0,
-		"llama":      7.5,
+		"gpt-4o":          9.0,
+		"claude-3.5":      9.0,
+		"gemini-2.5":      9.0,
+		"gemini-2.0":      8.5,
+		"gemini-pro":      8.0,
+		"llama":           7.5,
 	}
 
 	for pattern, score := range efficientModels {
@@ -441,6 +446,7 @@ func (s *ScoringService) calculateCostScore(modelID string) float64 {
 		"gpt-4":         5.0,
 		"claude-3-opus": 4.0,
 		"gemini-ultra":  4.5,
+		"gemini-2.5-pro": 5.5,
 	}
 
 	for pattern, score := range cheapModels {
@@ -463,17 +469,20 @@ func (s *ScoringService) calculateCostScore(modelID string) float64 {
 func (s *ScoringService) calculateCapabilityScore(modelID string) float64 {
 	// High capability models
 	highCapModels := map[string]float64{
-		"gpt-4":         9.5,
-		"gpt-4o":        9.5,
-		"claude-3-opus": 9.5,
-		"claude-3.5":    9.0,
-		"gemini-ultra":  9.0,
+		"gpt-4":           9.5,
+		"gpt-4o":          9.5,
+		"claude-3-opus":   9.5,
+		"claude-3.5":      9.0,
+		"gemini-2.5-pro":  9.5,
+		"gemini-2.5-flash": 9.0,
+		"gemini-ultra":    9.0,
 	}
 
 	// Medium capability models
 	medCapModels := map[string]float64{
 		"gpt-3.5":         7.0,
 		"claude-3-sonnet": 8.0,
+		"gemini-2.0-flash": 8.5,
 		"gemini-pro":      8.0,
 		"llama-3":         7.5,
 	}
@@ -498,10 +507,12 @@ func (s *ScoringService) calculateCapabilityScore(modelID string) float64 {
 func (s *ScoringService) calculateRecencyScore(modelID string) float64 {
 	// Recent models
 	recentModels := map[string]float64{
-		"gpt-4o":      9.5,
-		"gpt-4-turbo": 9.0,
-		"claude-3.5":  9.0,
-		"gemini-1.5":  9.0,
+		"gpt-4o":        9.5,
+		"gpt-4-turbo":   9.0,
+		"claude-3.5":    9.0,
+		"gemini-2.5":    9.5,
+		"gemini-2.0":    9.0,
+		"gemini-1.5":    8.0,
 	}
 
 	// Older models

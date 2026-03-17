@@ -16,6 +16,9 @@ vendor/
 coverage/
 *.log
 .env*
+!.env.example
+!.env.mcp.example
+!.env.mcps.example
 *.swp
 *.tmp
 *.bak
@@ -88,3 +91,4 @@ releases/web/
 
 # CLI agent local memory/state directories
 .junie/
+.gemini/

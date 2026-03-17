@@ -308,8 +308,8 @@ func TestModelDiscoveryService_getDiscoveryEndpoint(t *testing.T) {
 			expectedPrefix: "https://api.anthropic.com",
 		},
 		{
-			name:           "google",
-			cred:           ProviderCredentials{ProviderName: "google"},
+			name:           "gemini",
+			cred:           ProviderCredentials{ProviderName: "gemini"},
 			expectedPrefix: "https://generativelanguage.googleapis.com",
 		},
 		{
@@ -479,7 +479,7 @@ func TestModelDiscoveryService_selectTopModels(t *testing.T) {
 	models := []*DiscoveredModel{
 		{ModelID: "model1", Provider: "openai", OverallScore: 9.5},
 		{ModelID: "model2", Provider: "anthropic", OverallScore: 9.0},
-		{ModelID: "model3", Provider: "google", OverallScore: 8.5},
+		{ModelID: "model3", Provider: "gemini", OverallScore: 8.5},
 		{ModelID: "model4", Provider: "openai", OverallScore: 8.0}, // Same provider as model1
 		{ModelID: "model5", Provider: "groq", OverallScore: 6.0},   // Below min score
 	}

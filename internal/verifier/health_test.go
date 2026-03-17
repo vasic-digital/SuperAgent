@@ -629,7 +629,7 @@ func TestCircuitBreaker_Call_WithError(t *testing.T) {
 func TestHealthService_MultipleProviders(t *testing.T) {
 	svc := NewHealthService(nil)
 
-	providers := []string{"openai", "anthropic", "google", "groq"}
+	providers := []string{"openai", "anthropic", "gemini", "groq"}
 	for _, p := range providers {
 		svc.AddProvider(p, p+" Provider")
 	}
@@ -691,7 +691,7 @@ func TestHealthService_PerformHealthCheck_KnownProviders(t *testing.T) {
 
 	// These will fail because we're not actually reaching the endpoints
 	// but they test the code path
-	providers := []string{"openai", "anthropic", "google", "groq", "together", "mistral", "deepseek", "openrouter", "xai", "cerebras"}
+	providers := []string{"openai", "anthropic", "gemini", "groq", "together", "mistral", "deepseek", "openrouter", "xai", "cerebras"}
 
 	for _, p := range providers {
 		// Just verify no panic - actual network calls will fail

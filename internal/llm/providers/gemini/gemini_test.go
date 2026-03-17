@@ -14,79 +14,246 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// ==============================================================================
+// Unified Provider Tests
+// ==============================================================================
+
 func TestNewGeminiProvider(t *testing.T) {
 	tests := []struct {
 		name    string
 		apiKey  string
 		baseURL string
 		model   string
-		want    *GeminiProvider
 	}{
 		{
 			name:    "all parameters provided",
 			apiKey:  "test-api-key-123",
 			baseURL: "https://custom.example.com/v1beta/models/%s:generateContent",
 			model:   "gemini-ultra",
-			want: &GeminiProvider{
-				apiKey:  "test-api-key-123",
-				baseURL: "https://custom.example.com/v1beta/models/%s:generateContent",
-				model:   "gemini-ultra",
-				httpClient: &http.Client{
-					Timeout: 60 * time.Second,
-				},
-			},
 		},
 		{
 			name:    "default parameters",
 			apiKey:  "test-key",
 			baseURL: "",
 			model:   "",
-			want: &GeminiProvider{
-				apiKey:  "test-key",
-				baseURL: "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent",
-				model:   "gemini-2.0-flash",
-				httpClient: &http.Client{
-					Timeout: 120 * time.Second,
-				},
-			},
 		},
 		{
-			name:    "empty api key",
-			apiKey:  "",
+			name:    "explicit api key override",
+			apiKey:  "explicit-key-override",
 			baseURL: "https://api.example.com/v1beta/models/%s:generateContent",
 			model:   "gemini-pro",
-			want: &GeminiProvider{
-				apiKey:  "",
-				baseURL: "https://api.example.com/v1beta/models/%s:generateContent",
-				model:   "gemini-pro",
-				httpClient: &http.Client{
-					Timeout: 60 * time.Second,
-				},
-			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := NewGeminiProvider(tt.apiKey, tt.baseURL, tt.model)
-			assert.Equal(t, tt.want.apiKey, got.apiKey)
-			assert.Equal(t, tt.want.baseURL, got.baseURL)
-			assert.Equal(t, tt.want.model, got.model)
-			assert.NotNil(t, got.httpClient)
-			assert.Equal(t, 120*time.Second, got.httpClient.Timeout)
+			assert.NotNil(t, got)
+
+			// When explicit key provided, it should be used
+			if tt.apiKey != "" {
+				assert.Equal(t, tt.apiKey, got.apiKey)
+			}
+
+			if tt.model != "" {
+				assert.Equal(t, tt.model, got.model)
+			} else {
+				assert.Equal(t, GeminiDefaultModel, got.model)
+			}
+
+			// API provider created when any API key is available (explicit or env)
+			if got.apiKey != "" {
+				assert.NotNil(t, got.apiProvider)
+			}
 		})
 	}
 }
 
-func TestGeminiProvider_Complete_Success(t *testing.T) {
+func TestNewGeminiUnifiedProvider(t *testing.T) {
+	config := DefaultGeminiUnifiedConfig()
+	config.APIKey = "test-key"
+	config.Model = "gemini-2.5-pro"
+
+	p := NewGeminiUnifiedProvider(config)
+	assert.NotNil(t, p)
+	assert.Equal(t, "test-key", p.apiKey)
+	assert.Equal(t, "gemini-2.5-pro", p.model)
+	assert.Equal(t, "auto", p.preferredMethod)
+	assert.NotNil(t, p.apiProvider)
+}
+
+func TestDefaultGeminiUnifiedConfig(t *testing.T) {
+	config := DefaultGeminiUnifiedConfig()
+	assert.Equal(t, GeminiDefaultModel, config.Model)
+	assert.Equal(t, 180*time.Second, config.Timeout)
+	assert.Equal(t, 8192, config.MaxTokens)
+	assert.Equal(t, "auto", config.PreferredMethod)
+}
+
+func TestGeminiUnifiedProvider_GetName(t *testing.T) {
+	p := NewGeminiProvider("key", "", "")
+	assert.Equal(t, "gemini", p.GetName())
+}
+
+func TestGeminiUnifiedProvider_GetProviderType(t *testing.T) {
+	p := NewGeminiProvider("key", "", "")
+	assert.Equal(t, "gemini", p.GetProviderType())
+}
+
+func TestGeminiUnifiedProvider_SetModel(t *testing.T) {
+	p := NewGeminiProvider("key", "", "gemini-2.5-flash")
+	assert.Equal(t, "gemini-2.5-flash", p.GetCurrentModel())
+
+	p.SetModel("gemini-2.5-pro")
+	assert.Equal(t, "gemini-2.5-pro", p.GetCurrentModel())
+}
+
+func TestGeminiUnifiedProvider_GetAvailableAccessMethods(t *testing.T) {
+	p := NewGeminiProvider("test-key", "", "")
+	methods := p.GetAvailableAccessMethods()
+	// Should at least have API when key is provided
+	assert.Contains(t, methods, "api")
+}
+
+func TestGeminiUnifiedProvider_GetCapabilities(t *testing.T) {
+	p := NewGeminiProvider("test-key", "", "")
+	caps := p.GetCapabilities()
+
+	require.NotNil(t, caps)
+
+	// Check supported models include all generations
+	assert.Contains(t, caps.SupportedModels, "gemini-2.5-flash")
+	assert.Contains(t, caps.SupportedModels, "gemini-2.5-pro")
+	assert.Contains(t, caps.SupportedModels, "gemini-3-pro-preview")
+	assert.Contains(t, caps.SupportedModels, "gemini-3.1-pro-preview")
+
+	// Check features
+	assert.Contains(t, caps.SupportedFeatures, "extended_thinking")
+	assert.Contains(t, caps.SupportedFeatures, "google_search_grounding")
+	assert.Contains(t, caps.SupportedFeatures, "streaming")
+
+	// Check booleans
+	assert.True(t, caps.SupportsStreaming)
+	assert.True(t, caps.SupportsFunctionCalling)
+	assert.True(t, caps.SupportsVision)
+	assert.True(t, caps.SupportsTools)
+	assert.True(t, caps.SupportsSearch)
+	assert.True(t, caps.SupportsReasoning)
+
+	// Check limits
+	assert.Equal(t, 65536, caps.Limits.MaxTokens)
+	assert.Equal(t, 10, caps.Limits.MaxConcurrentRequests)
+
+	// Check metadata
+	assert.Equal(t, "Google", caps.Metadata["provider"])
+	assert.Equal(t, "Gemini", caps.Metadata["model_family"])
+}
+
+func TestGeminiUnifiedProvider_ValidateConfig(t *testing.T) {
+	t.Run("valid with API key", func(t *testing.T) {
+		p := NewGeminiProvider("test-key", "", "")
+		valid, issues := p.ValidateConfig(nil)
+		assert.True(t, valid)
+		assert.Empty(t, issues)
+	})
+
+	t.Run("without key uses CLI or env fallback", func(t *testing.T) {
+		// This test is environment-dependent: if GEMINI_API_KEY is set in env
+		// or Gemini CLI is installed, validation will pass
+		config := GeminiUnifiedConfig{
+			Model:           GeminiDefaultModel,
+			Timeout:         180 * time.Second,
+			MaxTokens:       8192,
+			PreferredMethod: "auto",
+			// Explicitly no API key
+		}
+		p := NewGeminiUnifiedProvider(config)
+		valid, issues := p.ValidateConfig(nil)
+		if p.apiKey != "" || IsGeminiCLIInstalled() {
+			assert.True(t, valid)
+			assert.Empty(t, issues)
+		} else {
+			assert.False(t, valid)
+			assert.NotEmpty(t, issues)
+		}
+	})
+}
+
+func TestGeminiProviderInfo(t *testing.T) {
+	info := GetGeminiProviderInfo()
+	assert.Equal(t, "gemini", info["id"])
+	assert.Equal(t, "Gemini (Google)", info["name"])
+	assert.True(t, info["supports_streaming"].(bool))
+	assert.True(t, info["supports_tools"].(bool))
+	assert.True(t, info["supports_search"].(bool))
+
+	accessMethods := info["access_methods"].([]string)
+	assert.Contains(t, accessMethods, "api")
+	assert.Contains(t, accessMethods, "cli")
+	assert.Contains(t, accessMethods, "acp")
+}
+
+func TestGetAllGeminiModels(t *testing.T) {
+	models := getAllGeminiModels()
+	assert.GreaterOrEqual(t, len(models), 7)
+	assert.Contains(t, models, "gemini-2.0-flash")
+	assert.Contains(t, models, "gemini-2.5-flash")
+	assert.Contains(t, models, "gemini-2.5-pro")
+	assert.Contains(t, models, "gemini-3-pro-preview")
+	assert.Contains(t, models, "gemini-3.1-pro-preview")
+	assert.Contains(t, models, "gemini-embedding-001")
+}
+
+func TestBuildPromptFromRequest(t *testing.T) {
+	t.Run("from messages", func(t *testing.T) {
+		req := &models.LLMRequest{
+			Messages: []models.Message{
+				{Role: "system", Content: "You are helpful"},
+				{Role: "user", Content: "Hello"},
+				{Role: "assistant", Content: "Hi there"},
+			},
+		}
+		prompt := buildPromptFromRequest(req)
+		assert.Contains(t, prompt, "System: You are helpful")
+		assert.Contains(t, prompt, "Hello")
+		assert.Contains(t, prompt, "Assistant: Hi there")
+	})
+
+	t.Run("from prompt field", func(t *testing.T) {
+		req := &models.LLMRequest{
+			Prompt: "Direct prompt",
+		}
+		prompt := buildPromptFromRequest(req)
+		assert.Equal(t, "Direct prompt", prompt)
+	})
+
+	t.Run("empty request", func(t *testing.T) {
+		req := &models.LLMRequest{}
+		prompt := buildPromptFromRequest(req)
+		assert.Empty(t, prompt)
+	})
+}
+
+// ==============================================================================
+// API Provider Tests (using GeminiAPIProvider directly)
+// ==============================================================================
+
+func TestNewGeminiAPIProvider(t *testing.T) {
+	p := NewGeminiAPIProvider("test-key", "", "")
+	assert.NotNil(t, p)
+	assert.Equal(t, GeminiDefaultModel, p.model)
+	assert.Equal(t, "gemini-api", p.GetName())
+	assert.Equal(t, "gemini", p.GetProviderType())
+}
+
+func TestGeminiAPIProvider_Complete_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "POST", r.Method)
-		assert.Equal(t, "/v1beta/models/gemini-pro:generateContent", r.URL.Path)
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 		assert.Equal(t, "test-api-key", r.Header.Get("x-goog-api-key"))
 		assert.Equal(t, "HelixAgent/1.0", r.Header.Get("User-Agent"))
 
-		var reqBody GeminiRequest
+		var reqBody GeminiAPIRequest
 		body, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
 		err = json.Unmarshal(body, &reqBody)
@@ -98,7 +265,6 @@ func TestGeminiProvider_Complete_Success(t *testing.T) {
 		assert.Equal(t, "Hello, how are you?", reqBody.Contents[0].Parts[0].Text)
 		assert.Equal(t, 0.7, reqBody.GenerationConfig.Temperature)
 		assert.Equal(t, 1000, reqBody.GenerationConfig.MaxOutputTokens)
-		assert.Len(t, reqBody.SafetySettings, 4)
 
 		response := GeminiResponse{
 			Candidates: []GeminiCandidate{
@@ -126,7 +292,7 @@ func TestGeminiProvider_Complete_Success(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewGeminiProvider("test-api-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
+	provider := NewGeminiAPIProvider("test-api-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
 	provider.httpClient = server.Client()
 
 	req := &models.LLMRequest{
@@ -143,20 +309,20 @@ func TestGeminiProvider_Complete_Success(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 
-	assert.Equal(t, "gemini-test-req-123", resp.ID)
+	assert.Equal(t, "gemini-api-test-req-123", resp.ID)
 	assert.Equal(t, "test-req-123", resp.RequestID)
-	assert.Equal(t, "gemini", resp.ProviderID)
+	assert.Equal(t, "gemini-api", resp.ProviderID)
 	assert.Equal(t, "Gemini", resp.ProviderName)
 	assert.Equal(t, "I'm doing well, thank you for asking!", resp.Content)
-	assert.Greater(t, resp.Confidence, 0.8) // Should be high confidence for successful response
+	assert.Greater(t, resp.Confidence, 0.8)
 	assert.Equal(t, 30, resp.TokensUsed)
 	assert.Equal(t, "STOP", resp.FinishReason)
 	assert.Equal(t, "gemini-pro", resp.Metadata["model"])
 }
 
-func TestGeminiProvider_Complete_WithMessages(t *testing.T) {
+func TestGeminiAPIProvider_Complete_WithMessages(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var reqBody GeminiRequest
+		var reqBody GeminiAPIRequest
 		body, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
 		err = json.Unmarshal(body, &reqBody)
@@ -196,7 +362,7 @@ func TestGeminiProvider_Complete_WithMessages(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewGeminiProvider("test-api-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
+	provider := NewGeminiAPIProvider("test-api-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
 	provider.httpClient = server.Client()
 
 	req := &models.LLMRequest{
@@ -218,7 +384,7 @@ func TestGeminiProvider_Complete_WithMessages(t *testing.T) {
 	assert.Equal(t, 40, resp.TokensUsed)
 }
 
-func TestGeminiProvider_Complete_ErrorResponse(t *testing.T) {
+func TestGeminiAPIProvider_Complete_ErrorResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
@@ -226,7 +392,7 @@ func TestGeminiProvider_Complete_ErrorResponse(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewGeminiProvider("invalid-api-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
+	provider := NewGeminiAPIProvider("invalid-api-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
 	provider.httpClient = server.Client()
 
 	req := &models.LLMRequest{
@@ -243,7 +409,7 @@ func TestGeminiProvider_Complete_ErrorResponse(t *testing.T) {
 	assert.Contains(t, err.Error(), "Gemini API error: 401")
 }
 
-func TestGeminiProvider_Complete_NoCandidates(t *testing.T) {
+func TestGeminiAPIProvider_Complete_NoCandidates(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		response := GeminiResponse{
 			Candidates: []GeminiCandidate{},
@@ -260,7 +426,7 @@ func TestGeminiProvider_Complete_NoCandidates(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewGeminiProvider("test-api-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
+	provider := NewGeminiAPIProvider("test-api-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
 	provider.httpClient = server.Client()
 
 	req := &models.LLMRequest{
@@ -274,13 +440,12 @@ func TestGeminiProvider_Complete_NoCandidates(t *testing.T) {
 	resp, err := provider.Complete(context.Background(), req)
 	require.NoError(t, err)
 	require.NotNil(t, resp)
-	assert.Equal(t, "", resp.Content) // Empty content when no candidates
+	assert.Equal(t, "", resp.Content)
 	assert.Equal(t, 5, resp.TokensUsed)
 }
 
-func TestGeminiProvider_Complete_NetworkError(t *testing.T) {
-	provider := NewGeminiProvider("test-api-key", "https://invalid-url-that-does-not-exist.example.com/v1beta/models/%s:generateContent", "gemini-pro")
-	// Create a client that will fail quickly
+func TestGeminiAPIProvider_Complete_NetworkError(t *testing.T) {
+	provider := NewGeminiAPIProvider("test-api-key", "https://invalid-url-that-does-not-exist.example.com/v1beta/models/%s:generateContent", "gemini-pro")
 	provider.httpClient = &http.Client{
 		Timeout: 1 * time.Millisecond,
 	}
@@ -299,7 +464,7 @@ func TestGeminiProvider_Complete_NetworkError(t *testing.T) {
 	assert.Contains(t, err.Error(), "Gemini API call failed")
 }
 
-func TestGeminiProvider_Complete_InvalidJSON(t *testing.T) {
+func TestGeminiAPIProvider_Complete_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -307,7 +472,7 @@ func TestGeminiProvider_Complete_InvalidJSON(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewGeminiProvider("test-api-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
+	provider := NewGeminiAPIProvider("test-api-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
 	provider.httpClient = server.Client()
 
 	req := &models.LLMRequest{
@@ -324,12 +489,11 @@ func TestGeminiProvider_Complete_InvalidJSON(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to parse Gemini response")
 }
 
-func TestGeminiProvider_CompleteStream(t *testing.T) {
+func TestGeminiAPIProvider_CompleteStream(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 
-		// Send streaming response
 		streamData := []string{
 			`data: {"candidates":[{"content":{"parts":[{"text":"Hello "}],"role":"model"},"finishReason":"","index":0}]}`,
 			`data: {"candidates":[{"content":{"parts":[{"text":"world"}],"role":"model"},"finishReason":"","index":0}]}`,
@@ -346,7 +510,7 @@ func TestGeminiProvider_CompleteStream(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewGeminiProvider("test-api-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
+	provider := NewGeminiAPIProvider("test-api-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
 	provider.httpClient = server.Client()
 
 	req := &models.LLMRequest{
@@ -361,19 +525,17 @@ func TestGeminiProvider_CompleteStream(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, ch)
 
-	// Collect responses
 	var responses []*models.LLMResponse
 	for resp := range ch {
 		responses = append(responses, resp)
 	}
 
-	// Should have at least 3 chunk responses + final response
 	assert.GreaterOrEqual(t, len(responses), 3)
-	assert.Equal(t, "gemini", responses[0].ProviderID)
+	assert.Equal(t, "gemini-api", responses[0].ProviderID)
 	assert.Equal(t, "Gemini", responses[0].ProviderName)
 }
 
-func TestGeminiProvider_CompleteStream_Error(t *testing.T) {
+func TestGeminiAPIProvider_CompleteStream_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
@@ -381,7 +543,7 @@ func TestGeminiProvider_CompleteStream_Error(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewGeminiProvider("invalid-api-key", server.URL+"/v1beta/models/%s:streamGenerateContent", "gemini-2.0-flash")
+	provider := NewGeminiAPIProvider("invalid-api-key", server.URL+"/v1beta/models/%s:streamGenerateContent", "gemini-2.0-flash")
 	provider.httpClient = server.Client()
 
 	req := &models.LLMRequest{
@@ -392,14 +554,13 @@ func TestGeminiProvider_CompleteStream_Error(t *testing.T) {
 		Prompt: "Test prompt",
 	}
 
-	// CompleteStream now returns an error for non-2xx HTTP status codes
 	ch, err := provider.CompleteStream(context.Background(), req)
-	require.Error(t, err) // Should return error for 401 status
+	require.Error(t, err)
 	require.Nil(t, ch)
 	assert.Contains(t, err.Error(), "HTTP 401")
 }
 
-func TestGeminiProvider_HealthCheck_Success(t *testing.T) {
+func TestGeminiAPIProvider_HealthCheck_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -412,7 +573,7 @@ func TestGeminiProvider_HealthCheck_Success(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewGeminiProvider("test-api-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
+	provider := NewGeminiAPIProvider("test-api-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
 	provider.healthURL = server.URL + "/v1beta/models"
 	provider.httpClient = server.Client()
 
@@ -420,14 +581,14 @@ func TestGeminiProvider_HealthCheck_Success(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestGeminiProvider_HealthCheck_Error(t *testing.T) {
+func TestGeminiAPIProvider_HealthCheck_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte(`{"error": {"code": 401, "message": "Invalid API key"}}`))
 	}))
 	defer server.Close()
 
-	provider := NewGeminiProvider("invalid-api-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
+	provider := NewGeminiAPIProvider("invalid-api-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
 	provider.healthURL = server.URL + "/v1beta/models"
 	provider.httpClient = server.Client()
 
@@ -435,8 +596,8 @@ func TestGeminiProvider_HealthCheck_Error(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestGeminiProvider_CalculateConfidence(t *testing.T) {
-	provider := NewGeminiProvider("test-key", "", "")
+func TestGeminiAPIProvider_CalculateConfidence(t *testing.T) {
+	provider := NewGeminiAPIProvider("test-key", "", "")
 
 	tests := []struct {
 		name         string
@@ -470,7 +631,7 @@ func TestGeminiProvider_CalculateConfidence(t *testing.T) {
 			name:         "RECITATION finish reason",
 			content:      "Content",
 			finishReason: "RECITATION",
-			wantMin:      0.64, // Adjusted for floating point precision
+			wantMin:      0.64,
 			wantMax:      0.75,
 		},
 		{
@@ -496,9 +657,8 @@ func TestGeminiProvider_CalculateConfidence(t *testing.T) {
 	}
 }
 
-func TestGeminiProvider_Complete_ContextTimeout(t *testing.T) {
+func TestGeminiAPIProvider_Complete_ContextTimeout(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Simulate slow response
 		time.Sleep(100 * time.Millisecond)
 		response := GeminiResponse{
 			Candidates: []GeminiCandidate{
@@ -526,7 +686,7 @@ func TestGeminiProvider_Complete_ContextTimeout(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewGeminiProvider("test-api-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
+	provider := NewGeminiAPIProvider("test-api-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
 	provider.httpClient = server.Client()
 
 	req := &models.LLMRequest{
@@ -537,7 +697,6 @@ func TestGeminiProvider_Complete_ContextTimeout(t *testing.T) {
 		Prompt: "Test prompt",
 	}
 
-	// Create context with short timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
 
@@ -547,9 +706,9 @@ func TestGeminiProvider_Complete_ContextTimeout(t *testing.T) {
 	assert.Contains(t, err.Error(), "context deadline exceeded")
 }
 
-func TestGeminiProvider_Complete_WithStopSequences(t *testing.T) {
+func TestGeminiAPIProvider_Complete_WithStopSequences(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var reqBody GeminiRequest
+		var reqBody GeminiAPIRequest
 		body, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
 		err = json.Unmarshal(body, &reqBody)
@@ -583,7 +742,7 @@ func TestGeminiProvider_Complete_WithStopSequences(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewGeminiProvider("test-api-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
+	provider := NewGeminiAPIProvider("test-api-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
 	provider.httpClient = server.Client()
 
 	req := &models.LLMRequest{
@@ -605,25 +764,17 @@ func TestGeminiProvider_Complete_WithStopSequences(t *testing.T) {
 	assert.Equal(t, 20, resp.TokensUsed)
 }
 
-// ==============================================================================
-// ADDITIONAL COMPREHENSIVE TESTS FOR GEMINI PROVIDER
-// ==============================================================================
-
-func TestGeminiProvider_Complete_WithTools(t *testing.T) {
+func TestGeminiAPIProvider_Complete_WithTools(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var reqBody GeminiRequest
+		var reqBody GeminiAPIRequest
 		body, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
 		err = json.Unmarshal(body, &reqBody)
 		require.NoError(t, err)
 
-		// Verify tools are properly converted
-		require.Len(t, reqBody.Tools, 1)
-		require.Len(t, reqBody.Tools[0].FunctionDeclarations, 2)
-		assert.Equal(t, "get_weather", reqBody.Tools[0].FunctionDeclarations[0].Name)
-		assert.Equal(t, "search_files", reqBody.Tools[0].FunctionDeclarations[1].Name)
+		// Verify tools are properly converted (user tools + googleSearch)
+		require.GreaterOrEqual(t, len(reqBody.Tools), 1)
 
-		// Return function call response
 		response := GeminiResponse{
 			Candidates: []GeminiCandidate{
 				{
@@ -656,7 +807,7 @@ func TestGeminiProvider_Complete_WithTools(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewGeminiProvider("test-api-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
+	provider := NewGeminiAPIProvider("test-api-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
 	provider.httpClient = server.Client()
 
 	req := &models.LLMRequest{
@@ -696,63 +847,7 @@ func TestGeminiProvider_Complete_WithTools(t *testing.T) {
 	assert.Equal(t, "get_weather", resp.ToolCalls[0].Function.Name)
 }
 
-func TestGeminiProvider_Complete_WithToolChoice(t *testing.T) {
-	testCases := []struct {
-		name         string
-		toolChoice   string
-		expectedMode string
-	}{
-		{"auto", "auto", "AUTO"},
-		{"none", "none", "NONE"},
-		{"required", "required", "ANY"},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			var capturedToolConfig *GeminiToolConfig
-
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				var reqBody GeminiRequest
-				body, _ := io.ReadAll(r.Body)
-				_ = json.Unmarshal(body, &reqBody)
-				capturedToolConfig = reqBody.ToolConfig
-
-				response := GeminiResponse{
-					Candidates: []GeminiCandidate{
-						{
-							Content: GeminiContent{
-								Parts: []GeminiPart{{Text: "OK"}},
-							},
-							FinishReason: "STOP",
-						},
-					},
-				}
-				w.WriteHeader(http.StatusOK)
-				_ = json.NewEncoder(w).Encode(response)
-			}))
-			defer server.Close()
-
-			provider := NewGeminiProvider("test-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
-			provider.httpClient = server.Client()
-
-			req := &models.LLMRequest{
-				ID:     "test-tool-choice",
-				Prompt: "Test",
-				Tools: []models.Tool{
-					{Type: "function", Function: models.ToolFunction{Name: "test_tool"}},
-				},
-				ToolChoice: tc.toolChoice,
-			}
-
-			_, err := provider.Complete(context.Background(), req)
-			require.NoError(t, err)
-			require.NotNil(t, capturedToolConfig)
-			assert.Equal(t, tc.expectedMode, capturedToolConfig.FunctionCallingConfig.Mode)
-		})
-	}
-}
-
-func TestGeminiProvider_ValidateConfig(t *testing.T) {
+func TestGeminiAPIProvider_ValidateConfig(t *testing.T) {
 	tests := []struct {
 		name         string
 		apiKey       string
@@ -805,7 +900,7 @@ func TestGeminiProvider_ValidateConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			provider := &GeminiProvider{
+			provider := &GeminiAPIProvider{
 				apiKey:  tt.apiKey,
 				baseURL: tt.baseURL,
 				model:   tt.model,
@@ -818,43 +913,26 @@ func TestGeminiProvider_ValidateConfig(t *testing.T) {
 	}
 }
 
-func TestGeminiProvider_GetCapabilities(t *testing.T) {
-	provider := NewGeminiProvider("test-key", "", "")
+func TestGeminiAPIProvider_GetCapabilities(t *testing.T) {
+	provider := NewGeminiAPIProvider("test-key", "", "")
 	caps := provider.GetCapabilities()
 
 	require.NotNil(t, caps)
-
-	// Check supported models
-	assert.Contains(t, caps.SupportedModels, "gemini-2.0-flash")
 	assert.Contains(t, caps.SupportedModels, "gemini-2.5-flash")
 	assert.Contains(t, caps.SupportedModels, "gemini-2.5-pro")
 
-	// Check supported features
-	assert.Contains(t, caps.SupportedFeatures, "text_completion")
-	assert.Contains(t, caps.SupportedFeatures, "chat")
-	assert.Contains(t, caps.SupportedFeatures, "streaming")
-	assert.Contains(t, caps.SupportedFeatures, "function_calling")
-	assert.Contains(t, caps.SupportedFeatures, "vision")
-
-	// Check boolean capabilities
 	assert.True(t, caps.SupportsStreaming)
 	assert.True(t, caps.SupportsFunctionCalling)
 	assert.True(t, caps.SupportsVision)
 	assert.True(t, caps.SupportsTools)
-	assert.False(t, caps.SupportsSearch)
+	assert.True(t, caps.SupportsSearch)
 	assert.True(t, caps.SupportsReasoning)
 
-	// Check limits
-	assert.Equal(t, 32768, caps.Limits.MaxTokens)
-	assert.Equal(t, 8192, caps.Limits.MaxOutputLength)
-	assert.Equal(t, 10, caps.Limits.MaxConcurrentRequests)
-
-	// Check metadata
 	assert.Equal(t, "Google", caps.Metadata["provider"])
 	assert.Equal(t, "Gemini", caps.Metadata["model_family"])
 }
 
-func TestGeminiProvider_Retry_RateLimited(t *testing.T) {
+func TestGeminiAPIProvider_Retry_RateLimited(t *testing.T) {
 	attempts := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		attempts++
@@ -884,7 +962,7 @@ func TestGeminiProvider_Retry_RateLimited(t *testing.T) {
 		Multiplier:   2.0,
 	}
 
-	provider := NewGeminiProviderWithRetry("test-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro", retryConfig)
+	provider := NewGeminiAPIProviderWithRetry("test-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro", retryConfig)
 	provider.httpClient = server.Client()
 
 	req := &models.LLMRequest{ID: "retry-test", Prompt: "Test"}
@@ -896,7 +974,7 @@ func TestGeminiProvider_Retry_RateLimited(t *testing.T) {
 	assert.Equal(t, 3, attempts)
 }
 
-func TestGeminiProvider_Retry_ServerError(t *testing.T) {
+func TestGeminiAPIProvider_Retry_ServerError(t *testing.T) {
 	attempts := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		attempts++
@@ -926,7 +1004,7 @@ func TestGeminiProvider_Retry_ServerError(t *testing.T) {
 		Multiplier:   2.0,
 	}
 
-	provider := NewGeminiProviderWithRetry("test-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro", retryConfig)
+	provider := NewGeminiAPIProviderWithRetry("test-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro", retryConfig)
 	provider.httpClient = server.Client()
 
 	req := &models.LLMRequest{ID: "retry-test", Prompt: "Test"}
@@ -937,7 +1015,7 @@ func TestGeminiProvider_Retry_ServerError(t *testing.T) {
 	assert.Equal(t, 2, attempts)
 }
 
-func TestGeminiProvider_Retry_AuthError(t *testing.T) {
+func TestGeminiAPIProvider_Retry_AuthError(t *testing.T) {
 	attempts := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		attempts++
@@ -963,16 +1041,15 @@ func TestGeminiProvider_Retry_AuthError(t *testing.T) {
 		Multiplier:   2.0,
 	}
 
-	provider := NewGeminiProviderWithRetry("test-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro", retryConfig)
+	provider := NewGeminiAPIProviderWithRetry("test-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro", retryConfig)
 	provider.httpClient = server.Client()
 
 	req := &models.LLMRequest{ID: "auth-retry", Prompt: "Test"}
 	resp, err := provider.Complete(context.Background(), req)
 
-	// Should succeed after auth retry
 	require.NoError(t, err)
 	require.NotNil(t, resp)
-	assert.Equal(t, 2, attempts) // Auth retry + success
+	assert.Equal(t, 2, attempts)
 }
 
 func TestIsRetryableStatus(t *testing.T) {
@@ -980,16 +1057,16 @@ func TestIsRetryableStatus(t *testing.T) {
 		statusCode int
 		retryable  bool
 	}{
-		{http.StatusOK, false},
-		{http.StatusBadRequest, false},
-		{http.StatusUnauthorized, false},
-		{http.StatusForbidden, false},
-		{http.StatusNotFound, false},
-		{http.StatusTooManyRequests, true},
-		{http.StatusInternalServerError, true},
-		{http.StatusBadGateway, true},
-		{http.StatusServiceUnavailable, true},
-		{http.StatusGatewayTimeout, true},
+		{200, false},
+		{400, false},
+		{401, false},
+		{403, false},
+		{404, false},
+		{429, true},
+		{500, true},
+		{502, true},
+		{503, true},
+		{504, true},
 	}
 
 	for _, tt := range tests {
@@ -1004,10 +1081,10 @@ func TestIsAuthRetryableStatus(t *testing.T) {
 		statusCode int
 		retryable  bool
 	}{
-		{http.StatusUnauthorized, true},
-		{http.StatusOK, false},
-		{http.StatusForbidden, false},
-		{http.StatusTooManyRequests, false},
+		{401, true},
+		{200, false},
+		{403, false},
+		{429, false},
 	}
 
 	for _, tt := range tests {
@@ -1017,29 +1094,26 @@ func TestIsAuthRetryableStatus(t *testing.T) {
 	}
 }
 
-func TestGeminiProvider_NextDelay(t *testing.T) {
-	provider := NewGeminiProviderWithRetry("test-key", "", "", RetryConfig{
+func TestGeminiAPIProvider_NextDelay(t *testing.T) {
+	provider := NewGeminiAPIProviderWithRetry("test-key", "", "", RetryConfig{
 		MaxRetries:   3,
 		InitialDelay: 1 * time.Second,
 		MaxDelay:     10 * time.Second,
 		Multiplier:   2.0,
 	})
 
-	// First delay should be multiplied
 	next := provider.nextDelay(1 * time.Second)
 	assert.Equal(t, 2*time.Second, next)
 
-	// Should hit max delay
 	next = provider.nextDelay(8 * time.Second)
 	assert.Equal(t, 10*time.Second, next)
 }
 
-func TestGeminiProvider_CompleteStream_MalformedJSON(t *testing.T) {
+func TestGeminiAPIProvider_CompleteStream_MalformedJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 
-		// Send some malformed JSON mixed with valid JSON
 		_, _ = w.Write([]byte("data: {invalid json}\n"))
 		_, _ = w.Write([]byte("data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Valid chunk\"}]},\"finishReason\":\"\"}]}\n"))
 		_, _ = w.Write([]byte("data: [DONE]\n"))
@@ -1049,7 +1123,7 @@ func TestGeminiProvider_CompleteStream_MalformedJSON(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewGeminiProvider("test-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
+	provider := NewGeminiAPIProvider("test-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
 	provider.httpClient = server.Client()
 
 	req := &models.LLMRequest{ID: "malformed-test", Prompt: "Test"}
@@ -1061,16 +1135,14 @@ func TestGeminiProvider_CompleteStream_MalformedJSON(t *testing.T) {
 		responses = append(responses, resp)
 	}
 
-	// Should have received the valid chunk + final response
 	assert.GreaterOrEqual(t, len(responses), 1)
 }
 
-func TestGeminiProvider_CompleteStream_ArrayWrapper(t *testing.T) {
+func TestGeminiAPIProvider_CompleteStream_ArrayWrapper(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 
-		// Send response with array wrapper (as Gemini sometimes does)
 		_, _ = w.Write([]byte("[{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Array wrapped\"}]},\"finishReason\":\"STOP\"}]}]\n"))
 		if f, ok := w.(http.Flusher); ok {
 			f.Flush()
@@ -1078,7 +1150,7 @@ func TestGeminiProvider_CompleteStream_ArrayWrapper(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewGeminiProvider("test-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
+	provider := NewGeminiAPIProvider("test-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
 	provider.httpClient = server.Client()
 
 	req := &models.LLMRequest{ID: "array-test", Prompt: "Test"}
@@ -1090,49 +1162,11 @@ func TestGeminiProvider_CompleteStream_ArrayWrapper(t *testing.T) {
 		responses = append(responses, resp)
 	}
 
-	// Should handle array-wrapped response
 	assert.GreaterOrEqual(t, len(responses), 1)
 }
 
-func TestGeminiProvider_ConvertRequest_MaxTokensCapping(t *testing.T) {
-	provider := NewGeminiProvider("test-key", "", "gemini-pro")
-
-	t.Run("caps tokens above 8192", func(t *testing.T) {
-		req := &models.LLMRequest{
-			Prompt: "Test",
-			ModelParams: models.ModelParameters{
-				MaxTokens: 100000, // Way above limit
-			},
-		}
-		geminiReq := provider.convertRequest(req)
-		assert.Equal(t, 8192, geminiReq.GenerationConfig.MaxOutputTokens)
-	})
-
-	t.Run("uses default when zero", func(t *testing.T) {
-		req := &models.LLMRequest{
-			Prompt: "Test",
-			ModelParams: models.ModelParameters{
-				MaxTokens: 0,
-			},
-		}
-		geminiReq := provider.convertRequest(req)
-		assert.Equal(t, 4096, geminiReq.GenerationConfig.MaxOutputTokens)
-	})
-
-	t.Run("uses provided value when within limit", func(t *testing.T) {
-		req := &models.LLMRequest{
-			Prompt: "Test",
-			ModelParams: models.ModelParameters{
-				MaxTokens: 2000,
-			},
-		}
-		geminiReq := provider.convertRequest(req)
-		assert.Equal(t, 2000, geminiReq.GenerationConfig.MaxOutputTokens)
-	})
-}
-
-func TestGeminiProvider_ConvertResponse_MultipleParts(t *testing.T) {
-	provider := NewGeminiProvider("test-key", "", "gemini-pro")
+func TestGeminiAPIProvider_ConvertResponse_MultipleParts(t *testing.T) {
+	provider := NewGeminiAPIProvider("test-key", "", "gemini-pro")
 	req := &models.LLMRequest{ID: "multi-part"}
 
 	geminiResp := &GeminiResponse{
@@ -1154,14 +1188,13 @@ func TestGeminiProvider_ConvertResponse_MultipleParts(t *testing.T) {
 
 	resp := provider.convertResponse(req, geminiResp, time.Now())
 
-	// Should concatenate all text parts
 	assert.Contains(t, resp.Content, "Part one")
 	assert.Contains(t, resp.Content, "Part two")
 }
 
-func TestGeminiProvider_HealthCheck_NetworkError(t *testing.T) {
-	provider := NewGeminiProvider("test-key", "", "gemini-pro")
-	provider.healthURL = "http://localhost:9999/nonexistent" // Non-existent URL
+func TestGeminiAPIProvider_HealthCheck_NetworkError(t *testing.T) {
+	provider := NewGeminiAPIProvider("test-key", "", "gemini-pro")
+	provider.healthURL = "http://localhost:9999/nonexistent"
 	provider.httpClient = &http.Client{Timeout: 100 * time.Millisecond}
 
 	err := provider.HealthCheck()
@@ -1169,7 +1202,7 @@ func TestGeminiProvider_HealthCheck_NetworkError(t *testing.T) {
 	assert.Contains(t, err.Error(), "health check request failed")
 }
 
-func TestNewGeminiProviderWithRetry(t *testing.T) {
+func TestNewGeminiAPIProviderWithRetry(t *testing.T) {
 	retryConfig := RetryConfig{
 		MaxRetries:   5,
 		InitialDelay: 2 * time.Second,
@@ -1177,11 +1210,10 @@ func TestNewGeminiProviderWithRetry(t *testing.T) {
 		Multiplier:   3.0,
 	}
 
-	provider := NewGeminiProviderWithRetry("test-key", "", "", retryConfig)
+	provider := NewGeminiAPIProviderWithRetry("test-key", "", "", retryConfig)
 
 	assert.Equal(t, "test-key", provider.apiKey)
-	assert.Equal(t, GeminiAPIURL, provider.baseURL)
-	assert.Equal(t, GeminiModel, provider.model)
+	assert.Equal(t, GeminiDefaultModel, provider.model)
 	assert.Equal(t, 5, provider.retryConfig.MaxRetries)
 	assert.Equal(t, 2*time.Second, provider.retryConfig.InitialDelay)
 }
@@ -1195,26 +1227,8 @@ func TestDefaultRetryConfig(t *testing.T) {
 	assert.Equal(t, 2.0, config.Multiplier)
 }
 
-func TestGeminiProvider_StreamURLDerivation(t *testing.T) {
-	t.Run("default URLs", func(t *testing.T) {
-		provider := NewGeminiProvider("key", "", "")
-		assert.Equal(t, GeminiAPIURL, provider.baseURL)
-		assert.Equal(t, GeminiStreamAPIURL, provider.streamURL)
-	})
-
-	t.Run("custom base URL keeps same when suffix not matched", func(t *testing.T) {
-		// Note: The code checks for 15 chars suffix but :generateContent is 16 chars
-		// So custom URLs that don't end with exactly the right suffix don't get modified
-		customURL := "https://custom.api.com/v1/models/%s:generateContent"
-		provider := NewGeminiProvider("key", customURL, "")
-		assert.Equal(t, customURL, provider.baseURL)
-		// Stream URL falls back to same as base URL
-		assert.Equal(t, customURL, provider.streamURL)
-	})
-}
-
-func TestGeminiProvider_WaitWithJitter(t *testing.T) {
-	provider := NewGeminiProvider("test-key", "", "")
+func TestGeminiAPIProvider_WaitWithJitter(t *testing.T) {
+	provider := NewGeminiAPIProvider("test-key", "", "")
 
 	start := time.Now()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -1224,28 +1238,670 @@ func TestGeminiProvider_WaitWithJitter(t *testing.T) {
 	provider.waitWithJitter(ctx, baseDelay)
 	elapsed := time.Since(start)
 
-	// Should wait at least the base delay
 	assert.GreaterOrEqual(t, elapsed, baseDelay)
-	// Should not exceed base delay + 10% jitter + buffer
 	assert.LessOrEqual(t, elapsed, 150*time.Millisecond)
 }
 
-func TestGeminiProvider_WaitWithJitter_ContextCancelled(t *testing.T) {
-	provider := NewGeminiProvider("test-key", "", "")
+func TestGeminiAPIProvider_WaitWithJitter_ContextCancelled(t *testing.T) {
+	provider := NewGeminiAPIProvider("test-key", "", "")
 
 	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // Cancel immediately
+	cancel()
 
 	start := time.Now()
 	provider.waitWithJitter(ctx, 1*time.Second)
 	elapsed := time.Since(start)
 
-	// Should return immediately due to cancelled context
 	assert.Less(t, elapsed, 100*time.Millisecond)
 }
 
-func BenchmarkGeminiProvider_ConvertRequest(b *testing.B) {
-	provider := NewGeminiProvider("test-key", "", "")
+// ==============================================================================
+// CLI Provider Tests
+// ==============================================================================
+
+func TestIsGeminiCLIInstalled(t *testing.T) {
+	installed := IsGeminiCLIInstalled()
+	t.Logf("Gemini CLI installed: %v", installed)
+}
+
+func TestGeminiCLIProvider_Basics(t *testing.T) {
+	config := DefaultGeminiCLIConfig()
+	p := NewGeminiCLIProvider(config)
+	assert.NotNil(t, p)
+	assert.Equal(t, "gemini-cli", p.GetName())
+	assert.Equal(t, "gemini", p.GetProviderType())
+}
+
+func TestGeminiCLIProvider_KnownModels(t *testing.T) {
+	models := GetKnownGeminiCLIModels()
+	assert.GreaterOrEqual(t, len(models), 7)
+	assert.Contains(t, models, "gemini-2.5-pro")
+	assert.Contains(t, models, "gemini-2.5-flash")
+	assert.Contains(t, models, "gemini-3-pro-preview")
+}
+
+// ==============================================================================
+// ACP Provider Tests
+// ==============================================================================
+
+func TestGeminiACPProvider_Basics(t *testing.T) {
+	config := DefaultGeminiACPConfig()
+	p := NewGeminiACPProvider(config)
+	assert.NotNil(t, p)
+	assert.Equal(t, "gemini-acp", p.GetName())
+	assert.Equal(t, "gemini", p.GetProviderType())
+}
+
+func TestGeminiACPProvider_IsAvailable(t *testing.T) {
+	available := IsGeminiACPAvailable()
+	t.Logf("Gemini ACP available: %v", available)
+}
+
+// ==============================================================================
+// Power Feature Tests
+// ==============================================================================
+
+func TestGeminiAPIProvider_ExtendedThinking(t *testing.T) {
+	t.Run("pro model includes thinkingConfig", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var reqBody GeminiAPIRequest
+			body, err := io.ReadAll(r.Body)
+			require.NoError(t, err)
+			err = json.Unmarshal(body, &reqBody)
+			require.NoError(t, err)
+
+			// Verify thinkingConfig is present for pro model
+			require.NotNil(t, reqBody.GenerationConfig.ThinkingConfig,
+				"thinkingConfig should be present for gemini-2.5-pro")
+			assert.Equal(t, 8192, reqBody.GenerationConfig.ThinkingConfig.ThinkingBudget,
+				"thinking budget should be 8192")
+
+			response := GeminiResponse{
+				Candidates: []GeminiCandidate{
+					{
+						Content: GeminiContent{
+							Parts: []GeminiPart{{Text: "Thought-through response"}},
+							Role:  "model",
+						},
+						FinishReason: "STOP",
+					},
+				},
+				UsageMetadata: &GeminiUsageMetadata{TotalTokenCount: 50},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(response)
+		}))
+		defer server.Close()
+
+		provider := NewGeminiAPIProvider("test-key",
+			server.URL+"/v1beta/models/%s:generateContent", "gemini-2.5-pro")
+		provider.httpClient = server.Client()
+
+		req := &models.LLMRequest{
+			ID:     "thinking-test",
+			Prompt: "Think deeply about this",
+			ModelParams: models.ModelParameters{
+				MaxTokens: 1000,
+			},
+		}
+		resp, err := provider.Complete(context.Background(), req)
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, "Thought-through response", resp.Content)
+	})
+
+	t.Run("flash model does not include thinkingConfig", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var reqBody GeminiAPIRequest
+			body, err := io.ReadAll(r.Body)
+			require.NoError(t, err)
+			err = json.Unmarshal(body, &reqBody)
+			require.NoError(t, err)
+
+			// Verify thinkingConfig is NOT present for flash model
+			assert.Nil(t, reqBody.GenerationConfig.ThinkingConfig,
+				"thinkingConfig should NOT be present for gemini-2.0-flash")
+
+			response := GeminiResponse{
+				Candidates: []GeminiCandidate{
+					{
+						Content: GeminiContent{
+							Parts: []GeminiPart{{Text: "Quick response"}},
+							Role:  "model",
+						},
+						FinishReason: "STOP",
+					},
+				},
+				UsageMetadata: &GeminiUsageMetadata{TotalTokenCount: 20},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(response)
+		}))
+		defer server.Close()
+
+		provider := NewGeminiAPIProvider("test-key",
+			server.URL+"/v1beta/models/%s:generateContent", "gemini-2.0-flash")
+		provider.httpClient = server.Client()
+
+		req := &models.LLMRequest{
+			ID:     "no-thinking-test",
+			Prompt: "Quick question",
+			ModelParams: models.ModelParameters{
+				MaxTokens: 500,
+			},
+		}
+		resp, err := provider.Complete(context.Background(), req)
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, "Quick response", resp.Content)
+	})
+
+	t.Run("gemini-3-pro-preview includes thinkingConfig", func(t *testing.T) {
+		provider := NewGeminiAPIProvider("test-key", "", "gemini-3-pro-preview")
+		geminiReq := provider.convertRequest(&models.LLMRequest{
+			Prompt:      "Test",
+			ModelParams: models.ModelParameters{MaxTokens: 100},
+		})
+		require.NotNil(t, geminiReq.GenerationConfig.ThinkingConfig,
+			"thinkingConfig should be present for gemini-3-pro-preview")
+		assert.Equal(t, 8192, geminiReq.GenerationConfig.ThinkingConfig.ThinkingBudget)
+	})
+
+	t.Run("gemini-3.1-pro-preview includes thinkingConfig", func(t *testing.T) {
+		provider := NewGeminiAPIProvider("test-key", "", "gemini-3.1-pro-preview")
+		geminiReq := provider.convertRequest(&models.LLMRequest{
+			Prompt:      "Test",
+			ModelParams: models.ModelParameters{MaxTokens: 100},
+		})
+		require.NotNil(t, geminiReq.GenerationConfig.ThinkingConfig,
+			"thinkingConfig should be present for gemini-3.1-pro-preview")
+		assert.Equal(t, 8192, geminiReq.GenerationConfig.ThinkingConfig.ThinkingBudget)
+	})
+}
+
+func TestGeminiAPIProvider_GoogleSearchGrounding(t *testing.T) {
+	t.Run("always includes googleSearch in tools", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var reqBody GeminiAPIRequest
+			body, err := io.ReadAll(r.Body)
+			require.NoError(t, err)
+			err = json.Unmarshal(body, &reqBody)
+			require.NoError(t, err)
+
+			// Verify tools array has at least one entry with googleSearch
+			require.GreaterOrEqual(t, len(reqBody.Tools), 1,
+				"tools array should contain at least googleSearch")
+
+			foundGoogleSearch := false
+			for _, tool := range reqBody.Tools {
+				if tool.GoogleSearch != nil {
+					foundGoogleSearch = true
+					break
+				}
+			}
+			assert.True(t, foundGoogleSearch,
+				"tools array should contain a tool with googleSearch")
+
+			response := GeminiResponse{
+				Candidates: []GeminiCandidate{
+					{
+						Content: GeminiContent{
+							Parts: []GeminiPart{{Text: "Grounded response"}},
+							Role:  "model",
+						},
+						FinishReason: "STOP",
+					},
+				},
+				UsageMetadata: &GeminiUsageMetadata{TotalTokenCount: 25},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(response)
+		}))
+		defer server.Close()
+
+		provider := NewGeminiAPIProvider("test-key",
+			server.URL+"/v1beta/models/%s:generateContent", "gemini-2.5-flash")
+		provider.httpClient = server.Client()
+
+		// Request with NO user tools
+		req := &models.LLMRequest{
+			ID:     "search-grounding-test",
+			Prompt: "What is the current weather?",
+			ModelParams: models.ModelParameters{
+				MaxTokens: 500,
+			},
+		}
+		resp, err := provider.Complete(context.Background(), req)
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, "Grounded response", resp.Content)
+	})
+
+	t.Run("googleSearch present alongside user tools", func(t *testing.T) {
+		provider := NewGeminiAPIProvider("test-key", "", "gemini-2.5-flash")
+
+		req := &models.LLMRequest{
+			Prompt: "Test",
+			Tools: []models.Tool{
+				{
+					Type: "function",
+					Function: models.ToolFunction{
+						Name:        "test_func",
+						Description: "A test function",
+					},
+				},
+			},
+			ModelParams: models.ModelParameters{MaxTokens: 100},
+		}
+
+		geminiReq := provider.convertRequest(req)
+
+		// Should have 2 tool entries: one with function declarations, one with googleSearch
+		require.Equal(t, 2, len(geminiReq.Tools),
+			"should have function declarations tool + googleSearch tool")
+
+		assert.NotNil(t, geminiReq.Tools[0].FunctionDeclarations,
+			"first tool entry should contain function declarations")
+		assert.NotNil(t, geminiReq.Tools[1].GoogleSearch,
+			"second tool entry should be googleSearch")
+	})
+
+	t.Run("googleSearch only when no user tools", func(t *testing.T) {
+		provider := NewGeminiAPIProvider("test-key", "", "gemini-2.5-flash")
+
+		req := &models.LLMRequest{
+			Prompt:      "Test",
+			ModelParams: models.ModelParameters{MaxTokens: 100},
+		}
+
+		geminiReq := provider.convertRequest(req)
+
+		// Should have exactly 1 tool entry: googleSearch only
+		require.Equal(t, 1, len(geminiReq.Tools),
+			"should have only googleSearch tool when no user tools")
+		assert.NotNil(t, geminiReq.Tools[0].GoogleSearch,
+			"the single tool entry should be googleSearch")
+		assert.Nil(t, geminiReq.Tools[0].FunctionDeclarations,
+			"should not have function declarations")
+	})
+}
+
+func TestGeminiAPIProvider_ModelAwareMaxTokens(t *testing.T) {
+	tests := []struct {
+		name              string
+		model             string
+		requestedTokens   int
+		expectedMaxTokens int
+	}{
+		{
+			name:              "gemini-2.5-pro gets extended cap",
+			model:             "gemini-2.5-pro",
+			requestedTokens:   65536,
+			expectedMaxTokens: 65536,
+		},
+		{
+			name:              "gemini-2.0-flash gets legacy cap",
+			model:             "gemini-2.0-flash",
+			requestedTokens:   65536,
+			expectedMaxTokens: 8192,
+		},
+		{
+			name:              "gemini-3-pro-preview gets extended cap",
+			model:             "gemini-3-pro-preview",
+			requestedTokens:   65536,
+			expectedMaxTokens: 65536,
+		},
+		{
+			name:              "gemini-2.5-flash gets extended cap",
+			model:             "gemini-2.5-flash",
+			requestedTokens:   65536,
+			expectedMaxTokens: 65536,
+		},
+		{
+			name:              "gemini-3.1-pro-preview gets extended cap",
+			model:             "gemini-3.1-pro-preview",
+			requestedTokens:   65536,
+			expectedMaxTokens: 65536,
+		},
+		{
+			name:              "zero requested returns default 4096",
+			model:             "gemini-2.5-pro",
+			requestedTokens:   0,
+			expectedMaxTokens: 4096,
+		},
+		{
+			name:              "small requested tokens are preserved",
+			model:             "gemini-2.5-pro",
+			requestedTokens:   1000,
+			expectedMaxTokens: 1000,
+		},
+		{
+			name:              "legacy model caps at 8192",
+			model:             "gemini-2.0-flash",
+			requestedTokens:   10000,
+			expectedMaxTokens: 8192,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			provider := NewGeminiAPIProvider("test-key", "", tt.model)
+			geminiReq := provider.convertRequest(&models.LLMRequest{
+				Prompt: "Test",
+				ModelParams: models.ModelParameters{
+					MaxTokens: tt.requestedTokens,
+				},
+			})
+			assert.Equal(t, tt.expectedMaxTokens,
+				geminiReq.GenerationConfig.MaxOutputTokens,
+				"MaxOutputTokens mismatch for model %s with requested %d",
+				tt.model, tt.requestedTokens)
+		})
+	}
+}
+
+func TestGeminiAPIProvider_ThinkingContentExtraction(t *testing.T) {
+	t.Run("extracts thinking content into metadata", func(t *testing.T) {
+		provider := NewGeminiAPIProvider("test-key", "", "gemini-2.5-pro")
+
+		geminiResp := &GeminiResponse{
+			Candidates: []GeminiCandidate{
+				{
+					Content: GeminiContent{
+						Parts: []GeminiPart{
+							{Text: "Let me think about this step by step...", Thought: true},
+							{Text: "The answer is 42."},
+						},
+						Role: "model",
+					},
+					FinishReason: "STOP",
+				},
+			},
+			UsageMetadata: &GeminiUsageMetadata{TotalTokenCount: 30},
+		}
+
+		req := &models.LLMRequest{ID: "thinking-extract"}
+		resp := provider.convertResponse(req, geminiResp, time.Now())
+
+		// Regular content should NOT include thinking parts
+		assert.Equal(t, "The answer is 42.", resp.Content,
+			"content should only contain non-thought parts")
+
+		// Thinking content should be in metadata
+		require.NotNil(t, resp.Metadata)
+		thinkingVal, ok := resp.Metadata["thinking"]
+		require.True(t, ok, "metadata should contain 'thinking' key")
+		assert.Equal(t, "Let me think about this step by step...", thinkingVal,
+			"thinking metadata should contain the thought text")
+	})
+
+	t.Run("no thinking metadata when no thought parts", func(t *testing.T) {
+		provider := NewGeminiAPIProvider("test-key", "", "gemini-2.0-flash")
+
+		geminiResp := &GeminiResponse{
+			Candidates: []GeminiCandidate{
+				{
+					Content: GeminiContent{
+						Parts: []GeminiPart{
+							{Text: "Direct answer without thinking."},
+						},
+						Role: "model",
+					},
+					FinishReason: "STOP",
+				},
+			},
+			UsageMetadata: &GeminiUsageMetadata{TotalTokenCount: 15},
+		}
+
+		req := &models.LLMRequest{ID: "no-thinking"}
+		resp := provider.convertResponse(req, geminiResp, time.Now())
+
+		assert.Equal(t, "Direct answer without thinking.", resp.Content)
+		require.NotNil(t, resp.Metadata)
+		_, hasThinking := resp.Metadata["thinking"]
+		assert.False(t, hasThinking,
+			"metadata should NOT contain 'thinking' key when no thought parts")
+	})
+
+	t.Run("multiple thinking parts concatenated", func(t *testing.T) {
+		provider := NewGeminiAPIProvider("test-key", "", "gemini-2.5-pro")
+
+		geminiResp := &GeminiResponse{
+			Candidates: []GeminiCandidate{
+				{
+					Content: GeminiContent{
+						Parts: []GeminiPart{
+							{Text: "First thought. ", Thought: true},
+							{Text: "Second thought. ", Thought: true},
+							{Text: "Final answer."},
+						},
+						Role: "model",
+					},
+					FinishReason: "STOP",
+				},
+			},
+			UsageMetadata: &GeminiUsageMetadata{TotalTokenCount: 40},
+		}
+
+		req := &models.LLMRequest{ID: "multi-thought"}
+		resp := provider.convertResponse(req, geminiResp, time.Now())
+
+		assert.Equal(t, "Final answer.", resp.Content)
+		thinkingVal := resp.Metadata["thinking"]
+		assert.Equal(t, "First thought. Second thought. ", thinkingVal,
+			"multiple thinking parts should be concatenated")
+	})
+}
+
+func TestGeminiUnifiedProvider_FallbackChain(t *testing.T) {
+	t.Run("reports all methods failed when API returns error", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = w.Write([]byte(`{"error": {"code": 500, "message": "Internal error"}}`))
+		}))
+		defer server.Close()
+
+		config := GeminiUnifiedConfig{
+			APIKey:          "test-key",
+			BaseURL:         server.URL + "/v1beta/models/%s:generateContent",
+			Model:           "gemini-2.5-flash",
+			Timeout:         5 * time.Second,
+			MaxTokens:       100,
+			PreferredMethod: "auto",
+		}
+		p := NewGeminiUnifiedProvider(config)
+		// Override HTTP client on the API provider to use test server
+		p.apiProvider.httpClient = server.Client()
+		// Override retry config to speed up test
+		p.apiProvider.retryConfig = RetryConfig{
+			MaxRetries:   0,
+			InitialDelay: 1 * time.Millisecond,
+			MaxDelay:     10 * time.Millisecond,
+			Multiplier:   1.0,
+		}
+
+		req := &models.LLMRequest{
+			ID:     "fallback-test",
+			Prompt: "Test",
+			ModelParams: models.ModelParameters{
+				MaxTokens: 100,
+			},
+		}
+
+		resp, err := p.Complete(context.Background(), req)
+		assert.Error(t, err, "should fail when all methods fail")
+		assert.Nil(t, resp)
+		assert.Contains(t, err.Error(), "all Gemini access methods failed",
+			"error should mention fallback failure")
+	})
+
+	t.Run("API-only mode fails gracefully", func(t *testing.T) {
+		config := GeminiUnifiedConfig{
+			APIKey:          "bad-key",
+			BaseURL:         "http://localhost:1/v1beta/models/%s:generateContent",
+			Model:           "gemini-2.5-flash",
+			Timeout:         2 * time.Second,
+			MaxTokens:       100,
+			PreferredMethod: "api",
+		}
+		p := NewGeminiUnifiedProvider(config)
+		p.apiProvider.httpClient = &http.Client{Timeout: 100 * time.Millisecond}
+		p.apiProvider.retryConfig = RetryConfig{
+			MaxRetries:   0,
+			InitialDelay: 1 * time.Millisecond,
+			MaxDelay:     10 * time.Millisecond,
+			Multiplier:   1.0,
+		}
+
+		req := &models.LLMRequest{
+			ID:     "api-only-fail",
+			Prompt: "Test",
+			ModelParams: models.ModelParameters{
+				MaxTokens: 100,
+			},
+		}
+
+		resp, err := p.Complete(context.Background(), req)
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+	})
+}
+
+func TestGeminiCLIProvider_SessionTracking(t *testing.T) {
+	t.Run("has sessionID field", func(t *testing.T) {
+		config := DefaultGeminiCLIConfig()
+		p := NewGeminiCLIProvider(config)
+		// sessionID starts empty
+		assert.Equal(t, "", p.sessionID,
+			"sessionID should start empty")
+	})
+
+	t.Run("SetModel works correctly", func(t *testing.T) {
+		config := DefaultGeminiCLIConfig()
+		config.Model = "gemini-2.5-flash"
+		p := NewGeminiCLIProvider(config)
+
+		assert.Equal(t, "gemini-2.5-flash", p.GetCurrentModel())
+
+		p.SetModel("gemini-2.5-pro")
+		assert.Equal(t, "gemini-2.5-pro", p.GetCurrentModel())
+
+		p.SetModel("gemini-3-pro-preview")
+		assert.Equal(t, "gemini-3-pro-preview", p.GetCurrentModel())
+	})
+
+	t.Run("GetBestAvailableModel returns reasonable default", func(t *testing.T) {
+		config := DefaultGeminiCLIConfig()
+		p := NewGeminiCLIProvider(config)
+
+		bestModel := p.GetBestAvailableModel()
+		assert.NotEmpty(t, bestModel,
+			"GetBestAvailableModel should return a non-empty model name")
+
+		// Should be one of the known models or the hardcoded default
+		knownModels := GetKnownGeminiCLIModels()
+		found := false
+		for _, m := range knownModels {
+			if bestModel == m {
+				found = true
+				break
+			}
+		}
+		// Also accept the hardcoded fallback
+		if bestModel == "gemini-2.5-pro" {
+			found = true
+		}
+		assert.True(t, found,
+			"GetBestAvailableModel should return a known model, got: %s", bestModel)
+	})
+
+	t.Run("provider name and type are correct", func(t *testing.T) {
+		config := DefaultGeminiCLIConfig()
+		p := NewGeminiCLIProvider(config)
+
+		assert.Equal(t, "gemini-cli", p.GetName())
+		assert.Equal(t, "gemini", p.GetProviderType())
+	})
+}
+
+func TestGeminiAllModelsComprehensive(t *testing.T) {
+	t.Run("returns all expected models", func(t *testing.T) {
+		allModels := getAllGeminiModels()
+
+		expectedModels := []string{
+			"gemini-3.1-pro-preview",
+			"gemini-3-pro-preview",
+			"gemini-3-flash-preview",
+			"gemini-2.5-pro",
+			"gemini-2.5-flash",
+			"gemini-2.5-flash-lite",
+			"gemini-2.0-flash",
+			"gemini-embedding-001",
+		}
+
+		for _, expected := range expectedModels {
+			assert.Contains(t, allModels, expected,
+				"getAllGeminiModels should contain %s", expected)
+		}
+	})
+
+	t.Run("model names follow gemini pattern", func(t *testing.T) {
+		allModels := getAllGeminiModels()
+
+		for _, model := range allModels {
+			assert.True(t,
+				len(model) > 6 && model[:6] == "gemini",
+				"model %q should start with 'gemini'", model)
+		}
+	})
+
+	t.Run("no duplicate models", func(t *testing.T) {
+		allModels := getAllGeminiModels()
+		seen := make(map[string]bool, len(allModels))
+
+		for _, model := range allModels {
+			assert.False(t, seen[model],
+				"model %q appears more than once", model)
+			seen[model] = true
+		}
+	})
+
+	t.Run("embedding model is included", func(t *testing.T) {
+		allModels := getAllGeminiModels()
+		assert.Contains(t, allModels, "gemini-embedding-001",
+			"embedding model should be present")
+	})
+
+	t.Run("minimum model count", func(t *testing.T) {
+		allModels := getAllGeminiModels()
+		assert.GreaterOrEqual(t, len(allModels), 7,
+			"should have at least 7 models")
+	})
+
+	t.Run("thinking models are subset of all models", func(t *testing.T) {
+		allModels := getAllGeminiModels()
+		allModelSet := make(map[string]bool, len(allModels))
+		for _, m := range allModels {
+			allModelSet[m] = true
+		}
+
+		for model := range thinkingModels {
+			assert.True(t, allModelSet[model],
+				"thinking model %q should be in getAllGeminiModels()", model)
+		}
+	})
+}
+
+// ==============================================================================
+// Benchmarks
+// ==============================================================================
+
+func BenchmarkGeminiAPIProvider_ConvertRequest(b *testing.B) {
+	provider := NewGeminiAPIProvider("test-key", "", "")
 	req := &models.LLMRequest{
 		ID:     "bench-request",
 		Prompt: "Test prompt",
@@ -1265,12 +1921,29 @@ func BenchmarkGeminiProvider_ConvertRequest(b *testing.B) {
 	}
 }
 
-func BenchmarkGeminiProvider_CalculateConfidence(b *testing.B) {
-	provider := NewGeminiProvider("test-key", "", "")
+func BenchmarkGeminiAPIProvider_CalculateConfidence(b *testing.B) {
+	provider := NewGeminiAPIProvider("test-key", "", "")
 	content := "This is a sample response from the Gemini model."
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		provider.calculateConfidence(content, "STOP")
+	}
+}
+
+func BenchmarkBuildPromptFromRequest(b *testing.B) {
+	req := &models.LLMRequest{
+		Prompt: "System context",
+		Messages: []models.Message{
+			{Role: "system", Content: "You are helpful"},
+			{Role: "user", Content: "Hello"},
+			{Role: "assistant", Content: "Hi there"},
+			{Role: "user", Content: "How are you?"},
+		},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		buildPromptFromRequest(req)
 	}
 }

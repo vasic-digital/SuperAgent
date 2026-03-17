@@ -294,7 +294,8 @@ func (s *HealthService) performHealthCheck(providerName string) bool {
 	endpoints := map[string]string{
 		"openai":     "https://api.openai.com/v1/models",
 		"anthropic":  "https://api.anthropic.com/v1/messages",
-		"google":     "https://generativelanguage.googleapis.com/v1/models",
+		"gemini":     "https://generativelanguage.googleapis.com/v1/models",
+		"google":     "https://generativelanguage.googleapis.com/v1/models", // Alias for gemini
 		"groq":       "https://api.groq.com/openai/v1/models",
 		"together":   "https://api.together.xyz/v1/models",
 		"mistral":    "https://api.mistral.ai/v1/models",

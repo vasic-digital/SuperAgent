@@ -210,8 +210,8 @@ func (s *ModelDiscoveryService) discoverModelsFromProvider(ctx context.Context, 
 	case "anthropic":
 		req.Header.Set("x-api-key", cred.APIKey)
 		req.Header.Set("anthropic-version", "2023-06-01")
-	case "google":
-		// Google uses query parameter
+	case "gemini", "google":
+		// Gemini uses query parameter (key=...)
 	default:
 		req.Header.Set("Authorization", "Bearer "+cred.APIKey)
 	}
@@ -236,7 +236,8 @@ func (s *ModelDiscoveryService) getDiscoveryEndpoint(cred ProviderCredentials) s
 	endpoints := map[string]string{
 		"openai":     "https://api.openai.com/v1/models",
 		"anthropic":  "https://api.anthropic.com/v1/models",
-		"google":     "https://generativelanguage.googleapis.com/v1/models",
+		"gemini":     "https://generativelanguage.googleapis.com/v1/models",
+		"google":     "https://generativelanguage.googleapis.com/v1/models", // Alias for gemini
 		"groq":       "https://api.groq.com/openai/v1/models",
 		"together":   "https://api.together.xyz/v1/models",
 		"mistral":    "https://api.mistral.ai/v1/models",
@@ -517,7 +518,7 @@ func DefaultDiscoveryConfig() *DiscoveryConfig {
 		RequireCodeVisibility: true,
 		RequireDiversity:      true,
 		ProviderPriority: []string{
-			"openai", "anthropic", "google", "groq", "together",
+			"openai", "anthropic", "gemini", "groq", "together",
 			"mistral", "deepseek", "ollama", "openrouter",
 		},
 	}

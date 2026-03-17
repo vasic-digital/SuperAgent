@@ -125,7 +125,7 @@ var LLMsVerifierModels = struct {
 	Chutes   string // Chutes AI DeepSeek-V3
 }{
 	DeepSeek: "deepseek-chat",
-	Gemini:   "gemini-2.0-flash",
+	Gemini:   "gemini-2.5-flash",
 	Mistral:  "mistral-large-latest",
 	Groq:     "llama-3.1-70b-versatile",
 	Cerebras: "llama-3.3-70b",

@@ -1,39 +1,30 @@
 package gemini
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"math/rand"
-	"net/http"
-	"strings"
+	"os"
+	"sync"
 	"time"
 
-	"dev.helix.agent/internal/llm/discovery"
 	"dev.helix.agent/internal/models"
 )
 
 const (
-	GeminiAPIURL       = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent"
+	// GeminiAPIURL is the base URL for the Gemini API generateContent endpoint.
+	GeminiAPIURL = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent"
+	// GeminiStreamAPIURL is the base URL for the Gemini API streaming endpoint.
 	GeminiStreamAPIURL = "https://generativelanguage.googleapis.com/v1beta/models/%s:streamGenerateContent"
-	GeminiModel        = "gemini-2.0-flash" // Updated from deprecated gemini-pro
+	// GeminiModel is the legacy default model (kept for backward compatibility).
+	GeminiModel = "gemini-2.0-flash"
 )
 
-type GeminiProvider struct {
-	apiKey      string
-	baseURL     string
-	streamURL   string
-	healthURL   string
-	model       string
-	httpClient  *http.Client
-	retryConfig RetryConfig
-	discoverer  *discovery.Discoverer
-}
+// ---------------------------------------------------------------------------
+// Shared types — used by all sub-providers (API, CLI, ACP)
+// ---------------------------------------------------------------------------
 
-// RetryConfig defines retry behavior for API calls
+// RetryConfig defines retry behavior for API calls.
 type RetryConfig struct {
 	MaxRetries   int
 	InitialDelay time.Duration
@@ -41,101 +32,7 @@ type RetryConfig struct {
 	Multiplier   float64
 }
 
-type GeminiRequest struct {
-	Contents         []GeminiContent        `json:"contents"`
-	GenerationConfig GeminiGenerationConfig `json:"generationConfig,omitempty"`
-	SafetySettings   []GeminiSafetySetting  `json:"safetySettings,omitempty"`
-	Tools            []GeminiToolDef        `json:"tools,omitempty"`
-	ToolConfig       *GeminiToolConfig      `json:"toolConfig,omitempty"`
-}
-
-// GeminiToolDef represents a tool definition for Gemini API
-type GeminiToolDef struct {
-	FunctionDeclarations []GeminiFunctionDeclaration `json:"functionDeclarations,omitempty"`
-}
-
-// GeminiFunctionDeclaration represents a function declaration
-type GeminiFunctionDeclaration struct {
-	Name        string                 `json:"name"`
-	Description string                 `json:"description,omitempty"`
-	Parameters  map[string]interface{} `json:"parameters,omitempty"`
-}
-
-// GeminiToolConfig configures tool behavior
-type GeminiToolConfig struct {
-	FunctionCallingConfig *GeminiFunctionCallingConfig `json:"functionCallingConfig,omitempty"`
-}
-
-// GeminiFunctionCallingConfig configures function calling
-type GeminiFunctionCallingConfig struct {
-	Mode string `json:"mode,omitempty"` // AUTO, NONE, ANY
-}
-
-type GeminiContent struct {
-	Parts []GeminiPart `json:"parts"`
-	Role  string       `json:"role,omitempty"`
-}
-
-type GeminiPart struct {
-	Text         string            `json:"text,omitempty"`
-	InlineData   *GeminiInlineData `json:"inlineData,omitempty"`
-	FunctionCall map[string]any    `json:"functionCall,omitempty"`
-}
-
-type GeminiInlineData struct {
-	MimeType string `json:"mimeType"`
-	Data     string `json:"data"`
-}
-
-type GeminiGenerationConfig struct {
-	Temperature     float64  `json:"temperature,omitempty"`
-	TopP            float64  `json:"topP,omitempty"`
-	TopK            int      `json:"topK,omitempty"`
-	MaxOutputTokens int      `json:"maxOutputTokens,omitempty"`
-	StopSequences   []string `json:"stopSequences,omitempty"`
-}
-
-type GeminiSafetySetting struct {
-	Category  string `json:"category"`
-	Threshold string `json:"threshold"`
-}
-
-type GeminiResponse struct {
-	Candidates     []GeminiCandidate     `json:"candidates"`
-	PromptFeedback *GeminiPromptFeedback `json:"promptFeedback,omitempty"`
-	UsageMetadata  *GeminiUsageMetadata  `json:"usageMetadata,omitempty"`
-}
-
-type GeminiCandidate struct {
-	Content       GeminiContent        `json:"content"`
-	FinishReason  string               `json:"finishReason"`
-	Index         int                  `json:"index"`
-	SafetyRatings []GeminiSafetyRating `json:"safetyRatings,omitempty"`
-}
-
-type GeminiPromptFeedback struct {
-	BlockReason   string               `json:"blockReason"`
-	SafetyRatings []GeminiSafetyRating `json:"safetyRatings,omitempty"`
-}
-
-type GeminiSafetyRating struct {
-	Category    string `json:"category"`
-	Probability string `json:"probability"`
-	Blocked     bool   `json:"blocked"`
-}
-
-type GeminiUsageMetadata struct {
-	PromptTokenCount     int `json:"promptTokenCount"`
-	CandidatesTokenCount int `json:"candidatesTokenCount"`
-	TotalTokenCount      int `json:"totalTokenCount"`
-}
-
-type GeminiStreamResponse struct {
-	Candidates    []GeminiCandidate    `json:"candidates,omitempty"`
-	UsageMetadata *GeminiUsageMetadata `json:"usageMetadata,omitempty"`
-}
-
-// DefaultRetryConfig returns sensible defaults for Gemini API retry behavior
+// DefaultRetryConfig returns sensible defaults for Gemini API retry behavior.
 func DefaultRetryConfig() RetryConfig {
 	return RetryConfig{
 		MaxRetries:   3,
@@ -145,649 +42,413 @@ func DefaultRetryConfig() RetryConfig {
 	}
 }
 
-func NewGeminiProvider(apiKey, baseURL, model string) *GeminiProvider {
-	return NewGeminiProviderWithRetry(apiKey, baseURL, model, DefaultRetryConfig())
+// GeminiRequest represents a request to the Gemini API (legacy format).
+type GeminiRequest struct {
+	Contents         []GeminiContent        `json:"contents"`
+	GenerationConfig GeminiGenerationConfig `json:"generationConfig,omitempty"`
+	SafetySettings   []GeminiSafetySetting  `json:"safetySettings,omitempty"`
+	Tools            []GeminiToolDef        `json:"tools,omitempty"`
+	ToolConfig       *GeminiToolConfig      `json:"toolConfig,omitempty"`
 }
 
-func NewGeminiProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig) *GeminiProvider {
-	if baseURL == "" {
-		baseURL = GeminiAPIURL
-	}
-	if model == "" {
-		model = GeminiModel
-	}
-
-	// Derive streaming URL from base URL
-	streamURL := GeminiStreamAPIURL
-	if baseURL != GeminiAPIURL {
-		// Custom base URL - try to derive stream URL by replacing generateContent with streamGenerateContent
-		streamURL = baseURL
-		if len(streamURL) > 15 && streamURL[len(streamURL)-15:] == ":generateContent" {
-			streamURL = streamURL[:len(streamURL)-15] + ":streamGenerateContent"
-		}
-	}
-
-	p := &GeminiProvider{
-		apiKey:    apiKey,
-		baseURL:   baseURL,
-		streamURL: streamURL,
-		model:     model,
-		httpClient: &http.Client{
-			Timeout: 120 * time.Second, // Longer timeout for streaming
-		},
-		retryConfig: retryConfig,
-	}
-
-	p.discoverer = discovery.NewDiscoverer(discovery.ProviderConfig{
-		ProviderName:   "gemini",
-		ModelsEndpoint: "https://generativelanguage.googleapis.com/v1beta/models",
-		ModelsDevID:    "google",
-		APIKey:         apiKey,
-		AuthHeader:     "x-goog-api-key",
-		AuthPrefix:     "",
-		ResponseParser: discovery.ParseGeminiModelsResponse,
-		FallbackModels: []string{
-			"gemini-2.0-flash",
-			"gemini-2.5-flash",
-			"gemini-2.5-pro",
-			"gemini-3-flash-preview",
-			"gemini-3-pro-preview",
-		},
-	})
-
-	return p
+// GeminiToolDef represents a tool definition for the Gemini API.
+type GeminiToolDef struct {
+	FunctionDeclarations []GeminiFunctionDeclaration `json:"functionDeclarations,omitempty"`
 }
 
-func (p *GeminiProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
-	startTime := time.Now()
-
-	// Convert internal request to Gemini format
-	geminiReq := p.convertRequest(req)
-
-	// Make API call
-	resp, err := p.makeAPICall(ctx, geminiReq)
-	if err != nil {
-		return nil, fmt.Errorf("Gemini API call failed: %w", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	// Parse response
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Gemini API error: %d - %s", resp.StatusCode, string(body))
-	}
-
-	var geminiResp GeminiResponse
-	if err := json.Unmarshal(body, &geminiResp); err != nil {
-		return nil, fmt.Errorf("failed to parse Gemini response: %w", err)
-	}
-
-	// Convert back to internal format
-	return p.convertResponse(req, &geminiResp, startTime), nil
+// GeminiFunctionDeclaration represents a function declaration.
+type GeminiFunctionDeclaration struct {
+	Name        string                 `json:"name"`
+	Description string                 `json:"description,omitempty"`
+	Parameters  map[string]interface{} `json:"parameters,omitempty"`
 }
 
-func (p *GeminiProvider) CompleteStream(ctx context.Context, req *models.LLMRequest) (<-chan *models.LLMResponse, error) {
-	startTime := time.Now()
-
-	// Convert internal request to Gemini format
-	geminiReq := p.convertRequest(req)
-
-	// Add streaming parameter to generation config
-	if geminiReq.GenerationConfig.MaxOutputTokens == 0 {
-		geminiReq.GenerationConfig.MaxOutputTokens = 2048
-	}
-
-	// Make streaming API call using stream URL
-	resp, err := p.makeStreamAPICall(ctx, geminiReq)
-	if err != nil {
-		return nil, fmt.Errorf("Gemini streaming API call failed: %w", err)
-	}
-
-	// Check for non-2xx status codes before starting stream
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, readErr := io.ReadAll(resp.Body)
-		_ = resp.Body.Close()
-		if readErr != nil {
-			return nil, fmt.Errorf("Gemini API error: HTTP %d - failed to read response body: %v", resp.StatusCode, readErr)
-		}
-		return nil, fmt.Errorf("Gemini API error: HTTP %d - %s", resp.StatusCode, string(body))
-	}
-
-	// Create response channel
-	ch := make(chan *models.LLMResponse)
-
-	go func() {
-		defer func() { _ = resp.Body.Close() }()
-		defer close(ch)
-
-		reader := bufio.NewReader(resp.Body)
-		var fullContent string
-
-		for {
-			line, err := reader.ReadBytes('\n')
-			if err != nil {
-				if err == io.EOF {
-					break
-				}
-				// Send error response and exit
-				errorResp := &models.LLMResponse{
-					ID:             "stream-error-" + req.ID,
-					RequestID:      req.ID,
-					ProviderID:     "gemini",
-					ProviderName:   "Gemini",
-					Content:        "",
-					Confidence:     0.0,
-					TokensUsed:     0,
-					ResponseTime:   time.Since(startTime).Milliseconds(),
-					FinishReason:   "error",
-					Selected:       false,
-					SelectionScore: 0.0,
-					CreatedAt:      time.Now(),
-				}
-				ch <- errorResp
-				return
-			}
-
-			// Trim whitespace
-			line = bytes.TrimSpace(line)
-			if len(line) == 0 {
-				continue
-			}
-
-			// Handle SSE format (data: prefix) if present
-			if bytes.HasPrefix(line, []byte("data: ")) {
-				line = bytes.TrimPrefix(line, []byte("data: "))
-			}
-
-			// Skip "[DONE]" marker
-			if bytes.Equal(line, []byte("[DONE]")) {
-				break
-			}
-
-			// Try to parse as Gemini response JSON
-			// Gemini streaming returns JSON objects, possibly in a JSON array wrapper
-			var streamResp GeminiStreamResponse
-
-			// Handle potential JSON array wrapper from Gemini streaming
-			lineStr := string(line)
-			if len(lineStr) > 0 && lineStr[0] == '[' {
-				// Remove array wrapper if present
-				lineStr = strings.TrimPrefix(lineStr, "[")
-				lineStr = strings.TrimSuffix(lineStr, "]")
-				lineStr = strings.TrimPrefix(lineStr, ",")
-				lineStr = strings.TrimSpace(lineStr)
-				line = []byte(lineStr)
-			}
-
-			if err := json.Unmarshal(line, &streamResp); err != nil {
-				// Try parsing as full GeminiResponse
-				var fullResp GeminiResponse
-				if err2 := json.Unmarshal(line, &fullResp); err2 == nil && len(fullResp.Candidates) > 0 {
-					// Convert to stream response format
-					streamResp.Candidates = fullResp.Candidates
-				} else {
-					continue // Skip malformed JSON
-				}
-			}
-
-			// Extract content from candidates
-			if len(streamResp.Candidates) > 0 {
-				candidate := streamResp.Candidates[0]
-				if len(candidate.Content.Parts) > 0 {
-					for _, part := range candidate.Content.Parts {
-						if part.Text != "" {
-							fullContent += part.Text
-
-							// Send chunk response
-							chunkResp := &models.LLMResponse{
-								ID:             "gemini-stream-" + req.ID,
-								RequestID:      req.ID,
-								ProviderID:     "gemini",
-								ProviderName:   "Gemini",
-								Content:        part.Text,
-								Confidence:     0.85, // High confidence for Gemini
-								TokensUsed:     1,    // Estimated
-								ResponseTime:   time.Since(startTime).Milliseconds(),
-								FinishReason:   "",
-								Selected:       false,
-								SelectionScore: 0.0,
-								CreatedAt:      time.Now(),
-							}
-							ch <- chunkResp
-						}
-					}
-				}
-
-				// Check if stream is finished
-				if candidate.FinishReason != "" {
-					break
-				}
-			}
-		}
-
-		// Send final response
-		finalResp := &models.LLMResponse{
-			ID:             "gemini-final-" + req.ID,
-			RequestID:      req.ID,
-			ProviderID:     "gemini",
-			ProviderName:   "Gemini",
-			Content:        "",
-			Confidence:     0.85,
-			TokensUsed:     len(fullContent) / 4, // Rough estimate
-			ResponseTime:   time.Since(startTime).Milliseconds(),
-			FinishReason:   "stop",
-			Selected:       false,
-			SelectionScore: 0.0,
-			CreatedAt:      time.Now(),
-		}
-		ch <- finalResp
-	}()
-
-	return ch, nil
+// GeminiToolConfig configures tool behavior.
+type GeminiToolConfig struct {
+	FunctionCallingConfig *GeminiFunctionCallingConfig `json:"functionCallingConfig,omitempty"`
 }
 
-func (p *GeminiProvider) convertRequest(req *models.LLMRequest) GeminiRequest {
-	// Convert messages to Gemini content format
-	contents := make([]GeminiContent, 0, len(req.Messages)+1)
-
-	// Add system prompt as user message if present
-	if req.Prompt != "" {
-		contents = append(contents, GeminiContent{
-			Parts: []GeminiPart{
-				{Text: req.Prompt},
-			},
-			Role: "user",
-		})
-	}
-
-	// Add conversation messages
-	for _, msg := range req.Messages {
-		role := "user"
-		if msg.Role == "assistant" {
-			role = "model"
-		}
-
-		contents = append(contents, GeminiContent{
-			Parts: []GeminiPart{
-				{Text: msg.Content},
-			},
-			Role: role,
-		})
-	}
-
-	// Cap max_tokens to Gemini's limit (8192 for most models)
-	maxTokens := req.ModelParams.MaxTokens
-	if maxTokens <= 0 {
-		maxTokens = 4096 // Default
-	} else if maxTokens > 8192 {
-		maxTokens = 8192 // Safe max for Gemini models
-	}
-
-	geminiReq := GeminiRequest{
-		Contents: contents,
-		GenerationConfig: GeminiGenerationConfig{
-			Temperature:     req.ModelParams.Temperature,
-			TopP:            req.ModelParams.TopP,
-			MaxOutputTokens: maxTokens,
-			StopSequences:   req.ModelParams.StopSequences,
-		},
-		SafetySettings: []GeminiSafetySetting{
-			{
-				Category:  "HARM_CATEGORY_HARASSMENT",
-				Threshold: "BLOCK_NONE",
-			},
-			{
-				Category:  "HARM_CATEGORY_HATE_SPEECH",
-				Threshold: "BLOCK_NONE",
-			},
-			{
-				Category:  "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-				Threshold: "BLOCK_NONE",
-			},
-			{
-				Category:  "HARM_CATEGORY_DANGEROUS_CONTENT",
-				Threshold: "BLOCK_NONE",
-			},
-		},
-	}
-
-	// Convert tools if provided
-	if len(req.Tools) > 0 {
-		funcDecls := make([]GeminiFunctionDeclaration, len(req.Tools))
-		for i, tool := range req.Tools {
-			funcDecls[i] = GeminiFunctionDeclaration{
-				Name:        tool.Function.Name,
-				Description: tool.Function.Description,
-				Parameters:  tool.Function.Parameters,
-			}
-		}
-		geminiReq.Tools = []GeminiToolDef{
-			{FunctionDeclarations: funcDecls},
-		}
-
-		// Set tool config based on ToolChoice
-		if req.ToolChoice != "" {
-			mode := "AUTO"
-			switch req.ToolChoice {
-			case "none":
-				mode = "NONE"
-			case "auto":
-				mode = "AUTO"
-			case "required":
-				mode = "ANY"
-			}
-			geminiReq.ToolConfig = &GeminiToolConfig{
-				FunctionCallingConfig: &GeminiFunctionCallingConfig{
-					Mode: mode,
-				},
-			}
-		}
-	}
-
-	return geminiReq
+// GeminiFunctionCallingConfig configures function calling.
+type GeminiFunctionCallingConfig struct {
+	Mode string `json:"mode,omitempty"` // AUTO, NONE, ANY
 }
 
-func (p *GeminiProvider) convertResponse(req *models.LLMRequest, geminiResp *GeminiResponse, startTime time.Time) *models.LLMResponse {
-	var content string
-	var finishReason string
-	var tokensUsed int
-	var toolCalls []models.ToolCall
-
-	if len(geminiResp.Candidates) > 0 {
-		candidate := geminiResp.Candidates[0]
-		if len(candidate.Content.Parts) > 0 {
-			for i, part := range candidate.Content.Parts {
-				if part.Text != "" {
-					content += part.Text
-				}
-				// Parse function calls from Gemini response
-				if part.FunctionCall != nil {
-					// Extract function name and arguments
-					name, ok := part.FunctionCall["name"].(string)
-					if !ok {
-						name = ""
-					}
-					args, ok2 := part.FunctionCall["args"].(map[string]interface{})
-					if !ok2 {
-						args = map[string]interface{}{}
-					}
-
-					// Convert args to JSON string
-					argsJSON, _ := json.Marshal(args) //nolint:errcheck
-
-					toolCalls = append(toolCalls, models.ToolCall{
-						ID:   fmt.Sprintf("call_%d", i),
-						Type: "function",
-						Function: models.ToolCallFunction{
-							Name:      name,
-							Arguments: string(argsJSON),
-						},
-					})
-				}
-			}
-		}
-		finishReason = candidate.FinishReason
-
-		// Set finish_reason to tool_calls if we have function calls
-		if len(toolCalls) > 0 && (finishReason == "" || finishReason == "STOP") {
-			finishReason = "tool_calls"
-		}
-	}
-
-	if geminiResp.UsageMetadata != nil {
-		tokensUsed = geminiResp.UsageMetadata.TotalTokenCount
-	}
-
-	// Calculate confidence based on finish reason and response quality
-	confidence := p.calculateConfidence(content, finishReason)
-
-	return &models.LLMResponse{
-		ID:           "gemini-" + req.ID,
-		RequestID:    req.ID,
-		ProviderID:   "gemini",
-		ProviderName: "Gemini",
-		Content:      content,
-		Confidence:   confidence,
-		TokensUsed:   tokensUsed,
-		ResponseTime: time.Since(startTime).Milliseconds(),
-		FinishReason: finishReason,
-		ToolCalls:    toolCalls,
-		Metadata: map[string]any{
-			"model": p.model,
-		},
-		Selected:       false,
-		SelectionScore: 0.0,
-		CreatedAt:      time.Now(),
-	}
+// GeminiContent represents a content block in the Gemini API.
+type GeminiContent struct {
+	Parts []GeminiPart `json:"parts"`
+	Role  string       `json:"role,omitempty"`
 }
 
-func (p *GeminiProvider) calculateConfidence(content, finishReason string) float64 {
-	confidence := 0.85 // High base confidence for Gemini
-
-	// Adjust based on finish reason
-	switch finishReason {
-	case "STOP":
-		confidence += 0.1
-	case "MAX_TOKENS":
-		confidence -= 0.1
-	case "SAFETY":
-		confidence -= 0.3
-	case "RECITATION":
-		confidence -= 0.2
-	}
-
-	// Adjust based on content length
-	if len(content) > 100 {
-		confidence += 0.03
-	}
-	if len(content) > 500 {
-		confidence += 0.03
-	}
-
-	// Ensure confidence is within bounds
-	if confidence > 1.0 {
-		confidence = 1.0
-	}
-	if confidence < 0.0 {
-		confidence = 0.0
-	}
-
-	return confidence
+// GeminiPart represents a part of a content block.
+type GeminiPart struct {
+	Text         string            `json:"text,omitempty"`
+	InlineData   *GeminiInlineData `json:"inlineData,omitempty"`
+	FunctionCall map[string]any    `json:"functionCall,omitempty"`
+	Thought      bool              `json:"thought,omitempty"`
 }
 
-func (p *GeminiProvider) makeAPICall(ctx context.Context, req GeminiRequest) (*http.Response, error) {
-	return p.makeAPICallWithAuthRetry(ctx, req, true)
+// GeminiInlineData represents inline binary data.
+type GeminiInlineData struct {
+	MimeType string `json:"mimeType"`
+	Data     string `json:"data"`
 }
 
-// makeAPICallWithAuthRetry performs the API call with optional 401 retry
-func (p *GeminiProvider) makeAPICallWithAuthRetry(ctx context.Context, req GeminiRequest, allowAuthRetry bool) (*http.Response, error) {
-	// Marshal request
-	body, err := json.Marshal(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
-	}
-
-	// Build URL with model
-	url := fmt.Sprintf(p.baseURL, p.model)
-
-	var lastErr error
-	delay := p.retryConfig.InitialDelay
-
-	for attempt := 0; attempt <= p.retryConfig.MaxRetries; attempt++ {
-		// Check context before making request
-		select {
-		case <-ctx.Done():
-			return nil, fmt.Errorf("context cancelled: %w", ctx.Err())
-		default:
-		}
-
-		// Create HTTP request (fresh for each attempt)
-		httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(body))
-		if err != nil {
-			return nil, fmt.Errorf("failed to create request: %w", err)
-		}
-
-		// Set headers
-		httpReq.Header.Set("Content-Type", "application/json")
-		httpReq.Header.Set("x-goog-api-key", p.apiKey)
-		httpReq.Header.Set("User-Agent", "HelixAgent/1.0")
-
-		// Make request
-		resp, err := p.httpClient.Do(httpReq)
-		if err != nil {
-			lastErr = fmt.Errorf("HTTP request failed: %w", err)
-			// Retry on network errors
-			if attempt < p.retryConfig.MaxRetries {
-				p.waitWithJitter(ctx, delay)
-				delay = p.nextDelay(delay)
-				continue
-			}
-			return nil, lastErr
-		}
-
-		// Check for auth errors (401) - retry once with a short delay
-		// This handles transient auth issues (token validation delays, auth service hiccups)
-		if isAuthRetryableStatus(resp.StatusCode) && allowAuthRetry {
-			_ = resp.Body.Close()
-			// Short delay before auth retry (500ms with jitter)
-			authRetryDelay := 500 * time.Millisecond
-			p.waitWithJitter(ctx, authRetryDelay)
-			// Recursive call with auth retry disabled to prevent infinite loops
-			return p.makeAPICallWithAuthRetry(ctx, req, false)
-		}
-
-		// Check for retryable status codes (429, 5xx)
-		if isRetryableStatus(resp.StatusCode) && attempt < p.retryConfig.MaxRetries {
-			_ = resp.Body.Close()
-			lastErr = fmt.Errorf("HTTP %d: retryable error", resp.StatusCode)
-			p.waitWithJitter(ctx, delay)
-			delay = p.nextDelay(delay)
-			continue
-		}
-
-		return resp, nil
-	}
-
-	return nil, fmt.Errorf("all %d retry attempts failed: %w", p.retryConfig.MaxRetries+1, lastErr)
+// GeminiGenerationConfig holds generation parameters.
+type GeminiGenerationConfig struct {
+	Temperature     float64  `json:"temperature,omitempty"`
+	TopP            float64  `json:"topP,omitempty"`
+	TopK            int      `json:"topK,omitempty"`
+	MaxOutputTokens int      `json:"maxOutputTokens,omitempty"`
+	StopSequences   []string `json:"stopSequences,omitempty"`
 }
 
-// makeStreamAPICall makes a streaming API call using the stream URL
-func (p *GeminiProvider) makeStreamAPICall(ctx context.Context, req GeminiRequest) (*http.Response, error) {
-	// Marshal request
-	body, err := json.Marshal(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
-	}
-
-	// Build URL with model using stream URL
-	url := fmt.Sprintf(p.streamURL, p.model)
-
-	// Add alt=sse parameter for SSE streaming format
-	url += "?alt=sse&key=" + p.apiKey
-
-	var lastErr error
-	delay := p.retryConfig.InitialDelay
-
-	for attempt := 0; attempt <= p.retryConfig.MaxRetries; attempt++ {
-		// Check context before making request
-		select {
-		case <-ctx.Done():
-			return nil, fmt.Errorf("context cancelled: %w", ctx.Err())
-		default:
-		}
-
-		// Create HTTP request (fresh for each attempt)
-		httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(body))
-		if err != nil {
-			return nil, fmt.Errorf("failed to create request: %w", err)
-		}
-
-		// Set headers for streaming
-		httpReq.Header.Set("Content-Type", "application/json")
-		httpReq.Header.Set("Accept", "text/event-stream")
-		httpReq.Header.Set("User-Agent", "HelixAgent/1.0")
-
-		// Make request
-		resp, err := p.httpClient.Do(httpReq)
-		if err != nil {
-			lastErr = fmt.Errorf("HTTP request failed: %w", err)
-			// Retry on network errors
-			if attempt < p.retryConfig.MaxRetries {
-				p.waitWithJitter(ctx, delay)
-				delay = p.nextDelay(delay)
-				continue
-			}
-			return nil, lastErr
-		}
-
-		// Check for retryable status codes
-		if isRetryableStatus(resp.StatusCode) && attempt < p.retryConfig.MaxRetries {
-			_ = resp.Body.Close()
-			lastErr = fmt.Errorf("HTTP %d: retryable error", resp.StatusCode)
-			p.waitWithJitter(ctx, delay)
-			delay = p.nextDelay(delay)
-			continue
-		}
-
-		return resp, nil
-	}
-
-	return nil, fmt.Errorf("all %d retry attempts failed: %w", p.retryConfig.MaxRetries+1, lastErr)
+// GeminiSafetySetting configures content safety thresholds.
+type GeminiSafetySetting struct {
+	Category  string `json:"category"`
+	Threshold string `json:"threshold"`
 }
 
-// isRetryableStatus returns true for HTTP status codes that warrant a retry
+// GeminiResponse represents the Gemini API response.
+type GeminiResponse struct {
+	Candidates     []GeminiCandidate     `json:"candidates"`
+	PromptFeedback *GeminiPromptFeedback `json:"promptFeedback,omitempty"`
+	UsageMetadata  *GeminiUsageMetadata  `json:"usageMetadata,omitempty"`
+}
+
+// GeminiCandidate represents a response candidate.
+type GeminiCandidate struct {
+	Content       GeminiContent        `json:"content"`
+	FinishReason  string               `json:"finishReason"`
+	Index         int                  `json:"index"`
+	SafetyRatings []GeminiSafetyRating `json:"safetyRatings,omitempty"`
+}
+
+// GeminiPromptFeedback holds prompt-level feedback.
+type GeminiPromptFeedback struct {
+	BlockReason   string               `json:"blockReason"`
+	SafetyRatings []GeminiSafetyRating `json:"safetyRatings,omitempty"`
+}
+
+// GeminiSafetyRating represents a safety rating.
+type GeminiSafetyRating struct {
+	Category    string `json:"category"`
+	Probability string `json:"probability"`
+	Blocked     bool   `json:"blocked"`
+}
+
+// GeminiUsageMetadata holds token usage information.
+type GeminiUsageMetadata struct {
+	PromptTokenCount     int `json:"promptTokenCount"`
+	CandidatesTokenCount int `json:"candidatesTokenCount"`
+	TotalTokenCount      int `json:"totalTokenCount"`
+}
+
+// GeminiStreamResponse represents a streaming response chunk.
+type GeminiStreamResponse struct {
+	Candidates    []GeminiCandidate    `json:"candidates,omitempty"`
+	UsageMetadata *GeminiUsageMetadata `json:"usageMetadata,omitempty"`
+}
+
+// isRetryableStatus returns true for HTTP status codes that warrant a retry.
 func isRetryableStatus(statusCode int) bool {
 	switch statusCode {
-	case http.StatusTooManyRequests, // 429 - Rate limited
-		http.StatusInternalServerError, // 500
-		http.StatusBadGateway,          // 502
-		http.StatusServiceUnavailable,  // 503
-		http.StatusGatewayTimeout:      // 504
+	case 429, 500, 502, 503, 504:
 		return true
 	default:
 		return false
 	}
 }
 
-// isAuthRetryableStatus returns true for auth errors that may be transient
-// (e.g., token validation delays, temporary auth service issues)
+// isAuthRetryableStatus returns true for auth errors that may be transient.
 func isAuthRetryableStatus(statusCode int) bool {
-	return statusCode == http.StatusUnauthorized // 401
+	return statusCode == 401
 }
 
-// waitWithJitter waits for the specified duration plus random jitter
-func (p *GeminiProvider) waitWithJitter(ctx context.Context, delay time.Duration) {
-	// Add 10% jitter - using math/rand is acceptable for non-security jitter
-	jitter := time.Duration(rand.Float64() * 0.1 * float64(delay)) // #nosec G404 - jitter doesn't require cryptographic randomness
-	select {
-	case <-ctx.Done():
-	case <-time.After(delay + jitter):
+// ---------------------------------------------------------------------------
+// Unified Gemini Provider — orchestrates API, CLI, and ACP sub-providers
+// ---------------------------------------------------------------------------
+
+// GeminiUnifiedProvider is the unified Gemini provider with multiple access
+// methods:
+//  1. Primary: Direct Gemini API with API key
+//  2. Fallback 1: Gemini CLI headless mode
+//  3. Fallback 2: Gemini ACP (Agent Communication Protocol)
+//
+// Access method selection is automatic based on available credentials and
+// installed tooling.
+type GeminiUnifiedProvider struct {
+	model     string
+	timeout   time.Duration
+	maxTokens int
+	apiKey    string
+
+	apiProvider *GeminiAPIProvider
+	cliProvider *GeminiCLIProvider
+	acpProvider *GeminiACPProvider
+
+	initialized     bool
+	initOnce        sync.Once
+	initErr         error
+	preferredMethod string
+}
+
+// GeminiUnifiedConfig holds configuration for the unified Gemini provider.
+type GeminiUnifiedConfig struct {
+	Model           string
+	Timeout         time.Duration
+	MaxTokens       int
+	APIKey          string
+	BaseURL         string
+	PreferredMethod string // "auto", "api", "cli", "acp"
+}
+
+// DefaultGeminiUnifiedConfig returns default configuration reading from env.
+func DefaultGeminiUnifiedConfig() GeminiUnifiedConfig {
+	return GeminiUnifiedConfig{
+		Model:           GeminiDefaultModel,
+		Timeout:         180 * time.Second,
+		MaxTokens:       8192,
+		APIKey:          os.Getenv("GEMINI_API_KEY"),
+		PreferredMethod: "auto",
 	}
 }
 
-// nextDelay calculates the next delay using exponential backoff
-func (p *GeminiProvider) nextDelay(currentDelay time.Duration) time.Duration {
-	nextDelay := time.Duration(float64(currentDelay) * p.retryConfig.Multiplier)
-	if nextDelay > p.retryConfig.MaxDelay {
-		nextDelay = p.retryConfig.MaxDelay
+// NewGeminiUnifiedProvider creates a new unified Gemini provider.
+func NewGeminiUnifiedProvider(config GeminiUnifiedConfig) *GeminiUnifiedProvider {
+	if config.Timeout == 0 {
+		config.Timeout = 180 * time.Second
 	}
-	return nextDelay
+	if config.MaxTokens == 0 {
+		config.MaxTokens = 8192
+	}
+	if config.APIKey == "" {
+		config.APIKey = os.Getenv("GEMINI_API_KEY")
+	}
+	if config.PreferredMethod == "" {
+		config.PreferredMethod = "auto"
+	}
+	if config.Model == "" {
+		config.Model = GeminiDefaultModel
+	}
+
+	p := &GeminiUnifiedProvider{
+		model:           config.Model,
+		timeout:         config.Timeout,
+		maxTokens:       config.MaxTokens,
+		apiKey:          config.APIKey,
+		preferredMethod: config.PreferredMethod,
+	}
+
+	// Eagerly create API provider if we have an API key
+	if config.APIKey != "" {
+		p.apiProvider = NewGeminiAPIProvider(config.APIKey, config.BaseURL, config.Model)
+	}
+
+	return p
 }
 
-// GetCapabilities returns the capabilities of the Gemini provider
-func (p *GeminiProvider) GetCapabilities() *models.ProviderCapabilities {
-	return &models.ProviderCapabilities{
-		SupportedModels: p.discoverer.DiscoverModels(),
+// NewGeminiProvider creates a backward-compatible Gemini provider.
+// It returns a GeminiUnifiedProvider that delegates to the API sub-provider
+// when an API key is provided, with CLI and ACP as fallbacks.
+func NewGeminiProvider(apiKey, baseURL, model string) *GeminiUnifiedProvider {
+	config := GeminiUnifiedConfig{
+		APIKey:          apiKey,
+		BaseURL:         baseURL,
+		Model:           model,
+		Timeout:         180 * time.Second,
+		MaxTokens:       8192,
+		PreferredMethod: "auto",
+	}
+	return NewGeminiUnifiedProvider(config)
+}
+
+// NewGeminiProviderWithRetry creates a backward-compatible provider with
+// custom retry configuration.
+func NewGeminiProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig) *GeminiUnifiedProvider {
+	config := GeminiUnifiedConfig{
+		APIKey:          apiKey,
+		BaseURL:         baseURL,
+		Model:           model,
+		Timeout:         180 * time.Second,
+		MaxTokens:       8192,
+		PreferredMethod: "auto",
+	}
+	p := NewGeminiUnifiedProvider(config)
+	if p.apiProvider != nil {
+		p.apiProvider.retryConfig = retryConfig
+	}
+	return p
+}
+
+// Initialize lazily initializes all sub-providers.
+func (p *GeminiUnifiedProvider) Initialize() error {
+	p.initOnce.Do(func() {
+		p.initErr = p.initialize()
+	})
+	return p.initErr
+}
+
+func (p *GeminiUnifiedProvider) initialize() error {
+	// API provider already created in constructor if key was present
+
+	// Create CLI provider
+	cliConfig := GeminiCLIConfig{
+		Model:           p.model,
+		Timeout:         p.timeout,
+		MaxOutputTokens: p.maxTokens,
+		APIKey:          p.apiKey,
+	}
+	p.cliProvider = NewGeminiCLIProvider(cliConfig)
+
+	// Create ACP provider
+	acpConfig := GeminiACPConfig{
+		Model:     p.model,
+		Timeout:   p.timeout,
+		MaxTokens: p.maxTokens,
+		APIKey:    p.apiKey,
+	}
+	p.acpProvider = NewGeminiACPProvider(acpConfig)
+
+	p.initialized = true
+	return nil
+}
+
+// Complete implements the LLMProvider interface with auto-detect fallback.
+func (p *GeminiUnifiedProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
+	if err := p.Initialize(); err != nil {
+		return nil, fmt.Errorf("failed to initialize Gemini: %w", err)
+	}
+
+	var lastErr error
+
+	switch p.preferredMethod {
+	case "api":
+		return p.completeWithAPI(ctx, req)
+	case "cli":
+		return p.completeWithCLI(ctx, req)
+	case "acp":
+		return p.completeWithACP(ctx, req)
+	default: // "auto"
+		// Try API first (fastest, most reliable)
+		if p.apiProvider != nil {
+			if resp, err := p.completeWithAPI(ctx, req); err == nil {
+				return resp, nil
+			} else {
+				lastErr = err
+			}
+		}
+
+		// Try CLI fallback
+		if p.cliProvider.IsCLIAvailable() {
+			if resp, err := p.completeWithCLI(ctx, req); err == nil {
+				return resp, nil
+			} else {
+				lastErr = err
+			}
+		}
+
+		// Try ACP fallback
+		if p.acpProvider.IsAvailable() {
+			if resp, err := p.completeWithACP(ctx, req); err == nil {
+				return resp, nil
+			} else {
+				lastErr = err
+			}
+		}
+
+		if lastErr != nil {
+			return nil, fmt.Errorf("all Gemini access methods failed: %w", lastErr)
+		}
+		return nil, fmt.Errorf("no Gemini access method available (no API key, CLI not installed, ACP unavailable)")
+	}
+}
+
+func (p *GeminiUnifiedProvider) completeWithAPI(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
+	if p.apiProvider == nil {
+		return nil, fmt.Errorf("Gemini API provider not configured (no API key)")
+	}
+	return p.apiProvider.Complete(ctx, req)
+}
+
+func (p *GeminiUnifiedProvider) completeWithCLI(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
+	if !p.cliProvider.IsCLIAvailable() {
+		return nil, fmt.Errorf("Gemini CLI not available: %v", p.cliProvider.GetCLIError())
+	}
+	return p.cliProvider.Complete(ctx, req)
+}
+
+func (p *GeminiUnifiedProvider) completeWithACP(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
+	if !p.acpProvider.IsAvailable() {
+		return nil, fmt.Errorf("Gemini ACP not available")
+	}
+	return p.acpProvider.Complete(ctx, req)
+}
+
+// CompleteStream implements streaming completion with auto-detect fallback.
+func (p *GeminiUnifiedProvider) CompleteStream(ctx context.Context, req *models.LLMRequest) (<-chan *models.LLMResponse, error) {
+	if err := p.Initialize(); err != nil {
+		return nil, fmt.Errorf("failed to initialize Gemini: %w", err)
+	}
+
+	switch p.preferredMethod {
+	case "api":
+		if p.apiProvider != nil {
+			return p.apiProvider.CompleteStream(ctx, req)
+		}
+	case "cli":
+		return p.cliProvider.CompleteStream(ctx, req)
+	case "acp":
+		return p.acpProvider.CompleteStream(ctx, req)
+	}
+
+	// Auto mode: try in order
+	if p.apiProvider != nil {
+		return p.apiProvider.CompleteStream(ctx, req)
+	}
+	if p.cliProvider.IsCLIAvailable() {
+		return p.cliProvider.CompleteStream(ctx, req)
+	}
+	return p.acpProvider.CompleteStream(ctx, req)
+}
+
+// HealthCheck checks provider health using the best available method.
+func (p *GeminiUnifiedProvider) HealthCheck() error {
+	if err := p.Initialize(); err != nil {
+		return err
+	}
+
+	// Prefer API health check (lightweight — just lists models)
+	if p.apiProvider != nil {
+		if err := p.apiProvider.HealthCheck(); err == nil {
+			return nil
+		}
+	}
+
+	// Try CLI
+	if p.cliProvider.IsCLIAvailable() {
+		return nil // CLI availability itself is the health check
+	}
+
+	// Try ACP
+	if p.acpProvider.IsAvailable() {
+		return nil
+	}
+
+	return fmt.Errorf("no Gemini access method available for health check")
+}
+
+// GetCapabilities returns merged capabilities from all available sub-providers.
+func (p *GeminiUnifiedProvider) GetCapabilities() *models.ProviderCapabilities {
+	caps := &models.ProviderCapabilities{
+		SupportedModels: getAllGeminiModels(),
 		SupportedFeatures: []string{
 			"text_completion",
 			"chat",
 			"function_calling",
 			"streaming",
 			"vision",
+			"extended_thinking",
+			"google_search_grounding",
 		},
 		SupportedRequestTypes: []string{
 			"text_completion",
@@ -797,72 +458,182 @@ func (p *GeminiProvider) GetCapabilities() *models.ProviderCapabilities {
 		SupportsFunctionCalling: true,
 		SupportsVision:          true,
 		SupportsTools:           true,
-		SupportsSearch:          false,
+		SupportsSearch:          true,
 		SupportsReasoning:       true,
 		SupportsCodeCompletion:  true,
 		SupportsCodeAnalysis:    true,
 		SupportsRefactoring:     false,
 		Limits: models.ModelLimits{
-			MaxTokens:             32768,
-			MaxInputLength:        32768,
-			MaxOutputLength:       8192,
+			MaxTokens:             65536,
+			MaxInputLength:        1048576,
+			MaxOutputLength:       65536,
 			MaxConcurrentRequests: 10,
 		},
 		Metadata: map[string]string{
-			"provider":     "Google",
-			"model_family": "Gemini",
-			"api_version":  "v1beta",
+			"provider":       "Google",
+			"model_family":   "Gemini",
+			"api_version":    "v1beta",
+			"access_methods": "api,cli,acp",
 		},
 	}
+
+	return caps
 }
 
-// ValidateConfig validates the provider configuration
-func (p *GeminiProvider) ValidateConfig(config map[string]interface{}) (bool, []string) {
-	var errors []string
+// ValidateConfig validates the provider configuration.
+func (p *GeminiUnifiedProvider) ValidateConfig(config map[string]interface{}) (bool, []string) {
+	var issues []string
 
-	if p.apiKey == "" {
-		errors = append(errors, "API key is required")
+	if p.apiKey == "" && !IsGeminiCLIInstalled() {
+		issues = append(issues, "no GEMINI_API_KEY and Gemini CLI not installed")
 	}
 
-	if p.baseURL == "" {
-		errors = append(errors, "base URL is required")
+	if len(issues) > 0 {
+		return false, issues
 	}
-
-	if p.model == "" {
-		errors = append(errors, "model is required")
-	}
-
-	return len(errors) == 0, errors
+	return true, nil
 }
 
-// HealthCheck implements health checking for the Gemini provider
-func (p *GeminiProvider) HealthCheck() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+// GetName returns the provider name.
+func (p *GeminiUnifiedProvider) GetName() string {
+	return "gemini"
+}
 
-	// Use healthURL if set, otherwise use default
-	healthURL := p.healthURL
-	if healthURL == "" {
-		healthURL = "https://generativelanguage.googleapis.com/v1beta/models"
+// GetProviderType returns the provider type.
+func (p *GeminiUnifiedProvider) GetProviderType() string {
+	return "gemini"
+}
+
+// GetCurrentModel returns the current model.
+func (p *GeminiUnifiedProvider) GetCurrentModel() string {
+	return p.model
+}
+
+// SetModel sets the model across all sub-providers.
+func (p *GeminiUnifiedProvider) SetModel(model string) {
+	p.model = model
+	if p.cliProvider != nil {
+		p.cliProvider.SetModel(model)
+	}
+	if p.acpProvider != nil {
+		p.acpProvider.SetModel(model)
+	}
+}
+
+// GetPreferredMethod returns the preferred access method.
+func (p *GeminiUnifiedProvider) GetPreferredMethod() string {
+	return p.preferredMethod
+}
+
+// SetPreferredMethod sets the preferred access method.
+func (p *GeminiUnifiedProvider) SetPreferredMethod(method string) {
+	p.preferredMethod = method
+}
+
+// GetAvailableAccessMethods returns all currently available access methods.
+func (p *GeminiUnifiedProvider) GetAvailableAccessMethods() []string {
+	_ = p.Initialize()
+
+	var methods []string
+
+	if p.apiProvider != nil {
+		methods = append(methods, "api")
 	}
 
-	// Simple health check - try to get models list
-	req, err := http.NewRequestWithContext(ctx, "GET", healthURL+"?key="+p.apiKey, nil)
-	if err != nil {
-		return fmt.Errorf("failed to create health check request: %w", err)
+	if p.cliProvider != nil && p.cliProvider.IsCLIAvailable() {
+		methods = append(methods, "cli")
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := p.httpClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("health check request failed: %w", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("health check failed with status: %d", resp.StatusCode)
+	if p.acpProvider != nil && p.acpProvider.IsAvailable() {
+		methods = append(methods, "acp")
 	}
 
-	return nil
+	return methods
+}
+
+// getAllGeminiModels returns all known Gemini models.
+func getAllGeminiModels() []string {
+	return []string{
+		"gemini-3.1-pro-preview",
+		"gemini-3-pro-preview",
+		"gemini-3-flash-preview",
+		"gemini-2.5-pro",
+		"gemini-2.5-flash",
+		"gemini-2.5-flash-lite",
+		"gemini-2.0-flash",
+		"gemini-embedding-001",
+	}
+}
+
+// IsGeminiAvailable checks if any Gemini access method is available.
+func IsGeminiAvailable() bool {
+	if os.Getenv("GEMINI_API_KEY") != "" {
+		return true
+	}
+	return IsGeminiCLIInstalled() && IsGeminiCLIAuthenticated()
+}
+
+// CanUseGemini returns true if Gemini can be used via any method.
+func CanUseGemini() bool {
+	return IsGeminiAvailable() || CanUseGeminiCLI() || CanUseGeminiACP()
+}
+
+// GetGeminiProviderInfo returns provider information for the registry.
+func GetGeminiProviderInfo() map[string]interface{} {
+	return map[string]interface{}{
+		"id":           "gemini",
+		"name":         "Gemini (Google)",
+		"type":         "gemini",
+		"display_name": "Google Gemini",
+		"description":  "Google's Gemini models with API, CLI headless, and ACP access methods",
+		"auth_type":    "api_key",
+		"access_methods": []string{
+			"api",
+			"cli",
+			"acp",
+		},
+		"models":             getAllGeminiModels(),
+		"supports_streaming": true,
+		"supports_tools":     true,
+		"supports_vision":    true,
+		"supports_search":    true,
+		"supports_reasoning": true,
+		"tier":               1,
+		"priority":           1,
+	}
+}
+
+// buildPromptFromRequest extracts a text prompt from an LLMRequest.
+// Shared helper used by CLI and ACP sub-providers.
+func buildPromptFromRequest(req *models.LLMRequest) string {
+	var b []byte
+
+	for _, msg := range req.Messages {
+		switch msg.Role {
+		case "system":
+			b = append(b, "System: "...)
+			b = append(b, msg.Content...)
+			b = append(b, "\n\n"...)
+		case "user":
+			b = append(b, msg.Content...)
+			b = append(b, '\n')
+		case "assistant":
+			b = append(b, "Assistant: "...)
+			b = append(b, msg.Content...)
+			b = append(b, "\n\n"...)
+		}
+	}
+
+	prompt := string(b)
+	if prompt == "" && req.Prompt != "" {
+		prompt = req.Prompt
+	}
+
+	return prompt
+}
+
+// marshalJSON is a convenience wrapper that ignores marshal errors for metadata.
+func marshalJSON(v interface{}) string {
+	data, _ := json.Marshal(v) //nolint:errcheck
+	return string(data)
 }

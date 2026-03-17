@@ -380,7 +380,7 @@ var SupportedProviders = map[string]*ProviderTypeInfo{
 		Priority:    2,
 		EnvVars:     []string{"GEMINI_API_KEY", "GOOGLE_API_KEY", "ApiKey_Gemini"},
 		BaseURL:     "https://generativelanguage.googleapis.com/v1beta",
-		Models:      []string{"gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"},
+		Models:      []string{"gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"},
 		Free:        false,
 	},
 	"deepseek": {

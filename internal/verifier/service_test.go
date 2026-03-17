@@ -187,7 +187,7 @@ func TestVerificationService_BatchVerify(t *testing.T) {
 	requests := []*BatchVerificationRequest{
 		{ModelID: "model1", Provider: "openai"},
 		{ModelID: "model2", Provider: "anthropic"},
-		{ModelID: "model3", Provider: "google"},
+		{ModelID: "model3", Provider: "gemini"},
 	}
 
 	results, err := svc.BatchVerify(context.Background(), requests)
