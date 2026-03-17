@@ -21,6 +21,14 @@ const (
 	VeniceAPIURL = "https://api.venice.ai/api/v1/chat/completions"
 	// VeniceModelsURL is the URL for listing models
 	VeniceModelsURL = "https://api.venice.ai/api/v1/models"
+	// VeniceEmbeddingsURL is the URL for embeddings generation
+	VeniceEmbeddingsURL = "https://api.venice.ai/api/v1/embeddings"
+	// VeniceImageURL is the URL for image generation
+	VeniceImageURL = "https://api.venice.ai/api/v1/image/generate"
+	// VeniceAudioURL is the URL for text-to-speech
+	VeniceAudioURL = "https://api.venice.ai/api/v1/audio/speech"
+	// VeniceTranscribeURL is the URL for speech-to-text transcriptions
+	VeniceTranscribeURL = "https://api.venice.ai/api/v1/audio/transcriptions"
 	// VeniceDefault is the default Venice model
 	VeniceDefault = "llama-3.3-70b"
 )
@@ -383,6 +391,8 @@ func (p *Provider) GetCapabilities() *models.ProviderCapabilities {
 		SupportedFeatures: []string{
 			"chat", "streaming", "tools", "vision", "reasoning",
 			"web_search", "code_completion", "uncensored",
+			"embeddings", "image_generation",
+			"text_to_speech", "speech_to_text",
 		},
 		SupportedRequestTypes:   []string{"chat", "completion"},
 		SupportsStreaming:       true,
@@ -400,9 +410,26 @@ func (p *Provider) GetCapabilities() *models.ProviderCapabilities {
 			MaxConcurrentRequests: 50,
 		},
 		Metadata: map[string]string{
-			"provider":   "venice",
-			"web_search": "true",
+			"provider":            "venice",
+			"supported_endpoints": "chat,embeddings,image,audio,models",
+			"web_search":          "true",
+			"e2ee":                "true",
+			"uncensored_models":   "true",
 		},
+	}
+}
+
+// GetSupportedEndpoints returns all Venice AI API endpoints
+func (p *Provider) GetSupportedEndpoints() []string {
+	return []string{
+		"chat/completions",
+		"embeddings",
+		"image/generate",
+		"image/edit",
+		"image/upscale",
+		"audio/speech",
+		"audio/transcriptions",
+		"models",
 	}
 }
 

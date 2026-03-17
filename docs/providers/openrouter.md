@@ -1,87 +1,208 @@
-# OpenRouter Provider Setup Guide
+# OpenRouter Provider
 
 ## Overview
 
-OpenRouter is a unified API gateway that provides access to multiple AI models from various providers through a single API. This allows you to use models from OpenAI, Anthropic, Google, Meta, and many others without managing separate API keys for each provider.
+OpenRouter is a universal API gateway providing access to 300+ AI models from multiple providers through a single OpenAI-compatible API. It offers unified billing, automatic model routing, and access to both premium and free-tier models, making it especially useful for HelixAgent's ensemble debate system.
 
-### Supported Models
+## Authentication
 
-OpenRouter provides access to 100+ models including:
+| Header | Value |
+|--------|-------|
+| `Authorization` | `Bearer <OPENROUTER_API_KEY>` |
 
-**Top Providers:**
-- `openrouter/anthropic/claude-3.5-sonnet` - Anthropic Claude
-- `openrouter/openai/gpt-4o` - OpenAI GPT-4o
-- `openrouter/google/gemini-pro` - Google Gemini
-- `openrouter/meta-llama/llama-3.1-405b` - Meta Llama 3.1
-- `openrouter/mistralai/mistral-large` - Mistral AI
-- `openrouter/deepseek-v2-lite` - DeepSeek
+### Obtaining an API Key
 
-**Open Source Models:**
-- `openrouter/meta-llama/llama-3.1-70b`
-- `openrouter/perplexity-70b`
-- Various other open source models
-
-### Key Features
-
-- Access to 100+ models through one API
-- Multi-model routing
-- Cost optimization
-- Streaming responses
-- Tool use support
-- Search capabilities
-- Code completion and analysis
-- Unified billing across providers
-
-## API Key Setup
-
-### Step 1: Create an OpenRouter Account
-
-1. Visit [openrouter.ai](https://openrouter.ai)
-2. Click **Sign In** and create an account
-3. Verify your email address
-
-### Step 2: Add Credits
-
-1. Navigate to **Credits** in your dashboard
-2. Add funds to your account (minimum $5)
-3. Your credits will be used across all model providers
-
-### Step 3: Generate an API Key
-
-1. Go to **API Keys** in your dashboard
-2. Click **Create Key**
-3. Name your key (e.g., "HelixAgent")
-4. Copy the API key immediately
-
-### Step 4: Store Your API Key Securely
+1. Visit [openrouter.ai](https://openrouter.ai) and sign in
+2. Navigate to **API Keys** in your dashboard
+3. Click **Create Key**, name it (e.g., "HelixAgent")
+4. Copy the key immediately (prefix: `sk-or-v1-`)
 
 ```bash
-# Add to your environment or .env file
 export OPENROUTER_API_KEY=sk-or-v1-xxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-## Environment Variable Configuration
+## API Base URL
 
-Add the following to your `.env` file or environment:
+```
+https://openrouter.ai/api/v1
+```
+
+## Endpoint
+
+| Endpoint | URL | Method |
+|----------|-----|--------|
+| Chat completions | `/chat/completions` | POST |
+| Models list | `/models` | GET |
+
+OpenRouter exposes a single OpenAI-compatible chat completions endpoint. All model access goes through `/chat/completions`.
+
+## Model Naming Convention
+
+Models use the `provider/model-name` format:
+
+```
+anthropic/claude-3.5-sonnet
+openai/gpt-4o
+google/gemini-pro
+meta-llama/llama-3.1-405b-instruct
+deepseek/deepseek-chat
+```
+
+### Free Models
+
+Append `:free` to a model ID for free-tier access (rate-limited, no credits required):
+
+```
+meta-llama/llama-4-maverick:free
+deepseek/deepseek-r1:free
+google/gemini-2.5-pro-exp-03-25:free
+qwen/qwq-32b:free
+mistralai/mistral-7b-instruct:free
+```
+
+## Configuration
+
+Add to your `.env` file:
 
 ```bash
 # Required
 OPENROUTER_API_KEY=sk-or-v1-xxxxxxxxxxxxxxxxxxxxxxxx
 
-# Optional - Override default settings
+# Optional
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
-OPENROUTER_DEFAULT_MODEL=openrouter/anthropic/claude-3.5-sonnet
+OPENROUTER_DEFAULT_MODEL=anthropic/claude-3.5-sonnet
 ```
-
-### Configuration Options
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `OPENROUTER_API_KEY` | Yes | - | Your OpenRouter API key |
-| `OPENROUTER_BASE_URL` | No | `https://openrouter.ai/api/v1` | API endpoint URL |
+| `OPENROUTER_BASE_URL` | No | `https://openrouter.ai/api/v1` | API base URL |
 | `OPENROUTER_DEFAULT_MODEL` | No | - | Default model to use |
 
-## Basic Usage Example
+## Key Models by Provider
+
+| Provider | Model ID | Notes |
+|----------|----------|-------|
+| Anthropic | `anthropic/claude-3.5-sonnet` | Premium |
+| OpenAI | `openai/gpt-4o` | Premium |
+| Google | `google/gemini-pro` | Premium |
+| Meta | `meta-llama/llama-3.1-405b-instruct` | Premium |
+| Meta | `meta-llama/llama-4-maverick:free` | Free |
+| Meta | `meta-llama/llama-4-scout:free` | Free |
+| DeepSeek | `deepseek/deepseek-chat` | Premium |
+| DeepSeek | `deepseek/deepseek-r1:free` | Free |
+| DeepSeek | `deepseek/deepseek-chat-v3-0324:free` | Free |
+| Mistral | `mistralai/mistral-large` | Premium |
+| Google | `google/gemini-2.5-pro-exp-03-25:free` | Free |
+| Google | `google/gemma-3-27b-it:free` | Free |
+| Qwen | `qwen/qwq-32b:free` | Free |
+| NVIDIA | `nvidia/llama-3.1-nemotron-ultra-253b-v1:free` | Free |
+| Microsoft | `microsoft/phi-3-medium-128k-instruct:free` | Free |
+
+## App Attribution Headers
+
+OpenRouter requires (or strongly recommends) attribution headers:
+
+```go
+httpReq.Header.Set("HTTP-Referer", "helixagent")
+httpReq.Header.Set("X-Title", "HelixAgent")
+```
+
+These headers identify your application to OpenRouter and may be required for certain models. HelixAgent sets these automatically.
+
+## Streaming
+
+OpenRouter uses standard SSE (Server-Sent Events) for streaming:
+
+- Each chunk is a `data: {json}\n\n` line
+- Processing comments (lines starting with `:`) may appear mid-stream for keep-alive
+- Errors can occur mid-stream as SSE events with error payloads
+- Stream terminates with `data: [DONE]`
+
+```go
+streamChan, err := provider.CompleteStream(ctx, req)
+if err != nil {
+    fmt.Printf("Error: %v\n", err)
+    return
+}
+for chunk := range streamChan {
+    fmt.Print(chunk.Content)
+}
+```
+
+## Tool/Function Calling
+
+OpenRouter passes tool definitions through to the underlying model. Not all models support tools. The request format is OpenAI-compatible:
+
+```go
+req := &models.LLMRequest{
+    ID: "request-1",
+    Messages: []models.Message{
+        {Role: "user", Content: "What's the weather in London?"},
+    },
+    Tools: []models.Tool{
+        {
+            Type: "function",
+            Function: models.ToolFunction{
+                Name:        "get_weather",
+                Description: "Get current weather",
+                Parameters: map[string]interface{}{
+                    "type": "object",
+                    "properties": map[string]interface{}{
+                        "city": map[string]interface{}{
+                            "type": "string",
+                        },
+                    },
+                    "required": []string{"city"},
+                },
+            },
+        },
+    },
+    ModelParams: models.ModelParams{
+        Model:     "openai/gpt-4o",
+        MaxTokens: 1024,
+    },
+}
+```
+
+## Rate Limits
+
+Rate limits vary by model and account tier:
+
+| Tier | Requests/Minute | Concurrent Requests |
+|------|-----------------|---------------------|
+| Free | 20 | 5 |
+| Standard | 200 | 50 |
+| Pro | 1000 | 100 |
+
+Free-tier models (`:free` suffix) have lower limits. Check the [OpenRouter Models page](https://openrouter.ai/models) for per-model specifics.
+
+## Cost Tracking
+
+OpenRouter charges per-token based on the underlying model's pricing. Costs vary significantly:
+
+- Free models: $0
+- Open-source models: fractions of a cent per 1K tokens
+- Premium models (GPT-4o, Claude): standard provider pricing with OpenRouter markup
+
+Monitor spending in the OpenRouter dashboard. HelixAgent extracts token usage from response metadata.
+
+## HelixAgent Integration
+
+OpenRouter is a key provider in the HelixAgent ecosystem:
+
+- **Provider type**: API Key (Bearer token)
+- **Provider ID**: `openrouter`
+- **Discovery**: 3-tier (OpenRouter `/v1/models` API, models.dev, hardcoded fallback with 30+ models)
+- **Health check**: Queries `/v1/models` endpoint
+- **Free model discovery**: Automatically discovers `:free` models for zero-cost debate participants
+- **Debate team selection**: Both premium and free models scored by LLMsVerifier
+- **Auto-routing**: HelixAgent can route through OpenRouter as fallback when direct provider access fails
+- **Retry**: Exponential backoff with jitter (default: 3 retries, 1s initial, 30s max)
+- **Max tokens cap**: 16,384 (safe maximum across most OpenRouter models)
+- **HTTP timeout**: 60 seconds
+
+## Example Usage
 
 ### Go Code Example
 
@@ -98,261 +219,81 @@ import (
 )
 
 func main() {
-    // Create provider
     provider := openrouter.NewSimpleOpenRouterProvider(
         os.Getenv("OPENROUTER_API_KEY"),
     )
 
-    // Create request
     req := &models.LLMRequest{
         ID: "request-1",
         Messages: []models.Message{
             {Role: "user", Content: "What is the capital of France?"},
         },
         ModelParams: models.ModelParams{
-            Model:       "openrouter/anthropic/claude-3.5-sonnet",
+            Model:       "anthropic/claude-3.5-sonnet",
             MaxTokens:   1024,
             Temperature: 0.7,
         },
     }
 
-    // Make completion request
     ctx := context.Background()
     resp, err := provider.Complete(ctx, req)
     if err != nil {
         fmt.Printf("Error: %v\n", err)
         return
     }
-
     fmt.Printf("Response: %s\n", resp.Content)
 }
 ```
 
-### Streaming Example
+### Using a Free Model
 
 ```go
-// Enable streaming
-streamChan, err := provider.CompleteStream(ctx, req)
-if err != nil {
-    fmt.Printf("Error: %v\n", err)
-    return
-}
-
-for chunk := range streamChan {
-    fmt.Print(chunk.Content)
-}
-```
-
-### Using Different Models
-
-```go
-// Use GPT-4
 req := &models.LLMRequest{
     ID: "request-1",
     Messages: []models.Message{
-        {Role: "user", Content: "Write a poem about coding."},
+        {Role: "user", Content: "Explain quicksort."},
     },
     ModelParams: models.ModelParams{
-        Model:       "openrouter/openai/gpt-4o",
-        MaxTokens:   1024,
-        Temperature: 0.8,
-    },
-}
-
-// Use Llama 3.1
-req := &models.LLMRequest{
-    ID: "request-2",
-    Messages: []models.Message{
-        {Role: "user", Content: "Explain quantum computing."},
-    },
-    ModelParams: models.ModelParams{
-        Model:       "openrouter/meta-llama/llama-3.1-70b",
+        Model:       "deepseek/deepseek-r1:free",
         MaxTokens:   2048,
-        Temperature: 0.7,
+        Temperature: 0.3,
     },
 }
 ```
-
-## Rate Limits and Quotas
-
-### Default Rate Limits
-
-OpenRouter rate limits vary by model and account tier:
-
-| Tier | Requests/Minute | Concurrent Requests |
-|------|-----------------|---------------------|
-| Free | 20 | 5 |
-| Standard | 200 | 50 |
-| Pro | 1000 | 100 |
-
-### Model-Specific Limits
-
-Different models have different rate limits based on the underlying provider. Check the [OpenRouter Models page](https://openrouter.ai/models) for specific limits.
-
-### Context Limits
-
-| Model Family | Max Context |
-|--------------|-------------|
-| Claude 3.5 | 200,000 tokens |
-| GPT-4o | 128,000 tokens |
-| Llama 3.1 | 128,000 tokens |
-| Mistral Large | 32,000 tokens |
-
-### Best Practices for Rate Limits
-
-1. **Use exponential backoff** - HelixAgent automatically implements retry with backoff
-2. **Monitor usage** - Check your OpenRouter dashboard for usage statistics
-3. **Use appropriate models** - Choose cost-effective models for simple tasks
-4. **Enable request queuing** - For high-volume applications
-
-## Cost Management
-
-OpenRouter provides transparent pricing per model:
-
-### Checking Costs
-
-1. Visit the [OpenRouter Models page](https://openrouter.ai/models)
-2. View per-token pricing for each model
-3. Monitor spending in your dashboard
-
-### Cost Optimization Tips
-
-1. **Use smaller models** when appropriate
-2. **Set max_tokens limits** to prevent runaway costs
-3. **Cache responses** for repeated queries
-4. **Use streaming** for faster perceived response times
 
 ## Troubleshooting
 
-### Common Errors
+### Authentication Error (401)
 
-#### Authentication Error (401)
+Verify your API key starts with `sk-or-v1-` and has not been revoked.
 
-```
-OpenRouter API error: Invalid API key
-```
+### Insufficient Credits (402)
 
-**Solution:**
-- Verify your API key is correct
-- Check that the key hasn't been revoked
-- Ensure proper `Authorization: Bearer` header
+Add credits in the OpenRouter dashboard. Free-tier models (`:free`) do not require credits.
 
-#### Insufficient Credits (402)
+### Rate Limit Error (429)
 
-```
-OpenRouter API error: Insufficient credits
-```
+HelixAgent retries automatically with exponential backoff. Upgrade your tier or switch to a less loaded model.
 
-**Solution:**
-- Add more credits to your OpenRouter account
-- Check your balance in the dashboard
-- Consider using a more cost-effective model
+### Model Not Found (404)
 
-#### Rate Limit Error (429)
+Verify the model ID uses the correct `provider/model-name` format. Browse available models at [openrouter.ai/models](https://openrouter.ai/models).
 
-```
-OpenRouter API error: Rate limit exceeded
-```
+### Provider Unavailable (503)
 
-**Solution:**
-- Wait for the rate limit to reset
-- HelixAgent automatically retries with exponential backoff
-- Upgrade to a higher tier if needed
-
-#### Model Not Found (404)
-
-```
-OpenRouter API error: Model not found
-```
-
-**Solution:**
-- Verify the model ID is correct
-- Check that the model is available on OpenRouter
-- Use the model browser at openrouter.ai/models
-
-#### Provider Unavailable (503)
-
-```
-OpenRouter API error: Provider temporarily unavailable
-```
-
-**Solution:**
-- Wait and retry (automatic with HelixAgent)
-- Try an alternative model from a different provider
-- Check OpenRouter status page
-
-### Health Check
-
-HelixAgent provides a health check for OpenRouter:
-
-```go
-err := provider.HealthCheck()
-if err != nil {
-    fmt.Printf("OpenRouter provider unhealthy: %v\n", err)
-}
-```
-
-Note: OpenRouter doesn't have a dedicated health check endpoint. The health check verifies that the API key is configured.
+The underlying provider is temporarily down. Try an alternative model from a different provider. HelixAgent handles this via its fallback chain.
 
 ### Debug Logging
-
-Enable debug logging to troubleshoot issues:
 
 ```bash
 export GIN_MODE=debug
 export LOG_LEVEL=debug
 ```
 
-### Connection Issues
-
-If experiencing connection timeouts:
-
-1. Check network connectivity to `openrouter.ai`
-2. Verify SSL/TLS is working correctly
-3. Check for proxy interference
-4. Consider increasing timeout (default is 60 seconds)
-
-```go
-// Custom retry configuration
-retryConfig := openrouter.RetryConfig{
-    MaxRetries:   5,
-    InitialDelay: 2 * time.Second,
-    MaxDelay:     60 * time.Second,
-    Multiplier:   2.0,
-}
-
-provider := openrouter.NewSimpleOpenRouterProviderWithRetry(
-    apiKey,
-    baseURL,
-    retryConfig,
-)
-```
-
-## Headers and Metadata
-
-OpenRouter supports additional headers for tracking:
-
-```go
-httpReq.Header.Set("HTTP-Referer", "helixagent")  // Identify your app
-httpReq.Header.Set("X-Title", "HelixAgent App")   // Your app name
-```
-
-These headers help OpenRouter track usage and may be required for some models.
-
-## Model Selection Guide
-
-| Use Case | Recommended Model | Cost |
-|----------|-------------------|------|
-| Complex reasoning | claude-3.5-sonnet | $$$ |
-| General chat | gpt-4o | $$$ |
-| Code generation | deepseek-coder | $$ |
-| Fast responses | llama-3.1-70b | $ |
-| Cost-effective | mistral-7b | $ |
-
 ## Additional Resources
 
 - [OpenRouter Website](https://openrouter.ai)
 - [OpenRouter API Documentation](https://openrouter.ai/docs)
 - [Model Browser](https://openrouter.ai/models)
-- [Pricing Information](https://openrouter.ai/docs#pricing)
-- [OpenRouter Discord](https://discord.gg/openrouter)
+- [Pricing](https://openrouter.ai/docs#pricing)
+- Provider source: `internal/llm/providers/openrouter/openrouter.go`

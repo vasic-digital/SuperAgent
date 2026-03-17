@@ -1441,6 +1441,189 @@ func TestSimpleOpenRouterProvider_Complete_NilID(t *testing.T) {
 	assert.Equal(t, "", resp.ID) // Should be empty when id is nil
 }
 
+// Test CompleteStream with SSE processing comments (keep-alive)
+func TestSimpleOpenRouterProvider_CompleteStream_ProcessingComments(
+	t *testing.T,
+) {
+	server := httptest.NewServer(http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "text/event-stream")
+			w.Header().Set("Cache-Control", "no-cache")
+			w.Header().Set("Connection", "keep-alive")
+			w.WriteHeader(http.StatusOK)
+
+			flusher, ok := w.(http.Flusher)
+			if !ok {
+				t.Fatal("server doesn't support flushing")
+			}
+
+			// Send processing comment (should be skipped)
+			_, _ = w.Write(
+				[]byte(": OPENROUTER PROCESSING\n\n"),
+			)
+			flusher.Flush()
+			time.Sleep(50 * time.Millisecond)
+
+			// Send actual data
+			_, _ = w.Write([]byte(
+				"data: {\"choices\":[{\"delta\":" +
+					"{\"content\":\"Hello\"}}]}\n\n",
+			))
+			flusher.Flush()
+			time.Sleep(50 * time.Millisecond)
+
+			// Another processing comment
+			_, _ = w.Write(
+				[]byte(": OPENROUTER PROCESSING\n\n"),
+			)
+			flusher.Flush()
+			time.Sleep(50 * time.Millisecond)
+
+			// More actual data
+			_, _ = w.Write([]byte(
+				"data: {\"choices\":[{\"delta\":" +
+					"{\"content\":\" world\"}}]}\n\n",
+			))
+			flusher.Flush()
+			time.Sleep(50 * time.Millisecond)
+
+			// Done
+			_, _ = w.Write([]byte("data: [DONE]\n\n"))
+			flusher.Flush()
+			time.Sleep(50 * time.Millisecond)
+		},
+	))
+	defer server.Close()
+
+	provider := NewSimpleOpenRouterProvider("test-key")
+	provider.baseURL = server.URL
+
+	req := &models.LLMRequest{
+		ID: "test-processing-comments",
+		ModelParams: models.ModelParameters{
+			Model: "test-model",
+		},
+		Prompt: "Test",
+	}
+
+	ch, err := provider.CompleteStream(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, ch)
+
+	// Read from channel with timeout (same pattern as existing test)
+	var responses []*models.LLMResponse
+	timeout := time.After(5 * time.Second)
+	done := false
+
+	for !done {
+		select {
+		case resp, ok := <-ch:
+			if !ok {
+				done = true
+				break
+			}
+			if resp != nil {
+				responses = append(responses, resp)
+			}
+		case <-timeout:
+			done = true
+		}
+	}
+
+	// Should have chunk responses plus final
+	require.GreaterOrEqual(t, len(responses), 1)
+
+	// Last response should be the final with accumulated content
+	lastResp := responses[len(responses)-1]
+	assert.Equal(t, "stop", lastResp.FinishReason)
+	assert.Contains(t, lastResp.Content, "Hello")
+	assert.Contains(t, lastResp.Content, "world")
+}
+
+// Test CompleteStream with mid-stream error
+func TestSimpleOpenRouterProvider_CompleteStream_MidStreamError(
+	t *testing.T,
+) {
+	server := httptest.NewServer(http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "text/event-stream")
+			w.Header().Set("Cache-Control", "no-cache")
+			w.Header().Set("Connection", "keep-alive")
+			w.WriteHeader(http.StatusOK)
+
+			flusher, ok := w.(http.Flusher)
+			if !ok {
+				t.Fatal("server doesn't support flushing")
+			}
+
+			// Send some valid data first
+			_, _ = w.Write([]byte(
+				"data: {\"choices\":[{\"delta\":" +
+					"{\"content\":\"Partial\"}}]}\n\n",
+			))
+			flusher.Flush()
+			time.Sleep(50 * time.Millisecond)
+
+			// Send mid-stream error
+			_, _ = w.Write([]byte(
+				"data: {\"error\":{\"message\":" +
+					"\"rate limit exceeded\"," +
+					"\"code\":429}}\n\n",
+			))
+			flusher.Flush()
+			time.Sleep(50 * time.Millisecond)
+		},
+	))
+	defer server.Close()
+
+	provider := NewSimpleOpenRouterProvider("test-key")
+	provider.baseURL = server.URL
+
+	req := &models.LLMRequest{
+		ID: "test-midstream-error",
+		ModelParams: models.ModelParameters{
+			Model: "test-model",
+		},
+		Prompt: "Test",
+	}
+
+	ch, err := provider.CompleteStream(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, ch)
+
+	// Read from channel with timeout
+	var responses []*models.LLMResponse
+	timeout := time.After(5 * time.Second)
+	done := false
+
+	for !done {
+		select {
+		case resp, ok := <-ch:
+			if !ok {
+				done = true
+				break
+			}
+			if resp != nil {
+				responses = append(responses, resp)
+			}
+		case <-timeout:
+			done = true
+		}
+	}
+
+	// Should have the content chunk plus the error response
+	require.GreaterOrEqual(t, len(responses), 1)
+
+	// Find the error response
+	lastResp := responses[len(responses)-1]
+	assert.Equal(t, "error", lastResp.FinishReason)
+	assert.NotNil(t, lastResp.Metadata["error"])
+	assert.Equal(t,
+		"rate limit exceeded",
+		lastResp.Metadata["error"],
+	)
+}
+
 // =============================================================================
 // Benchmarks
 // =============================================================================

@@ -950,6 +950,62 @@ func TestEmptyChoices(t *testing.T) {
 	assert.Empty(t, resp.FinishReason)
 }
 
+func TestVeniceProvider_GetSupportedEndpoints(t *testing.T) {
+	p := NewProvider("key", "", "")
+	endpoints := p.GetSupportedEndpoints()
+	assert.Contains(t, endpoints, "chat/completions")
+	assert.Contains(t, endpoints, "embeddings")
+	assert.Contains(t, endpoints, "image/generate")
+	assert.Contains(t, endpoints, "audio/speech")
+	assert.Contains(t, endpoints, "audio/transcriptions")
+	assert.Contains(t, endpoints, "models")
+	assert.Contains(t, endpoints, "image/edit")
+	assert.Contains(t, endpoints, "image/upscale")
+	assert.GreaterOrEqual(t, len(endpoints), 7)
+}
+
+func TestVeniceProvider_Capabilities_MultiModal(t *testing.T) {
+	p := NewProvider("key", "", "")
+	caps := p.GetCapabilities()
+	assert.Contains(t, caps.SupportedFeatures, "embeddings")
+	assert.Contains(t, caps.SupportedFeatures, "image_generation")
+	assert.Contains(t, caps.SupportedFeatures, "text_to_speech")
+	assert.Contains(t, caps.SupportedFeatures, "speech_to_text")
+	assert.True(t, caps.SupportsVision)
+	assert.True(t, caps.SupportsReasoning)
+	assert.True(t, caps.SupportsSearch)
+}
+
+func TestVeniceProvider_Capabilities_Metadata(t *testing.T) {
+	p := NewProvider("key", "", "")
+	caps := p.GetCapabilities()
+	assert.Equal(t, "true", caps.Metadata["e2ee"])
+	assert.Equal(t, "true", caps.Metadata["uncensored_models"])
+	assert.Equal(t,
+		"chat,embeddings,image,audio,models",
+		caps.Metadata["supported_endpoints"],
+	)
+}
+
+func TestVeniceProvider_EndpointConstants(t *testing.T) {
+	assert.Equal(t,
+		"https://api.venice.ai/api/v1/embeddings",
+		VeniceEmbeddingsURL,
+	)
+	assert.Equal(t,
+		"https://api.venice.ai/api/v1/image/generate",
+		VeniceImageURL,
+	)
+	assert.Equal(t,
+		"https://api.venice.ai/api/v1/audio/speech",
+		VeniceAudioURL,
+	)
+	assert.Equal(t,
+		"https://api.venice.ai/api/v1/audio/transcriptions",
+		VeniceTranscribeURL,
+	)
+}
+
 // Benchmarks
 
 func BenchmarkProvider_ConvertRequest(b *testing.B) {

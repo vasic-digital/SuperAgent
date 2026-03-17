@@ -504,6 +504,13 @@ func (p *SimpleOpenRouterProvider) CompleteStream(ctx context.Context, req *mode
 				lines := bytes.Split([]byte(data), []byte("\n"))
 				for _, line := range lines {
 					lineStr := string(line)
+
+					// Skip SSE comments (OpenRouter sends
+					// ": OPENROUTER PROCESSING" keep-alive)
+					if len(lineStr) > 0 && lineStr[0] == ':' {
+						continue
+					}
+
 					if len(lineStr) > 6 && lineStr[:6] == "data: " {
 						jsonData := lineStr[6:]
 						if jsonData == "[DONE]" {
@@ -518,6 +525,38 @@ func (p *SimpleOpenRouterProvider) CompleteStream(ctx context.Context, req *mode
 								CreatedAt:    time.Now(),
 							}
 							return
+						}
+
+						// Check for mid-stream errors
+						if bytes.Contains(
+							[]byte(jsonData), []byte(`"error"`),
+						) {
+							var errResp struct {
+								Error struct {
+									Message string `json:"message"`
+									Code    int    `json:"code"`
+								} `json:"error"`
+							}
+							if json.Unmarshal(
+								[]byte(jsonData), &errResp,
+							) == nil && errResp.Error.Message != "" {
+								ch <- &models.LLMResponse{
+									ID: fmt.Sprintf(
+										"stream-error-%d", chunkIndex,
+									),
+									RequestID:    req.ID,
+									ProviderID:   "openrouter",
+									ProviderName: "OpenRouter",
+									Content:      contentBuilder.String(),
+									FinishReason: "error",
+									CreatedAt:    time.Now(),
+									Metadata: map[string]any{
+										"error":      errResp.Error.Message,
+										"error_code": errResp.Error.Code,
+									},
+								}
+								return
+							}
 						}
 
 						var chunk struct {
