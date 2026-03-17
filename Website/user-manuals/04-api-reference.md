@@ -1192,3 +1192,776 @@ This API reference covers all HelixAgent endpoints. Key points:
 4. **Full Monitoring**: Health, metrics, and provider status endpoints available
 
 For implementation examples, see the [Getting Started Guide](01-getting-started.md). For deployment, see the [Deployment Guide](05-deployment-guide.md).
+
+---
+
+## Background Tasks API (`/v1/tasks`)
+
+The Background Tasks API provides full lifecycle management for asynchronous operations such as batch processing, long-running LLM evaluations, and scheduled maintenance tasks.
+
+### Create Task
+
+Creates a new background task and adds it to the processing queue.
+
+```
+POST /v1/tasks
+```
+
+**Request Body**
+
+```json
+{
+  "type": "batch_evaluation",
+  "payload": {
+    "models": ["deepseek-chat", "claude-3-sonnet"],
+    "prompts": ["Explain quantum computing", "Write a haiku about Go"],
+    "settings": {"temperature": 0.7}
+  },
+  "priority": "high"
+}
+```
+
+**Parameters**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `type` | string | Yes | - | Task type identifier |
+| `payload` | object | Yes | - | Task-specific payload |
+| `priority` | string | No | `normal` | Priority: `low`, `normal`, or `high` |
+
+**Response**
+
+```json
+{
+  "id": "task_a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "status": "queued",
+  "type": "batch_evaluation",
+  "priority": "high",
+  "created_at": "2026-03-15T10:30:00Z"
+}
+```
+
+### List Tasks
+
+Returns all background tasks with optional filtering.
+
+```
+GET /v1/tasks
+```
+
+**Query Parameters**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `status` | string | all | Filter: `queued`, `running`, `completed`, `failed`, `paused` |
+| `limit` | integer | 50 | Maximum results (1-500) |
+| `offset` | integer | 0 | Pagination offset |
+| `type` | string | all | Filter by task type |
+
+**Response**
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "task_a1b2c3d4",
+      "type": "batch_evaluation",
+      "status": "running",
+      "progress": 0.65,
+      "created_at": "2026-03-15T10:30:00Z",
+      "started_at": "2026-03-15T10:30:02Z"
+    }
+  ],
+  "total": 12,
+  "limit": 50,
+  "offset": 0
+}
+```
+
+### Get Task Details
+
+```
+GET /v1/tasks/:id
+```
+
+Returns full details for a specific task including progress, timing, and result data.
+
+### Get Task Status
+
+```
+GET /v1/tasks/:id/status
+```
+
+Returns only the current status and progress percentage. Useful for lightweight polling.
+
+**Response**
+
+```json
+{
+  "id": "task_a1b2c3d4",
+  "status": "running",
+  "progress": 0.65,
+  "eta_seconds": 45
+}
+```
+
+### Get Task Logs
+
+```
+GET /v1/tasks/:id/logs
+```
+
+Returns execution logs for a task, useful for debugging failed tasks.
+
+**Query Parameters**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `level` | string | all | Filter: `info`, `warn`, `error` |
+| `limit` | integer | 100 | Maximum log entries |
+
+### Get Task Resource Usage
+
+```
+GET /v1/tasks/:id/resources
+```
+
+Returns CPU, memory, and goroutine usage for a running task. Helps monitor resource consumption against the 30-40% host limit policy.
+
+**Response**
+
+```json
+{
+  "id": "task_a1b2c3d4",
+  "resources": {
+    "cpu_percent": 12.5,
+    "memory_mb": 256,
+    "goroutines": 8,
+    "api_calls": 42
+  }
+}
+```
+
+### Task Control
+
+#### Pause Task
+
+```
+POST /v1/tasks/:id/pause
+```
+
+Pauses a running task. The task can be resumed later from where it left off.
+
+#### Resume Task
+
+```
+POST /v1/tasks/:id/resume
+```
+
+Resumes a previously paused task.
+
+#### Cancel Task
+
+```
+POST /v1/tasks/:id/cancel
+```
+
+Cancels a queued or running task. Cancelled tasks cannot be resumed.
+
+#### Delete Task
+
+```
+DELETE /v1/tasks/:id
+```
+
+Permanently removes a task and its associated data. Only completed, failed, or cancelled tasks can be deleted.
+
+### Task Analytics
+
+#### Queue Statistics
+
+```
+GET /v1/tasks/queue/stats
+```
+
+Returns aggregate queue statistics including pending count, average wait time, and throughput.
+
+**Response**
+
+```json
+{
+  "pending": 5,
+  "running": 3,
+  "completed_today": 142,
+  "failed_today": 2,
+  "avg_wait_time_seconds": 1.5,
+  "avg_execution_time_seconds": 34.2,
+  "throughput_per_minute": 4.2
+}
+```
+
+#### Poll Task Events
+
+```
+GET /v1/tasks/events
+```
+
+Returns recent task events (created, started, completed, failed). Useful for building dashboards.
+
+**Query Parameters**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `since` | string | - | ISO 8601 timestamp to fetch events after |
+| `limit` | integer | 50 | Maximum events |
+
+#### Analyze Task Performance
+
+```
+POST /v1/tasks/:id/analyze
+```
+
+Triggers a performance analysis of a completed task, returning timing breakdowns and optimization suggestions.
+
+#### WebSocket Real-Time Updates
+
+```
+GET /v1/tasks/:id/ws
+```
+
+Opens a WebSocket connection for real-time task status updates. Events are pushed as the task progresses, completing, or failing.
+
+**WebSocket Events**
+
+```json
+{"event": "progress", "data": {"progress": 0.75, "message": "Processing prompt 3/4"}}
+{"event": "completed", "data": {"result": {...}, "duration_seconds": 42}}
+{"event": "failed", "data": {"error": "provider timeout", "retry_possible": true}}
+```
+
+### Webhooks
+
+#### Register Webhook
+
+```
+POST /v1/tasks/webhooks
+```
+
+Registers a webhook URL to receive notifications when tasks change status.
+
+**Request Body**
+
+```json
+{
+  "url": "https://your-app.com/webhooks/tasks",
+  "events": ["completed", "failed"],
+  "secret": "your-signing-secret"
+}
+```
+
+#### List Webhooks
+
+```
+GET /v1/tasks/webhooks
+```
+
+Returns all registered webhooks.
+
+#### Delete Webhook
+
+```
+DELETE /v1/tasks/webhooks/:id
+```
+
+Removes a registered webhook.
+
+---
+
+## Model Discovery API (`/v1/discovery`)
+
+The Discovery API exposes HelixAgent's 3-tier dynamic model discovery system. Models are discovered from provider APIs (Tier 1), models.dev catalog (Tier 2), and hardcoded fallbacks (Tier 3).
+
+### Get All Discovered Models
+
+```
+GET /v1/discovery/models
+```
+
+Returns all models discovered across all providers, including discovery tier and availability status.
+
+**Response**
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "deepseek-chat",
+      "provider": "deepseek",
+      "discovery_tier": 1,
+      "available": true,
+      "capabilities": {"chat": true, "streaming": true},
+      "discovered_at": "2026-03-15T08:00:00Z"
+    }
+  ],
+  "total": 85,
+  "discovery_stats": {
+    "tier_1_count": 52,
+    "tier_2_count": 28,
+    "tier_3_count": 5
+  }
+}
+```
+
+### Get Selected Models for Debate
+
+```
+GET /v1/discovery/models/selected
+```
+
+Returns the models currently selected for ensemble debate based on verification scores.
+
+### Get Discovery Statistics
+
+```
+GET /v1/discovery/stats
+```
+
+Returns statistics about the discovery process: number of providers queried, success/failure rates, cache TTL remaining, and last refresh time.
+
+### Trigger Model Discovery
+
+```
+POST /v1/discovery/trigger
+```
+
+Manually triggers a full model discovery cycle across all providers. The discovery process runs asynchronously.
+
+**Response**
+
+```json
+{
+  "status": "discovery_started",
+  "estimated_duration_seconds": 30,
+  "providers_querying": 22
+}
+```
+
+### Get Ensemble Configuration
+
+```
+GET /v1/discovery/ensemble
+```
+
+Returns the current ensemble model configuration including which providers and models are active in the debate team.
+
+### Get Debate Model Assignment
+
+```
+GET /v1/discovery/debate-model
+```
+
+Returns the model assigned for the current debate session, including its verification score and position.
+
+---
+
+## Model Scoring API (`/v1/scoring`)
+
+The Scoring API provides access to HelixAgent's 5-component weighted scoring system used to rank and select providers for ensemble debate.
+
+### Get Model Score
+
+```
+GET /v1/scoring/model/:name
+```
+
+Returns the detailed score breakdown for a specific model.
+
+**Response**
+
+```json
+{
+  "model": "deepseek-chat",
+  "provider": "deepseek",
+  "total_score": 8.45,
+  "components": {
+    "response_speed": {"score": 9.2, "weight": 0.25},
+    "cost_effectiveness": {"score": 8.8, "weight": 0.25},
+    "model_efficiency": {"score": 7.5, "weight": 0.20},
+    "capability": {"score": 8.1, "weight": 0.20},
+    "recency": {"score": 8.0, "weight": 0.10}
+  },
+  "bonuses": {
+    "oauth_bonus": 0.0,
+    "free_tier_adjustment": 0.0
+  },
+  "last_verified": "2026-03-15T08:05:00Z"
+}
+```
+
+### Batch Calculate Scores
+
+```
+POST /v1/scoring/batch
+```
+
+Calculates scores for multiple models in a single request.
+
+**Request Body**
+
+```json
+{
+  "models": ["deepseek-chat", "claude-3-sonnet", "gemini-pro"]
+}
+```
+
+### Get Top-Scored Models
+
+```
+GET /v1/scoring/top
+```
+
+Returns models ranked by total score. Accepts an optional `limit` query parameter (default: 10).
+
+### Filter by Score Range
+
+```
+GET /v1/scoring/range
+```
+
+Returns models within a specified score range.
+
+**Query Parameters**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `min` | float | 0.0 | Minimum score |
+| `max` | float | 10.0 | Maximum score |
+
+### Get Scoring Weights
+
+```
+GET /v1/scoring/weights
+```
+
+Returns the current scoring weight configuration.
+
+**Response**
+
+```json
+{
+  "response_speed": 0.25,
+  "cost_effectiveness": 0.25,
+  "model_efficiency": 0.20,
+  "capability": 0.20,
+  "recency": 0.10
+}
+```
+
+### Update Scoring Weights
+
+```
+PUT /v1/scoring/weights
+```
+
+Updates the scoring weight components. Weights must sum to 1.0.
+
+**Request Body**
+
+```json
+{
+  "response_speed": 0.30,
+  "cost_effectiveness": 0.20,
+  "model_efficiency": 0.20,
+  "capability": 0.20,
+  "recency": 0.10
+}
+```
+
+### Invalidate Scoring Cache
+
+```
+POST /v1/scoring/cache/invalidate
+```
+
+Forces re-calculation of all model scores by invalidating the scoring cache.
+
+### Compare Models
+
+```
+POST /v1/scoring/compare
+```
+
+Compares two models across all scoring dimensions.
+
+**Request Body**
+
+```json
+{
+  "model_a": "deepseek-chat",
+  "model_b": "claude-3-sonnet"
+}
+```
+
+**Response**
+
+```json
+{
+  "model_a": {"name": "deepseek-chat", "total": 8.45},
+  "model_b": {"name": "claude-3-sonnet", "total": 8.72},
+  "winner": "claude-3-sonnet",
+  "advantages": {
+    "deepseek-chat": ["response_speed", "cost_effectiveness"],
+    "claude-3-sonnet": ["capability", "model_efficiency", "recency"]
+  }
+}
+```
+
+---
+
+## Provider Verification API (`/v1/verification`)
+
+The Verification API exposes HelixAgent's 8-test verification pipeline used during startup to validate provider health and capability.
+
+### Verify a Single Model
+
+```
+POST /v1/verification/model
+```
+
+Runs the full 8-test verification pipeline against a single model.
+
+**Request Body**
+
+```json
+{
+  "model": "deepseek-chat",
+  "provider": "deepseek"
+}
+```
+
+**Response**
+
+```json
+{
+  "model": "deepseek-chat",
+  "provider": "deepseek",
+  "verified": true,
+  "tests_passed": 8,
+  "tests_total": 8,
+  "score": 8.45,
+  "verification_time_ms": 2500,
+  "test_results": [
+    {"test": "connectivity", "passed": true, "latency_ms": 120},
+    {"test": "authentication", "passed": true, "latency_ms": 15},
+    {"test": "simple_completion", "passed": true, "latency_ms": 800},
+    {"test": "streaming", "passed": true, "latency_ms": 450},
+    {"test": "error_handling", "passed": true, "latency_ms": 200},
+    {"test": "rate_limit", "passed": true, "latency_ms": 100},
+    {"test": "capability_check", "passed": true, "latency_ms": 50},
+    {"test": "model_listing", "passed": true, "latency_ms": 300}
+  ]
+}
+```
+
+### Batch Verify Models
+
+```
+POST /v1/verification/batch
+```
+
+Runs verification against multiple models in parallel.
+
+**Request Body**
+
+```json
+{
+  "models": [
+    {"model": "deepseek-chat", "provider": "deepseek"},
+    {"model": "gemini-pro", "provider": "gemini"}
+  ]
+}
+```
+
+### Get Verification Pipeline Status
+
+```
+GET /v1/verification/status
+```
+
+Returns the current state of the verification pipeline including which providers are being verified.
+
+### Get All Verified Models
+
+```
+GET /v1/verification/models
+```
+
+Returns all models that have passed verification, sorted by score.
+
+### Re-verify a Model
+
+```
+POST /v1/verification/model/:name/reverify
+```
+
+Forces re-verification of a specific model, useful when a provider recovers from an outage.
+
+### Get Available Verification Tests
+
+```
+GET /v1/verification/tests
+```
+
+Returns the list of verification tests in the pipeline with their descriptions and timeout settings.
+
+### Get Verification Service Health
+
+```
+GET /v1/verification/health
+```
+
+Returns the health status of the verification service itself.
+
+---
+
+## Provider Health API (`/v1/health`)
+
+The Provider Health API provides real-time health monitoring for all configured LLM providers, including latency tracking and circuit breaker states.
+
+### Get All Provider Health
+
+```
+GET /v1/health/providers
+```
+
+Returns health status for all configured providers.
+
+**Response**
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "provider": "deepseek",
+      "status": "healthy",
+      "latency_ms": 245,
+      "uptime_percent": 99.8,
+      "circuit_breaker": "closed",
+      "last_check": "2026-03-15T10:30:00Z"
+    },
+    {
+      "provider": "claude",
+      "status": "healthy",
+      "latency_ms": 380,
+      "uptime_percent": 99.5,
+      "circuit_breaker": "closed",
+      "last_check": "2026-03-15T10:30:00Z"
+    }
+  ],
+  "healthy_count": 18,
+  "total_count": 22
+}
+```
+
+### Get Healthy Providers Only
+
+```
+GET /v1/health/providers/healthy
+```
+
+Returns only providers currently in healthy state. Useful for routing decisions.
+
+### Get Fastest Provider
+
+```
+GET /v1/health/providers/fastest
+```
+
+Returns the provider with the lowest current latency.
+
+**Response**
+
+```json
+{
+  "provider": "cerebras",
+  "latency_ms": 85,
+  "status": "healthy",
+  "model": "llama-3.3-70b"
+}
+```
+
+### Get Specific Provider Health
+
+```
+GET /v1/health/provider/:name
+```
+
+Returns detailed health information for a specific provider.
+
+### Get Provider Latency
+
+```
+GET /v1/health/provider/:name/latency
+```
+
+Returns latency history for a provider including P50, P95, and P99 percentiles.
+
+**Response**
+
+```json
+{
+  "provider": "deepseek",
+  "current_ms": 245,
+  "p50_ms": 220,
+  "p95_ms": 450,
+  "p99_ms": 890,
+  "samples": 1000
+}
+```
+
+### Check Provider Availability
+
+```
+GET /v1/health/provider/:name/available
+```
+
+Quick boolean check for whether a provider is available.
+
+**Response**
+
+```json
+{
+  "provider": "deepseek",
+  "available": true
+}
+```
+
+### Get Circuit Breaker States
+
+```
+GET /v1/health/circuit-breakers
+```
+
+Returns circuit breaker states for all providers. States: `closed` (healthy), `open` (failing), `half-open` (testing recovery).
+
+**Response**
+
+```json
+{
+  "circuit_breakers": [
+    {"provider": "deepseek", "state": "closed", "failure_count": 0},
+    {"provider": "replicate", "state": "open", "failure_count": 5, "opens_at": "2026-03-15T10:25:00Z", "recovery_at": "2026-03-15T10:30:00Z"}
+  ]
+}
+```
+
+### Get Health Service Status
+
+```
+GET /v1/health/status
+```
+
+Returns the overall health of the health monitoring service itself, including check frequency and last full scan time.
