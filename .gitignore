@@ -85,3 +85,6 @@ reports/false-positive-checks.json
 # Mobile release artifacts
 releases/mobile/
 releases/web/
+
+# CLI agent local memory/state directories
+.junie/
