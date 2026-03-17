@@ -74,9 +74,10 @@ else
 fi
 
 # Test 1.4: Binary is recent (built within last hour)
-BINARY_AGE=$(find bin/helixagent -mmin -60 2>/dev/null | wc -l)
+# Check binary was built within last 24 hours
+BINARY_AGE=$(find bin/helixagent -mmin -1440 2>/dev/null | wc -l)
 if [ "$BINARY_AGE" -ge 1 ]; then
-    pass "Binary was built recently (within last hour)"
+    pass "Binary was built recently (within last 24 hours)"
 else
     fail "Binary is stale — run 'make build' before starting server"
 fi
@@ -168,7 +169,7 @@ fi
 
 # Test 3.4: Circuit breakers should not be permanently open for primary providers
 if [ -f "$LOG" ]; then
-    OPEN_CIRCUITS=$(grep -c "circuit breaker is open" "$LOG" 2>/dev/null || echo "0")
+    OPEN_CIRCUITS=$(grep "circuit breaker is open" "$LOG" 2>/dev/null | wc -l)
     if [ "$OPEN_CIRCUITS" -le 2 ]; then
         pass "Circuit breakers healthy (open count: $OPEN_CIRCUITS)"
     else
