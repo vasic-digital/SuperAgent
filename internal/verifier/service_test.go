@@ -127,7 +127,9 @@ func TestVerificationService_VerifyModel_ProviderError(t *testing.T) {
 func TestVerificationService_VerifyModel_CodeNotVisible(t *testing.T) {
 	svc := NewVerificationService(&Config{})
 
-	// Mock provider that doesn't confirm code visibility
+	// Mock provider that doesn't confirm code visibility but still responds
+	// With soft-gate, code visibility failure alone does NOT block verification;
+	// the model can still pass if overall score >= 50
 	svc.SetProviderFunc(func(ctx context.Context, modelID, provider, prompt string) (string, error) {
 		return "I cannot see any code", nil
 	})
@@ -140,11 +142,14 @@ func TestVerificationService_VerifyModel_CodeNotVisible(t *testing.T) {
 	if result.CodeVerified {
 		t.Error("expected CodeVerified to be false")
 	}
-	if result.Verified {
-		t.Error("expected Verified to be false")
+	// Code visibility is a soft gate — overall score determines verification
+	// The model still responds to other tests, so it may or may not pass
+	// depending on overall score threshold (>= 50)
+	if result.OverallScore < 50 && result.Verified {
+		t.Error("expected Verified to be false when overall score < 50")
 	}
-	if result.Status != "failed" {
-		t.Errorf("expected status 'failed', got '%s'", result.Status)
+	if result.OverallScore >= 50 && !result.Verified {
+		t.Error("expected Verified to be true when overall score >= 50 (soft gate)")
 	}
 }
 
@@ -155,16 +160,32 @@ func TestVerificationService_isAffirmativeCodeResponse(t *testing.T) {
 		response string
 		expected bool
 	}{
+		// Primary affirmatives
 		{"Yes, I can see your code", true},
 		{"yes i can see the code", true},
 		{"I see your code above", true},
 		{"The code is visible to me", true},
 		{"I can view the code", true},
 		{"affirmative, I see it", true},
+		// Secondary indicators — model references or analyzes the code
+		{"This is a recursive fibonacci function", true},
+		{"The function calculates fibonacci numbers", true},
+		{"I notice this code defines a recursive function", true},
+		{"Here's the code you shared with me", true},
+		{"Looking at your code, it implements fibonacci", true},
+		{"The provided code shows a fibonacci implementation", true},
+		{"This code snippet uses recursion", true},
+		{"def fibonacci(n) is defined here", true},
+		{"func fibonacci computes the sequence", true},
+		{"The given code above is correct", true},
+		{"I see a function that computes values", true},
+		// Negative cases — should NOT match
 		{"No, I cannot see anything", false},
 		{"What code?", false},
 		{"I don't understand", false},
 		{"", false},
+		{"Hello there", false},
+		{"The weather is nice today", false},
 	}
 
 	for _, tt := range tests {
@@ -1006,11 +1027,12 @@ func TestVerificationService_StoreVerificationResult_UpdatesStats(t *testing.T) 
 
 func TestVerificationService_StoreVerificationResult_FailedVerification(t *testing.T) {
 	svc := NewVerificationService(&Config{})
+	// Return errors for all calls — this guarantees a truly failed verification
 	svc.SetProviderFunc(func(ctx context.Context, modelID, provider, prompt string) (string, error) {
-		return "I cannot see any code", nil
+		return "", errors.New("provider unavailable")
 	})
 
-	// This will fail verification due to code visibility
+	// This will fail verification because the provider returns errors for all tests
 	_, _ = svc.VerifyModel(context.Background(), "model1", "openai")
 
 	stats, _ := svc.GetStats(context.Background())

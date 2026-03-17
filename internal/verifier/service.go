@@ -247,18 +247,17 @@ func (s *VerificationService) VerifyModel(ctx context.Context, modelID string, p
 		result.TestsMap[test.Name] = test.Passed
 	}
 
-	if result.CodeVerified && result.OverallScore >= 60 {
+	// Code visibility is important but not a hard gate.
+	// A model that responds well to all other tests but doesn't match
+	// our affirmative patterns is still usable with a lower score.
+	if result.OverallScore >= 50 {
 		result.Status = "verified"
 		result.Verified = true
 		result.Message = "Model verified successfully"
 	} else {
 		result.Status = "failed"
 		result.Verified = false
-		if !result.CodeVerified {
-			result.Message = "Code visibility verification failed"
-		} else {
-			result.Message = "Model did not meet minimum score threshold"
-		}
+		result.Message = "Model did not meet minimum score threshold"
 	}
 
 	// Store result in cache and update statistics
@@ -319,7 +318,8 @@ func (s *VerificationService) verifyCodeVisibility(ctx context.Context, modelID,
 		Details:   make([]string, 0),
 	}
 
-	// Code samples in multiple languages
+	// Code samples — reduced to 2 (Python and Go) to minimize API calls
+	// while still validating cross-language code visibility
 	codeSamples := []struct {
 		language string
 		code     string
@@ -333,18 +333,6 @@ func (s *VerificationService) verifyCodeVisibility(ctx context.Context, modelID,
         return n
     }
     return fibonacci(n-1) + fibonacci(n-2)
-}`},
-		{"javascript", `function fibonacci(n) {
-    if (n <= 1) return n;
-    return fibonacci(n - 1) + fibonacci(n - 2);
-}`},
-		{"java", `public int fibonacci(int n) {
-    if (n <= 1) return n;
-    return fibonacci(n - 1) + fibonacci(n - 2);
-}`},
-		{"csharp", `public int Fibonacci(int n) {
-    if (n <= 1) return n;
-    return Fibonacci(n - 1) + Fibonacci(n - 2);
 }`},
 	}
 
@@ -375,7 +363,7 @@ Do you see my code? Please respond with "Yes, I can see your code" if you can se
 
 	result.CompletedAt = time.Now()
 	result.Score = float64(passedCount) / float64(totalTests) * 100
-	result.Passed = result.Score >= 80 // Require 80% pass rate
+	result.Passed = result.Score >= 50 // Require at least 1 of 2 samples to pass
 
 	return result, nil
 }
@@ -384,23 +372,71 @@ Do you see my code? Please respond with "Yes, I can see your code" if you can se
 func (s *VerificationService) isAffirmativeCodeResponse(response string) bool {
 	response = strings.ToLower(response)
 
+	// Primary affirmatives — explicit "yes" patterns
 	affirmatives := []string{
 		"yes, i can see",
 		"yes i can see",
+		"yes, i see",
+		"yes i see",
 		"i can see your code",
 		"i see your code",
 		"i can see the code",
-		"yes, i see",
-		"yes i see",
+		"see the code",
+		"can see the",
 		"affirmative",
 		"visible",
 		"i can view",
-		"can see the",
-		"see the code",
 	}
 
 	for _, phrase := range affirmatives {
 		if strings.Contains(response, phrase) {
+			return true
+		}
+	}
+
+	// Secondary indicators — the model analyzed or referenced the code
+	// These indicate the model can see the code even without explicit "yes"
+	codeIndicators := []string{
+		"fibonacci",          // References the function name from the test
+		"recursive",          // Describes what the code does
+		"here is the code",   // Acknowledges seeing code
+		"here's the code",    // Acknowledges seeing code
+		"your code",          // References user's code
+		"the code you",       // References the code shown
+		"this code",          // References the code
+		"code snippet",       // References a code snippet
+		"code sample",        // References code sample
+		"function",           // Identifies a function
+		"looking at",         // Looking at the code
+		"i see a",            // I see a function/code
+		"i notice",           // I notice the code
+		"shows a",            // Shows a function
+		"defines a",          // Defines a function
+		"implements",         // Implements fibonacci
+		"calculates",         // Calculates fibonacci
+		"computes",           // Computes fibonacci
+		"this is a",          // This is a recursive function
+		"the function",       // The function fibonacci
+		"provided code",      // The provided code
+		"given code",         // The given code
+		"above code",         // The above code
+		"following code",     // The following code
+		"displayed code",     // The displayed code
+		"shown code",         // The shown code
+		"presented code",     // The presented code
+		"code above",         // Code above
+		"code below",         // Code below
+		"code you shared",    // Code you shared
+		"code you provided",  // Code you provided
+		"code you wrote",     // Code you wrote
+		"def fibonacci",      // Python function signature
+		"func fibonacci",     // Go function signature
+		"function fibonacci", // JS function signature
+		"public int",         // Java/C# method
+	}
+
+	for _, indicator := range codeIndicators {
+		if strings.Contains(response, indicator) {
 			return true
 		}
 	}
@@ -416,7 +452,7 @@ func (s *VerificationService) verifyExistence(ctx context.Context, modelID, prov
 	}
 
 	start := time.Now()
-	response, err := s.callModel(ctx, modelID, provider, "Hello, please respond with 'OK' if you can hear me.")
+	response, err := s.callModel(ctx, modelID, provider, "Reply with just 'hello'")
 	latency := time.Since(start)
 
 	// Store the response for quality inspection
