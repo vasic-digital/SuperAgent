@@ -8,6 +8,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// LLMInvoker provides real LLM inference for debate agents.
+// When set on BaseAgent, specialized agents call this instead of returning templates.
+type LLMInvoker interface {
+	Invoke(ctx context.Context, systemPrompt, userPrompt string) (string, float64, error)
+}
+
 // AgentPool manages a pool of agents
 type AgentPool struct {
 	byRole map[Role][]*Agent
@@ -293,9 +299,10 @@ type AgentConfig struct {
 
 // BaseAgent provides a base implementation of AgentInterface
 type BaseAgent struct {
-	agent  *Agent
-	pool   *AgentPool
-	logger *logrus.Logger
+	agent      *Agent
+	pool       *AgentPool
+	logger     *logrus.Logger
+	llmInvoker LLMInvoker
 }
 
 // NewBaseAgent creates a new base agent
@@ -335,6 +342,67 @@ func (b *BaseAgent) CanHandle(taskType string) bool {
 // UpdateScore updates the agent's score
 func (b *BaseAgent) UpdateScore(score float64) {
 	b.agent.Score = score
+}
+
+// SetLLMInvoker sets the LLM invoker for real provider calls.
+func (b *BaseAgent) SetLLMInvoker(invoker LLMInvoker) {
+	b.llmInvoker = invoker
+}
+
+// InvokeLLM calls the real LLM provider if available, otherwise returns the
+// template fallback. All specialized agents delegate here.
+func (b *BaseAgent) InvokeLLM(
+	ctx context.Context,
+	role, topic, templateFallback string,
+) (string, float64, error) {
+	invoker := b.llmInvoker
+	if invoker == nil {
+		invoker = GetInvoker(b.agent.Provider, b.agent.Model)
+	}
+	if invoker == nil {
+		return templateFallback, 0.85, nil
+	}
+
+	systemPrompt := fmt.Sprintf(
+		"You are %s in an AI debate team. Your role: %s. "+
+			"The provider/model you represent: %s/%s. "+
+			"Be concise (2-3 sentences), focused on your role.",
+		role, getRoleDescription(role),
+		b.agent.Provider, b.agent.Model,
+	)
+
+	userPrompt := fmt.Sprintf(
+		"Topic: %s\n\nProvide your analysis focused on your role.",
+		topic,
+	)
+
+	content, confidence, err := invoker.Invoke(ctx, systemPrompt, userPrompt)
+	if err != nil {
+		b.logger.WithError(err).WithField("role", role).
+			Warn("LLM invocation failed, using template fallback")
+		return templateFallback, 0.85, nil
+	}
+	return content, confidence, nil
+}
+
+// getRoleDescription returns a human-readable description for a debate role.
+func getRoleDescription(role string) string {
+	descriptions := map[string]string{
+		"Architect":   "System design, component architecture, data flow planning",
+		"Generator":   "Code generation, implementation of solutions",
+		"Critic":      "Code review, identify weaknesses, security issues, edge cases",
+		"Refactoring": "Code improvement, reduce complexity, improve readability",
+		"Tester":      "Test case generation, coverage analysis, quality assurance",
+		"Validator":   "Correctness validation, syntax checking, type safety",
+		"Security":    "Security analysis, vulnerability detection, attack surface assessment",
+		"Performance": "Performance optimization, complexity analysis, bottleneck detection",
+		"RedTeam":     "Adversarial testing, find vulnerabilities, stress test edge cases",
+		"BlueTeam":    "Defensive implementation, mitigation strategies, security hardening",
+	}
+	if desc, ok := descriptions[role]; ok {
+		return desc
+	}
+	return "General analysis and contribution"
 }
 
 // Process processes a message - must be overridden

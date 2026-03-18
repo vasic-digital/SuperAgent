@@ -9,6 +9,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"dev.helix.agent/internal/debate/comprehensive"
 	"dev.helix.agent/internal/services"
 	"digital.vasic.debate"
 	"digital.vasic.debate/orchestrator"
@@ -335,11 +336,33 @@ func (si *ServiceIntegration) PopulateFromDebateTeam(teamConfig *services.Debate
 		registeredCount++
 	}
 
+	// Register real LLM invokers in the comprehensive debate package so that
+	// specialized agents (Architect, Generator, Critic, etc.) call real
+	// providers instead of returning hardcoded template strings.
+	invokerCount := 0
+	for _, vllm := range verifiedLLMs {
+		if vllm.Provider != nil {
+			invoker := comprehensive.NewProviderLLMInvoker(vllm.Provider, vllm.ModelName)
+			comprehensive.RegisterInvoker(vllm.ProviderName, vllm.ModelName, invoker)
+			invokerCount++
+		}
+	}
+
+	// Set the strongest verified provider as fallback invoker so agents
+	// whose provider/model pair was not explicitly registered still get
+	// real LLM calls.
+	if len(verifiedLLMs) > 0 && verifiedLLMs[0].Provider != nil {
+		comprehensive.SetFallbackInvoker(
+			comprehensive.NewProviderLLMInvoker(verifiedLLMs[0].Provider, verifiedLLMs[0].ModelName),
+		)
+	}
+
 	if si.logger != nil {
 		si.logger.WithFields(logrus.Fields{
-			"registered_agents": registeredCount,
-			"total_verified":    len(verifiedLLMs),
-			"pool_size":         si.orchestrator.GetAgentPool().Size(),
+			"registered_agents":  registeredCount,
+			"registered_invokers": invokerCount,
+			"total_verified":     len(verifiedLLMs),
+			"pool_size":          si.orchestrator.GetAgentPool().Size(),
 		}).Info("Populated orchestrator agent pool from debate team verified providers")
 	}
 }

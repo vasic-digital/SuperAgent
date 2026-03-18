@@ -19,14 +19,20 @@ func NewArchitectAgent(agent *Agent, pool *AgentPool) *ArchitectAgent {
 }
 
 // Process implements system design logic
-func (a *ArchitectAgent) Process(ctx context.Context, msg *Message, context *Context) (*AgentResponse, error) {
-	response := NewAgentResponse(a.agent,
-		fmt.Sprintf("Architectural design for: %s\n\n1. System Components\n2. Data Flow\n3. Interface Definitions\n4. Technology Choices", context.Topic),
-		0.9)
+func (a *ArchitectAgent) Process(ctx context.Context, msg *Message, debateCtx *Context) (*AgentResponse, error) {
+	templateFallback := fmt.Sprintf(
+		"Architectural design for: %s\n\n1. System Components\n2. Data Flow\n"+
+			"3. Interface Definitions\n4. Technology Choices", debateCtx.Topic)
 
+	content, confidence, err := a.InvokeLLM(ctx, "Architect", debateCtx.Topic, templateFallback)
+	if err != nil {
+		return nil, err
+	}
+
+	response := NewAgentResponse(a.agent, content, confidence)
 	response.Metadata["phase"] = "design"
-	response.Metadata["components"] = []string{"api", "database", "cache"}
-
+	response.Metadata["provider"] = a.agent.Provider
+	response.Metadata["model"] = a.agent.Model
 	return response, nil
 }
 
@@ -43,14 +49,21 @@ func NewGeneratorAgent(agent *Agent, pool *AgentPool) *GeneratorAgent {
 }
 
 // Process implements code generation logic
-func (a *GeneratorAgent) Process(ctx context.Context, msg *Message, context *Context) (*AgentResponse, error) {
-	response := NewAgentResponse(a.agent,
-		fmt.Sprintf("Generated code for: %s\n\n```go\n// Implementation\nfunc %s() {\n    // TODO: Implement\n}\n```", context.Topic, sanitizeFunctionName(context.Topic)),
-		0.85)
+func (a *GeneratorAgent) Process(ctx context.Context, msg *Message, debateCtx *Context) (*AgentResponse, error) {
+	templateFallback := fmt.Sprintf(
+		"Generated code for: %s\n\n```go\n// Implementation\nfunc %s() {\n    // TODO: Implement\n}\n```",
+		debateCtx.Topic, sanitizeFunctionName(debateCtx.Topic))
 
+	content, confidence, err := a.InvokeLLM(ctx, "Generator", debateCtx.Topic, templateFallback)
+	if err != nil {
+		return nil, err
+	}
+
+	response := NewAgentResponse(a.agent, content, confidence)
 	response.Metadata["phase"] = "generation"
-	response.Metadata["language"] = context.Language
-
+	response.Metadata["language"] = debateCtx.Language
+	response.Metadata["provider"] = a.agent.Provider
+	response.Metadata["model"] = a.agent.Model
 	return response, nil
 }
 
@@ -67,14 +80,20 @@ func NewCriticAgent(agent *Agent, pool *AgentPool) *CriticAgent {
 }
 
 // Process implements code critique logic
-func (a *CriticAgent) Process(ctx context.Context, msg *Message, context *Context) (*AgentResponse, error) {
-	response := NewAgentResponse(a.agent,
-		"Code Review:\n\n1. Potential Issues:\n   - Error handling missing\n   - Edge cases not covered\n\n2. Recommendations:\n   - Add input validation\n   - Handle nil pointers",
-		0.8)
+func (a *CriticAgent) Process(ctx context.Context, msg *Message, debateCtx *Context) (*AgentResponse, error) {
+	templateFallback := "Code Review:\n\n1. Potential Issues:\n   - Error handling missing\n" +
+		"   - Edge cases not covered\n\n2. Recommendations:\n   - Add input validation\n" +
+		"   - Handle nil pointers"
 
+	content, confidence, err := a.InvokeLLM(ctx, "Critic", debateCtx.Topic, templateFallback)
+	if err != nil {
+		return nil, err
+	}
+
+	response := NewAgentResponse(a.agent, content, confidence)
 	response.Metadata["phase"] = "critique"
-	response.Metadata["issues_found"] = 2
-
+	response.Metadata["provider"] = a.agent.Provider
+	response.Metadata["model"] = a.agent.Model
 	return response, nil
 }
 
@@ -91,14 +110,19 @@ func NewRefactoringAgent(agent *Agent, pool *AgentPool) *RefactoringAgent {
 }
 
 // Process implements refactoring logic
-func (a *RefactoringAgent) Process(ctx context.Context, msg *Message, context *Context) (*AgentResponse, error) {
-	response := NewAgentResponse(a.agent,
-		"Refactored Code:\n\n- Extracted helper functions\n- Reduced cyclomatic complexity\n- Improved naming\n- Added documentation",
-		0.88)
+func (a *RefactoringAgent) Process(ctx context.Context, msg *Message, debateCtx *Context) (*AgentResponse, error) {
+	templateFallback := "Refactored Code:\n\n- Extracted helper functions\n" +
+		"- Reduced cyclomatic complexity\n- Improved naming\n- Added documentation"
 
+	content, confidence, err := a.InvokeLLM(ctx, "Refactoring", debateCtx.Topic, templateFallback)
+	if err != nil {
+		return nil, err
+	}
+
+	response := NewAgentResponse(a.agent, content, confidence)
 	response.Metadata["phase"] = "refactoring"
-	response.Metadata["improvements"] = []string{"complexity", "readability", "naming"}
-
+	response.Metadata["provider"] = a.agent.Provider
+	response.Metadata["model"] = a.agent.Model
 	return response, nil
 }
 
@@ -115,14 +139,19 @@ func NewTesterAgent(agent *Agent, pool *AgentPool) *TesterAgent {
 }
 
 // Process implements test generation logic
-func (a *TesterAgent) Process(ctx context.Context, msg *Message, context *Context) (*AgentResponse, error) {
-	response := NewAgentResponse(a.agent,
-		"Test Cases:\n\n1. Test happy path\n2. Test error conditions\n3. Test edge cases\n4. Test concurrent access",
-		0.9)
+func (a *TesterAgent) Process(ctx context.Context, msg *Message, debateCtx *Context) (*AgentResponse, error) {
+	templateFallback := "Test Cases:\n\n1. Test happy path\n2. Test error conditions\n" +
+		"3. Test edge cases\n4. Test concurrent access"
 
+	content, confidence, err := a.InvokeLLM(ctx, "Tester", debateCtx.Topic, templateFallback)
+	if err != nil {
+		return nil, err
+	}
+
+	response := NewAgentResponse(a.agent, content, confidence)
 	response.Metadata["phase"] = "testing"
-	response.Metadata["test_count"] = 4
-
+	response.Metadata["provider"] = a.agent.Provider
+	response.Metadata["model"] = a.agent.Model
 	return response, nil
 }
 
@@ -139,14 +168,19 @@ func NewValidatorAgent(agent *Agent, pool *AgentPool) *ValidatorAgent {
 }
 
 // Process implements validation logic
-func (a *ValidatorAgent) Process(ctx context.Context, msg *Message, context *Context) (*AgentResponse, error) {
-	response := NewAgentResponse(a.agent,
-		"Validation Results:\n\n- Syntax: ✓ Valid\n- Types: ✓ Consistent\n- Logic: ✓ Correct\n- Tests: ✓ Passing",
-		0.95)
+func (a *ValidatorAgent) Process(ctx context.Context, msg *Message, debateCtx *Context) (*AgentResponse, error) {
+	templateFallback := "Validation Results:\n\n- Syntax: Valid\n- Types: Consistent\n" +
+		"- Logic: Correct\n- Tests: Passing"
 
+	content, confidence, err := a.InvokeLLM(ctx, "Validator", debateCtx.Topic, templateFallback)
+	if err != nil {
+		return nil, err
+	}
+
+	response := NewAgentResponse(a.agent, content, confidence)
 	response.Metadata["phase"] = "validation"
-	response.Metadata["valid"] = true
-
+	response.Metadata["provider"] = a.agent.Provider
+	response.Metadata["model"] = a.agent.Model
 	return response, nil
 }
 
@@ -163,14 +197,19 @@ func NewSecurityAgent(agent *Agent, pool *AgentPool) *SecurityAgent {
 }
 
 // Process implements security analysis logic
-func (a *SecurityAgent) Process(ctx context.Context, msg *Message, context *Context) (*AgentResponse, error) {
-	response := NewAgentResponse(a.agent,
-		"Security Analysis:\n\n1. Vulnerabilities Found: 0 Critical, 1 Medium\n\n2. Recommendations:\n   - Add input validation\n   - Use parameterized queries",
-		0.85)
+func (a *SecurityAgent) Process(ctx context.Context, msg *Message, debateCtx *Context) (*AgentResponse, error) {
+	templateFallback := "Security Analysis:\n\n1. Vulnerabilities Found: 0 Critical, 1 Medium\n\n" +
+		"2. Recommendations:\n   - Add input validation\n   - Use parameterized queries"
 
+	content, confidence, err := a.InvokeLLM(ctx, "Security", debateCtx.Topic, templateFallback)
+	if err != nil {
+		return nil, err
+	}
+
+	response := NewAgentResponse(a.agent, content, confidence)
 	response.Metadata["phase"] = "security"
-	response.Metadata["vulnerabilities"] = 1
-
+	response.Metadata["provider"] = a.agent.Provider
+	response.Metadata["model"] = a.agent.Model
 	return response, nil
 }
 
@@ -187,14 +226,19 @@ func NewPerformanceAgent(agent *Agent, pool *AgentPool) *PerformanceAgent {
 }
 
 // Process implements performance analysis logic
-func (a *PerformanceAgent) Process(ctx context.Context, msg *Message, context *Context) (*AgentResponse, error) {
-	response := NewAgentResponse(a.agent,
-		"Performance Analysis:\n\n1. Complexity: O(n log n)\n2. Memory: Efficient\n3. Bottlenecks: None found\n\nOptimization: Pre-allocate slices for 15% speedup",
-		0.9)
+func (a *PerformanceAgent) Process(ctx context.Context, msg *Message, debateCtx *Context) (*AgentResponse, error) {
+	templateFallback := "Performance Analysis:\n\n1. Complexity: O(n log n)\n2. Memory: Efficient\n" +
+		"3. Bottlenecks: None found\n\nOptimization: Pre-allocate slices for 15% speedup"
 
+	content, confidence, err := a.InvokeLLM(ctx, "Performance", debateCtx.Topic, templateFallback)
+	if err != nil {
+		return nil, err
+	}
+
+	response := NewAgentResponse(a.agent, content, confidence)
 	response.Metadata["phase"] = "performance"
-	response.Metadata["complexity"] = "O(n log n)"
-
+	response.Metadata["provider"] = a.agent.Provider
+	response.Metadata["model"] = a.agent.Model
 	return response, nil
 }
 
@@ -211,14 +255,19 @@ func NewRedTeamAgent(agent *Agent, pool *AgentPool) *RedTeamAgent {
 }
 
 // Process implements adversarial testing logic
-func (a *RedTeamAgent) Process(ctx context.Context, msg *Message, context *Context) (*AgentResponse, error) {
-	response := NewAgentResponse(a.agent,
-		"Attack Vectors:\n\n1. SQL Injection - Mitigated ✓\n2. XSS - Vulnerable ✗\n3. CSRF - Needs validation\n4. Path Traversal - Safe ✓",
-		0.87)
+func (a *RedTeamAgent) Process(ctx context.Context, msg *Message, debateCtx *Context) (*AgentResponse, error) {
+	templateFallback := "Attack Vectors:\n\n1. SQL Injection - Mitigated\n" +
+		"2. XSS - Vulnerable\n3. CSRF - Needs validation\n4. Path Traversal - Safe"
 
+	content, confidence, err := a.InvokeLLM(ctx, "RedTeam", debateCtx.Topic, templateFallback)
+	if err != nil {
+		return nil, err
+	}
+
+	response := NewAgentResponse(a.agent, content, confidence)
 	response.Metadata["phase"] = "adversarial"
-	response.Metadata["attack_surface"] = []string{"input", "database", "filesystem"}
-
+	response.Metadata["provider"] = a.agent.Provider
+	response.Metadata["model"] = a.agent.Model
 	return response, nil
 }
 
@@ -235,14 +284,19 @@ func NewBlueTeamAgent(agent *Agent, pool *AgentPool) *BlueTeamAgent {
 }
 
 // Process implements defensive coding logic
-func (a *BlueTeamAgent) Process(ctx context.Context, msg *Message, context *Context) (*AgentResponse, error) {
-	response := NewAgentResponse(a.agent,
-		"Defensive Implementation:\n\n1. Input validation added\n2. Error handling improved\n3. Rate limiting implemented\n4. Logging enhanced",
-		0.9)
+func (a *BlueTeamAgent) Process(ctx context.Context, msg *Message, debateCtx *Context) (*AgentResponse, error) {
+	templateFallback := "Defensive Implementation:\n\n1. Input validation added\n" +
+		"2. Error handling improved\n3. Rate limiting implemented\n4. Logging enhanced"
 
+	content, confidence, err := a.InvokeLLM(ctx, "BlueTeam", debateCtx.Topic, templateFallback)
+	if err != nil {
+		return nil, err
+	}
+
+	response := NewAgentResponse(a.agent, content, confidence)
 	response.Metadata["phase"] = "defense"
-	response.Metadata["mitigations"] = []string{"validation", "error_handling", "rate_limiting"}
-
+	response.Metadata["provider"] = a.agent.Provider
+	response.Metadata["model"] = a.agent.Model
 	return response, nil
 }
 
