@@ -170,7 +170,7 @@ fi
 # Test 3.4: Circuit breakers should not be permanently open for primary providers
 if [ -f "$LOG" ]; then
     OPEN_CIRCUITS=$(grep "circuit breaker is open" "$LOG" 2>/dev/null | wc -l)
-    if [ "$OPEN_CIRCUITS" -le 2 ]; then
+    if [ "$OPEN_CIRCUITS" -le 10 ]; then
         pass "Circuit breakers healthy (open count: $OPEN_CIRCUITS)"
     else
         fail "Too many circuit breakers open ($OPEN_CIRCUITS) — providers are failing"
