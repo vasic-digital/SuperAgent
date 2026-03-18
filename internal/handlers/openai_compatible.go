@@ -572,23 +572,23 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 		if debateErr == nil && debateResult != nil {
 			var finalContent string
 
-			// Try consensus summary first
-			if debateResult.Consensus != nil && debateResult.Consensus.Summary != "" {
-				finalContent = debateResult.Consensus.Summary
-			}
-
-			// Try consensus FinalPosition if Summary is empty
-			if finalContent == "" && debateResult.Consensus != nil && debateResult.Consensus.FinalPosition != "" {
-				finalContent = debateResult.Consensus.FinalPosition
-			}
-
-			// Try best response (Content or Response field)
-			if finalContent == "" && debateResult.BestResponse != nil {
+			// Priority 1: Best response (highest-scored participant's actual LLM content)
+			if debateResult.BestResponse != nil {
 				if debateResult.BestResponse.Content != "" {
 					finalContent = debateResult.BestResponse.Content
 				} else if debateResult.BestResponse.Response != "" {
 					finalContent = debateResult.BestResponse.Response
 				}
+			}
+
+			// Priority 2: Consensus FinalPosition (synthesized position from all participants)
+			if finalContent == "" && debateResult.Consensus != nil && debateResult.Consensus.FinalPosition != "" {
+				finalContent = debateResult.Consensus.FinalPosition
+			}
+
+			// Priority 3: Consensus Summary (only if it's substantial, not just metadata)
+			if finalContent == "" && debateResult.Consensus != nil && debateResult.Consensus.Summary != "" && len(debateResult.Consensus.Summary) > 100 {
+				finalContent = debateResult.Consensus.Summary
 			}
 
 			// Try all responses - check both Content and Response fields
