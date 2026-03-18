@@ -133,7 +133,7 @@ func TestCerebrasProvider_GetCapabilities(t *testing.T) {
 	caps := provider.GetCapabilities()
 
 	assert.NotNil(t, caps)
-	assert.Contains(t, caps.SupportedModels, "llama-3.3-70b")
+	assert.Contains(t, caps.SupportedModels, "llama3.1-8b")
 	assert.Contains(t, caps.SupportedFeatures, "streaming")
 	assert.True(t, caps.SupportsStreaming)
 	assert.False(t, caps.SupportsFunctionCalling)
