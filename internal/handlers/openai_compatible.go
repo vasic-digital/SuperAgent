@@ -544,11 +544,61 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 		"debate_service":   h.debateService != nil,
 	}).Info("[STREAMING-DEBUG] Entering handleStreamingChatCompletions orchestrator check")
 
-	if h.orchestratorIntegration != nil && h.debateService != nil {
-		logrus.Info("[STREAMING] Using NEW orchestrator path — bypassing legacy 5-position debate")
+	if h.debateService != nil && h.debateTeamConfig != nil {
+		logrus.Info("[STREAMING] Using debate service with verified team — bypassing legacy 5-position dialogue")
 
-		// Run orchestrator debate (non-streaming — collects full result)
-		result, orchErr := h.processWithEnsemble(ctx, internalReq, req)
+		// Extract topic from the last user message
+		topic := ""
+		for _, msg := range req.Messages {
+			if msg.Role == "user" {
+				topic = msg.Content
+			}
+		}
+		if topic == "" {
+			topic = "User Query"
+		}
+
+		// Get participants from the verified debate team
+		participants := h.debateTeamConfig.GetParticipantConfigs()
+		logrus.WithField("participant_count", len(participants)).Info("[STREAMING] Debate team participants")
+
+		// Run debate service directly with verified participants (skip broken orchestrator)
+		debateConfig := &services.DebateConfig{
+			DebateID:     fmt.Sprintf("stream-debate-%d", time.Now().UnixNano()),
+			Topic:        topic,
+			MaxRounds:    3,
+			Strategy:     "collaborative",
+			Participants: participants,
+			Timeout:      90 * time.Second,
+		}
+
+		debateResult, debateErr := h.debateService.AutoConductDebate(ctx, debateConfig)
+
+		var result *services.EnsembleResult
+		var orchErr error
+		if debateErr == nil && debateResult != nil {
+			var finalContent string
+			if debateResult.Consensus != nil && debateResult.Consensus.Summary != "" {
+				finalContent = debateResult.Consensus.Summary
+			} else if debateResult.BestResponse != nil {
+				finalContent = debateResult.BestResponse.Content
+			} else if len(debateResult.AllResponses) > 0 {
+				finalContent = debateResult.AllResponses[0].Content
+			}
+			if finalContent != "" {
+				result = &services.EnsembleResult{
+					Selected: &models.LLMResponse{
+						Content:      finalContent,
+						FinishReason: "stop",
+						CreatedAt:    time.Now(),
+					},
+				}
+			}
+		} else {
+			orchErr = debateErr
+		}
+
+		_ = orchErr // used below
 		if orchErr == nil && result != nil && result.Selected != nil && result.Selected.Content != "" {
 			logrus.WithField("content_len", len(result.Selected.Content)).Info("[STREAMING] Orchestrator debate completed — streaming result")
 
