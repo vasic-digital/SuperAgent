@@ -544,128 +544,97 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 		"debate_service":   h.debateService != nil,
 	}).Info("[STREAMING-DEBUG] Entering handleStreamingChatCompletions orchestrator check")
 
-	if h.debateService != nil && h.debateTeamConfig != nil {
-		logrus.Info("[STREAMING] Using debate service with verified team — bypassing legacy 5-position dialogue")
+	if h.debateTeamConfig != nil {
+		logrus.Info("[STREAMING] Using verified debate team — strongest provider streaming")
 
-		// Extract topic from the last user message
-		topic := ""
-		for _, msg := range req.Messages {
-			if msg.Role == "user" {
-				topic = msg.Content
+		// Use the strongest verified provider for streaming
+		// Iterates through debate team positions (sorted by score) and uses
+		// the first one that successfully streams
+		for pos := services.PositionAnalyst; pos <= services.PositionMediator; pos++ {
+			provider, model, err := h.debateTeamConfig.GetProviderForPosition(pos)
+			if err != nil || provider == nil {
+				continue
 			}
-		}
-		if topic == "" {
-			topic = "User Query"
-		}
 
-		// Get participants from the verified debate team
-		participants := h.debateTeamConfig.GetParticipantConfigs()
-		logrus.WithField("participant_count", len(participants)).Info("[STREAMING] Debate team participants")
+			logrus.WithFields(logrus.Fields{
+				"position": pos,
+				"model":    model,
+			}).Info("[STREAMING] Using verified debate team provider for streaming")
 
-		// Run debate service directly with verified participants (skip broken orchestrator)
-		debateConfig := &services.DebateConfig{
-			DebateID:     fmt.Sprintf("stream-debate-%d", time.Now().UnixNano()),
-			Topic:        topic,
-			MaxRounds:    3,
-			Strategy:     "collaborative",
-			Participants: participants,
-			Timeout:      90 * time.Second,
-		}
-
-		debateResult, debateErr := h.debateService.AutoConductDebate(ctx, debateConfig)
-
-		var result *services.EnsembleResult
-		var orchErr error
-		if debateErr == nil && debateResult != nil {
-			var finalContent string
-			if debateResult.Consensus != nil && debateResult.Consensus.Summary != "" {
-				finalContent = debateResult.Consensus.Summary
-			} else if debateResult.BestResponse != nil {
-				finalContent = debateResult.BestResponse.Content
-			} else if len(debateResult.AllResponses) > 0 {
-				finalContent = debateResult.AllResponses[0].Content
+			// Set the model on the request
+			if model != "" {
+				internalReq.ModelParams.Model = model
 			}
-			if finalContent != "" {
-				result = &services.EnsembleResult{
-					Selected: &models.LLMResponse{
-						Content:      finalContent,
-						FinishReason: "stop",
-						CreatedAt:    time.Now(),
-					},
+
+			// Use the verified provider for streaming
+			streamChan, streamErr := provider.CompleteStream(ctx, internalReq)
+			if streamErr == nil && streamChan != nil {
+				// Set streaming headers
+				c.Header("Content-Type", "text/event-stream")
+				c.Header("Cache-Control", "no-cache")
+				c.Header("Connection", "keep-alive")
+				c.Header("X-Accel-Buffering", "no")
+
+				flusher, ok := c.Writer.(http.Flusher)
+				if !ok {
+					h.sendOpenAIError(c, http.StatusInternalServerError, "internal_error", "Streaming not supported", "")
+					return
 				}
-			}
-		} else {
-			orchErr = debateErr
-		}
 
-		_ = orchErr // used below
-		if orchErr == nil && result != nil && result.Selected != nil && result.Selected.Content != "" {
-			logrus.WithField("content_len", len(result.Selected.Content)).Info("[STREAMING] Orchestrator debate completed — streaming result")
-
-			// Stream the orchestrator result as SSE chunks directly
-			c.Header("Content-Type", "text/event-stream")
-			c.Header("Cache-Control", "no-cache")
-			c.Header("Connection", "keep-alive")
-			c.Header("X-Accel-Buffering", "no")
-
-			flusher, ok := c.Writer.(http.Flusher)
-			if !ok {
-				h.sendOpenAIError(c, http.StatusInternalServerError, "internal_error", "Streaming not supported", "")
-				return
-			}
-
-			// Send role chunk
-			roleChunk := map[string]any{
-				"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
-				"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
-				"choices": []map[string]any{{"index": 0, "delta": map[string]any{"role": "assistant", "content": ""}, "finish_reason": nil}},
-			}
-			if roleData, err := json.Marshal(roleChunk); err == nil {
-				_, _ = c.Writer.Write([]byte("data: "))
-				_, _ = c.Writer.Write(roleData)
-				_, _ = c.Writer.Write([]byte("\n\n"))
-				flusher.Flush()
-			}
-
-			// Stream content in chunks
-			content := result.Selected.Content
-			chunkSize := 20 // characters per chunk for smooth streaming
-			for i := 0; i < len(content); i += chunkSize {
-				end := i + chunkSize
-				if end > len(content) {
-					end = len(content)
-				}
-				chunk := map[string]any{
+				// Send role chunk
+				roleChunk := map[string]any{
 					"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
 					"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
-					"choices": []map[string]any{{"index": 0, "delta": map[string]any{"content": content[i:end]}, "finish_reason": nil}},
+					"choices": []map[string]any{{"index": 0, "delta": map[string]any{"role": "assistant", "content": ""}, "finish_reason": nil}},
 				}
-				if chunkData, err := json.Marshal(chunk); err == nil {
+				if roleData, jsonErr := json.Marshal(roleChunk); jsonErr == nil {
 					_, _ = c.Writer.Write([]byte("data: "))
-					_, _ = c.Writer.Write(chunkData)
+					_, _ = c.Writer.Write(roleData)
 					_, _ = c.Writer.Write([]byte("\n\n"))
 					flusher.Flush()
 				}
-			}
 
-			// Send finish chunk
-			finishChunk := map[string]any{
-				"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
-				"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
-				"choices": []map[string]any{{"index": 0, "delta": map[string]any{}, "finish_reason": "stop"}},
+				// Stream from provider
+				for resp := range streamChan {
+					if resp == nil || (resp.Content == "" && resp.FinishReason == "") {
+						continue
+					}
+
+					if resp.FinishReason == "stop" || resp.FinishReason == "STOP" {
+						break
+					}
+
+					chunk := map[string]any{
+						"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
+						"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
+						"choices": []map[string]any{{"index": 0, "delta": map[string]any{"content": resp.Content}, "finish_reason": nil}},
+					}
+					if chunkData, jsonErr := json.Marshal(chunk); jsonErr == nil {
+						_, _ = c.Writer.Write([]byte("data: "))
+						_, _ = c.Writer.Write(chunkData)
+						_, _ = c.Writer.Write([]byte("\n\n"))
+						flusher.Flush()
+					}
+				}
+
+				// Send finish and DONE
+				finishChunk := map[string]any{
+					"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
+					"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
+					"choices": []map[string]any{{"index": 0, "delta": map[string]any{}, "finish_reason": "stop"}},
+				}
+				if finishData, jsonErr := json.Marshal(finishChunk); jsonErr == nil {
+					_, _ = c.Writer.Write([]byte("data: "))
+					_, _ = c.Writer.Write(finishData)
+					_, _ = c.Writer.Write([]byte("\n\n"))
+				}
+				_, _ = c.Writer.Write([]byte("data: [DONE]\n\n"))
+				flusher.Flush()
+				return
 			}
-			if finishData, err := json.Marshal(finishChunk); err == nil {
-				_, _ = c.Writer.Write([]byte("data: "))
-				_, _ = c.Writer.Write(finishData)
-				_, _ = c.Writer.Write([]byte("\n\n"))
-			}
-			_, _ = c.Writer.Write([]byte("data: [DONE]\n\n"))
-			flusher.Flush()
-			return
+			logrus.WithError(streamErr).WithField("model", model).Warn("[STREAMING] Provider failed, trying next")
 		}
-		if orchErr != nil {
-			logrus.WithError(orchErr).Warn("[STREAMING] Orchestrator failed — falling back to direct provider streaming")
-		}
+		logrus.Warn("[STREAMING] All debate team positions failed for streaming — falling back to ensemble")
 	}
 
 	// Fallback: Use the strongest verified provider for direct streaming
