@@ -57,7 +57,7 @@ func NewUnifiedHandler(registry *services.ProviderRegistry, cfg *config.Config) 
 		config:             cfg,
 		dialogueFormatter:  dialogueFormatter,
 		debateTeamConfig:   debateTeamConfig,
-		showDebateDialogue: true, // Enable by default
+		showDebateDialogue: false, // Disabled: use intent-based routing instead
 	}
 }
 
