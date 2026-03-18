@@ -34,6 +34,7 @@ import (
 	"dev.helix.agent/internal/llm/providers/together"
 	"dev.helix.agent/internal/llm/providers/venice"
 	"dev.helix.agent/internal/llm/providers/xai"
+	"dev.helix.agent/internal/llm/providers/zai"
 	"dev.helix.agent/internal/llm/providers/zen"
 	"dev.helix.agent/internal/models"
 	"github.com/sirupsen/logrus"
@@ -777,6 +778,12 @@ func (pd *ProviderDiscovery) createProvider(mapping ProviderMapping, apiKey stri
 			baseURL = "https://api.venice.ai/api/v1/chat/completions"
 		}
 		return venice.NewProvider(apiKey, baseURL, mapping.DefaultModel), nil
+
+	case "groq":
+		return groq.NewProvider(apiKey, mapping.BaseURL, mapping.DefaultModel), nil
+
+	case "zai":
+		return zai.NewZAIProvider(apiKey, mapping.BaseURL, mapping.DefaultModel), nil
 
 	// For providers without native implementations, use OpenRouter as a proxy
 	case "hyperbolic", "sambanova", "siliconflow", "cloudflare", "nvidia",
