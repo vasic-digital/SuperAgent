@@ -1823,19 +1823,47 @@ func (h *UnifiedHandler) processWithEnsembleStream(ctx context.Context, req *mod
 		return h.processWithComprehensiveStream(ctx, req, openaiReq)
 	}
 
-	// Check if provider registry is available
+	// CRITICAL: Use the verified debate team's strongest provider for streaming.
+	// The old ensemble service uses weak/random providers — we must use the
+	// score-sorted debate team to pick the strongest available model.
+	if h.debateTeamConfig != nil {
+		// Get the strongest provider from Position 1 (highest score)
+		for pos := services.PositionAnalyst; pos <= services.PositionMediator; pos++ {
+			provider, model, err := h.debateTeamConfig.GetProviderForPosition(pos)
+			if err != nil || provider == nil {
+				continue
+			}
+
+			logrus.WithFields(logrus.Fields{
+				"position": pos,
+				"model":    model,
+			}).Info("[Streaming] Using verified debate team provider")
+
+			// Set the model on the request
+			if model != "" {
+				req.ModelParams.Model = model
+			}
+
+			// Use the verified provider for streaming
+			streamChan, err := provider.CompleteStream(ctx, req)
+			if err == nil {
+				return streamChan, nil
+			}
+			logrus.WithError(err).WithField("model", model).Warn("[Streaming] Verified provider failed, trying next position")
+		}
+		logrus.Warn("[Streaming] All debate team positions failed, falling back to ensemble")
+	}
+
+	// Fallback to ensemble service
 	if h.providerRegistry == nil {
 		return nil, services.NewConfigurationError("provider registry not available", nil)
 	}
 
-	// Get ensemble service
 	ensembleService := h.providerRegistry.GetEnsembleService()
 	if ensembleService == nil {
 		return nil, services.NewConfigurationError("ensemble service not available", nil)
 	}
 
-	// For streaming, we'll use the first available provider
-	// In a more sophisticated implementation, we could merge streams
 	return ensembleService.RunEnsembleStream(ctx, req)
 }
 
