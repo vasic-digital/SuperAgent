@@ -543,17 +543,112 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 	// streaming latency requirements.
 	// See: original orchestrator code used h.orchestratorIntegration.GetOrchestrator().ConductDebate()
 
-	// Use debate service directly with verified team (real LLM calls).
-	if h.debateService != nil && h.debateTeamConfig != nil && ctx.Err() == nil {
-		logrus.Info("[STREAMING] Using debate service directly (orchestrator disabled for streaming)")
+	// INTENT DETECTION: Route simple messages to single provider, complex to debate.
+	// This prevents wasting 15-45 seconds on a full multi-LLM debate for "hello!"
+	lastUserMsg := ""
+	for _, msg := range req.Messages {
+		if msg.Role == "user" {
+			lastUserMsg = msg.Content
+		}
+	}
 
-		// Extract topic
-		topic := ""
-		for _, msg := range req.Messages {
-			if msg.Role == "user" {
-				topic = msg.Content
+	useDebate := true
+	if h.intentRouter != nil {
+		useDebate = h.intentRouter.ShouldUseEnsemble(lastUserMsg, nil)
+		logrus.WithFields(logrus.Fields{
+			"use_debate": useDebate,
+			"message":    lastUserMsg[:min(50, len(lastUserMsg))],
+		}).Info("[STREAMING] IntentBasedRouter decision")
+	} else {
+		// Fallback: simple heuristic for when IntentBasedRouter isn't available
+		msgLower := strings.ToLower(strings.TrimSpace(lastUserMsg))
+		simplePatterns := []string{
+			"hello", "hi", "hey", "greetings", "good morning", "good afternoon",
+			"good evening", "thanks", "thank you", "yes", "no", "ok", "okay",
+			"sure", "bye", "goodbye", "help", "what can you do",
+		}
+		for _, pattern := range simplePatterns {
+			if msgLower == pattern || msgLower == pattern+"!" || msgLower == pattern+"." {
+				useDebate = false
+				break
 			}
 		}
+		// Short messages (< 20 chars) without code indicators are likely simple
+		if len(msgLower) < 20 && !strings.ContainsAny(msgLower, "{}()[]<>=;:") {
+			useDebate = false
+		}
+		logrus.WithFields(logrus.Fields{
+			"use_debate": useDebate,
+			"message":    lastUserMsg[:min(50, len(lastUserMsg))],
+		}).Info("[STREAMING] Heuristic intent detection")
+	}
+
+	// For SIMPLE messages: use strongest single provider for fast, direct response
+	if !useDebate && h.debateTeamConfig != nil {
+		logrus.Info("[STREAMING] Simple message — using strongest single provider")
+		for pos := services.PositionAnalyst; pos <= services.PositionMediator; pos++ {
+			provider, model, err := h.debateTeamConfig.GetProviderForPosition(pos)
+			if err != nil || provider == nil {
+				continue
+			}
+			logrus.WithField("model", model).Info("[STREAMING] Direct provider response")
+			if model != "" {
+				internalReq.ModelParams.Model = model
+			}
+			streamChan, streamErr := provider.CompleteStream(ctx, internalReq)
+			if streamErr == nil && streamChan != nil {
+				c.Header("Content-Type", "text/event-stream")
+				c.Header("Cache-Control", "no-cache")
+				c.Header("Connection", "keep-alive")
+				c.Header("X-Accel-Buffering", "no")
+				flusher, ok := c.Writer.(http.Flusher)
+				if !ok {
+					h.sendOpenAIError(c, http.StatusInternalServerError, "internal_error", "Streaming not supported", "")
+					return
+				}
+				roleData, _ := json.Marshal(map[string]any{
+					"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
+					"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
+					"choices": []map[string]any{{"index": 0, "delta": map[string]any{"role": "assistant", "content": ""}, "finish_reason": nil}},
+				})
+				_, _ = fmt.Fprintf(c.Writer, "data: %s\n\n", roleData)
+				flusher.Flush()
+
+				for resp := range streamChan {
+					if resp == nil || (resp.Content == "" && resp.FinishReason == "") {
+						continue
+					}
+					if resp.FinishReason == "stop" || resp.FinishReason == "STOP" {
+						break
+					}
+					chunkData, _ := json.Marshal(map[string]any{
+						"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
+						"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
+						"choices": []map[string]any{{"index": 0, "delta": map[string]any{"content": resp.Content}, "finish_reason": nil}},
+					})
+					_, _ = fmt.Fprintf(c.Writer, "data: %s\n\n", chunkData)
+					flusher.Flush()
+				}
+
+				finishData, _ := json.Marshal(map[string]any{
+					"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
+					"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
+					"choices": []map[string]any{{"index": 0, "delta": map[string]any{}, "finish_reason": "stop"}},
+				})
+				_, _ = fmt.Fprintf(c.Writer, "data: %s\n\ndata: [DONE]\n\n", finishData)
+				flusher.Flush()
+				return
+			}
+			logrus.WithError(streamErr).Warn("[STREAMING] Single provider failed, trying next")
+		}
+		logrus.Warn("[STREAMING] All single providers failed, falling through to debate")
+	}
+
+	// For COMPLEX messages: use debate service with verified team (real LLM calls).
+	if h.debateService != nil && h.debateTeamConfig != nil && ctx.Err() == nil {
+		logrus.Info("[STREAMING] Complex message — using debate service with verified team")
+
+		topic := lastUserMsg
 		if topic == "" {
 			topic = "User Query"
 		}
