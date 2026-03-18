@@ -293,6 +293,57 @@ type IntegrationStatistics struct {
 	OverallSuccessRate  float64 `json:"overall_success_rate"`
 }
 
+// PopulateFromDebateTeam registers verified providers from the DebateTeamConfig
+// into the orchestrator's agent pool. This ensures the orchestrator uses the same
+// verified, scored providers as the debate team rather than just the provider registry.
+// Call this AFTER DebateTeamConfig.InitializeTeam() has completed.
+func (si *ServiceIntegration) PopulateFromDebateTeam(teamConfig *services.DebateTeamConfig) {
+	if teamConfig == nil || si.orchestrator == nil {
+		return
+	}
+
+	verifiedLLMs := teamConfig.GetVerifiedLLMs()
+	if len(verifiedLLMs) == 0 {
+		if si.logger != nil {
+			si.logger.Warn("No verified LLMs in debate team config - orchestrator agents unchanged")
+		}
+		return
+	}
+
+	registeredCount := 0
+	for _, vllm := range verifiedLLMs {
+		if vllm.Provider == nil {
+			if si.logger != nil {
+				si.logger.WithFields(logrus.Fields{
+					"provider": vllm.ProviderName,
+					"model":    vllm.ModelName,
+				}).Debug("Skipping LLM with nil Provider for orchestrator registration")
+			}
+			continue
+		}
+
+		err := si.orchestrator.RegisterProvider(vllm.ProviderName, vllm.ModelName, vllm.Score)
+		if err != nil {
+			if si.logger != nil {
+				si.logger.WithError(err).WithFields(logrus.Fields{
+					"provider": vllm.ProviderName,
+					"model":    vllm.ModelName,
+				}).Warn("Failed to register verified provider in orchestrator")
+			}
+			continue
+		}
+		registeredCount++
+	}
+
+	if si.logger != nil {
+		si.logger.WithFields(logrus.Fields{
+			"registered_agents": registeredCount,
+			"total_verified":    len(verifiedLLMs),
+			"pool_size":         si.orchestrator.GetAgentPool().Size(),
+		}).Info("Populated orchestrator agent pool from debate team verified providers")
+	}
+}
+
 // =============================================================================
 // Factory Functions for Easy Integration
 // =============================================================================

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 	"sync"
 
 	"dev.helix.agent/internal/llm"
@@ -405,33 +406,38 @@ func (dtc *DebateTeamConfig) collectVerifiedLLMs(ctx context.Context) {
 	// Use StartupVerifier if available (unified pipeline)
 	if dtc.startupVerifier != nil {
 		dtc.collectFromStartupVerifier()
-		return
+	} else {
+		// Legacy path: Use discovery and manual collection
+		// Verify providers if discovery is available
+		if dtc.discovery != nil {
+			dtc.discovery.VerifyAllProviders(ctx)
+		}
+
+		// Collect OAuth2 Claude models (trust CLI credentials even if API verification fails)
+		dtc.collectClaudeModels()
+
+		// Collect OAuth2 Qwen models (trust CLI credentials even if API verification fails)
+		dtc.collectQwenModels()
+
+		// Collect reliable API-key providers (Cerebras, Mistral) - MUST be before free models
+		// These are proven working providers that should be prioritized as fallbacks
+		dtc.collectReliableAPIProviders()
+
+		// Collect OpenRouter Zen free models (:free suffix)
+		dtc.collectOpenRouterFreeModels()
+
+		// Collect OpenCode Zen free models (Big Pickle, Grok Code Fast, GLM 4.7, GPT 5 Nano)
+		dtc.collectZenModels()
+
+		// Collect LLMsVerifier-scored providers
+		dtc.collectLLMsVerifierProviders()
 	}
 
-	// Legacy path: Use discovery and manual collection
-	// Verify providers if discovery is available
-	if dtc.discovery != nil {
-		dtc.discovery.VerifyAllProviders(ctx)
-	}
-
-	// Collect OAuth2 Claude models (trust CLI credentials even if API verification fails)
-	dtc.collectClaudeModels()
-
-	// Collect OAuth2 Qwen models (trust CLI credentials even if API verification fails)
-	dtc.collectQwenModels()
-
-	// Collect reliable API-key providers (Cerebras, Mistral) - MUST be before free models
-	// These are proven working providers that should be prioritized as fallbacks
-	dtc.collectReliableAPIProviders()
-
-	// Collect OpenRouter Zen free models (:free suffix)
-	dtc.collectOpenRouterFreeModels()
-
-	// Collect OpenCode Zen free models (Big Pickle, Grok Code Fast, GLM 4.7, GPT 5 Nano)
-	dtc.collectZenModels()
-
-	// Collect LLMsVerifier-scored providers
-	dtc.collectLLMsVerifierProviders()
+	// Filter out local/Ollama providers - debate MUST use remote API providers only.
+	// Local models (Ollama, codellama, etc.) are unsuitable for multi-LLM debate because
+	// they typically run on the same machine, have limited capabilities, and cannot provide
+	// the diversity of reasoning needed for effective debate positions.
+	dtc.filterLocalProviders()
 
 	dtc.logger.WithFields(logrus.Fields{
 		"total_verified":    len(dtc.verifiedLLMs),
@@ -440,12 +446,82 @@ func (dtc *DebateTeamConfig) collectVerifiedLLMs(ctx context.Context) {
 	}).Info("Verified LLMs collected")
 }
 
+// filterLocalProviders removes Ollama and other local-only providers from the verified LLMs list.
+// Debate requires remote API providers for diversity and reliability.
+func (dtc *DebateTeamConfig) filterLocalProviders() {
+	beforeCount := len(dtc.verifiedLLMs)
+	filtered := make([]*VerifiedLLM, 0, len(dtc.verifiedLLMs))
+	for _, llm := range dtc.verifiedLLMs {
+		providerLower := strings.ToLower(llm.ProviderName)
+		if providerLower == "ollama" || providerLower == "local" {
+			dtc.logger.WithFields(logrus.Fields{
+				"provider": llm.ProviderName,
+				"model":    llm.ModelName,
+			}).Debug("Skipping local/Ollama provider for debate team")
+			continue
+		}
+		// Also skip bare local model names that indicate Ollama models without the provider prefix
+		modelLower := strings.ToLower(llm.ModelName)
+		if isLocalOnlyModel(modelLower) {
+			dtc.logger.WithFields(logrus.Fields{
+				"provider": llm.ProviderName,
+				"model":    llm.ModelName,
+			}).Debug("Skipping local-only model for debate team")
+			continue
+		}
+		filtered = append(filtered, llm)
+	}
+	dtc.verifiedLLMs = filtered
+	removedCount := beforeCount - len(dtc.verifiedLLMs)
+	if removedCount > 0 {
+		dtc.logger.WithFields(logrus.Fields{
+			"removed":   removedCount,
+			"remaining": len(dtc.verifiedLLMs),
+		}).Info("Filtered out local/Ollama providers from debate team")
+	}
+}
+
+// isLocalOnlyModel checks if a model name indicates a local-only model (e.g., Ollama models
+// that don't have a provider path prefix like "openrouter/meta-llama/llama-3.1").
+func isLocalOnlyModel(modelLower string) bool {
+	// Only match bare model names without path separators (e.g., "codellama", "llama3.2")
+	// Models with path prefixes like "meta-llama/llama-3.1-8b:free" are remote and should NOT be filtered
+	if strings.Contains(modelLower, "/") {
+		return false
+	}
+	localModels := []string{"codellama", "llama3.2", "llama3.1", "llama2", "mistral-local", "phi-2", "phi-3"}
+	for _, local := range localModels {
+		if modelLower == local || strings.HasPrefix(modelLower, local+":") {
+			return true
+		}
+	}
+	return false
+}
+
 // collectFromStartupVerifier collects verified LLMs from the unified StartupVerifier
 func (dtc *DebateTeamConfig) collectFromStartupVerifier() {
 	rankedProviders := dtc.startupVerifier.GetRankedProviders()
 
 	for _, provider := range rankedProviders {
 		if !provider.Verified {
+			continue
+		}
+
+		// Skip providers with nil Instance - they can't be used for debate
+		if provider.Instance == nil {
+			dtc.logger.WithFields(logrus.Fields{
+				"provider": provider.Name,
+				"reason":   "nil instance",
+			}).Debug("Skipping provider with nil instance")
+			continue
+		}
+
+		// Skip Ollama/local providers - debate requires remote API providers
+		if strings.ToLower(provider.Type) == "ollama" || strings.ToLower(provider.Name) == "ollama" {
+			dtc.logger.WithFields(logrus.Fields{
+				"provider": provider.Name,
+				"type":     provider.Type,
+			}).Debug("Skipping Ollama provider from StartupVerifier for debate team")
 			continue
 		}
 
@@ -925,14 +1001,29 @@ func (dtc *DebateTeamConfig) assignPrimaryPositions() {
 	for _, r := range roles {
 		var llmToUse *VerifiedLLM
 
-		// Find next available LLM (can reuse if needed)
-		if usedIdx < len(dtc.verifiedLLMs) {
-			llmToUse = dtc.verifiedLLMs[usedIdx]
+		// Find next available LLM WITH a valid Provider instance (can reuse if needed)
+		for usedIdx < len(dtc.verifiedLLMs) {
+			candidate := dtc.verifiedLLMs[usedIdx]
 			usedIdx++
-		} else if len(dtc.verifiedLLMs) > 0 {
-			// Reuse best available LLM if we've exhausted the list
-			llmToUse = dtc.verifiedLLMs[0]
-			dtc.logger.WithField("position", r.Position).Debug("Reusing LLM for position (not enough unique LLMs)")
+			if candidate.Provider != nil {
+				llmToUse = candidate
+				break
+			}
+			dtc.logger.WithFields(logrus.Fields{
+				"provider": candidate.ProviderName,
+				"model":    candidate.ModelName,
+			}).Debug("Skipping LLM with nil Provider instance for primary position")
+		}
+
+		// If we exhausted the list, reuse the first LLM with a valid Provider
+		if llmToUse == nil && len(dtc.verifiedLLMs) > 0 {
+			for _, candidate := range dtc.verifiedLLMs {
+				if candidate.Provider != nil {
+					llmToUse = candidate
+					dtc.logger.WithField("position", r.Position).Debug("Reusing LLM for position (not enough unique LLMs with valid Provider)")
+					break
+				}
+			}
 		}
 
 		if llmToUse != nil {

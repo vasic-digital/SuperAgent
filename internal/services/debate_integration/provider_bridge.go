@@ -5,6 +5,7 @@ package debate_integration
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"dev.helix.agent/internal/llm"
 	"dev.helix.agent/internal/models"
@@ -252,6 +253,7 @@ func (f *OrchestratorFactory) CreateOrchestratorWithDefaults() *orchestrator.Orc
 
 // registerVerifiedProviders registers all available providers from the registry.
 // Providers are registered even if not yet verified, but unhealthy ones are skipped.
+// Ollama/local providers are excluded since debate requires remote API providers.
 // This ensures the debate system has agents available immediately on startup.
 func (f *OrchestratorFactory) registerVerifiedProviders(orch *orchestrator.Orchestrator) {
 	if f.providerRegistry == nil {
@@ -261,6 +263,12 @@ func (f *OrchestratorFactory) registerVerifiedProviders(orch *orchestrator.Orche
 	providers := f.providerRegistry.ListProvidersOrderedByScore()
 
 	for _, name := range providers {
+		// Skip Ollama/local providers - debate requires remote API providers
+		nameLower := strings.ToLower(name)
+		if nameLower == "ollama" || nameLower == "local" {
+			continue
+		}
+
 		config, err := f.providerRegistry.GetProviderConfig(name)
 		if err != nil || config == nil {
 			continue

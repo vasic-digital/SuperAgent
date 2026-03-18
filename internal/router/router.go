@@ -40,14 +40,15 @@ type RouterContext struct {
 	healthMonitor           *services.ProviderHealthMonitor
 	concurrencyMonitor      *services.ConcurrencyMonitor
 	concurrencyAlertManager *services.ConcurrencyAlertManager
-	constitutionWatcher     *services.ConstitutionWatcher // Constitution auto-update background service
-	ProviderRegistry        *services.ProviderRegistry    // Exposed for StartupVerifier integration
-	DebateTeamConfig        *services.DebateTeamConfig    // Exposed for re-initialization with StartupVerifier
-	unifiedHandler          *handlers.UnifiedHandler      // For updating debate team display
-	debateService           *services.DebateService       // For updating team config
-	CogneeService           *services.CogneeService       // Exposed for container adapter injection
-	logger                  *logrus.Logger                // For IntentBasedRouter creation
-	intentBasedRouter       *services.IntentBasedRouter   // For re-initialization with StartupVerifier
+	constitutionWatcher     *services.ConstitutionWatcher                // Constitution auto-update background service
+	ProviderRegistry        *services.ProviderRegistry                   // Exposed for StartupVerifier integration
+	DebateTeamConfig        *services.DebateTeamConfig                   // Exposed for re-initialization with StartupVerifier
+	unifiedHandler          *handlers.UnifiedHandler                     // For updating debate team display
+	debateService           *services.DebateService                      // For updating team config
+	orchestratorIntegration *debate_integration.ServiceIntegration       // Orchestrator integration for re-population
+	CogneeService           *services.CogneeService                     // Exposed for container adapter injection
+	logger                  *logrus.Logger                               // For IntentBasedRouter creation
+	intentBasedRouter       *services.IntentBasedRouter                  // For re-initialization with StartupVerifier
 }
 
 // Shutdown stops all background services started by the router
@@ -106,6 +107,11 @@ func (rc *RouterContext) ReinitializeDebateTeam(ctx context.Context) error {
 	}
 	if rc.debateService != nil {
 		rc.debateService.SetTeamConfig(rc.DebateTeamConfig)
+	}
+
+	// Re-populate the orchestrator agent pool with the updated debate team's verified providers
+	if rc.orchestratorIntegration != nil {
+		rc.orchestratorIntegration.PopulateFromDebateTeam(rc.DebateTeamConfig)
 	}
 
 	return nil
@@ -853,6 +859,7 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 		// Store references for later re-initialization with StartupVerifier
 		rc.DebateTeamConfig = debateTeamConfig
 		rc.unifiedHandler = unifiedHandler
+		// Note: rc.orchestratorIntegration is set below after CreateIntegration
 
 		debateService := services.NewDebateServiceWithDeps(logger, providerRegistry, cogneeService)
 		debateService.SetTeamConfig(debateTeamConfig) // Set the team configuration
@@ -863,6 +870,7 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 		// This implements: 5 positions × 3 LLMs = 15 agents
 		// 8-phase protocol: Dehallucination → SelfEvolvement → Proposal → Critique → Review → Optimization → Adversarial → Convergence
 		orchestratorIntegration := debate_integration.CreateIntegration(providerRegistry, logger)
+		rc.orchestratorIntegration = orchestratorIntegration
 		debateHandler.SetOrchestratorIntegration(orchestratorIntegration)
 
 		// CRITICAL: Also set orchestrator on UnifiedHandler so chat completions use NEW debate system
@@ -870,6 +878,11 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 
 		// CRITICAL: Set debate service on UnifiedHandler so it can use the configured debate team
 		unifiedHandler.SetDebateService(debateService)
+
+		// Populate the orchestrator agent pool from the debate team's verified providers.
+		// This ensures the orchestrator uses the same verified, scored, and filtered providers
+		// (no Ollama/local, no nil instances) as the debate team config.
+		orchestratorIntegration.PopulateFromDebateTeam(debateTeamConfig)
 
 		// Initialize verification report generator for provider scores
 		// Note: This will generate reports on-demand during debates
