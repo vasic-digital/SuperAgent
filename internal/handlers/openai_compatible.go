@@ -544,14 +544,112 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 		"debate_service":   h.debateService != nil,
 	}).Info("[STREAMING-DEBUG] Entering handleStreamingChatCompletions orchestrator check")
 
-	// Use comprehensive debate streaming if available (NEW system)
-	// This is the default path — uses multi-agent debate with verified providers
-	if h.debateService != nil && h.debateService.IsComprehensiveSystemEnabled() {
-		logrus.Info("[STREAMING] Using comprehensive multi-agent debate system (NEW)")
+	// Use debate service with verified team for streaming (NEW system).
+	// ConductDebate makes REAL LLM calls through verified providers.
+	if h.debateService != nil && h.debateTeamConfig != nil {
+		logrus.Info("[STREAMING] Running debate with verified team providers (real LLM calls)")
 
-		// CRITICAL: Ensure LLM invokers are registered for comprehensive agents.
+		// Extract topic
+		topic := ""
+		for _, msg := range req.Messages {
+			if msg.Role == "user" {
+				topic = msg.Content
+			}
+		}
+		if topic == "" {
+			topic = "User Query"
+		}
+
+		participants := h.debateTeamConfig.GetParticipantConfigs()
+		debateConfig := &services.DebateConfig{
+			DebateID:     fmt.Sprintf("stream-%d", time.Now().UnixNano()),
+			Topic:        topic,
+			MaxRounds:    3,
+			Strategy:     "collaborative",
+			Participants: participants,
+			Timeout:      120 * time.Second,
+		}
+
+		debateResult, debateErr := h.debateService.ConductDebate(ctx, debateConfig)
+		if debateErr == nil && debateResult != nil {
+			var finalContent string
+			if debateResult.Consensus != nil && debateResult.Consensus.Summary != "" {
+				finalContent = debateResult.Consensus.Summary
+			} else if debateResult.BestResponse != nil && debateResult.BestResponse.Content != "" {
+				finalContent = debateResult.BestResponse.Content
+			} else if len(debateResult.AllResponses) > 0 {
+				for _, r := range debateResult.AllResponses {
+					if r.Response != "" {
+						finalContent += r.Response + "\n\n"
+					}
+				}
+			}
+
+			if finalContent != "" {
+				logrus.WithField("content_len", len(finalContent)).Info("[STREAMING] Debate completed, streaming result")
+				c.Header("Content-Type", "text/event-stream")
+				c.Header("Cache-Control", "no-cache")
+				c.Header("Connection", "keep-alive")
+				c.Header("X-Accel-Buffering", "no")
+
+				flusher, ok := c.Writer.(http.Flusher)
+				if !ok {
+					h.sendOpenAIError(c, http.StatusInternalServerError, "internal_error", "Streaming not supported", "")
+					return
+				}
+
+				// Role chunk
+				roleData, _ := json.Marshal(map[string]any{
+					"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
+					"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
+					"choices": []map[string]any{{"index": 0, "delta": map[string]any{"role": "assistant", "content": ""}, "finish_reason": nil}},
+				})
+				_, _ = fmt.Fprintf(c.Writer, "data: %s\n\n", roleData)
+				flusher.Flush()
+
+				// Stream content in chunks
+				for i := 0; i < len(finalContent); i += 50 {
+					end := i + 50
+					if end > len(finalContent) {
+						end = len(finalContent)
+					}
+					chunkData, _ := json.Marshal(map[string]any{
+						"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
+						"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
+						"choices": []map[string]any{{"index": 0, "delta": map[string]any{"content": finalContent[i:end]}, "finish_reason": nil}},
+					})
+					_, _ = fmt.Fprintf(c.Writer, "data: %s\n\n", chunkData)
+					flusher.Flush()
+				}
+
+				// Finish
+				finishData, _ := json.Marshal(map[string]any{
+					"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
+					"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
+					"choices": []map[string]any{{"index": 0, "delta": map[string]any{}, "finish_reason": "stop"}},
+				})
+				_, _ = fmt.Fprintf(c.Writer, "data: %s\n\ndata: [DONE]\n\n", finishData)
+				flusher.Flush()
+				return
+			}
+		}
+		if debateErr != nil {
+			logrus.WithError(debateErr).Warn("[STREAMING] Debate failed — falling back")
+		}
+		// If debate produced no content, fall through to old path
+	}
+
+	// OLD CODE REMOVED — comprehensive streaming replaced by ConductDebate above
+	if false { // Dead code guard — keeping for reference
+		_ = comprehensive.HasFallbackInvoker
 		// PopulateFromDebateTeam may not have run yet due to startup timing.
 		// Lazily register invokers from the debate team config if needed.
+		logrus.WithFields(logrus.Fields{
+			"debate_team_config": h.debateTeamConfig != nil,
+			"has_fallback":       comprehensive.HasFallbackInvoker(),
+			"invoker_count":      comprehensive.InvokerCount(),
+		}).Info("[STREAMING-INVOKER] Checking invoker registration state")
+
 		if h.debateTeamConfig != nil && !comprehensive.HasFallbackInvoker() {
 			verifiedLLMs := h.debateTeamConfig.GetVerifiedLLMs()
 			invokerCount := 0
