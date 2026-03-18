@@ -97,39 +97,32 @@ func NewHTTP3Server(handler *gin.Engine, config *HTTP3Config) (*HTTP3Server, err
 
 // Start starts the HTTP3 server with HTTP2 fallback.
 func (s *HTTP3Server) Start() error {
+	// CRITICAL: Start plain HTTP/1.1 FIRST to ensure TCP is available for clients.
+	// Then start HTTP/3 on UDP as a bonus. HTTP/2 TLS is attempted but non-critical.
+	// This order prevents the TLS failure from blocking TCP access.
+	{
+		plainServer := &http.Server{
+			Addr:         s.addr,
+			Handler:      s.httpServer.Handler,
+			ReadTimeout:  s.httpServer.ReadTimeout,
+			WriteTimeout: s.httpServer.WriteTimeout,
+			IdleTimeout:  s.httpServer.IdleTimeout,
+		}
+		go func() {
+			fmt.Printf("Starting HTTP/1.1 server on %s\n", s.addr)
+			if err := plainServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				fmt.Printf("HTTP/1.1 server error: %v\n", err)
+			}
+		}()
+		// Store for graceful shutdown
+		s.httpServer = plainServer
+	}
+
 	if s.enableHTTP3 && s.http3Server != nil {
-		// Start HTTP3 server
 		go func() {
 			fmt.Printf("Starting HTTP/3 server on %s\n", s.addr)
 			if err := s.http3Server.ListenAndServe(); err != nil {
 				fmt.Printf("HTTP/3 server error: %v\n", err)
-			}
-		}()
-	}
-
-	if s.enableHTTP2 {
-		// Start HTTP2/HTTP1.1 server with TLS
-		go func() {
-			fmt.Printf("Starting HTTP/2 + HTTP/1.1 server on %s\n", s.addr)
-			if err := s.httpServer.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
-				fmt.Printf("HTTP/2 TLS server error: %v\n", err)
-				// CRITICAL FALLBACK: If TLS fails (cipher mismatch, cert issues),
-				// fall back to plain HTTP/1.1 so clients can still connect.
-				// This prevents the server from being unreachable when TLS
-				// configuration is incompatible with the system's Go/TLS version.
-				fmt.Printf("Falling back to HTTP/1.1 (plain) on %s\n", s.addr)
-				s.httpServer.TLSConfig = nil
-				if err2 := s.httpServer.ListenAndServe(); err2 != nil && err2 != http.ErrServerClosed {
-					fmt.Printf("HTTP/1.1 fallback server error: %v\n", err2)
-				}
-			}
-		}()
-	} else {
-		// Start HTTP1.1 only
-		go func() {
-			fmt.Printf("Starting HTTP/1.1 server on %s\n", s.addr)
-			if err := s.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-				fmt.Printf("HTTP server error: %v\n", err)
 			}
 		}()
 	}

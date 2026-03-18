@@ -359,6 +359,8 @@ func (h *UnifiedHandler) RegisterOpenAIRoutes(r *gin.RouterGroup, auth gin.Handl
 // ChatCompletions handles OpenAI chat completions with automatic ensemble
 // Supports both streaming and non-streaming modes based on the "stream" parameter
 func (h *UnifiedHandler) ChatCompletions(c *gin.Context) {
+	logrus.Info("[ENTRY] ChatCompletions handler called")
+
 	// Parse OpenAI request
 	var req OpenAIChatRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -537,6 +539,11 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 	// CRITICAL: Use the NEW debate orchestrator path for streaming.
 	// The orchestrator uses the scored, verified debate team — no legacy 5-position system.
 	// processWithOrchestrator runs the debate non-streaming, then we stream the result.
+	logrus.WithFields(logrus.Fields{
+		"orchestrator_set": h.orchestratorIntegration != nil,
+		"debate_service":   h.debateService != nil,
+	}).Info("[STREAMING-DEBUG] Entering handleStreamingChatCompletions orchestrator check")
+
 	if h.orchestratorIntegration != nil && h.debateService != nil {
 		logrus.Info("[STREAMING] Using NEW orchestrator path — bypassing legacy 5-position debate")
 
@@ -2099,9 +2106,24 @@ func (h *UnifiedHandler) processWithOrchestrator(ctx context.Context, req *model
 		logrus.Warn("[CODE PATH] No participants from debate team config — debate service will use its own selection")
 	}
 
+	// Extract topic from request — use prompt or last user message
+	topic := req.Prompt
+	if topic == "" {
+		// Get topic from last user message in the conversation
+		for _, msg := range req.Messages {
+			if msg.Role == "user" {
+				topic = msg.Content
+			}
+		}
+	}
+	if topic == "" {
+		topic = "User Query"
+	}
+
 	// Configure debate with the verified team participants
 	debateConfig := services.DebateConfig{
-		Topic:        req.Prompt,
+		DebateID:     fmt.Sprintf("debate-%d", time.Now().UnixNano()),
+		Topic:        topic,
 		MaxRounds:    3,
 		EnableCognee: false,
 		Strategy:     "collaborative",

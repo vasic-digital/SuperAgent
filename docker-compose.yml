@@ -68,7 +68,12 @@ services:
       - full
 
   # HelixAgent Application
+  # NOTE: This service is for containerized deployment only.
+  # When running ./bin/helixagent directly, this should NOT start.
+  # Use 'podman-compose --profile containerized up -d helixagent' for container mode.
   helixagent:
+    profiles:
+      - containerized
     build:
       context: .
       dockerfile: Dockerfile
