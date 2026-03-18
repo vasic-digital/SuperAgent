@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
@@ -344,8 +345,8 @@ func (p *Parser) ParseDirectory(dir string) ([]*Skill, error) {
 		if !info.IsDir() && strings.ToUpper(info.Name()) == "SKILL.MD" {
 			skill, err := p.ParseFile(path)
 			if err != nil {
-				// Log error but continue parsing other files
-				fmt.Printf("Warning: failed to parse %s: %v\n", path, err)
+				// Log at Debug — optional skills that fail to parse should not clutter logs
+				logrus.WithError(err).WithField("path", path).Debug("Skipping skill file that failed to parse")
 				return nil
 			}
 			skills = append(skills, skill)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	genericoauth "digital.vasic.auth/pkg/oauth"
@@ -165,7 +166,16 @@ func (m *OAuthCredentialManager) RefreshAll(ctx context.Context) error {
 	for provider := range m.paths {
 		_, err := m.auto.GetCredentials(provider)
 		if err != nil {
-			m.logger.WithError(err).WithField("provider", provider).Warn("Failed to refresh credentials")
+			// Empty/missing tokens are expected when OAuth credentials are not
+			// configured for a provider — log at Debug to avoid log noise.
+			errMsg := err.Error()
+			if strings.Contains(errMsg, "empty access token") ||
+				strings.Contains(errMsg, "no such file") ||
+				strings.Contains(errMsg, "does not exist") {
+				m.logger.WithError(err).WithField("provider", provider).Debug("Skipping credential refresh — credentials not configured")
+			} else {
+				m.logger.WithError(err).WithField("provider", provider).Warn("Failed to refresh credentials")
+			}
 		}
 	}
 

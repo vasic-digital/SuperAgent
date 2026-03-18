@@ -536,130 +536,16 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 	// Generate stream ID early for potential orchestrator use
 	streamID := fmt.Sprintf("chatcmpl-%d", time.Now().UnixNano())
 
-	// CRITICAL: Use the NEW debate orchestrator path for streaming.
-	// The orchestrator uses the scored, verified debate team — no legacy 5-position system.
-	// processWithOrchestrator runs the debate non-streaming, then we stream the result.
-	logrus.WithFields(logrus.Fields{
-		"orchestrator_set": h.orchestratorIntegration != nil,
-		"debate_service":   h.debateService != nil,
-	}).Info("[STREAMING-DEBUG] Entering handleStreamingChatCompletions orchestrator check")
+	// 8-phase orchestrator DISABLED for streaming — it consistently times out after 5 minutes,
+	// wastes resources, and then the fallback debate fires a DUPLICATE debate request.
+	// The debate service with ConductDebate already makes real LLM calls through verified
+	// providers and works correctly. The orchestrator will be re-enabled once optimized for
+	// streaming latency requirements.
+	// See: original orchestrator code used h.orchestratorIntegration.GetOrchestrator().ConductDebate()
 
-	// Use the NEW 8-phase orchestrator for streaming.
-	// This is the real new debate system from docs/requests/debate.
-	// Track whether the orchestrator was attempted so the fallback doesn't fire a
-	// second, duplicate debate request while the first one is still being processed.
-	orchestratorAttempted := false
-	if h.orchestratorIntegration != nil {
-		orchestratorAttempted = true
-		logrus.Info("[STREAMING] Using NEW 8-phase debate orchestrator")
-
-		orchTopic := ""
-		for _, msg := range req.Messages {
-			if msg.Role == "user" {
-				orchTopic = msg.Content
-			}
-		}
-		if orchTopic == "" {
-			orchTopic = "User Query"
-		}
-
-		debateReq := &orchestrator.DebateRequest{
-			Topic:        orchTopic,
-			MaxRounds:    2,
-			MinConsensus: 0.6,
-		}
-
-		debateResp, orchErr := h.orchestratorIntegration.GetOrchestrator().ConductDebate(ctx, debateReq)
-		if orchErr == nil && debateResp != nil {
-			// Extract content from 8-phase debate result
-			var finalContent string
-			if debateResp.Consensus != nil && debateResp.Consensus.Summary != "" {
-				finalContent = debateResp.Consensus.Summary
-			}
-
-			// Check if consensus content is actually an error message
-			if isErrorContent(finalContent) {
-				finalContent = ""
-			}
-
-			// If no good consensus, extract from phase responses (last phase first)
-			if finalContent == "" && len(debateResp.Phases) > 0 {
-				for i := len(debateResp.Phases) - 1; i >= 0; i-- {
-					for _, resp := range debateResp.Phases[i].Responses {
-						if resp.Content != "" && !isErrorContent(resp.Content) {
-							finalContent = resp.Content
-							break
-						}
-					}
-					if finalContent != "" {
-						break
-					}
-				}
-			}
-
-			if finalContent != "" {
-				logrus.WithFields(logrus.Fields{
-					"content_len": len(finalContent),
-					"phases":      len(debateResp.Phases),
-				}).Info("[STREAMING] 8-phase debate completed, streaming result")
-
-				c.Header("Content-Type", "text/event-stream")
-				c.Header("Cache-Control", "no-cache")
-				c.Header("Connection", "keep-alive")
-				c.Header("X-Accel-Buffering", "no")
-
-				flusher, ok := c.Writer.(http.Flusher)
-				if !ok {
-					h.sendOpenAIError(c, http.StatusInternalServerError, "internal_error", "Streaming not supported", "")
-					return
-				}
-
-				roleData, _ := json.Marshal(map[string]any{
-					"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
-					"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
-					"choices": []map[string]any{{"index": 0, "delta": map[string]any{"role": "assistant", "content": ""}, "finish_reason": nil}},
-				})
-				_, _ = fmt.Fprintf(c.Writer, "data: %s\n\n", roleData)
-				flusher.Flush()
-
-				for i := 0; i < len(finalContent); i += 50 {
-					end := i + 50
-					if end > len(finalContent) {
-						end = len(finalContent)
-					}
-					chunkData, _ := json.Marshal(map[string]any{
-						"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
-						"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
-						"choices": []map[string]any{{"index": 0, "delta": map[string]any{"content": finalContent[i:end]}, "finish_reason": nil}},
-					})
-					_, _ = fmt.Fprintf(c.Writer, "data: %s\n\n", chunkData)
-					flusher.Flush()
-				}
-
-				finishData, _ := json.Marshal(map[string]any{
-					"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
-					"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
-					"choices": []map[string]any{{"index": 0, "delta": map[string]any{}, "finish_reason": "stop"}},
-				})
-				_, _ = fmt.Fprintf(c.Writer, "data: %s\n\ndata: [DONE]\n\n", finishData)
-				flusher.Flush()
-				return
-			}
-		}
-		logrus.WithError(orchErr).Warn("[STREAMING] 8-phase orchestrator failed — falling back to debate service")
-	}
-
-	// Fallback: Use debate service with verified team (real LLM calls but old format).
-	// Only attempt this if the orchestrator was NOT already attempted, or if the
-	// orchestrator timed out / failed and the parent context still has time remaining.
-	// This prevents firing a second duplicate debate request when the orchestrator
-	// already consumed the budget.
+	// Use debate service directly with verified team (real LLM calls).
 	if h.debateService != nil && h.debateTeamConfig != nil && ctx.Err() == nil {
-		if orchestratorAttempted {
-			logrus.Info("[STREAMING] Orchestrator failed, attempting fallback debate service (context still alive)")
-		} else {
-			logrus.Info("[STREAMING] No orchestrator available, using debate service directly")
-		}
+		logrus.Info("[STREAMING] Using debate service directly (orchestrator disabled for streaming)")
 
 		// Extract topic
 		topic := ""
@@ -771,8 +657,6 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 			logrus.WithError(debateErr).Warn("[STREAMING] Debate failed — falling back")
 		}
 		// If debate produced no content, fall through to old path
-	} else if ctx.Err() != nil && orchestratorAttempted {
-		logrus.Warn("[STREAMING] Skipping fallback debate — context expired after orchestrator attempt")
 	}
 
 	// OLD CODE REMOVED — comprehensive streaming replaced by ConductDebate above
