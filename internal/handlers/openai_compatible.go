@@ -1960,9 +1960,22 @@ func (h *UnifiedHandler) processWithComprehensiveStream(ctx context.Context, req
 	go func() {
 		defer close(streamChan)
 
+		// Extract topic from request — use prompt or last user message
+		topic := req.Prompt
+		if topic == "" {
+			for _, msg := range req.Messages {
+				if msg.Role == "user" {
+					topic = msg.Content
+				}
+			}
+		}
+		if topic == "" {
+			topic = "User Query"
+		}
+
 		debateConfig := services.DebateConfig{
 			DebateID:  fmt.Sprintf("comp-%d", time.Now().UnixNano()),
-			Topic:     req.Prompt,
+			Topic:     topic,
 			MaxRounds: 3,
 			Metadata:  make(map[string]any),
 		}
