@@ -548,6 +548,27 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 	// This is the default path — uses multi-agent debate with verified providers
 	if h.debateService != nil && h.debateService.IsComprehensiveSystemEnabled() {
 		logrus.Info("[STREAMING] Using comprehensive multi-agent debate system (NEW)")
+
+		// CRITICAL: Ensure LLM invokers are registered for comprehensive agents.
+		// PopulateFromDebateTeam may not have run yet due to startup timing.
+		// Lazily register invokers from the debate team config if needed.
+		if h.debateTeamConfig != nil && !comprehensive.HasFallbackInvoker() {
+			verifiedLLMs := h.debateTeamConfig.GetVerifiedLLMs()
+			invokerCount := 0
+			for _, vllm := range verifiedLLMs {
+				if vllm.Provider != nil {
+					invoker := debate_integration.NewProviderLLMInvoker(vllm.Provider, vllm.ModelName)
+					comprehensive.RegisterInvoker(vllm.ProviderName, vllm.ModelName, invoker)
+					invokerCount++
+				}
+			}
+			if len(verifiedLLMs) > 0 && verifiedLLMs[0].Provider != nil {
+				comprehensive.SetFallbackInvoker(
+					debate_integration.NewProviderLLMInvoker(verifiedLLMs[0].Provider, verifiedLLMs[0].ModelName),
+				)
+			}
+			logrus.WithField("invoker_count", invokerCount).Info("[STREAMING] Lazily registered LLM invokers for comprehensive debate")
+		}
 		streamChan, compErr := h.processWithComprehensiveStream(ctx, internalReq, req)
 		if compErr == nil && streamChan != nil {
 			// Forward comprehensive stream directly
