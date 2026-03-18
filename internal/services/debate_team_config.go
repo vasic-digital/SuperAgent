@@ -129,7 +129,7 @@ var LLMsVerifierModels = struct {
 	Gemini:   "gemini-2.5-flash",
 	Mistral:  "mistral-large-latest",
 	Groq:     "llama-4-maverick-17b-128e-instruct",
-	Cerebras: "llama-3.3-70b",
+	Cerebras: "llama3.1-8b",
 	ZAI:      "glm-4.7",
 	Chutes:   "deepseek-ai/DeepSeek-V3",
 }

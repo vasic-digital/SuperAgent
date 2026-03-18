@@ -546,7 +546,11 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 
 	// Use the NEW 8-phase orchestrator for streaming.
 	// This is the real new debate system from docs/requests/debate.
+	// Track whether the orchestrator was attempted so the fallback doesn't fire a
+	// second, duplicate debate request while the first one is still being processed.
+	orchestratorAttempted := false
 	if h.orchestratorIntegration != nil {
+		orchestratorAttempted = true
 		logrus.Info("[STREAMING] Using NEW 8-phase debate orchestrator")
 
 		orchTopic := ""
@@ -562,7 +566,7 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 		debateReq := &orchestrator.DebateRequest{
 			Topic:        orchTopic,
 			MaxRounds:    2,
-			MinConsensus: 0.7,
+			MinConsensus: 0.6,
 		}
 
 		debateResp, orchErr := h.orchestratorIntegration.GetOrchestrator().ConductDebate(ctx, debateReq)
@@ -645,9 +649,17 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 		logrus.WithError(orchErr).Warn("[STREAMING] 8-phase orchestrator failed — falling back to debate service")
 	}
 
-	// Fallback: Use debate service with verified team (real LLM calls but old format)
-	if h.debateService != nil && h.debateTeamConfig != nil {
-		logrus.Info("[STREAMING] Fallback: Running debate service with verified team providers")
+	// Fallback: Use debate service with verified team (real LLM calls but old format).
+	// Only attempt this if the orchestrator was NOT already attempted, or if the
+	// orchestrator timed out / failed and the parent context still has time remaining.
+	// This prevents firing a second duplicate debate request when the orchestrator
+	// already consumed the budget.
+	if h.debateService != nil && h.debateTeamConfig != nil && ctx.Err() == nil {
+		if orchestratorAttempted {
+			logrus.Info("[STREAMING] Orchestrator failed, attempting fallback debate service (context still alive)")
+		} else {
+			logrus.Info("[STREAMING] No orchestrator available, using debate service directly")
+		}
 
 		// Extract topic
 		topic := ""
@@ -673,16 +685,38 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 		debateResult, debateErr := h.debateService.ConductDebate(ctx, debateConfig)
 		if debateErr == nil && debateResult != nil {
 			var finalContent string
+
+			// Try consensus summary first
 			if debateResult.Consensus != nil && debateResult.Consensus.Summary != "" {
 				finalContent = debateResult.Consensus.Summary
-			} else if debateResult.BestResponse != nil && debateResult.BestResponse.Content != "" {
-				finalContent = debateResult.BestResponse.Content
-			} else if len(debateResult.AllResponses) > 0 {
+			}
+
+			// Try consensus FinalPosition if Summary is empty
+			if finalContent == "" && debateResult.Consensus != nil && debateResult.Consensus.FinalPosition != "" {
+				finalContent = debateResult.Consensus.FinalPosition
+			}
+
+			// Try best response (Content or Response field)
+			if finalContent == "" && debateResult.BestResponse != nil {
+				if debateResult.BestResponse.Content != "" {
+					finalContent = debateResult.BestResponse.Content
+				} else if debateResult.BestResponse.Response != "" {
+					finalContent = debateResult.BestResponse.Response
+				}
+			}
+
+			// Try all responses - check both Content and Response fields
+			if finalContent == "" && len(debateResult.AllResponses) > 0 {
 				for _, r := range debateResult.AllResponses {
-					if r.Response != "" {
-						finalContent += r.Response + "\n\n"
+					content := r.Content
+					if content == "" {
+						content = r.Response
+					}
+					if content != "" {
+						finalContent += content + "\n\n"
 					}
 				}
+				finalContent = strings.TrimSpace(finalContent)
 			}
 
 			if finalContent != "" {
@@ -737,6 +771,8 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 			logrus.WithError(debateErr).Warn("[STREAMING] Debate failed — falling back")
 		}
 		// If debate produced no content, fall through to old path
+	} else if ctx.Err() != nil && orchestratorAttempted {
+		logrus.Warn("[STREAMING] Skipping fallback debate — context expired after orchestrator attempt")
 	}
 
 	// OLD CODE REMOVED — comprehensive streaming replaced by ConductDebate above
@@ -2285,7 +2321,7 @@ func (h *UnifiedHandler) processWithOrchestrator(ctx context.Context, req *model
 		debateReq := &orchestrator.DebateRequest{
 			Topic:        orchTopic,
 			MaxRounds:    2,
-			MinConsensus: 0.7,
+			MinConsensus: 0.6,
 		}
 
 		debateResp, err := h.orchestratorIntegration.GetOrchestrator().ConductDebate(ctx, debateReq)

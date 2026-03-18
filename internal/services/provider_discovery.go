@@ -189,8 +189,8 @@ var providerMappings = []ProviderMapping{
 	{EnvVar: "ApiKey_Groq", ProviderType: "groq", ProviderName: "groq", BaseURL: "https://api.groq.com/openai/v1/chat/completions", DefaultModel: "llama-3.1-70b-versatile", Priority: 5},
 
 	// Cerebras - Multiple key name variations
-	{EnvVar: "CEREBRAS_API_KEY", ProviderType: "cerebras", ProviderName: "cerebras", BaseURL: "https://api.cerebras.ai/v1/chat/completions", DefaultModel: "llama-3.3-70b", Priority: 5},
-	{EnvVar: "ApiKey_Cerebras", ProviderType: "cerebras", ProviderName: "cerebras", BaseURL: "https://api.cerebras.ai/v1/chat/completions", DefaultModel: "llama-3.3-70b", Priority: 5},
+	{EnvVar: "CEREBRAS_API_KEY", ProviderType: "cerebras", ProviderName: "cerebras", BaseURL: "https://api.cerebras.ai/v1/chat/completions", DefaultModel: "llama3.1-8b", Priority: 5},
+	{EnvVar: "ApiKey_Cerebras", ProviderType: "cerebras", ProviderName: "cerebras", BaseURL: "https://api.cerebras.ai/v1/chat/completions", DefaultModel: "llama3.1-8b", Priority: 5},
 
 	// SambaNova
 	{EnvVar: "SAMBANOVA_API_KEY", ProviderType: "sambanova", ProviderName: "sambanova", BaseURL: "https://api.sambanova.ai/v1", DefaultModel: "Meta-Llama-3.1-70B-Instruct", Priority: 5},

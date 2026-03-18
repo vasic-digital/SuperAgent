@@ -21,7 +21,7 @@ var log = logrus.New()
 
 const (
 	CerebrasAPIURL = "https://api.cerebras.ai/v1/chat/completions"
-	CerebrasModel  = "llama-3.3-70b"
+	CerebrasModel  = "llama3.1-8b"
 )
 
 type CerebrasProvider struct {
@@ -136,9 +136,8 @@ func NewCerebrasProviderWithRetry(apiKey, baseURL, model string, retryConfig Ret
 		ModelsDevID:    "cerebras",
 		APIKey:         apiKey,
 		FallbackModels: []string{
-			"llama-3.3-70b",
-			"llama-3.1-8b",
-			"llama-3.1-70b",
+			"llama3.1-8b",
+			"gpt-oss-120b",
 		},
 	})
 

@@ -72,9 +72,9 @@ func NewServiceIntegration(
 	orchConfig.EnableLearning = config.EnableLearning
 	orchConfig.EnableCrossDebateLearning = config.EnableLearning
 	orchConfig.MinAgentsPerDebate = config.MinAgentsForNewFramework
-	// Reduce default timeout for faster response times: 2 rounds × 8 phases
+	// Allow sufficient timeout for 2 rounds × 8 phases with slow providers (Mistral: 10-22s each)
 	orchConfig.DefaultMaxRounds = 2
-	orchConfig.DefaultTimeout = 3 * time.Minute
+	orchConfig.DefaultTimeout = 5 * time.Minute
 
 	orch, bridge := factory.CreateOrchestratorWithBridge(orchConfig)
 

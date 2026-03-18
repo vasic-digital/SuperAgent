@@ -426,7 +426,7 @@ var SupportedProviders = map[string]*ProviderTypeInfo{
 		Priority:    4,
 		EnvVars:     []string{"CEREBRAS_API_KEY", "ApiKey_Cerebras"},
 		BaseURL:     "https://api.cerebras.ai/v1/chat/completions",
-		Models:      []string{"llama-3.3-70b"},
+		Models:      []string{"llama3.1-8b"},
 		Free:        false,
 	},
 
