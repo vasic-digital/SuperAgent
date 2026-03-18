@@ -360,8 +360,18 @@ func (b *BaseAgent) InvokeLLM(
 		invoker = GetInvoker(b.agent.Provider, b.agent.Model)
 	}
 	if invoker == nil {
+		b.logger.WithFields(logrus.Fields{
+			"role":     role,
+			"provider": b.agent.Provider,
+			"model":    b.agent.Model,
+		}).Warn("[DEBATE-AGENT] No LLM invoker found — using template fallback")
 		return templateFallback, 0.85, nil
 	}
+	b.logger.WithFields(logrus.Fields{
+		"role":     role,
+		"provider": b.agent.Provider,
+		"model":    b.agent.Model,
+	}).Info("[DEBATE-AGENT] Calling real LLM provider")
 
 	systemPrompt := fmt.Sprintf(
 		"You are %s in an AI debate team. Your role: %s. "+

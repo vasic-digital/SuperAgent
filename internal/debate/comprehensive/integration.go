@@ -200,6 +200,12 @@ func (m *IntegrationManager) StreamDebate(ctx context.Context, req *DebateStream
 	// Create streaming orchestrator
 	streamConfig := DefaultStreamConfig()
 	allAgents := m.pool.GetAll()
+	m.logger.WithField("agent_count", len(allAgents)).Info("[StreamDebate] Pool agents count")
+	for i, a := range allAgents {
+		m.logger.WithFields(logrus.Fields{
+			"idx": i, "id": a.ID, "role": a.Role, "provider": a.Provider, "model": a.Model,
+		}).Info("[StreamDebate] Agent in pool")
+	}
 	streamer := NewStreamOrchestrator(streamConfig, req.StreamHandler, req.ID, len(allAgents))
 
 	// Emit debate start event

@@ -9,7 +9,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"dev.helix.agent/internal/debate/comprehensive"
+	"digital.vasic.debate/comprehensive"
 	"dev.helix.agent/internal/services"
 	"digital.vasic.debate"
 	"digital.vasic.debate/orchestrator"
@@ -342,7 +342,7 @@ func (si *ServiceIntegration) PopulateFromDebateTeam(teamConfig *services.Debate
 	invokerCount := 0
 	for _, vllm := range verifiedLLMs {
 		if vllm.Provider != nil {
-			invoker := comprehensive.NewProviderLLMInvoker(vllm.Provider, vllm.ModelName)
+			invoker := NewProviderLLMInvoker(vllm.Provider, vllm.ModelName)
 			comprehensive.RegisterInvoker(vllm.ProviderName, vllm.ModelName, invoker)
 			invokerCount++
 		}
@@ -353,7 +353,7 @@ func (si *ServiceIntegration) PopulateFromDebateTeam(teamConfig *services.Debate
 	// real LLM calls.
 	if len(verifiedLLMs) > 0 && verifiedLLMs[0].Provider != nil {
 		comprehensive.SetFallbackInvoker(
-			comprehensive.NewProviderLLMInvoker(verifiedLLMs[0].Provider, verifiedLLMs[0].ModelName),
+			NewProviderLLMInvoker(verifiedLLMs[0].Provider, verifiedLLMs[0].ModelName),
 		)
 	}
 
