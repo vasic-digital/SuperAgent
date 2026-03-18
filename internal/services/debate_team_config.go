@@ -446,13 +446,15 @@ func (dtc *DebateTeamConfig) collectVerifiedLLMs(ctx context.Context) {
 	}).Info("Verified LLMs collected")
 }
 
-// filterLocalProviders removes Ollama and other local-only providers from the verified LLMs list.
-// Debate requires remote API providers for diversity and reliability.
+// filterLocalProviders removes Ollama, local-only, and slow CLI-proxy providers
+// from the verified LLMs list. Debate requires fast remote API providers.
 func (dtc *DebateTeamConfig) filterLocalProviders() {
 	beforeCount := len(dtc.verifiedLLMs)
 	filtered := make([]*VerifiedLLM, 0, len(dtc.verifiedLLMs))
 	for _, llm := range dtc.verifiedLLMs {
 		providerLower := strings.ToLower(llm.ProviderName)
+
+		// Skip Ollama/local providers
 		if providerLower == "ollama" || providerLower == "local" {
 			dtc.logger.WithFields(logrus.Fields{
 				"provider": llm.ProviderName,
@@ -460,7 +462,20 @@ func (dtc *DebateTeamConfig) filterLocalProviders() {
 			}).Debug("Skipping local/Ollama provider for debate team")
 			continue
 		}
-		// Also skip bare local model names that indicate Ollama models without the provider prefix
+
+		// Skip OAuth/CLI-proxy providers (Claude, Qwen, Junie, Zen) —
+		// they use CLI subprocess calls that are too slow for real-time debate
+		// (Claude CLI takes 45-180 seconds per call, blocking the entire round)
+		if llm.IsOAuth {
+			dtc.logger.WithFields(logrus.Fields{
+				"provider": llm.ProviderName,
+				"model":    llm.ModelName,
+				"reason":   "OAuth/CLI proxy too slow for debate",
+			}).Debug("Skipping OAuth/CLI provider for debate team (use API-key providers)")
+			continue
+		}
+
+		// Also skip bare local model names
 		modelLower := strings.ToLower(llm.ModelName)
 		if isLocalOnlyModel(modelLower) {
 			dtc.logger.WithFields(logrus.Fields{

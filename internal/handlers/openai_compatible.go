@@ -562,7 +562,7 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 		debateConfig := &services.DebateConfig{
 			DebateID:     fmt.Sprintf("stream-%d", time.Now().UnixNano()),
 			Topic:        topic,
-			MaxRounds:    3,
+			MaxRounds:    1,
 			Strategy:     "collaborative",
 			Participants: participants,
 			Timeout:      120 * time.Second,
@@ -2306,7 +2306,7 @@ func (h *UnifiedHandler) processWithOrchestrator(ctx context.Context, req *model
 	debateConfig := services.DebateConfig{
 		DebateID:     fmt.Sprintf("debate-%d", time.Now().UnixNano()),
 		Topic:        topic,
-		MaxRounds:    3,
+		MaxRounds:    1,
 		EnableCognee: false,
 		Strategy:     "collaborative",
 		Participants: participants,
