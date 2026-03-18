@@ -13,6 +13,22 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// stubLLMProvider is a minimal stub that satisfies llm.LLMProvider for testing.
+type stubLLMProvider struct{}
+
+func (s *stubLLMProvider) Complete(_ context.Context, _ *models.LLMRequest) (*models.LLMResponse, error) {
+	return &models.LLMResponse{Content: "stub"}, nil
+}
+func (s *stubLLMProvider) CompleteStream(_ context.Context, _ *models.LLMRequest) (<-chan *models.LLMResponse, error) {
+	return nil, nil
+}
+func (s *stubLLMProvider) HealthCheck() error                                      { return nil }
+func (s *stubLLMProvider) GetCapabilities() *models.ProviderCapabilities           { return nil }
+func (s *stubLLMProvider) ValidateConfig(_ map[string]interface{}) (bool, []string) { return true, nil }
+
+// Ensure stubLLMProvider implements llm.LLMProvider
+var _ llm.LLMProvider = (*stubLLMProvider)(nil)
+
 // TestConstants verifies the debate team constants
 func TestConstants(t *testing.T) {
 	t.Run("Total positions is 5", func(t *testing.T) {
@@ -755,7 +771,7 @@ func TestReliableAPIProvidersCollection(t *testing.T) {
 	})
 
 	t.Run("Cerebras model ID is correct", func(t *testing.T) {
-		assert.Equal(t, "llama-3.3-70b", LLMsVerifierModels.Cerebras, "Cerebras should use llama-3.3-70b")
+		assert.Equal(t, "llama3.1-8b", LLMsVerifierModels.Cerebras, "Cerebras should use llama3.1-8b")
 	})
 
 	t.Run("Mistral model ID is correct", func(t *testing.T) {
@@ -853,18 +869,21 @@ func TestDebateTeamMustHaveWorkingFallbacks(t *testing.T) {
 
 	t.Run("All positions have fallbacks when providers available", func(t *testing.T) {
 		// Simulate verified LLMs being available
+		// NOTE: Provider must be non-nil for assignPrimaryPositions to accept the LLM
+		// Using a simple stub that satisfies the llm.LLMProvider interface
+		stubProvider := &stubLLMProvider{}
 		config.verifiedLLMs = []*VerifiedLLM{
 			// OAuth providers (Claude)
-			{ProviderName: "claude", ModelName: ClaudeModels.Opus45, Score: 9.8, IsOAuth: true, Verified: true},
-			{ProviderName: "claude", ModelName: ClaudeModels.Sonnet45, Score: 9.6, IsOAuth: true, Verified: true},
-			{ProviderName: "claude", ModelName: ClaudeModels.Opus4, Score: 9.4, IsOAuth: true, Verified: true},
-			{ProviderName: "claude", ModelName: ClaudeModels.Sonnet4, Score: 9.2, IsOAuth: true, Verified: true},
-			{ProviderName: "claude", ModelName: ClaudeModels.Haiku45, Score: 9.0, IsOAuth: true, Verified: true},
+			{ProviderName: "claude", ModelName: ClaudeModels.Opus45, Score: 9.8, IsOAuth: true, Verified: true, Provider: stubProvider},
+			{ProviderName: "claude", ModelName: ClaudeModels.Sonnet45, Score: 9.6, IsOAuth: true, Verified: true, Provider: stubProvider},
+			{ProviderName: "claude", ModelName: ClaudeModels.Opus4, Score: 9.4, IsOAuth: true, Verified: true, Provider: stubProvider},
+			{ProviderName: "claude", ModelName: ClaudeModels.Sonnet4, Score: 9.2, IsOAuth: true, Verified: true, Provider: stubProvider},
+			{ProviderName: "claude", ModelName: ClaudeModels.Haiku45, Score: 9.0, IsOAuth: true, Verified: true, Provider: stubProvider},
 			// Reliable API providers (NON-OAuth)
-			{ProviderName: "cerebras", ModelName: LLMsVerifierModels.Cerebras, Score: 8.9, IsOAuth: false, Verified: true},
-			{ProviderName: "mistral", ModelName: LLMsVerifierModels.Mistral, Score: 8.7, IsOAuth: false, Verified: true},
-			{ProviderName: "deepseek", ModelName: LLMsVerifierModels.DeepSeek, Score: 8.8, IsOAuth: false, Verified: true},
-			{ProviderName: "gemini", ModelName: LLMsVerifierModels.Gemini, Score: 8.6, IsOAuth: false, Verified: true},
+			{ProviderName: "cerebras", ModelName: LLMsVerifierModels.Cerebras, Score: 8.9, IsOAuth: false, Verified: true, Provider: stubProvider},
+			{ProviderName: "mistral", ModelName: LLMsVerifierModels.Mistral, Score: 8.7, IsOAuth: false, Verified: true, Provider: stubProvider},
+			{ProviderName: "deepseek", ModelName: LLMsVerifierModels.DeepSeek, Score: 8.8, IsOAuth: false, Verified: true, Provider: stubProvider},
+			{ProviderName: "gemini", ModelName: LLMsVerifierModels.Gemini, Score: 8.6, IsOAuth: false, Verified: true, Provider: stubProvider},
 		}
 
 		// Manually assign positions with fallbacks
@@ -1058,7 +1077,7 @@ func TestDebateTeamMember_ToParticipantConfig(t *testing.T) {
 			Fallbacks: []*DebateTeamMember{
 				{
 					ProviderName: "huggingface",
-					ModelName:    "llama-3.3-70b",
+					ModelName:    "llama3.1-8b",
 					Provider:     fallbackProvider,
 					Score:        7.5,
 				},
@@ -1069,7 +1088,7 @@ func TestDebateTeamMember_ToParticipantConfig(t *testing.T) {
 
 		assert.Len(t, config.Fallbacks, 1, "Should have 1 fallback")
 		assert.Equal(t, "huggingface", config.Fallbacks[0].Provider)
-		assert.Equal(t, "llama-3.3-70b", config.Fallbacks[0].Model)
+		assert.Equal(t, "llama3.1-8b", config.Fallbacks[0].Model)
 		assert.NotNil(t, config.Fallbacks[0].ProviderInstance, "Fallback ProviderInstance MUST be set")
 		assert.Equal(t, fallbackProvider, config.Fallbacks[0].ProviderInstance)
 	})
