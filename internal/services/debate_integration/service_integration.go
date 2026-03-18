@@ -24,6 +24,7 @@ import (
 type ServiceIntegration struct {
 	orchestrator     *orchestrator.Orchestrator
 	providerRegistry *services.ProviderRegistry
+	providerBridge   *ProviderRegistryBridge
 	logger           *logrus.Logger
 	config           ServiceIntegrationConfig
 }
@@ -71,12 +72,16 @@ func NewServiceIntegration(
 	orchConfig.EnableLearning = config.EnableLearning
 	orchConfig.EnableCrossDebateLearning = config.EnableLearning
 	orchConfig.MinAgentsPerDebate = config.MinAgentsForNewFramework
+	// Reduce default timeout for faster response times: 2 rounds × 8 phases
+	orchConfig.DefaultMaxRounds = 2
+	orchConfig.DefaultTimeout = 3 * time.Minute
 
-	orchestrator := factory.CreateOrchestrator(orchConfig)
+	orch, bridge := factory.CreateOrchestratorWithBridge(orchConfig)
 
 	return &ServiceIntegration{
-		orchestrator:     orchestrator,
+		orchestrator:     orch,
 		providerRegistry: providerRegistry,
+		providerBridge:   bridge,
 		logger:           logger,
 		config:           config,
 	}
@@ -301,6 +306,12 @@ type IntegrationStatistics struct {
 func (si *ServiceIntegration) PopulateFromDebateTeam(teamConfig *services.DebateTeamConfig) {
 	if teamConfig == nil || si.orchestrator == nil {
 		return
+	}
+
+	// Give the provider bridge access to verified provider instances so that
+	// OAuth/CLI providers (Claude, Qwen, etc.) can be resolved at invoke time.
+	if si.providerBridge != nil {
+		si.providerBridge.SetDebateTeamConfig(teamConfig)
 	}
 
 	verifiedLLMs := teamConfig.GetVerifiedLLMs()

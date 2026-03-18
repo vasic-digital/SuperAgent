@@ -561,7 +561,7 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 
 		debateReq := &orchestrator.DebateRequest{
 			Topic:        orchTopic,
-			MaxRounds:    3,
+			MaxRounds:    2,
 			MinConsensus: 0.7,
 		}
 
@@ -571,13 +571,24 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 			var finalContent string
 			if debateResp.Consensus != nil && debateResp.Consensus.Summary != "" {
 				finalContent = debateResp.Consensus.Summary
-			} else if len(debateResp.Phases) > 0 {
-				// Collect content from all phases
-				for _, phase := range debateResp.Phases {
-					for _, resp := range phase.Responses {
-						if resp.Content != "" {
-							finalContent += resp.Content + "\n\n"
+			}
+
+			// Check if consensus content is actually an error message
+			if isErrorContent(finalContent) {
+				finalContent = ""
+			}
+
+			// If no good consensus, extract from phase responses (last phase first)
+			if finalContent == "" && len(debateResp.Phases) > 0 {
+				for i := len(debateResp.Phases) - 1; i >= 0; i-- {
+					for _, resp := range debateResp.Phases[i].Responses {
+						if resp.Content != "" && !isErrorContent(resp.Content) {
+							finalContent = resp.Content
+							break
 						}
+					}
+					if finalContent != "" {
+						break
 					}
 				}
 			}
@@ -2273,7 +2284,7 @@ func (h *UnifiedHandler) processWithOrchestrator(ctx context.Context, req *model
 
 		debateReq := &orchestrator.DebateRequest{
 			Topic:        orchTopic,
-			MaxRounds:    3,
+			MaxRounds:    2,
 			MinConsensus: 0.7,
 		}
 
@@ -2286,10 +2297,28 @@ func (h *UnifiedHandler) processWithOrchestrator(ctx context.Context, req *model
 			if debateResp.Consensus != nil {
 				finalContent = debateResp.Consensus.Summary
 				confidence = debateResp.Consensus.Confidence
-			} else if len(debateResp.Phases) > 0 {
-				lastPhase := debateResp.Phases[len(debateResp.Phases)-1]
-				if len(lastPhase.Responses) > 0 {
-					finalContent = lastPhase.Responses[0].Content
+			}
+
+			// Check if consensus content is actually an error message
+			if isErrorContent(finalContent) {
+				finalContent = ""
+			}
+
+			// If no good consensus, extract from phase responses (last phase first)
+			if finalContent == "" && len(debateResp.Phases) > 0 {
+				for i := len(debateResp.Phases) - 1; i >= 0; i-- {
+					for _, resp := range debateResp.Phases[i].Responses {
+						if resp.Content != "" && !isErrorContent(resp.Content) {
+							finalContent = resp.Content
+							if confidence == 0 {
+								confidence = resp.Confidence
+							}
+							break
+						}
+					}
+					if finalContent != "" {
+						break
+					}
 				}
 			}
 
@@ -2414,6 +2443,20 @@ func (h *UnifiedHandler) processWithOrchestrator(ctx context.Context, req *model
 			"documentation": "docs/requests/debate",
 		},
 	}, nil
+}
+
+// isErrorContent returns true if the content looks like an error message rather
+// than a real LLM response. This handles cases where the consensus summary
+// contains a provider error (e.g. "provider not found") instead of content.
+func isErrorContent(content string) bool {
+	if content == "" {
+		return false
+	}
+	return strings.HasPrefix(content, "Error:") ||
+		strings.HasPrefix(content, "error:") ||
+		strings.Contains(content, "provider not found") ||
+		strings.Contains(content, "failed to get provider") ||
+		strings.Contains(content, "provider call failed")
 }
 
 func (h *UnifiedHandler) convertToOpenAIChatResponse(result *services.EnsembleResult, req *OpenAIChatRequest) *OpenAIChatResponse {

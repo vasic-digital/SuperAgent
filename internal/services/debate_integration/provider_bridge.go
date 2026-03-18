@@ -128,8 +128,10 @@ var _ llmprovider.LLMProvider = (*adaptedProvider)(nil)
 
 // ProviderRegistryBridge adapts the existing services.ProviderRegistry
 // to the orchestrator.ProviderRegistry interface.
+// It also supports OAuth and CLI-based providers via DebateTeamConfig fallback.
 type ProviderRegistryBridge struct {
-	registry *services.ProviderRegistry
+	registry       *services.ProviderRegistry
+	debateTeamCfg  *services.DebateTeamConfig
 }
 
 // NewProviderRegistryBridge creates a new bridge to the services provider registry.
@@ -137,13 +139,35 @@ func NewProviderRegistryBridge(registry *services.ProviderRegistry) *ProviderReg
 	return &ProviderRegistryBridge{registry: registry}
 }
 
+// SetDebateTeamConfig sets the debate team config so the bridge can look up
+// OAuth and CLI-based providers (e.g. Claude, Qwen) that are not in the
+// standard provider registry but have verified instances in the debate team.
+func (b *ProviderRegistryBridge) SetDebateTeamConfig(teamConfig *services.DebateTeamConfig) {
+	b.debateTeamCfg = teamConfig
+}
+
 // GetProvider implements ProviderRegistry interface.
+// It first tries the standard registry, then falls back to the debate team
+// config's verified provider instances for OAuth/CLI providers.
 func (b *ProviderRegistryBridge) GetProvider(name string) (llmprovider.LLMProvider, error) {
 	internalProvider, err := b.registry.GetProvider(name)
-	if err != nil {
-		return nil, err
+	if err == nil {
+		return NewAdaptedProvider(internalProvider), nil
 	}
-	return NewAdaptedProvider(internalProvider), nil
+
+	// Fallback: look up from debate team config's verified providers.
+	// This handles OAuth providers (Claude, Qwen) and CLI-based providers
+	// that are not registered in the standard provider registry.
+	if b.debateTeamCfg != nil {
+		verifiedLLMs := b.debateTeamCfg.GetVerifiedLLMs()
+		for _, vllm := range verifiedLLMs {
+			if vllm.ProviderName == name && vllm.Provider != nil {
+				return NewAdaptedProvider(vllm.Provider), nil
+			}
+		}
+	}
+
+	return nil, err
 }
 
 // GetAvailableProviders implements ProviderRegistry interface.
@@ -231,6 +255,14 @@ func NewOrchestratorFactory(providerRegistry *services.ProviderRegistry) *Orches
 // CreateOrchestrator creates a new orchestrator integrated with services.
 // lessonBank can be nil for fresh debates without learning history.
 func (f *OrchestratorFactory) CreateOrchestrator(config orchestrator.OrchestratorConfig) *orchestrator.Orchestrator {
+	orch, _ := f.CreateOrchestratorWithBridge(config)
+	return orch
+}
+
+// CreateOrchestratorWithBridge creates a new orchestrator and returns both
+// the orchestrator and the provider registry bridge. The bridge can be used
+// to set the DebateTeamConfig for OAuth/CLI provider fallback lookup.
+func (f *OrchestratorFactory) CreateOrchestratorWithBridge(config orchestrator.OrchestratorConfig) (*orchestrator.Orchestrator, *ProviderRegistryBridge) {
 	bridge := NewProviderRegistryBridge(f.providerRegistry)
 
 	// Create a fresh lesson bank if none provided
@@ -243,7 +275,7 @@ func (f *OrchestratorFactory) CreateOrchestrator(config orchestrator.Orchestrato
 	// Auto-register verified providers
 	f.registerVerifiedProviders(orch)
 
-	return orch
+	return orch, bridge
 }
 
 // CreateOrchestratorWithDefaults creates an orchestrator with default config.
