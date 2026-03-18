@@ -531,7 +531,87 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 	outputFormat := DetectOutputFormat(acceptHeader, userAgent, formatHint)
 	defer cancel()
 
-	// Process with ensemble streaming
+	// Generate stream ID early for potential orchestrator use
+	streamID := fmt.Sprintf("chatcmpl-%d", time.Now().UnixNano())
+
+	// CRITICAL: Use the NEW debate orchestrator path for streaming.
+	// The orchestrator uses the scored, verified debate team — no legacy 5-position system.
+	// processWithOrchestrator runs the debate non-streaming, then we stream the result.
+	if h.orchestratorIntegration != nil && h.debateService != nil {
+		logrus.Info("[STREAMING] Using NEW orchestrator path — bypassing legacy 5-position debate")
+
+		// Run orchestrator debate (non-streaming — collects full result)
+		result, orchErr := h.processWithEnsemble(ctx, internalReq, req)
+		if orchErr == nil && result != nil && result.Selected != nil && result.Selected.Content != "" {
+			logrus.WithField("content_len", len(result.Selected.Content)).Info("[STREAMING] Orchestrator debate completed — streaming result")
+
+			// Stream the orchestrator result as SSE chunks directly
+			c.Header("Content-Type", "text/event-stream")
+			c.Header("Cache-Control", "no-cache")
+			c.Header("Connection", "keep-alive")
+			c.Header("X-Accel-Buffering", "no")
+
+			flusher, ok := c.Writer.(http.Flusher)
+			if !ok {
+				h.sendOpenAIError(c, http.StatusInternalServerError, "internal_error", "Streaming not supported", "")
+				return
+			}
+
+			// Send role chunk
+			roleChunk := map[string]any{
+				"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
+				"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
+				"choices": []map[string]any{{"index": 0, "delta": map[string]any{"role": "assistant", "content": ""}, "finish_reason": nil}},
+			}
+			if roleData, err := json.Marshal(roleChunk); err == nil {
+				_, _ = c.Writer.Write([]byte("data: "))
+				_, _ = c.Writer.Write(roleData)
+				_, _ = c.Writer.Write([]byte("\n\n"))
+				flusher.Flush()
+			}
+
+			// Stream content in chunks
+			content := result.Selected.Content
+			chunkSize := 20 // characters per chunk for smooth streaming
+			for i := 0; i < len(content); i += chunkSize {
+				end := i + chunkSize
+				if end > len(content) {
+					end = len(content)
+				}
+				chunk := map[string]any{
+					"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
+					"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
+					"choices": []map[string]any{{"index": 0, "delta": map[string]any{"content": content[i:end]}, "finish_reason": nil}},
+				}
+				if chunkData, err := json.Marshal(chunk); err == nil {
+					_, _ = c.Writer.Write([]byte("data: "))
+					_, _ = c.Writer.Write(chunkData)
+					_, _ = c.Writer.Write([]byte("\n\n"))
+					flusher.Flush()
+				}
+			}
+
+			// Send finish chunk
+			finishChunk := map[string]any{
+				"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
+				"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
+				"choices": []map[string]any{{"index": 0, "delta": map[string]any{}, "finish_reason": "stop"}},
+			}
+			if finishData, err := json.Marshal(finishChunk); err == nil {
+				_, _ = c.Writer.Write([]byte("data: "))
+				_, _ = c.Writer.Write(finishData)
+				_, _ = c.Writer.Write([]byte("\n\n"))
+			}
+			_, _ = c.Writer.Write([]byte("data: [DONE]\n\n"))
+			flusher.Flush()
+			return
+		}
+		if orchErr != nil {
+			logrus.WithError(orchErr).Warn("[STREAMING] Orchestrator failed — falling back to direct provider streaming")
+		}
+	}
+
+	// Fallback: Use the strongest verified provider for direct streaming
 	streamChan, err := h.processWithEnsembleStream(ctx, internalReq, req)
 	if err != nil {
 		h.sendCategorizedError(c, err)
@@ -555,8 +635,8 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 	// Track streaming state for OpenCode/Crush/HelixCode compatibility
 	chunksSent := 0
 	isFirstChunk := true
-	sentFinalChunk := false                                       // Track if we've already sent a finish_reason chunk
-	streamID := fmt.Sprintf("chatcmpl-%d", time.Now().UnixNano()) // Consistent ID across all chunks
+	sentFinalChunk := false // Track if we've already sent a finish_reason chunk
+	// Note: streamID already generated above for orchestrator path
 
 	// Client disconnect detection via request context cancellation.
 	// c.Request.Context() is cancelled when the client disconnects,
