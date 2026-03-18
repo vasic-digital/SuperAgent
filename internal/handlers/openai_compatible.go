@@ -544,97 +544,77 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 		"debate_service":   h.debateService != nil,
 	}).Info("[STREAMING-DEBUG] Entering handleStreamingChatCompletions orchestrator check")
 
-	if h.debateTeamConfig != nil {
-		logrus.Info("[STREAMING] Using verified debate team — strongest provider streaming")
+	// Use comprehensive debate streaming if available (NEW system)
+	// This is the default path — uses multi-agent debate with verified providers
+	if h.debateService != nil && h.debateService.IsComprehensiveSystemEnabled() {
+		logrus.Info("[STREAMING] Using comprehensive multi-agent debate system (NEW)")
+		streamChan, compErr := h.processWithComprehensiveStream(ctx, internalReq, req)
+		if compErr == nil && streamChan != nil {
+			// Forward comprehensive stream directly
+			// Set streaming headers
+			c.Header("Content-Type", "text/event-stream")
+			c.Header("Cache-Control", "no-cache")
+			c.Header("Connection", "keep-alive")
+			c.Header("X-Accel-Buffering", "no")
 
-		// Use the strongest verified provider for streaming
-		// Iterates through debate team positions (sorted by score) and uses
-		// the first one that successfully streams
-		for pos := services.PositionAnalyst; pos <= services.PositionMediator; pos++ {
-			provider, model, err := h.debateTeamConfig.GetProviderForPosition(pos)
-			if err != nil || provider == nil {
-				continue
+			flusher, ok := c.Writer.(http.Flusher)
+			if !ok {
+				h.sendOpenAIError(c, http.StatusInternalServerError, "internal_error", "Streaming not supported", "")
+				return
 			}
 
-			logrus.WithFields(logrus.Fields{
-				"position": pos,
-				"model":    model,
-			}).Info("[STREAMING] Using verified debate team provider for streaming")
-
-			// Set the model on the request
-			if model != "" {
-				internalReq.ModelParams.Model = model
+			// Send role chunk
+			roleChunk := map[string]any{
+				"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
+				"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
+				"choices": []map[string]any{{"index": 0, "delta": map[string]any{"role": "assistant", "content": ""}, "finish_reason": nil}},
+			}
+			if roleData, jsonErr := json.Marshal(roleChunk); jsonErr == nil {
+				_, _ = c.Writer.Write([]byte("data: "))
+				_, _ = c.Writer.Write(roleData)
+				_, _ = c.Writer.Write([]byte("\n\n"))
+				flusher.Flush()
 			}
 
-			// Use the verified provider for streaming
-			streamChan, streamErr := provider.CompleteStream(ctx, internalReq)
-			if streamErr == nil && streamChan != nil {
-				// Set streaming headers
-				c.Header("Content-Type", "text/event-stream")
-				c.Header("Cache-Control", "no-cache")
-				c.Header("Connection", "keep-alive")
-				c.Header("X-Accel-Buffering", "no")
-
-				flusher, ok := c.Writer.(http.Flusher)
-				if !ok {
-					h.sendOpenAIError(c, http.StatusInternalServerError, "internal_error", "Streaming not supported", "")
-					return
+			// Stream from comprehensive debate
+			for resp := range streamChan {
+				if resp == nil || (resp.Content == "" && resp.FinishReason == "") {
+					continue
 				}
 
-				// Send role chunk
-				roleChunk := map[string]any{
+				if resp.FinishReason == "stop" || resp.FinishReason == "STOP" {
+					break
+				}
+
+				chunk := map[string]any{
 					"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
 					"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
-					"choices": []map[string]any{{"index": 0, "delta": map[string]any{"role": "assistant", "content": ""}, "finish_reason": nil}},
+					"choices": []map[string]any{{"index": 0, "delta": map[string]any{"content": resp.Content}, "finish_reason": nil}},
 				}
-				if roleData, jsonErr := json.Marshal(roleChunk); jsonErr == nil {
+				if chunkData, jsonErr := json.Marshal(chunk); jsonErr == nil {
 					_, _ = c.Writer.Write([]byte("data: "))
-					_, _ = c.Writer.Write(roleData)
+					_, _ = c.Writer.Write(chunkData)
 					_, _ = c.Writer.Write([]byte("\n\n"))
 					flusher.Flush()
 				}
-
-				// Stream from provider
-				for resp := range streamChan {
-					if resp == nil || (resp.Content == "" && resp.FinishReason == "") {
-						continue
-					}
-
-					if resp.FinishReason == "stop" || resp.FinishReason == "STOP" {
-						break
-					}
-
-					chunk := map[string]any{
-						"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
-						"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
-						"choices": []map[string]any{{"index": 0, "delta": map[string]any{"content": resp.Content}, "finish_reason": nil}},
-					}
-					if chunkData, jsonErr := json.Marshal(chunk); jsonErr == nil {
-						_, _ = c.Writer.Write([]byte("data: "))
-						_, _ = c.Writer.Write(chunkData)
-						_, _ = c.Writer.Write([]byte("\n\n"))
-						flusher.Flush()
-					}
-				}
-
-				// Send finish and DONE
-				finishChunk := map[string]any{
-					"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
-					"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
-					"choices": []map[string]any{{"index": 0, "delta": map[string]any{}, "finish_reason": "stop"}},
-				}
-				if finishData, jsonErr := json.Marshal(finishChunk); jsonErr == nil {
-					_, _ = c.Writer.Write([]byte("data: "))
-					_, _ = c.Writer.Write(finishData)
-					_, _ = c.Writer.Write([]byte("\n\n"))
-				}
-				_, _ = c.Writer.Write([]byte("data: [DONE]\n\n"))
-				flusher.Flush()
-				return
 			}
-			logrus.WithError(streamErr).WithField("model", model).Warn("[STREAMING] Provider failed, trying next")
+
+			// Send finish and DONE
+			finishChunk := map[string]any{
+				"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
+				"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
+				"choices": []map[string]any{{"index": 0, "delta": map[string]any{}, "finish_reason": "stop"}},
+			}
+			if finishData, jsonErr := json.Marshal(finishChunk); jsonErr == nil {
+				_, _ = c.Writer.Write([]byte("data: "))
+				_, _ = c.Writer.Write(finishData)
+				_, _ = c.Writer.Write([]byte("\n\n"))
+			}
+			_, _ = c.Writer.Write([]byte("data: [DONE]\n\n"))
+			flusher.Flush()
+			return
 		}
-		logrus.Warn("[STREAMING] All debate team positions failed for streaming — falling back to ensemble")
+		logrus.WithError(compErr).Warn("[STREAMING] Comprehensive debate failed — falling back")
 	}
 
 	// Fallback: Use the strongest verified provider for direct streaming
