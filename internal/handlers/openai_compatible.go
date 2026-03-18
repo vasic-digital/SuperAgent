@@ -544,10 +544,99 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 		"debate_service":   h.debateService != nil,
 	}).Info("[STREAMING-DEBUG] Entering handleStreamingChatCompletions orchestrator check")
 
-	// Use debate service with verified team for streaming (NEW system).
-	// ConductDebate makes REAL LLM calls through verified providers.
+	// Use the NEW 8-phase orchestrator for streaming.
+	// This is the real new debate system from docs/requests/debate.
+	if h.orchestratorIntegration != nil {
+		logrus.Info("[STREAMING] Using NEW 8-phase debate orchestrator")
+
+		orchTopic := ""
+		for _, msg := range req.Messages {
+			if msg.Role == "user" {
+				orchTopic = msg.Content
+			}
+		}
+		if orchTopic == "" {
+			orchTopic = "User Query"
+		}
+
+		debateReq := &orchestrator.DebateRequest{
+			Topic:        orchTopic,
+			MaxRounds:    3,
+			MinConsensus: 0.7,
+		}
+
+		debateResp, orchErr := h.orchestratorIntegration.GetOrchestrator().ConductDebate(ctx, debateReq)
+		if orchErr == nil && debateResp != nil {
+			// Extract content from 8-phase debate result
+			var finalContent string
+			if debateResp.Consensus != nil && debateResp.Consensus.Summary != "" {
+				finalContent = debateResp.Consensus.Summary
+			} else if len(debateResp.Phases) > 0 {
+				// Collect content from all phases
+				for _, phase := range debateResp.Phases {
+					for _, resp := range phase.Responses {
+						if resp.Content != "" {
+							finalContent += resp.Content + "\n\n"
+						}
+					}
+				}
+			}
+
+			if finalContent != "" {
+				logrus.WithFields(logrus.Fields{
+					"content_len": len(finalContent),
+					"phases":      len(debateResp.Phases),
+				}).Info("[STREAMING] 8-phase debate completed, streaming result")
+
+				c.Header("Content-Type", "text/event-stream")
+				c.Header("Cache-Control", "no-cache")
+				c.Header("Connection", "keep-alive")
+				c.Header("X-Accel-Buffering", "no")
+
+				flusher, ok := c.Writer.(http.Flusher)
+				if !ok {
+					h.sendOpenAIError(c, http.StatusInternalServerError, "internal_error", "Streaming not supported", "")
+					return
+				}
+
+				roleData, _ := json.Marshal(map[string]any{
+					"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
+					"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
+					"choices": []map[string]any{{"index": 0, "delta": map[string]any{"role": "assistant", "content": ""}, "finish_reason": nil}},
+				})
+				_, _ = fmt.Fprintf(c.Writer, "data: %s\n\n", roleData)
+				flusher.Flush()
+
+				for i := 0; i < len(finalContent); i += 50 {
+					end := i + 50
+					if end > len(finalContent) {
+						end = len(finalContent)
+					}
+					chunkData, _ := json.Marshal(map[string]any{
+						"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
+						"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
+						"choices": []map[string]any{{"index": 0, "delta": map[string]any{"content": finalContent[i:end]}, "finish_reason": nil}},
+					})
+					_, _ = fmt.Fprintf(c.Writer, "data: %s\n\n", chunkData)
+					flusher.Flush()
+				}
+
+				finishData, _ := json.Marshal(map[string]any{
+					"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
+					"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
+					"choices": []map[string]any{{"index": 0, "delta": map[string]any{}, "finish_reason": "stop"}},
+				})
+				_, _ = fmt.Fprintf(c.Writer, "data: %s\n\ndata: [DONE]\n\n", finishData)
+				flusher.Flush()
+				return
+			}
+		}
+		logrus.WithError(orchErr).Warn("[STREAMING] 8-phase orchestrator failed — falling back to debate service")
+	}
+
+	// Fallback: Use debate service with verified team (real LLM calls but old format)
 	if h.debateService != nil && h.debateTeamConfig != nil {
-		logrus.Info("[STREAMING] Running debate with verified team providers (real LLM calls)")
+		logrus.Info("[STREAMING] Fallback: Running debate service with verified team providers")
 
 		// Extract topic
 		topic := ""
@@ -2169,10 +2258,23 @@ func (h *UnifiedHandler) processWithOrchestrator(ctx context.Context, req *model
 	// First try the NEW orchestrator if available
 	if h.orchestratorIntegration != nil {
 		logrus.Info("[CODE PATH] Attempting NEW orchestrator (8-phase protocol)")
+		// Extract topic from request messages (OpenCode sends messages, not prompt)
+		orchTopic := req.Prompt
+		if orchTopic == "" {
+			for _, msg := range req.Messages {
+				if msg.Role == "user" {
+					orchTopic = msg.Content
+				}
+			}
+		}
+		if orchTopic == "" {
+			orchTopic = "User Query"
+		}
+
 		debateReq := &orchestrator.DebateRequest{
-			Topic:        req.Prompt,
-			MaxRounds:    10,
-			MinConsensus: 0.8,
+			Topic:        orchTopic,
+			MaxRounds:    3,
+			MinConsensus: 0.7,
 		}
 
 		debateResp, err := h.orchestratorIntegration.GetOrchestrator().ConductDebate(ctx, debateReq)
