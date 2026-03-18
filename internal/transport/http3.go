@@ -108,11 +108,20 @@ func (s *HTTP3Server) Start() error {
 	}
 
 	if s.enableHTTP2 {
-		// Start HTTP2/HTTP1.1 server
+		// Start HTTP2/HTTP1.1 server with TLS
 		go func() {
 			fmt.Printf("Starting HTTP/2 + HTTP/1.1 server on %s\n", s.addr)
 			if err := s.httpServer.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
-				fmt.Printf("HTTP server error: %v\n", err)
+				fmt.Printf("HTTP/2 TLS server error: %v\n", err)
+				// CRITICAL FALLBACK: If TLS fails (cipher mismatch, cert issues),
+				// fall back to plain HTTP/1.1 so clients can still connect.
+				// This prevents the server from being unreachable when TLS
+				// configuration is incompatible with the system's Go/TLS version.
+				fmt.Printf("Falling back to HTTP/1.1 (plain) on %s\n", s.addr)
+				s.httpServer.TLSConfig = nil
+				if err2 := s.httpServer.ListenAndServe(); err2 != nil && err2 != http.ErrServerClosed {
+					fmt.Printf("HTTP/1.1 fallback server error: %v\n", err2)
+				}
 			}
 		}()
 	} else {
