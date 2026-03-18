@@ -34,14 +34,18 @@ import (
 	"dev.helix.agent/internal/llm/providers/cerebras"
 	"dev.helix.agent/internal/llm/providers/chutes"
 	"dev.helix.agent/internal/llm/providers/claude"
+	"dev.helix.agent/internal/llm/providers/cloudflare"
+	"dev.helix.agent/internal/llm/providers/codestral"
 	"dev.helix.agent/internal/llm/providers/cohere"
 	"dev.helix.agent/internal/llm/providers/deepseek"
 	"dev.helix.agent/internal/llm/providers/fireworks"
 	"dev.helix.agent/internal/llm/providers/gemini"
 	"dev.helix.agent/internal/llm/providers/generic"
+	"dev.helix.agent/internal/llm/providers/githubmodels"
 	"dev.helix.agent/internal/llm/providers/groq"
 	"dev.helix.agent/internal/llm/providers/huggingface"
 	"dev.helix.agent/internal/llm/providers/mistral"
+	"dev.helix.agent/internal/llm/providers/nvidia"
 	"dev.helix.agent/internal/llm/providers/ollama"
 	"dev.helix.agent/internal/llm/providers/openai"
 	"dev.helix.agent/internal/llm/providers/openrouter"
@@ -49,6 +53,8 @@ import (
 	"dev.helix.agent/internal/llm/providers/qwen"
 	"dev.helix.agent/internal/llm/providers/replicate"
 	"dev.helix.agent/internal/llm/providers/together"
+	"dev.helix.agent/internal/llm/providers/upstage"
+	"dev.helix.agent/internal/llm/providers/venice"
 	"dev.helix.agent/internal/llm/providers/xai"
 	"dev.helix.agent/internal/llm/providers/zai"
 	"dev.helix.agent/internal/llm/providers/zen"
@@ -1118,6 +1124,55 @@ func createProviderForVerification(providerType, modelID string, logger *logrus.
 			return nil
 		}
 		return chutes.NewProvider(apiKey, "", modelID)
+
+	case "nvidia":
+		apiKey := os.Getenv("NVIDIA_API_KEY")
+		if apiKey == "" {
+			return nil
+		}
+		return nvidia.NewNvidiaProvider(apiKey, "", modelID)
+
+	case "codestral":
+		apiKey := os.Getenv("CODESTRAL_API_KEY")
+		if apiKey == "" {
+			apiKey = os.Getenv("MISTRAL_API_KEY")
+		}
+		if apiKey == "" {
+			return nil
+		}
+		return codestral.NewCodestralProvider(apiKey, "", modelID)
+
+	case "upstage":
+		apiKey := os.Getenv("UPSTAGE_API_KEY")
+		if apiKey == "" {
+			return nil
+		}
+		return upstage.NewUpstageProvider(apiKey, "", modelID)
+
+	case "cloudflare":
+		apiKey := os.Getenv("CLOUDFLARE_API_KEY")
+		accountID := os.Getenv("CLOUDFLARE_ACCOUNT_ID")
+		if apiKey == "" {
+			return nil
+		}
+		return cloudflare.NewCloudflareProvider(apiKey, accountID, "", modelID)
+
+	case "github-models":
+		apiKey := os.Getenv("GITHUB_MODELS_API_KEY")
+		if apiKey == "" {
+			apiKey = os.Getenv("GITHUB_TOKEN")
+		}
+		if apiKey == "" {
+			return nil
+		}
+		return githubmodels.NewGitHubModelsProvider(apiKey, "", modelID)
+
+	case "venice":
+		apiKey := os.Getenv("VENICE_API_KEY")
+		if apiKey == "" {
+			return nil
+		}
+		return venice.NewProvider(apiKey, "", modelID)
 
 	default:
 		// Try generic OpenAI-compatible provider using SupportedProviders config

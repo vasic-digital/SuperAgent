@@ -3264,7 +3264,14 @@ func (h *UnifiedHandler) getProviderForMember(member *services.DebateTeamMember)
 		return member.Provider, nil
 	}
 
-	// Fall back to registry lookup
+	// Fall back to registry lookup using the verified provider instance from debate team config
+	if h.debateTeamConfig != nil {
+		if verifiedProv := h.debateTeamConfig.GetVerifiedProviderInstance(member.ProviderName, member.ModelName); verifiedProv != nil {
+			return verifiedProv, nil
+		}
+	}
+
+	// Last resort: registry lookup
 	regProvider, regErr := h.providerRegistry.GetProvider(member.ProviderName)
 	if regErr != nil {
 		return nil, fmt.Errorf("provider %s not found: %w", member.ProviderName, regErr)
