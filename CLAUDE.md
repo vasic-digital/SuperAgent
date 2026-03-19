@@ -2,6 +2,16 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## MANDATORY: No CI/CD Pipelines
+
+**NO GitHub Actions, GitLab CI/CD, or any automated pipeline may exist in this repository!**
+
+- No `.github/workflows/` directory
+- No `.gitlab-ci.yml` file
+- No Jenkinsfile, .travis.yml, .circleci, or any other CI configuration
+- All builds and tests are run manually or via Makefile targets
+- This rule is permanent and non-negotiable
+
 ## Project Overview
 
 HelixAgent is an AI-powered ensemble LLM service written in Go that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports 43 LLM providers (Claude, Chutes, DeepSeek, Gemini, Mistral, OpenRouter, Qwen, ZAI, Zen, Cerebras, Ollama, AI21, Anthropic, Cohere, Fireworks, GitHub Models, Groq, HuggingFace, OpenAI, Perplexity, Replicate, Together, Venice, xAI, Junie, Cloudflare, Codestral, Hyperbolic, Kilo, Kimi, KimiCode, Modal, Nia, NLPCloud, Novita, Nvidia, PublicAI, SambaNova, Sarvam, SiliconFlow, Upstage, VulaVula, Zhipu) with **dynamic provider selection** based on LLMsVerifier verification scores.
