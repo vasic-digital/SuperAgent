@@ -155,10 +155,6 @@ func NewNLPCloudProviderWithRetry(apiKey, baseURL, model string, retryConfig Ret
 
 func (p *NLPCloudProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
 	startTime := time.Now()
-	requestID := req.ID
-	if requestID == "" {
-		requestID = fmt.Sprintf("nlpcloud-%d", time.Now().UnixNano())
-	}
 
 	nReq := p.convertRequest(req)
 

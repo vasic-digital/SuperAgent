@@ -458,11 +458,11 @@ func (c *Client) UploadJar(ctx context.Context, jarPath string) (*UploadJarRespo
 		return nil, fmt.Errorf("failed to create form file: %w", err)
 	}
 
-	if _, err := io.Copy(part, file); err != nil {
+	if _, err = io.Copy(part, file); err != nil {
 		return nil, fmt.Errorf("failed to copy file content: %w", err)
 	}
 
-	if err := writer.Close(); err != nil {
+	if err = writer.Close(); err != nil {
 		return nil, fmt.Errorf("failed to close writer: %w", err)
 	}
 

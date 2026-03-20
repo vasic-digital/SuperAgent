@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -439,15 +440,45 @@ func (s *TestCaseSynthesizer) Augment(ctx context.Context, cases []*TestCase, op
 	if opts == nil {
 		opts = DefaultSynthesizerOptions()
 	}
+	// Determine variations per test case
+	variationsPerCase := 2 // default
+	if opts.Count > 0 {
+		// Distribute total count across cases, minimum 1 per case
+		totalVariations := opts.Count
+		if totalVariations > len(cases)*5 {
+			totalVariations = len(cases) * 5 // reasonable limit
+		}
+		variationsPerCase = totalVariations / len(cases)
+		if variationsPerCase < 1 {
+			variationsPerCase = 1
+		}
+	}
 
 	var augmented []*TestCase
 	augmented = append(augmented, cases...) // Keep originals
 
 	for _, tc := range cases {
-		prompt := fmt.Sprintf(`Create 2-3 variations of this test case by:
+		prompt := fmt.Sprintf(`Create %d variations of this test case by:
 1. Rephrasing the question
 2. Asking for partial information
 3. Adding complexity
+`, variationsPerCase)
+
+		// Add instructions based on options
+		if len(opts.QuestionTypes) > 0 {
+			prompt += fmt.Sprintf("\nFocus on these question types: %s", strings.Join(opts.QuestionTypes, ", "))
+		}
+		if len(opts.Difficulties) > 0 {
+			prompt += fmt.Sprintf("\nInclude these difficulty levels: %s", strings.Join(opts.Difficulties, ", "))
+		}
+		if opts.MultiHop {
+			prompt += "\nInclude multi-hop questions (requiring reasoning across multiple pieces of information)."
+		}
+		if opts.EdgeCases {
+			prompt += "\nInclude edge cases (unusual scenarios, boundary conditions)."
+		}
+
+		prompt += fmt.Sprintf(`
 
 Original:
 Question: %s
@@ -468,6 +499,11 @@ Respond with JSON array:
 
 		if err := json.Unmarshal([]byte(extractJSON(response)), &variations); err != nil {
 			continue
+		}
+
+		// Limit to variationsPerCase
+		if len(variations) > variationsPerCase {
+			variations = variations[:variationsPerCase]
 		}
 
 		for i, v := range variations {

@@ -596,7 +596,7 @@ func (cha *ClickHouseAnalytics) GetDebateAnalytics(ctx context.Context, debateID
 	var participants []string
 	for rows.Next() {
 		var provider, model string
-		if err := rows.Scan(&provider, &model); err != nil {
+		if err = rows.Scan(&provider, &model); err != nil {
 			continue
 		}
 		participants = append(participants, fmt.Sprintf("%s/%s", provider, model))

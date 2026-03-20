@@ -427,7 +427,7 @@ func (p *JunieCLIProvider) CompleteStream(ctx context.Context, req *models.LLMRe
 			}
 		}
 
-		_ = cmd.Wait()
+		_ = cmd.Wait() //nolint:errcheck
 
 		responseChan <- &models.LLMResponse{
 			Content:      fullContent.String(),

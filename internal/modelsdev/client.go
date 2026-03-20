@@ -85,7 +85,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body io.Rea
 		req.Header.Set("Authorization", "Bearer "+c.apiKey)
 	}
 
-	if err := c.rateLimiter.Wait(ctx); err != nil {
+	if err = c.rateLimiter.Wait(ctx); err != nil {
 		return fmt.Errorf("rate limit error: %w", err)
 	}
 
@@ -121,7 +121,7 @@ func (c *Client) doGet(ctx context.Context, path string, result interface{}) err
 	return c.doRequest(ctx, http.MethodGet, path, nil, result)
 }
 
-func (c *Client) doPost(ctx context.Context, path string, body interface{}, result interface{}) error {
+func (c *Client) doPost(ctx context.Context, path string, body interface{}, result interface{}) error { //nolint:unused
 	bodyReader, err := json.Marshal(body)
 	if err != nil {
 		return fmt.Errorf("failed to marshal request body: %w", err)

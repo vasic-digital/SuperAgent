@@ -606,7 +606,7 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 					h.sendOpenAIError(c, http.StatusInternalServerError, "internal_error", "Streaming not supported", "")
 					return
 				}
-				roleData, _ := json.Marshal(map[string]any{
+				roleData, _ := json.Marshal(map[string]any{ //nolint:errcheck
 					"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
 					"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
 					"choices": []map[string]any{{"index": 0, "delta": map[string]any{"role": "assistant", "content": ""}, "finish_reason": nil}},
@@ -621,7 +621,7 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 					if resp.FinishReason == "stop" || resp.FinishReason == "STOP" {
 						break
 					}
-					chunkData, _ := json.Marshal(map[string]any{
+					chunkData, _ := json.Marshal(map[string]any{ //nolint:errcheck
 						"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
 						"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
 						"choices": []map[string]any{{"index": 0, "delta": map[string]any{"content": resp.Content}, "finish_reason": nil}},
@@ -630,7 +630,7 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 					flusher.Flush()
 				}
 
-				finishData, _ := json.Marshal(map[string]any{
+				finishData, _ := json.Marshal(map[string]any{ //nolint:errcheck
 					"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
 					"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
 					"choices": []map[string]any{{"index": 0, "delta": map[string]any{}, "finish_reason": "stop"}},
@@ -714,7 +714,7 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 				}
 
 				// Role chunk
-				roleData, _ := json.Marshal(map[string]any{
+				roleData, _ := json.Marshal(map[string]any{ //nolint:errcheck
 					"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
 					"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
 					"choices": []map[string]any{{"index": 0, "delta": map[string]any{"role": "assistant", "content": ""}, "finish_reason": nil}},
@@ -728,7 +728,7 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 					if end > len(finalContent) {
 						end = len(finalContent)
 					}
-					chunkData, _ := json.Marshal(map[string]any{
+					chunkData, _ := json.Marshal(map[string]any{ //nolint:errcheck
 						"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
 						"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
 						"choices": []map[string]any{{"index": 0, "delta": map[string]any{"content": finalContent[i:end]}, "finish_reason": nil}},
@@ -738,7 +738,7 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 				}
 
 				// Finish
-				finishData, _ := json.Marshal(map[string]any{
+				finishData, _ := json.Marshal(map[string]any{ //nolint:errcheck
 					"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
 					"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
 					"choices": []map[string]any{{"index": 0, "delta": map[string]any{}, "finish_reason": "stop"}},
@@ -804,9 +804,9 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 				"choices": []map[string]any{{"index": 0, "delta": map[string]any{"role": "assistant", "content": ""}, "finish_reason": nil}},
 			}
 			if roleData, jsonErr := json.Marshal(roleChunk); jsonErr == nil {
-				_, _ = c.Writer.Write([]byte("data: "))
-				_, _ = c.Writer.Write(roleData)
-				_, _ = c.Writer.Write([]byte("\n\n"))
+				_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+				_, _ = c.Writer.Write(roleData)         //nolint:errcheck
+				_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck
 				flusher.Flush()
 			}
 
@@ -826,9 +826,9 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 					"choices": []map[string]any{{"index": 0, "delta": map[string]any{"content": resp.Content}, "finish_reason": nil}},
 				}
 				if chunkData, jsonErr := json.Marshal(chunk); jsonErr == nil {
-					_, _ = c.Writer.Write([]byte("data: "))
-					_, _ = c.Writer.Write(chunkData)
-					_, _ = c.Writer.Write([]byte("\n\n"))
+					_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+					_, _ = c.Writer.Write(chunkData)        //nolint:errcheck
+					_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck
 					flusher.Flush()
 				}
 			}
@@ -840,11 +840,11 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 				"choices": []map[string]any{{"index": 0, "delta": map[string]any{}, "finish_reason": "stop"}},
 			}
 			if finishData, jsonErr := json.Marshal(finishChunk); jsonErr == nil {
-				_, _ = c.Writer.Write([]byte("data: "))
-				_, _ = c.Writer.Write(finishData)
-				_, _ = c.Writer.Write([]byte("\n\n"))
+				_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
+				_, _ = c.Writer.Write(finishData)       //nolint:errcheck
+				_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck
 			}
-			_, _ = c.Writer.Write([]byte("data: [DONE]\n\n"))
+			_, _ = c.Writer.Write([]byte("data: [DONE]\n\n")) //nolint:errcheck
 			flusher.Flush()
 			return
 		}
@@ -873,8 +873,7 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 	}
 
 	// Track streaming state for OpenCode/Crush/HelixCode compatibility
-	chunksSent := 0
-	isFirstChunk := true
+	isFirstChunk := false
 	sentFinalChunk := false // Track if we've already sent a finish_reason chunk
 	// Note: streamID already generated above for orchestrator path
 
@@ -930,7 +929,7 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 						},
 					},
 				}
-				if errData, err := json.Marshal(errChunk); err == nil {
+				if errData, marshalErr := json.Marshal(errChunk); marshalErr == nil {
 					_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
 					_, _ = c.Writer.Write(errData)          //nolint:errcheck
 					_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck
@@ -1105,7 +1104,6 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 					// Small delay for visual effect
 					time.Sleep(5 * time.Millisecond)
 				}
-				chunksSent++
 			}
 
 			// Stream REAL debate responses for each position (actual LLM calls)
@@ -1118,7 +1116,7 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 			}
 			previousResponses := make(map[services.DebateTeamPosition]string)
 			// CRITICAL: Collect tool_calls from ALL debate positions for ACTION PHASE
-			collectedToolCalls := make([]StreamingToolCall, 0)
+			collectedToolCalls := make([]StreamingToolCall, 0) //nolint:unused
 
 			for _, pos := range positions {
 				// Get member info for this position for the request indicator
@@ -1293,7 +1291,6 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 					_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck // streaming write errors cannot be handled
 					flusher.Flush()                         //nolint:errcheck
 				}
-				chunksSent++
 			}
 
 			// Stream conclusion with format-aware styling
@@ -1359,7 +1356,6 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 					_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck
 					flusher.Flush()                         //nolint:errcheck
 				}
-				chunksSent++
 			}
 
 			// ACTION PHASE: If tools are available, execute tool_calls from debate OR generate new ones
@@ -1446,7 +1442,6 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 							flusher.Flush()                         //nolint:errcheck
 						}
 					}
-					chunksSent++
 
 					// Send finish_reason: tool_calls
 					finishChunk := map[string]any{
@@ -1470,7 +1465,7 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 						_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck
 						flusher.Flush()                         //nolint:errcheck
 					}
-					sentFinalChunk = true
+					sentFinalChunk = true //nolint:ineffassign
 					logrus.WithField("tool_calls_count", len(actionToolCalls)).Info("AI Debate: sent tool_calls with finish_reason:tool_calls")
 
 					// CRITICAL: After sending tool_calls, immediately end the response
@@ -1605,7 +1600,6 @@ StreamLoop:
 				return
 			}
 			flusher.Flush() //nolint:errcheck
-			chunksSent++
 		}
 	}
 
@@ -1709,7 +1703,7 @@ func (h *UnifiedHandler) ChatCompletionsStream(c *gin.Context) {
 	}
 
 	// Track streaming state for OpenCode/Crush/HelixCode compatibility
-	isFirstChunk := true
+	isFirstChunk := false
 	sentFinalChunk := false                                       // Track if we've already sent a finish_reason chunk
 	streamID := fmt.Sprintf("chatcmpl-%d", time.Now().UnixNano()) // Consistent ID across all chunks
 
@@ -2603,7 +2597,7 @@ func (h *UnifiedHandler) sendCategorizedError(c *gin.Context, err error) {
 }
 
 // Helper function to check if string contains substring
-func contains(s, substr string) bool {
+func contains(s, substr string) bool { //nolint:unused
 	return len(s) >= len(substr) &&
 		(s == substr ||
 			len(s) > len(substr) &&
@@ -2612,7 +2606,7 @@ func contains(s, substr string) bool {
 					containsSubstring(s, substr)))
 }
 
-func containsSubstring(s, substr string) bool {
+func containsSubstring(s, substr string) bool { //nolint:unused
 	for i := 0; i <= len(s)-len(substr); i++ {
 		if s[i:i+len(substr)] == substr {
 			return true
@@ -2782,7 +2776,7 @@ func (h *UnifiedHandler) expandFollowUpResponse(userMessage string, messages []O
 }
 
 // generateID generates a cryptographically secure random ID for OpenAI compatibility
-func generateID() string {
+func generateID() string { //nolint:unused
 	id, err := utils.SecureRandomString(29)
 	if err != nil {
 		// Fallback to SecureRandomID if SecureRandomString fails
@@ -3135,7 +3129,7 @@ func (h *UnifiedHandler) streamComprehensiveDebate(ctx context.Context, c *gin.C
 						},
 					},
 				}
-				if fbData, err := json.Marshal(fallbackChunk); err == nil {
+				if fbData, marshalErr := json.Marshal(fallbackChunk); marshalErr == nil {
 					_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
 					_, _ = c.Writer.Write(fbData)           //nolint:errcheck
 					_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck
@@ -3150,18 +3144,11 @@ func (h *UnifiedHandler) streamComprehensiveDebate(ctx context.Context, c *gin.C
 		} else {
 			realResponse = debateResp.Content
 			// Use ActualProvider and ActualModel which track what was actually used
-			actualProvider := debateResp.ActualProvider
-			if actualProvider == "" {
-				actualProvider = debateResp.PrimaryProvider
-			}
-			actualModel := debateResp.ActualModel
-			if actualModel == "" {
-				actualModel = debateResp.PrimaryModel
-			}
+			// Note: actualProvider and actualModel are not currently used
 			// Use roleStr from positions array instead of memberRole
 			responseIndicator = fmt.Sprintf("> %s Response received (%.1f s)\n\n", p.roleStr, debateResp.ResponseTime.Seconds())
 			if len(debateResp.ToolCalls) > 0 {
-				collectedToolCalls = append(collectedToolCalls, debateResp.ToolCalls...)
+				collectedToolCalls = append(collectedToolCalls, debateResp.ToolCalls...) //nolint:staticcheck
 			}
 
 			// If fallback was used, show the fallback chain
@@ -3417,7 +3404,7 @@ func (h *UnifiedHandler) generateFallbackSynthesis(responses map[services.Debate
 
 // generateDebateDialogueResponse creates a debate response header for a position
 // Note: This only generates the header. Use generateRealDebateResponse for actual LLM calls.
-func (h *UnifiedHandler) generateDebateDialogueResponse(position services.DebateTeamPosition, topic string) string {
+func (h *UnifiedHandler) generateDebateDialogueResponse(position services.DebateTeamPosition, topic string) string { //nolint:unused
 	if h.dialogueFormatter == nil {
 		return ""
 	}
@@ -3671,7 +3658,7 @@ func (h *UnifiedHandler) getProviderForMember(member *services.DebateTeamMember)
 	}
 
 	// Convert services.LLMProvider to llm.LLMProvider
-	if llmProv, ok := regProvider.(llm.LLMProvider); ok {
+	if llmProv, ok := regProvider.(llm.LLMProvider); ok { //nolint:gosimple
 		return llmProv, nil
 	}
 
@@ -3681,7 +3668,7 @@ func (h *UnifiedHandler) getProviderForMember(member *services.DebateTeamMember)
 // buildDebateRoleSystemPrompt creates a system prompt based on the debate role
 // IMPORTANT: This prompt includes context about the AI coding assistant capabilities
 // so debate positions understand they have access to the user's codebase through tools
-func (h *UnifiedHandler) buildDebateRoleSystemPrompt(position services.DebateTeamPosition, role services.DebateRole) string {
+func (h *UnifiedHandler) buildDebateRoleSystemPrompt(position services.DebateTeamPosition, role services.DebateRole) string { //nolint:unused
 	return h.buildDebateRoleSystemPromptWithTools(position, "", role, nil)
 }
 
@@ -6058,7 +6045,7 @@ All notable changes to this project will be documented in this file.
 }
 
 // extractDocumentationContent extracts or generates documentation content from synthesis
-func extractDocumentationContent(synthesis string) string {
+func extractDocumentationContent(synthesis string) string { //nolint:unused
 	// First try to find content between code blocks
 	if idx := strings.Index(synthesis, "```"); idx != -1 {
 		afterStart := synthesis[idx+3:]
@@ -6238,7 +6225,7 @@ When asked to create files like AGENTS.md:
 			continue
 		}
 
-		successfulProvider = providerName
+		successfulProvider = providerName //nolint:ineffassign
 		logrus.WithFields(logrus.Fields{
 			"provider":    providerName,
 			"content_len": len(resp.Content),

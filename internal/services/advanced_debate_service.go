@@ -67,13 +67,13 @@ func (ads *AdvancedDebateService) ConductAdvancedDebate(
 
 	// Record performance metrics
 	metrics := ads.performanceService.CalculateMetrics(result)
-	if err := ads.performanceService.RecordMetrics(ctx, result.DebateID, metrics); err != nil {
-		ads.logger.Warnf("Failed to record performance metrics: %v", err)
+	if recordErr := ads.performanceService.RecordMetrics(ctx, result.DebateID, metrics); recordErr != nil {
+		ads.logger.Warnf("Failed to record performance metrics: %v", recordErr)
 	}
 
 	// Save to history
-	if err := ads.historyService.SaveDebateResult(ctx, result); err != nil {
-		ads.logger.Warnf("Failed to save debate to history: %v", err)
+	if saveErr := ads.historyService.SaveDebateResult(ctx, result); saveErr != nil {
+		ads.logger.Warnf("Failed to save debate to history: %v", saveErr)
 	}
 
 	// Generate report

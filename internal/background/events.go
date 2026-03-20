@@ -284,7 +284,7 @@ type TaskEventPublisher struct {
 	asyncPublish bool
 	publishCh    chan *BackgroundTaskEvent
 	stopCh       chan struct{}
-	wg           sync.WaitGroup
+	wg           sync.WaitGroup //nolint:unused
 	mu           sync.RWMutex
 	extracted    *extractedbackground.TaskEventPublisher
 }

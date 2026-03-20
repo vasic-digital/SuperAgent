@@ -320,7 +320,7 @@ func (d *ProtocolDiscovery) updateServerStatus(serverID string, status ServerSta
 
 func (d *ProtocolDiscovery) checkServerHealth(ctx context.Context, server *DiscoveredServer) ServerStatus {
 	timeout := 5 * time.Second
-	ctx, cancel := context.WithTimeout(ctx, timeout)
+	_, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	address := net.JoinHostPort(server.Address, fmt.Sprintf("%d", server.Port))

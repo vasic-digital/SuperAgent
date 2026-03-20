@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"llm-verifier/pkg/cliagents"
+	"digital.vasic.llmsverifier/pkg/cliagents"
 )
 
 // DebateGroupMember represents a member of the AI debate group

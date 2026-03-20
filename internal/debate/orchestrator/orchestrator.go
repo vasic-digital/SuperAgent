@@ -344,8 +344,8 @@ func (o *Orchestrator) ConductDebate(ctx context.Context, request *DebateRequest
 		return nil, fmt.Errorf("failed to create topology: %w", err)
 	}
 	// Initialize topology with agents
-	if err := topo.Initialize(ctx, topoAgents); err != nil {
-		return nil, fmt.Errorf("failed to initialize topology: %w", err)
+	if initErr := topo.Initialize(ctx, topoAgents); initErr != nil {
+		return nil, fmt.Errorf("failed to initialize topology: %w", initErr)
 	}
 
 	// 3. Create agent invoker

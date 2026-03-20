@@ -798,7 +798,6 @@ func (ap *AdversarialProtocol) generateFallbackAttack(
 			Exploit: "Supply oversized input to overflow " +
 				"buffer boundaries",
 		})
-		vulnID++
 	}
 
 	// Language-specific edge cases

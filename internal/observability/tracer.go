@@ -5,7 +5,7 @@ package observability
 import (
 	"context"
 	"fmt"
-	"sync"
+
 	"time"
 
 	"go.opentelemetry.io/otel"
@@ -86,10 +86,10 @@ func DefaultTracerConfig() *TracerConfig {
 
 // LLMTracer provides tracing for LLM operations
 type LLMTracer struct {
-	tracer      trace.Tracer
-	meter       metric.Meter
-	config      *TracerConfig
-	mu          sync.RWMutex
+	tracer trace.Tracer
+	meter  metric.Meter
+	config *TracerConfig
+
 	initialized bool
 
 	// Metrics

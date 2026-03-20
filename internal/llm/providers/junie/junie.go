@@ -155,17 +155,16 @@ func (p *JunieProvider) Complete(ctx context.Context, req *models.LLMRequest) (*
 	case "acp":
 		return p.completeWithACP(ctx, req)
 	default:
-		if resp, err := p.completeWithCLI(ctx, req); err == nil {
+		resp, err := p.completeWithCLI(ctx, req)
+		if err == nil {
 			return resp, nil
-		} else {
-			lastErr = err
 		}
 
-		if resp, err := p.completeWithACP(ctx, req); err == nil {
+		resp, err = p.completeWithACP(ctx, req)
+		if err == nil {
 			return resp, nil
-		} else {
-			lastErr = err
 		}
+		lastErr = err
 
 		return nil, fmt.Errorf("all Junie access methods failed: %w", lastErr)
 	}

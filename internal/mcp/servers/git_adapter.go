@@ -240,7 +240,8 @@ func (g *GitAdapter) Status(ctx context.Context, repoPath string) (*GitStatus, e
 		status.RemoteTracking = strings.TrimSpace(tracking)
 
 		// Get ahead/behind counts
-		revList, err := g.runGitCommand(ctx, repoPath, "rev-list", "--left-right", "--count", "HEAD...@{upstream}")
+		var revList string
+		revList, err = g.runGitCommand(ctx, repoPath, "rev-list", "--left-right", "--count", "HEAD...@{upstream}")
 		if err == nil {
 			parts := strings.Fields(revList)
 			if len(parts) == 2 {

@@ -197,7 +197,7 @@ func (m *UnifiedServerManager) GetAdapter(ctx context.Context, name string) (Ser
 	defer m.mu.Unlock()
 
 	// Double-check after acquiring write lock
-	if adapter, exists := m.adapters[name]; exists && adapter.IsConnected() {
+	if adapter, exists = m.adapters[name]; exists && adapter.IsConnected() {
 		return adapter, nil
 	}
 

@@ -31,24 +31,25 @@ import (
 
 // RouterContext wraps the router with cleanup capabilities for background services
 type RouterContext struct {
-	Engine                  *gin.Engine
-	protocolManager         *services.UnifiedProtocolManager
-	oauthMonitor            *services.OAuthTokenMonitor
-	oauthCredentialManager  *authadapter.OAuthCredentialManager // OAuth credential manager from auth adapter
-	containerAdapter        *containeradapter.Adapter           // Container adapter for orchestration
-	messagingAdapter        *messagingadapter.BrokerAdapter     // Messaging adapter for Kafka/RabbitMQ
+	Engine                 *gin.Engine
+	protocolManager        *services.UnifiedProtocolManager
+	oauthMonitor           *services.OAuthTokenMonitor
+	oauthCredentialManager *authadapter.OAuthCredentialManager // OAuth credential manager from auth adapter
+	containerAdapter       *containeradapter.Adapter           // Container adapter for orchestration
+	//nolint:unused,staticcheck
+	messagingAdapter        *messagingadapter.BrokerAdapter // Messaging adapter for Kafka/RabbitMQ
 	healthMonitor           *services.ProviderHealthMonitor
 	concurrencyMonitor      *services.ConcurrencyMonitor
 	concurrencyAlertManager *services.ConcurrencyAlertManager
-	constitutionWatcher     *services.ConstitutionWatcher                // Constitution auto-update background service
-	ProviderRegistry        *services.ProviderRegistry                   // Exposed for StartupVerifier integration
-	DebateTeamConfig        *services.DebateTeamConfig                   // Exposed for re-initialization with StartupVerifier
-	unifiedHandler          *handlers.UnifiedHandler                     // For updating debate team display
-	debateService           *services.DebateService                      // For updating team config
-	orchestratorIntegration *debate_integration.ServiceIntegration       // Orchestrator integration for re-population
-	CogneeService           *services.CogneeService                     // Exposed for container adapter injection
-	logger                  *logrus.Logger                               // For IntentBasedRouter creation
-	intentBasedRouter       *services.IntentBasedRouter                  // For re-initialization with StartupVerifier
+	constitutionWatcher     *services.ConstitutionWatcher          // Constitution auto-update background service
+	ProviderRegistry        *services.ProviderRegistry             // Exposed for StartupVerifier integration
+	DebateTeamConfig        *services.DebateTeamConfig             // Exposed for re-initialization with StartupVerifier
+	unifiedHandler          *handlers.UnifiedHandler               // For updating debate team display
+	debateService           *services.DebateService                // For updating team config
+	orchestratorIntegration *debate_integration.ServiceIntegration // Orchestrator integration for re-population
+	CogneeService           *services.CogneeService                // Exposed for container adapter injection
+	logger                  *logrus.Logger                         // For IntentBasedRouter creation
+	intentBasedRouter       *services.IntentBasedRouter            // For re-initialization with StartupVerifier
 }
 
 // Shutdown stops all background services started by the router
@@ -279,8 +280,8 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 	skillConfig.SkillsDirectory = "skills" // Load from project skills/ directory
 	skillService := skills.NewService(skillConfig)
 	skillService.SetLogger(logger)
-	if err := skillService.Initialize(context.Background()); err != nil {
-		logger.WithError(err).Warn("Failed to initialize skills system, continuing without skills")
+	if initErr := skillService.Initialize(context.Background()); initErr != nil {
+		logger.WithError(initErr).Warn("Failed to initialize skills system, continuing without skills")
 	} else {
 		logger.WithField("skills_loaded", len(skillService.GetAllSkills())).Info("Skills system initialized")
 	}
@@ -297,8 +298,8 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 	// Enhance all LLM providers with Cognee capabilities
 	// This wraps every provider with memory, graph reasoning, and context enhancement
 	if cfg.Cognee.Enabled {
-		if err := services.EnhanceProviderRegistry(providerRegistry, cogneeService, logger); err != nil {
-			logger.WithError(err).Warn("Failed to enhance providers with Cognee, continuing without enhancement")
+		if enhanceErr := services.EnhanceProviderRegistry(providerRegistry, cogneeService, logger); enhanceErr != nil {
+			logger.WithError(enhanceErr).Warn("Failed to enhance providers with Cognee, continuing without enhancement")
 		} else {
 			logger.Info("All LLM providers enhanced with Cognee capabilities")
 		}

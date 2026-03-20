@@ -478,9 +478,9 @@ func (s *CogneeService) authenticate(ctx context.Context) error {
 
 	// Login failed, try to register then login
 	s.logger.Debug("Login failed, attempting to register new user")
-	if err := s.register(ctx, email, password); err != nil {
+	if regErr := s.register(ctx, email, password); regErr != nil {
 		// Registration might fail if user already exists, ignore
-		s.logger.WithError(err).Debug("Registration failed (user may already exist)")
+		s.logger.WithError(regErr).Debug("Registration failed (user may already exist)")
 	}
 
 	// Try login again
@@ -649,17 +649,17 @@ func (s *CogneeService) addMemoryViaAdd(ctx context.Context, content, dataset, c
 	if err != nil {
 		return nil, fmt.Errorf("failed to create form file: %w", err)
 	}
-	if _, err := part.Write([]byte(content)); err != nil {
-		return nil, fmt.Errorf("failed to write content: %w", err)
+	if _, writeErr := part.Write([]byte(content)); writeErr != nil {
+		return nil, fmt.Errorf("failed to write content: %w", writeErr)
 	}
 
 	// Add dataset name
-	if err := writer.WriteField("datasetName", dataset); err != nil {
-		return nil, fmt.Errorf("failed to write dataset field: %w", err)
+	if fieldErr := writer.WriteField("datasetName", dataset); fieldErr != nil {
+		return nil, fmt.Errorf("failed to write dataset field: %w", fieldErr)
 	}
 
-	if err := writer.Close(); err != nil {
-		return nil, fmt.Errorf("failed to close multipart writer: %w", err)
+	if closeErr := writer.Close(); closeErr != nil {
+		return nil, fmt.Errorf("failed to close multipart writer: %w", closeErr)
 	}
 
 	url := fmt.Sprintf("%s/api/v1/add", s.baseURL)
@@ -1893,25 +1893,25 @@ Cognee provides knowledge graph and memory capabilities for enhanced context-awa
 		s.logger.WithError(err).Warn("Failed to create seed form file")
 		return fmt.Errorf("failed to create form file: %w", err)
 	}
-	if _, err := part.Write([]byte(seedContent)); err != nil {
-		s.logger.WithError(err).Warn("Failed to write seed content")
-		return fmt.Errorf("failed to write content: %w", err)
+	if _, writeErr := part.Write([]byte(seedContent)); writeErr != nil {
+		s.logger.WithError(writeErr).Warn("Failed to write seed content")
+		return fmt.Errorf("failed to write content: %w", writeErr)
 	}
 
-	if err := writer.WriteField("datasetName", "system"); err != nil {
-		s.logger.WithError(err).Warn("Failed to write dataset field")
-		return fmt.Errorf("failed to write dataset field: %w", err)
+	if fieldErr := writer.WriteField("datasetName", "system"); fieldErr != nil {
+		s.logger.WithError(fieldErr).Warn("Failed to write dataset field")
+		return fmt.Errorf("failed to write dataset field: %w", fieldErr)
 	}
 
-	if err := writer.Close(); err != nil {
-		s.logger.WithError(err).Warn("Failed to close multipart writer")
-		return fmt.Errorf("failed to close multipart writer: %w", err)
+	if closeErr := writer.Close(); closeErr != nil {
+		s.logger.WithError(closeErr).Warn("Failed to close multipart writer")
+		return fmt.Errorf("failed to close multipart writer: %w", closeErr)
 	}
 
 	// Ensure we're authenticated before making request
-	if err := s.EnsureAuthenticated(ctx); err != nil {
-		s.logger.WithError(err).Warn("Failed to authenticate for seeding")
-		return fmt.Errorf("failed to authenticate: %w", err)
+	if authErr := s.EnsureAuthenticated(ctx); authErr != nil {
+		s.logger.WithError(authErr).Warn("Failed to authenticate for seeding")
+		return fmt.Errorf("failed to authenticate: %w", authErr)
 	}
 
 	url := fmt.Sprintf("%s/api/v1/add", s.baseURL)

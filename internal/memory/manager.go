@@ -112,7 +112,7 @@ func (m *Manager) AddFromMessages(ctx context.Context, messages []Message, userI
 			}
 
 			for _, entity := range entities {
-				if err := m.store.AddEntity(ctx, entity); err != nil {
+				if err = m.store.AddEntity(ctx, entity); err != nil {
 					m.logger.WithError(err).Debug("Failed to add entity")
 				}
 			}
@@ -156,6 +156,8 @@ func (m *Manager) Search(ctx context.Context, query string, opts *SearchOptions)
 	// Generate query embedding
 	if m.embedder != nil {
 		// Let the store handle the embedding-based search
+		// embedder is optional; store handles embedding internally
+		_ = m.embedder
 	}
 
 	return m.store.Search(ctx, query, opts)

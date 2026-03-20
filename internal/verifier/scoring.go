@@ -104,10 +104,9 @@ func (s *ScoringService) CalculateScore(ctx context.Context, modelID string) (*S
 func (s *ScoringService) calculateBasicScore(ctx context.Context, modelID string) (*ScoringResult, error) {
 	// DYNAMIC SCORING: All models start with a neutral baseline
 	// Actual scores come from verified performance data or are inferred from model class
-	baseScore := 5.0
 
 	// Infer model class from naming patterns (not hardcoded per-model scores)
-	baseScore = s.inferModelClassScore(modelID)
+	baseScore := s.inferModelClassScore(modelID)
 
 	// Ensure score is within bounds
 	baseScore = math.Max(0, math.Min(10, baseScore))
@@ -374,34 +373,34 @@ func DefaultWeights() *ScoreWeights {
 }
 
 // calculateSpeedScore calculates speed score based on model characteristics
-func (s *ScoringService) calculateSpeedScore(modelID string) float64 {
+func (s *ScoringService) calculateSpeedScore(modelID string) float64 { //nolint:unused
 	// Fast models known for speed
 	fastModels := map[string]float64{
-		"groq":                                9.0,
-		"cloudflare":                          8.5,
-		"github-models":                       8.0,
-		"llama-4-maverick-17b-128e-instruct":  9.5,
-		"llama-4-scout-17b-16e-instruct":      9.5,
-		"llama-3.3-70b-versatile":             9.0,
-		"llama-3.1-8b-instruct-fast":          9.0,
-		"llama-3.1-8b-instant":                9.8,
-		"deepseek-r1-distill-llama-70b":       7.5,
-		"gpt-3.5":                             8.0,
-		"claude-3-haiku":                      8.5,
-		"gemini-2.5-flash":                    9.0,
-		"gemini-2.0-flash":                    8.5,
-		"gemini-flash":                        8.5,
+		"groq":                               9.0,
+		"cloudflare":                         8.5,
+		"github-models":                      8.0,
+		"llama-4-maverick-17b-128e-instruct": 9.5,
+		"llama-4-scout-17b-16e-instruct":     9.5,
+		"llama-3.3-70b-versatile":            9.0,
+		"llama-3.1-8b-instruct-fast":         9.0,
+		"llama-3.1-8b-instant":               9.8,
+		"deepseek-r1-distill-llama-70b":      7.5,
+		"gpt-3.5":                            8.0,
+		"claude-3-haiku":                     8.5,
+		"gemini-2.5-flash":                   9.0,
+		"gemini-2.0-flash":                   8.5,
+		"gemini-flash":                       8.5,
 	}
 
 	// Standard speed models
 	standardModels := map[string]float64{
-		"gpt-4":            7.5,
-		"gpt-5":            7.5,
-		"claude-3":         7.5,
-		"gemini-2.5-pro":   7.5,
-		"gemini":           7.0,
-		"command-a":        8.0,
-		"command-r7b":      9.0,
+		"gpt-4":          7.5,
+		"gpt-5":          7.5,
+		"claude-3":       7.5,
+		"gemini-2.5-pro": 7.5,
+		"gemini":         7.0,
+		"command-a":      8.0,
+		"command-r7b":    9.0,
 	}
 
 	for pattern, score := range fastModels {
@@ -421,19 +420,19 @@ func (s *ScoringService) calculateSpeedScore(modelID string) float64 {
 }
 
 // calculateEfficiencyScore calculates efficiency score based on model characteristics
-func (s *ScoringService) calculateEfficiencyScore(modelID string) float64 {
+func (s *ScoringService) calculateEfficiencyScore(modelID string) float64 { //nolint:unused
 	// Efficient models
 	efficientModels := map[string]float64{
-		"gpt-4o":         9.0,
-		"claude-3.5":     9.0,
-		"gemini-2.5":     9.0,
-		"gemini-2.0":     8.5,
-		"gemini-pro":     8.0,
-		"groq":           9.5,
-		"cloudflare":     8.5,
-		"github-models":  8.0,
-		"llama":          7.5,
-		"cohere":         8.0,
+		"gpt-4o":        9.0,
+		"claude-3.5":    9.0,
+		"gemini-2.5":    9.0,
+		"gemini-2.0":    8.5,
+		"gemini-pro":    8.0,
+		"groq":          9.5,
+		"cloudflare":    8.5,
+		"github-models": 8.0,
+		"llama":         7.5,
+		"cohere":        8.0,
 	}
 
 	for pattern, score := range efficientModels {
@@ -447,7 +446,7 @@ func (s *ScoringService) calculateEfficiencyScore(modelID string) float64 {
 }
 
 // calculateCostScore calculates cost score (higher = cheaper)
-func (s *ScoringService) calculateCostScore(modelID string) float64 {
+func (s *ScoringService) calculateCostScore(modelID string) float64 { //nolint:unused
 	// Free/cheap models
 	cheapModels := map[string]float64{
 		"llama":          9.0,
@@ -461,11 +460,11 @@ func (s *ScoringService) calculateCostScore(modelID string) float64 {
 
 	// Expensive models
 	expensiveModels := map[string]float64{
-		"gpt-4":         5.0,
-		"claude-3-opus": 4.0,
-		"gemini-ultra":  4.5,
+		"gpt-4":          5.0,
+		"claude-3-opus":  4.0,
+		"gemini-ultra":   4.5,
 		"gemini-2.5-pro": 5.5,
-		"cohere":        7.5,
+		"cohere":         7.5,
 	}
 
 	for pattern, score := range cheapModels {
@@ -485,7 +484,7 @@ func (s *ScoringService) calculateCostScore(modelID string) float64 {
 }
 
 // calculateCapabilityScore calculates capability score based on model characteristics
-func (s *ScoringService) calculateCapabilityScore(modelID string) float64 {
+func (s *ScoringService) calculateCapabilityScore(modelID string) float64 { //nolint:unused
 	// High capability models
 	highCapModels := map[string]float64{
 		"gpt-5":                              9.5,
@@ -512,15 +511,15 @@ func (s *ScoringService) calculateCapabilityScore(modelID string) float64 {
 
 	// Medium capability models
 	medCapModels := map[string]float64{
-		"gpt-3.5":                       7.0,
-		"claude-3-sonnet":               8.0,
-		"gemini-2.0-flash":              8.5,
-		"gemini-pro":                    8.0,
-		"llama-3":                       7.5,
-		"llama-3.3-70b-versatile":       8.0,
-		"qwen-qwq-32b":                 8.0,
-		"qwq-32b":                       8.0,
-		"command-r-plus":                8.0,
+		"gpt-3.5":                 7.0,
+		"claude-3-sonnet":         8.0,
+		"gemini-2.0-flash":        8.5,
+		"gemini-pro":              8.0,
+		"llama-3":                 7.5,
+		"llama-3.3-70b-versatile": 8.0,
+		"qwen-qwq-32b":            8.0,
+		"qwq-32b":                 8.0,
+		"command-r-plus":          8.0,
 	}
 
 	for pattern, score := range highCapModels {
@@ -540,7 +539,7 @@ func (s *ScoringService) calculateCapabilityScore(modelID string) float64 {
 }
 
 // calculateRecencyScore calculates recency score based on model release date
-func (s *ScoringService) calculateRecencyScore(modelID string) float64 {
+func (s *ScoringService) calculateRecencyScore(modelID string) float64 { //nolint:unused
 	// Recent models
 	recentModels := map[string]float64{
 		"gpt-5":                              9.5,
@@ -641,7 +640,7 @@ func (s *ScoringService) GetAvailableModels() []string {
 }
 
 // computeWeightedScore calculates a weighted score from components
-func (s *ScoringService) computeWeightedScore(components ScoreComponents) float64 {
+func (s *ScoringService) computeWeightedScore(components ScoreComponents) float64 { //nolint:unused
 	return components.SpeedScore*s.weights.ResponseSpeed +
 		components.EfficiencyScore*s.weights.ModelEfficiency +
 		components.CostScore*s.weights.CostEffectiveness +

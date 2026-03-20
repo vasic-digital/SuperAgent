@@ -543,7 +543,7 @@ func (h *CogneeAPIHandler) RegisterRoutes(router *gin.RouterGroup) {
 // HELPER FUNCTIONS
 // =====================================================
 
-func getIntParam(c *gin.Context, key string, defaultVal int) int {
+func getIntParam(c *gin.Context, key string, defaultVal int) int { //nolint:unused
 	if val := c.Query(key); val != "" {
 		if i, err := strconv.Atoi(val); err == nil {
 			return i
@@ -552,7 +552,7 @@ func getIntParam(c *gin.Context, key string, defaultVal int) int {
 	return defaultVal
 }
 
-func getFloatParam(c *gin.Context, key string, defaultVal float64) float64 {
+func getFloatParam(c *gin.Context, key string, defaultVal float64) float64 { //nolint:unused
 	if val := c.Query(key); val != "" {
 		if f, err := strconv.ParseFloat(val, 64); err == nil {
 			return f

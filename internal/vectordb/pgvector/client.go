@@ -127,7 +127,7 @@ func (c *Client) Connect(ctx context.Context) error {
 	}
 
 	// Test connection
-	if err := pool.Ping(ctx); err != nil {
+	if err = pool.Ping(ctx); err != nil {
 		pool.Close()
 		return fmt.Errorf("failed to ping database: %w", err)
 	}

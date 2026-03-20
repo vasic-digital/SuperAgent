@@ -124,6 +124,7 @@ type messageResponse struct {
 	CreatedAt string `json:"createdAt"`
 }
 
+//nolint:unused
 type errorResponse struct {
 	Error   string `json:"error"`
 	Message string `json:"message"`
@@ -258,7 +259,10 @@ func (p *ZenHTTPProvider) createSession(ctx context.Context) (string, error) {
 	// Validate Content-Type before JSON decoding to catch HTML error pages
 	contentType := resp.Header.Get("Content-Type")
 	if contentType != "" && !strings.Contains(contentType, "application/json") {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return "", fmt.Errorf("unexpected response Content-Type: %s (failed to read body: %v)", contentType, err)
+		}
 		return "", fmt.Errorf("unexpected response Content-Type: %s (expected JSON, body prefix: %.200s)", contentType, string(body))
 	}
 
@@ -294,7 +298,10 @@ func (p *ZenHTTPProvider) sendMessage(ctx context.Context, sessionID, content st
 	// Validate Content-Type before JSON decoding to catch HTML error pages
 	contentType := resp.Header.Get("Content-Type")
 	if contentType != "" && !strings.Contains(contentType, "application/json") {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("unexpected response Content-Type: %s (failed to read body: %v)", contentType, err)
+		}
 		return nil, fmt.Errorf("unexpected response Content-Type: %s (expected JSON, body prefix: %.200s)", contentType, string(body))
 	}
 

@@ -73,7 +73,7 @@ func NewGitTool(config GitToolConfig) (*GitTool, error) {
 
 	// Verify it is a git repository by checking for .git.
 	gitDir := filepath.Join(absRepoDir, ".git")
-	if _, err := os.Stat(gitDir); err != nil {
+	if _, err = os.Stat(gitDir); err != nil {
 		return nil, fmt.Errorf(
 			"not a git repository (no .git found): %s: %w", absRepoDir, err,
 		)

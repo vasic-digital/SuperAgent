@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os/exec"
 	"strings"
 	"sync"
@@ -301,6 +302,9 @@ func (p *QwenACPProvider) handleNotification(resp *acpResponse) {
 	if resp.Method == "session/update" {
 		// Parse notification and handle streaming updates
 		// This could be used for real-time streaming in the future
+		// For now, just log the notification
+		log.Printf("[QwenACP] session/update notification: %v", resp)
+		_ = resp // placeholder for future implementation
 	}
 }
 

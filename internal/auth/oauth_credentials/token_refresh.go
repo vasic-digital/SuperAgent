@@ -211,7 +211,7 @@ func UpdateClaudeCredentialsFile(newAccessToken, newRefreshToken string, expires
 	}
 
 	var creds ClaudeOAuthCredentials
-	if err := json.Unmarshal(data, &creds); err != nil {
+	if err = json.Unmarshal(data, &creds); err != nil {
 		return fmt.Errorf("failed to parse credentials file: %w", err)
 	}
 
@@ -254,7 +254,7 @@ func UpdateQwenCredentialsFile(newAccessToken, newRefreshToken, newIDToken strin
 	}
 
 	var creds QwenOAuthCredentials
-	if err := json.Unmarshal(data, &creds); err != nil {
+	if err = json.Unmarshal(data, &creds); err != nil {
 		return fmt.Errorf("failed to parse credentials file: %w", err)
 	}
 

@@ -571,7 +571,7 @@ func (pd *ProviderDiscovery) discoverOAuthProviders(seen map[string]bool) []*Dis
 				Verified:     false,
 			}
 
-			if provider != nil {
+			if provider != nil { //nolint:govet
 				dp.Capabilities = provider.GetCapabilities()
 				if dp.Capabilities != nil {
 					dp.SupportsModels = dp.Capabilities.SupportedModels
@@ -587,7 +587,7 @@ func (pd *ProviderDiscovery) discoverOAuthProviders(seen map[string]bool) []*Dis
 }
 
 // maskToken masks the middle part of a token for safe logging
-func maskToken(token string) string {
+func maskToken(token string) string { //nolint:unused
 	if len(token) <= 10 {
 		return "***"
 	}
@@ -683,7 +683,6 @@ func (pd *ProviderDiscovery) createProvider(mapping ProviderMapping, apiKey stri
 			return junie.NewJunieProvider(config), nil
 		}
 		logrus.Warn("Junie CLI not available: ", apiKey)
-		return nil, fmt.Errorf("junie CLI not installed or not authenticated")
 		// Use native Groq provider for fast inference
 		baseURL := mapping.BaseURL
 		if baseURL == "" {

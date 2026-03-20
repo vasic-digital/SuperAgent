@@ -439,10 +439,7 @@ func (p *QwenCLIProvider) SetModel(model string) {
 // IsQwenCodeInstalled is a standalone function to check if Qwen Code is installed
 func IsQwenCodeInstalled() bool {
 	_, err := exec.LookPath("qwen")
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 // GetQwenCodePath returns the path to qwen command if installed

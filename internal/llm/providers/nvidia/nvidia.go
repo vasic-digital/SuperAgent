@@ -145,10 +145,6 @@ func NewNvidiaProviderWithRetry(apiKey, baseURL, model string, retryConfig Retry
 
 func (p *NvidiaProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
 	startTime := time.Now()
-	requestID := req.ID
-	if requestID == "" {
-		requestID = fmt.Sprintf("nvidia-%d", time.Now().UnixNano())
-	}
 
 	nvidiaReq := p.convertRequest(req)
 

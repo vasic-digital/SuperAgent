@@ -241,9 +241,9 @@ var ZenModels = struct {
 	MistralLarge string
 	Codestral    string
 	// Other models
-	O3Mini       string
-	O1Mini       string
-	GPT4O        string
+	O3Mini   string
+	O1Mini   string
+	GPT4O    string
 	CommandA string
 }{
 	BigPickle:      "big-pickle",
@@ -810,7 +810,7 @@ func (dtc *DebateTeamConfig) getVerifiedProvider(names ...string) llm.LLMProvide
 
 // getRegisteredProvider gets any registered provider by name(s), even if not verified
 // This is used for OAuth providers where CLI credentials are trusted even if API verification fails
-func (dtc *DebateTeamConfig) getRegisteredProvider(names ...string) llm.LLMProvider {
+func (dtc *DebateTeamConfig) getRegisteredProvider(names ...string) llm.LLMProvider { //nolint:unused
 	for _, name := range names {
 		// Try registry
 		if dtc.providerRegistry != nil {
@@ -1572,9 +1572,9 @@ func (dtc *DebateTeamConfig) GetTeamSummary() map[string]interface{} {
 			"mistral_large": ZenModels.MistralLarge,
 			"codestral":     ZenModels.Codestral,
 			// Other models
-			"o3_mini":        ZenModels.O3Mini,
-			"o1_mini":        ZenModels.O1Mini,
-			"gpt_4o":         ZenModels.GPT4O,
+			"o3_mini":   ZenModels.O3Mini,
+			"o1_mini":   ZenModels.O1Mini,
+			"gpt_4o":    ZenModels.GPT4O,
 			"command_a": ZenModels.CommandA,
 		},
 		"zen_models_count":    dtc.countZenModels(),

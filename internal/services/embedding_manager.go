@@ -812,7 +812,7 @@ func (m *EmbeddingManager) ClearCache() {
 }
 
 // Helper function to convert bytes to float64
-func bytesToFloat64(b []byte) float64 {
+func bytesToFloat64(b []byte) float64 { //nolint:unused
 	if len(b) < 8 {
 		padded := make([]byte, 8)
 		copy(padded, b)

@@ -145,10 +145,6 @@ func NewSambaNovaProviderWithRetry(apiKey, baseURL, model string, retryConfig Re
 
 func (p *SambaNovaProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
 	startTime := time.Now()
-	requestID := req.ID
-	if requestID == "" {
-		requestID = fmt.Sprintf("sambanova-%d", time.Now().UnixNano())
-	}
 
 	sReq := p.convertRequest(req)
 

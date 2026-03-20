@@ -237,8 +237,8 @@ func (c *MCPClient) CallTool(ctx context.Context, serverID, toolName string, arg
 	}
 
 	// Validate arguments against schema
-	if err := c.validateToolArguments(tool, arguments); err != nil {
-		return nil, fmt.Errorf("invalid arguments for tool %s: %w", toolName, err)
+	if validateErr := c.validateToolArguments(tool, arguments); validateErr != nil {
+		return nil, fmt.Errorf("invalid arguments for tool %s: %w", toolName, validateErr)
 	}
 
 	// Execute the tool

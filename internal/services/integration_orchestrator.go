@@ -26,7 +26,7 @@ type IntegrationOrchestrator struct {
 	contextManager   *ContextManager
 	providerRegistry *ProviderRegistry
 	workflows        map[string]*Workflow
-	mu               sync.RWMutex
+	mu               sync.RWMutex //nolint:unused
 }
 
 // Workflow represents a sequence of integrated operations

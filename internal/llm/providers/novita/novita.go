@@ -144,10 +144,6 @@ func NewNovitaProviderWithRetry(apiKey, baseURL, model string, retryConfig Retry
 
 func (p *NovitaProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
 	startTime := time.Now()
-	requestID := req.ID
-	if requestID == "" {
-		requestID = fmt.Sprintf("novita-%d", time.Now().UnixNano())
-	}
 
 	nReq := p.convertRequest(req)
 

@@ -264,7 +264,7 @@ func ByAPIKey(c *gin.Context) string {
 }
 
 // max returns the maximum of two integers
-func max(a, b int) int {
+func max(a, b int) int { //nolint:unused
 	if a > b {
 		return a
 	}

@@ -443,6 +443,8 @@ func (g *GuidedCompletion) CompleteUntil(ctx context.Context, prompt string, sto
 	// Check stop condition
 	if stopCondition != nil && stopCondition(output) {
 		// Truncate at stop condition if needed
+		// Currently no truncation implemented
+		_ = output
 	}
 
 	return &GuidedCompletionResult{

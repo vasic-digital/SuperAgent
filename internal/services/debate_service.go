@@ -65,16 +65,19 @@ type DebateService struct {
 	constitutionWatcher      *ConstitutionWatcher      // Constitution auto-update background service
 
 	// Debate Spec Full Compliance — new components
-	reflexionMemory    *reflexion.EpisodicMemoryBuffer   // Reflexion episodic memory buffer
-	reflexionGenerator *reflexion.ReflectionGenerator    // Reflexion verbal reflection generator
-	reflexionLoop      *reflexion.ReflexionLoop          // Reflexion retry-and-learn loop
-	accumulatedWisdom  *reflexion.AccumulatedWisdom      // Cross-session learning
-	approvalGate       *gates.ApprovalGate               // Configurable approval gates
-	provenanceTracker  *audit.ProvenanceTracker          // Audit trail for reproducibility
-	benchmarkBridge    *evaluation.BenchmarkBridge       // Benchmark evaluation bridge
-	sessionRepo        *database.DebateSessionRepository // DB: debate sessions
-	turnRepo           *database.DebateTurnRepository    // DB: debate turns
-	codeVersionRepo    *database.CodeVersionRepository   // DB: code versions
+	reflexionMemory    *reflexion.EpisodicMemoryBuffer // Reflexion episodic memory buffer
+	reflexionGenerator *reflexion.ReflectionGenerator  // Reflexion verbal reflection generator
+	reflexionLoop      *reflexion.ReflexionLoop        // Reflexion retry-and-learn loop
+	accumulatedWisdom  *reflexion.AccumulatedWisdom    // Cross-session learning
+	approvalGate       *gates.ApprovalGate             // Configurable approval gates
+	provenanceTracker  *audit.ProvenanceTracker        // Audit trail for reproducibility
+	benchmarkBridge    *evaluation.BenchmarkBridge     // Benchmark evaluation bridge
+	//nolint:unused,staticcheck
+	sessionRepo *database.DebateSessionRepository // DB: debate sessions
+	//nolint:unused,staticcheck
+	turnRepo *database.DebateTurnRepository // DB: debate turns
+	//nolint:unused,staticcheck
+	codeVersionRepo *database.CodeVersionRepository // DB: code versions
 
 	// Performance Optimizer
 	performanceOptimizer *DebatePerformanceOptimizer
@@ -1388,20 +1391,20 @@ func (ds *DebateService) classifyUserIntent(topic string, hasContext bool) *Inte
 
 // isUserConfirmation detects if the user message is confirming an action plan
 // Uses semantic intent classification instead of hardcoded patterns
-func (ds *DebateService) isUserConfirmation(topic string) bool {
+func (ds *DebateService) isUserConfirmation(topic string) bool { //nolint:unused
 	// Use semantic classifier - no hardcoded patterns
 	result := ds.classifyUserIntent(topic, true) // Assume context exists in debate
 	return result.IsConfirmation() || result.ShouldProceed()
 }
 
 // isUserRefusal detects if the user is refusing/declining an action
-func (ds *DebateService) isUserRefusal(topic string) bool {
+func (ds *DebateService) isUserRefusal(topic string) bool { //nolint:unused
 	result := ds.classifyUserIntent(topic, true)
 	return result.IsRefusal()
 }
 
 // getUserIntentDescription returns a human-readable description of the detected intent
-func (ds *DebateService) getUserIntentDescription(topic string) string {
+func (ds *DebateService) getUserIntentDescription(topic string) string { //nolint:unused
 	result := ds.classifyUserIntent(topic, true)
 
 	switch result.Intent {

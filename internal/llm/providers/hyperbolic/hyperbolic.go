@@ -144,10 +144,6 @@ func NewHyperbolicProviderWithRetry(apiKey, baseURL, model string, retryConfig R
 
 func (p *HyperbolicProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
 	startTime := time.Now()
-	requestID := req.ID
-	if requestID == "" {
-		requestID = fmt.Sprintf("hyperbolic-%d", time.Now().UnixNano())
-	}
 
 	hReq := p.convertRequest(req)
 

@@ -143,10 +143,6 @@ func NewCodestralProviderWithRetry(apiKey, baseURL, model string, retryConfig Re
 
 func (p *CodestralProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
 	startTime := time.Now()
-	requestID := req.ID
-	if requestID == "" {
-		requestID = fmt.Sprintf("codestral-%d", time.Now().UnixNano())
-	}
 
 	codestralReq := p.convertRequest(req)
 

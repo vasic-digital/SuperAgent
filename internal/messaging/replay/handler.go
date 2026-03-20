@@ -329,7 +329,7 @@ func (h *Handler) fetchMessageBatch(ctx context.Context, req *ReplayRequest, bat
 	}
 	defer func() {
 		if sub != nil {
-			_ = sub.Unsubscribe()
+			_ = sub.Unsubscribe() //nolint:errcheck
 		}
 	}()
 

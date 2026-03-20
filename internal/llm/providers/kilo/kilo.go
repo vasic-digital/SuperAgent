@@ -143,10 +143,6 @@ func NewKiloProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryCo
 
 func (p *KiloProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
 	startTime := time.Now()
-	requestID := req.ID
-	if requestID == "" {
-		requestID = fmt.Sprintf("kilo-%d", time.Now().UnixNano())
-	}
 
 	kReq := p.convertRequest(req)
 

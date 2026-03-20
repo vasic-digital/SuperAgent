@@ -188,7 +188,7 @@ MANDATORY: NEVER use HTTPS for any Git service operations. All cloning, fetching
 
 **ID:** CONST-019
 
-NO GitHub Actions enabled. All CI/CD workflows and pipelines must be executed manually only.
+**NO GitHub Actions, GitLab CI/CD, or any automated pipeline** may exist in this repository! **NO Git hooks (pre-commit, pre-push, post-commit, etc.)** may be installed or configured. All builds, tests, and quality checks must be executed manually only via Makefile targets. This rule is permanent and non-negotiable.
 
 ## Networking
 

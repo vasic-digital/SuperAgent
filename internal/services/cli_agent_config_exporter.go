@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"llm-verifier/pkg/cliagents"
+	"digital.vasic.llmsverifier/pkg/cliagents"
 
 	"github.com/sirupsen/logrus"
 )

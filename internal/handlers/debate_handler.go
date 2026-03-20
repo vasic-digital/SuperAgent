@@ -340,7 +340,7 @@ func (h *DebateHandler) runDebate(debateID string, config *services.DebateConfig
 			state.Status = "completed"
 			state.Result = result
 			state.MultiPassResult = multiPassResult
-			if multiPassResult != nil {
+			if multiPassResult != nil { //nolint:govet
 				state.CurrentPhase = string(services.PhaseFinalConclusion)
 				h.logger.WithFields(logrus.Fields{
 					"debate_id":           debateID,

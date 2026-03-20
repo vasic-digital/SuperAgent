@@ -125,7 +125,7 @@ func (t *Topic) Unsubscribe(groupID string) {
 
 	for i, sub := range t.subscribers {
 		if sub.groupID == groupID {
-			sub.active = false
+			sub.active = false //nolint:govet
 			close(sub.ch)
 			t.subscribers = append(t.subscribers[:i], t.subscribers[i+1:]...)
 			return

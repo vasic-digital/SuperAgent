@@ -103,7 +103,7 @@ func (m *MemoryService) AddMemory(ctx context.Context, req *MemoryRequest) error
 	}()]))
 
 	// Check if we have a valid cached entry
-	if sources := m.getCachedSources(cacheKey); sources != nil && len(sources) > 0 {
+	if sources := m.getCachedSources(cacheKey); len(sources) > 0 {
 		// Return cached results
 		return nil
 	}

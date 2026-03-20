@@ -244,7 +244,6 @@ func (c *SmartChunker) semanticChunk(text string, ctx *ChunkingContext) []string
 			if currentChunk.Len() > 0 {
 				chunks = append(chunks, strings.TrimSpace(currentChunk.String()))
 				currentChunk.Reset()
-				currentTokens = 0
 			}
 			currentChunk.WriteString(para)
 			currentTokens = paraTokens

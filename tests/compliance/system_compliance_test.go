@@ -8,7 +8,7 @@ import (
 	"dev.helix.agent/internal/mcp/adapters"
 	"dev.helix.agent/internal/services/debate_integration"
 	"dev.helix.agent/internal/verifier"
-	"llm-verifier/pkg/cliagents"
+	"digital.vasic.llmsverifier/pkg/cliagents"
 )
 
 // MinProviders is the minimum number of providers required

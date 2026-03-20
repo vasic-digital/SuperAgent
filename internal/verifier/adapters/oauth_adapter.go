@@ -218,7 +218,8 @@ func (oa *OAuthAdapter) VerifyQwenOAuth(ctx context.Context) (*verifier.UnifiedP
 		oa.log.Info("Qwen token expired, attempting refresh")
 
 		// Try standard OAuth refresh first
-		refreshed, err := oauth_credentials.AutoRefreshQwenToken(creds)
+		var refreshed *oauth_credentials.QwenOAuthCredentials
+		refreshed, err = oauth_credentials.AutoRefreshQwenToken(creds)
 		if err != nil {
 			// Try CLI-based refresh as fallback
 			if oa.config.EnableCLIRefresh {

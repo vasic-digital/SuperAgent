@@ -812,7 +812,8 @@ func (m *BedrockEmbedding) Embed(ctx context.Context, text string) ([]float64, e
 	if strings.HasPrefix(m.config.ModelName, "amazon.titan") {
 		embedding, err = m.embedTitan(ctx, text)
 	} else if strings.HasPrefix(m.config.ModelName, "cohere.") {
-		embeddings, err := m.embedCohere(ctx, []string{text})
+		var embeddings [][]float64
+		embeddings, err = m.embedCohere(ctx, []string{text})
 		if err != nil {
 			return nil, err
 		}
@@ -873,7 +874,7 @@ func (m *BedrockEmbedding) embedTitan(ctx context.Context, text string) ([]float
 	req.Header.Set("Content-Type", "application/json")
 
 	// Sign the request with AWS SigV4
-	if err := m.signRequest(req, body); err != nil {
+	if err = m.signRequest(req, body); err != nil {
 		return nil, fmt.Errorf("failed to sign request: %w", err)
 	}
 
@@ -921,7 +922,7 @@ func (m *BedrockEmbedding) embedCohere(ctx context.Context, texts []string) ([][
 	req.Header.Set("Content-Type", "application/json")
 
 	// Sign the request with AWS SigV4
-	if err := m.signRequest(req, body); err != nil {
+	if err = m.signRequest(req, body); err != nil {
 		return nil, fmt.Errorf("failed to sign request: %w", err)
 	}
 

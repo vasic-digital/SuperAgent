@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -11,6 +12,33 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// buildPromptFromRequest converts an LLMRequest to a plain text prompt
+// following the same format used by GeminiACPProvider.Complete
+func buildPromptFromRequest(req *models.LLMRequest) string {
+	var promptBuilder strings.Builder
+	for _, msg := range req.Messages {
+		switch msg.Role {
+		case "system":
+			promptBuilder.WriteString("System: ")
+			promptBuilder.WriteString(msg.Content)
+			promptBuilder.WriteString("\n\n")
+		case "user":
+			promptBuilder.WriteString(msg.Content)
+			promptBuilder.WriteString("\n")
+		case "assistant":
+			promptBuilder.WriteString("Assistant: ")
+			promptBuilder.WriteString(msg.Content)
+			promptBuilder.WriteString("\n\n")
+		}
+	}
+
+	prompt := promptBuilder.String()
+	if prompt == "" && req.Prompt != "" {
+		prompt = req.Prompt
+	}
+	return prompt
+}
 
 // ==============================================================================
 // Unified Provider Tests

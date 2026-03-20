@@ -256,7 +256,7 @@ func (c *CacheService) InvalidateUserCache(ctx context.Context, userID string) e
 	c.userKeysMu.Unlock()
 
 	// Delete all tracked keys from Redis
-	if userKeySet != nil && len(userKeySet) > 0 {
+	if len(userKeySet) > 0 {
 		for key := range userKeySet {
 			if err := c.redisClient.Delete(ctx, key); err != nil {
 				// Log error but continue deleting other keys

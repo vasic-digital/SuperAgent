@@ -267,9 +267,9 @@ func (g *MCPConfigGenerator) GenerateOpenCodeMCPs() map[string]MCPServerConfig {
 		mcps["kubernetes"] = MCPServerConfig{
 			Type:    "local",
 			Command: []string{"npx", "-y", "mcp-server-kubernetes"},
-			Environment: map[string]string{
+			Environment: g.expandEnvMap(map[string]string{
 				"KUBECONFIG": "{env:KUBECONFIG}",
-			},
+			}),
 			Enabled: true,
 		}
 	}
@@ -283,9 +283,9 @@ func (g *MCPConfigGenerator) GenerateOpenCodeMCPs() map[string]MCPServerConfig {
 		mcps["github"] = MCPServerConfig{
 			Type:    "local",
 			Command: []string{"npx", "-y", "@modelcontextprotocol/server-github"},
-			Environment: map[string]string{
+			Environment: g.expandEnvMap(map[string]string{
 				"GITHUB_PERSONAL_ACCESS_TOKEN": "{env:GITHUB_TOKEN}",
-			},
+			}),
 			Enabled: true,
 		}
 	}
@@ -295,9 +295,9 @@ func (g *MCPConfigGenerator) GenerateOpenCodeMCPs() map[string]MCPServerConfig {
 		mcps["gitlab"] = MCPServerConfig{
 			Type:    "local",
 			Command: []string{"npx", "-y", "@modelcontextprotocol/server-gitlab"},
-			Environment: map[string]string{
+			Environment: g.expandEnvMap(map[string]string{
 				"GITLAB_PERSONAL_ACCESS_TOKEN": "{env:GITLAB_TOKEN}",
-			},
+			}),
 			Enabled: true,
 		}
 	}
@@ -307,9 +307,9 @@ func (g *MCPConfigGenerator) GenerateOpenCodeMCPs() map[string]MCPServerConfig {
 		mcps["brave-search"] = MCPServerConfig{
 			Type:    "local",
 			Command: []string{"npx", "-y", "@modelcontextprotocol/server-brave-search"},
-			Environment: map[string]string{
+			Environment: g.expandEnvMap(map[string]string{
 				"BRAVE_API_KEY": "{env:BRAVE_API_KEY}",
-			},
+			}),
 			Enabled: true,
 		}
 	}
@@ -319,10 +319,10 @@ func (g *MCPConfigGenerator) GenerateOpenCodeMCPs() map[string]MCPServerConfig {
 		mcps["slack"] = MCPServerConfig{
 			Type:    "local",
 			Command: []string{"npx", "-y", "@modelcontextprotocol/server-slack"},
-			Environment: map[string]string{
+			Environment: g.expandEnvMap(map[string]string{
 				"SLACK_BOT_TOKEN": "{env:SLACK_BOT_TOKEN}",
 				"SLACK_TEAM_ID":   "{env:SLACK_TEAM_ID}",
-			},
+			}),
 			Enabled: true,
 		}
 	}
@@ -332,9 +332,9 @@ func (g *MCPConfigGenerator) GenerateOpenCodeMCPs() map[string]MCPServerConfig {
 		mcps["notion"] = MCPServerConfig{
 			Type:    "local",
 			Command: []string{"npx", "-y", "@notionhq/notion-mcp-server"},
-			Environment: map[string]string{
+			Environment: g.expandEnvMap(map[string]string{
 				"NOTION_API_KEY": "{env:NOTION_API_KEY}",
-			},
+			}),
 			Enabled: true,
 		}
 	}
@@ -344,9 +344,9 @@ func (g *MCPConfigGenerator) GenerateOpenCodeMCPs() map[string]MCPServerConfig {
 		mcps["linear"] = MCPServerConfig{
 			Type:    "local",
 			Command: []string{"npx", "-y", "@modelcontextprotocol/server-linear"},
-			Environment: map[string]string{
+			Environment: g.expandEnvMap(map[string]string{
 				"LINEAR_API_KEY": "{env:LINEAR_API_KEY}",
-			},
+			}),
 			Enabled: true,
 		}
 	}
@@ -356,10 +356,10 @@ func (g *MCPConfigGenerator) GenerateOpenCodeMCPs() map[string]MCPServerConfig {
 		mcps["sentry"] = MCPServerConfig{
 			Type:    "local",
 			Command: []string{"npx", "-y", "@modelcontextprotocol/server-sentry"},
-			Environment: map[string]string{
+			Environment: g.expandEnvMap(map[string]string{
 				"SENTRY_AUTH_TOKEN": "{env:SENTRY_AUTH_TOKEN}",
 				"SENTRY_ORG":        "{env:SENTRY_ORG}",
-			},
+			}),
 			Enabled: true,
 		}
 	}
@@ -369,9 +369,9 @@ func (g *MCPConfigGenerator) GenerateOpenCodeMCPs() map[string]MCPServerConfig {
 		mcps["cloudflare"] = MCPServerConfig{
 			Type:    "local",
 			Command: []string{"npx", "-y", "@cloudflare/mcp-server-cloudflare"},
-			Environment: map[string]string{
+			Environment: g.expandEnvMap(map[string]string{
 				"CLOUDFLARE_API_TOKEN": "{env:CLOUDFLARE_API_TOKEN}",
-			},
+			}),
 			Enabled: true,
 		}
 	}
@@ -381,9 +381,9 @@ func (g *MCPConfigGenerator) GenerateOpenCodeMCPs() map[string]MCPServerConfig {
 		mcps["discord"] = MCPServerConfig{
 			Type:    "local",
 			Command: []string{"npx", "-y", "mcp-server-discord"},
-			Environment: map[string]string{
+			Environment: g.expandEnvMap(map[string]string{
 				"DISCORD_TOKEN": "{env:DISCORD_TOKEN}",
-			},
+			}),
 			Enabled: true,
 		}
 	}
@@ -393,14 +393,37 @@ func (g *MCPConfigGenerator) GenerateOpenCodeMCPs() map[string]MCPServerConfig {
 		mcps["exa"] = MCPServerConfig{
 			Type:    "local",
 			Command: []string{"npx", "-y", "exa-mcp-server"},
-			Environment: map[string]string{
+			Environment: g.expandEnvMap(map[string]string{
 				"EXA_API_KEY": "{env:EXA_API_KEY}",
-			},
+			}),
 			Enabled: true,
 		}
 	}
 
 	return mcps
+}
+
+// expandEnvValue expands {env:VAR_NAME} placeholders with actual environment variable values
+func (g *MCPConfigGenerator) expandEnvValue(value string) string {
+	if strings.HasPrefix(value, "{env:") && strings.HasSuffix(value, "}") {
+		envVar := strings.TrimSuffix(strings.TrimPrefix(value, "{env:"), "}")
+		if val, ok := g.envVars[envVar]; ok && val != "" {
+			return val
+		}
+	}
+	return value
+}
+
+// expandEnvMap expands all {env:...} placeholders in an environment map
+func (g *MCPConfigGenerator) expandEnvMap(env map[string]string) map[string]string {
+	if env == nil {
+		return nil
+	}
+	expanded := make(map[string]string, len(env))
+	for k, v := range env {
+		expanded[k] = g.expandEnvValue(v)
+	}
+	return expanded
 }
 
 // GetEnabledMCPCount returns the count of enabled MCPs

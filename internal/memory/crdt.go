@@ -213,6 +213,8 @@ func (cr *CRDTResolver) memoryFromEvent(memoryID string, event *MemoryEvent) *Me
 }
 
 // mergeTags merges two tag lists, removing duplicates
+//
+//nolint:unused
 func (cr *CRDTResolver) mergeTags(local, remote []string) []string {
 	tagSet := make(map[string]bool)
 
@@ -233,6 +235,8 @@ func (cr *CRDTResolver) mergeTags(local, remote []string) []string {
 }
 
 // mergeEntities merges entity lists from metadata
+//
+//nolint:unused
 func (cr *CRDTResolver) mergeEntities(local []MemoryEntity, remote []MemoryEntity) []MemoryEntity {
 	// Create map of local entities by ID
 	localMap := make(map[string]MemoryEntity)

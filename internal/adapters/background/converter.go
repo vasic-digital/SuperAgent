@@ -72,11 +72,6 @@ func convertToExtractedTasks(internal []*internalmodels.BackgroundTask) []*extra
 	return result
 }
 
-// convertTaskStatus converts internal TaskStatus to extracted TaskStatus
-func convertTaskStatus(status internalmodels.TaskStatus) extractedmodels.TaskStatus {
-	return extractedmodels.TaskStatus(status)
-}
-
 // convertTaskPriority converts internal TaskPriority to extracted TaskPriority
 func convertTaskPriority(priority internalmodels.TaskPriority) extractedmodels.TaskPriority {
 	return extractedmodels.TaskPriority(priority)
@@ -130,22 +125,6 @@ func convertToInternalSystemResources(extracted *extractedbackground.SystemResou
 	return &internal
 }
 
-// convertToExtractedSystemResources converts internal SystemResources to extracted SystemResources
-func convertToExtractedSystemResources(internal *internalbackground.SystemResources) *extractedbackground.SystemResources {
-	if internal == nil {
-		return nil
-	}
-	data, err := json.Marshal(internal)
-	if err != nil {
-		return nil
-	}
-	var extracted extractedbackground.SystemResources
-	if err := json.Unmarshal(data, &extracted); err != nil {
-		return nil
-	}
-	return &extracted
-}
-
 // convertToInternalStuckAnalysis converts extracted StuckAnalysis to internal StuckAnalysis
 func convertToInternalStuckAnalysis(extracted *extractedbackground.StuckAnalysis) *internalbackground.StuckAnalysis {
 	if extracted == nil {
@@ -160,6 +139,27 @@ func convertToInternalStuckAnalysis(extracted *extractedbackground.StuckAnalysis
 		return nil
 	}
 	return &internal
+}
+
+// convertTaskStatus converts internal TaskStatus to extracted TaskStatus
+func convertTaskStatus(status internalmodels.TaskStatus) extractedmodels.TaskStatus {
+	return extractedmodels.TaskStatus(status)
+}
+
+// convertToExtractedSystemResources converts internal SystemResources to extracted SystemResources
+func convertToExtractedSystemResources(internal *internalbackground.SystemResources) *extractedbackground.SystemResources {
+	if internal == nil {
+		return nil
+	}
+	data, err := json.Marshal(internal)
+	if err != nil {
+		return nil
+	}
+	var extracted extractedbackground.SystemResources
+	if err := json.Unmarshal(data, &extracted); err != nil {
+		return nil
+	}
+	return &extracted
 }
 
 // convertToExtractedStuckAnalysis converts internal StuckAnalysis to extracted StuckAnalysis

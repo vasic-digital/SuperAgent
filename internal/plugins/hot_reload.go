@@ -327,9 +327,7 @@ func (h *HotReloadManager) isPluginFile(path string) bool {
 func (h *HotReloadManager) getPluginNameFromPath(path string) string {
 	base := filepath.Base(path)
 	// Remove .so extension
-	if strings.HasSuffix(base, ".so") {
-		base = base[:len(base)-3]
-	}
+	base = strings.TrimSuffix(base, ".so")
 	return base
 }
 

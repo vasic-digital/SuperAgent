@@ -554,10 +554,7 @@ func (p *ClaudeCLIProvider) SetModel(model string) {
 // IsClaudeCodeInstalled is a standalone function to check if Claude Code is installed
 func IsClaudeCodeInstalled() bool {
 	_, err := exec.LookPath("claude")
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 // IsInsideClaudeCodeSession returns true if we're running inside a Claude Code session.

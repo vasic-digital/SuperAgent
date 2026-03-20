@@ -73,10 +73,10 @@ func TestModelMetadataRedisCache_Clear_WithMiniredis(t *testing.T) {
 	var cursor uint64
 	keysPattern := prefix + "*"
 	for {
-		keys, newCursor, err := client.Scan(ctx, cursor, keysPattern, 100).Result()
+		scannedKeys, newCursor, err := client.Scan(ctx, cursor, keysPattern, 100).Result()
 		require.NoError(t, err)
-		if len(keys) > 0 {
-			_, err := client.Del(ctx, keys...).Result()
+		if len(scannedKeys) > 0 {
+			_, err := client.Del(ctx, scannedKeys...).Result()
 			require.NoError(t, err)
 		}
 		cursor = newCursor
@@ -142,8 +142,8 @@ func TestModelMetadataRedisCache_Clear_ManyKeys(t *testing.T) {
 	numKeys := 50
 	for i := 0; i < numKeys; i++ {
 		key := prefix + "model:" + fmt.Sprintf("%04d", i)
-		err := client.Set(ctx, key, "value", 0).Err()
-		require.NoError(t, err)
+		setErr := client.Set(ctx, key, "value", 0).Err()
+		require.NoError(t, setErr)
 	}
 
 	// Verify keys exist
@@ -156,8 +156,8 @@ func TestModelMetadataRedisCache_Clear_ManyKeys(t *testing.T) {
 	keysToDelete, err := client.Keys(ctx, prefix+"*").Result()
 	require.NoError(t, err)
 	if len(keysToDelete) > 0 {
-		deleted, err := client.Del(ctx, keysToDelete...).Result()
-		require.NoError(t, err)
+		deleted, delErr := client.Del(ctx, keysToDelete...).Result()
+		require.NoError(t, delErr)
 		assert.Equal(t, int64(numKeys), deleted)
 	}
 

@@ -406,9 +406,7 @@ func (t *TreeTopology) BroadcastMessage(ctx context.Context, msg *Message) error
 
 		if visited[current.AgentID] {
 			// Still traverse children
-			for _, child := range current.Children {
-				queue = append(queue, child)
-			}
+			queue = append(queue, current.Children...)
 			continue
 		}
 		visited[current.AgentID] = true
@@ -427,9 +425,7 @@ func (t *TreeTopology) BroadcastMessage(ctx context.Context, msg *Message) error
 			return fmt.Errorf("broadcast timeout to %s", current.AgentID)
 		}
 
-		for _, child := range current.Children {
-			queue = append(queue, child)
-		}
+		queue = append(queue, current.Children...)
 	}
 
 	return nil

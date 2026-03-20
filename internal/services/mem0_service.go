@@ -20,7 +20,7 @@ type Mem0Service struct {
 	config  *config.MemoryConfig
 	logger  *logrus.Logger
 	stats   *Mem0Stats
-	mu      sync.RWMutex
+	mu      sync.RWMutex //nolint:unused
 }
 
 type Mem0Stats struct {

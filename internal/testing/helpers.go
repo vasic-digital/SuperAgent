@@ -297,7 +297,7 @@ func (m *MockMCPServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 
 	// Parse request
 	var req MockMCPRequest
-	if err := json.Unmarshal(body, &req); err != nil {
+	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}

@@ -154,10 +154,6 @@ func NewCloudflareProviderWithRetry(apiKey, accountID, baseURL, model string, re
 
 func (p *CloudflareProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
 	startTime := time.Now()
-	requestID := req.ID
-	if requestID == "" {
-		requestID = fmt.Sprintf("cloudflare-%d", time.Now().UnixNano())
-	}
 
 	cReq := p.convertRequest(req)
 

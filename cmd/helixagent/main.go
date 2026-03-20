@@ -69,7 +69,7 @@ import (
 	"dev.helix.agent/internal/utils"
 	"dev.helix.agent/internal/verifier"
 	appversion "dev.helix.agent/internal/version"
-	"llm-verifier/pkg/cliagents"
+	"digital.vasic.llmsverifier/pkg/cliagents"
 )
 
 var (
@@ -2176,6 +2176,14 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 		Instructions: []string{"CLAUDE.md", "opencode.md"},
 		TUI:          &OpenCodeTUIDef{Theme: "opencode"},
 	}
+
+	// Expand environment variables in entire configuration
+	envVars := loadEnvVars()
+	expandedConfig, err := expandEnvInOpenCodeConfig(config, envVars)
+	if err != nil {
+		return fmt.Errorf("failed to expand environment variables: %w", err)
+	}
+	config = expandedConfig
 	jsonData, err = json.MarshalIndent(config, "", "  ")
 
 	if err != nil {
@@ -4000,8 +4008,12 @@ func handleGenerateAgentConfig(appCfg *AppConfig) error {
 		return fmt.Errorf("config generation failed for %s: %v", agentType, result.Errors)
 	}
 
+	// Expand {env:VAR_NAME} placeholders with actual environment variable values
+	envVars := loadEnvVars()
+	expandedConfig := expandEnvInConfig(result.Config, envVars)
+
 	// Marshal to JSON
-	jsonData, err := json.MarshalIndent(result.Config, "", "  ")
+	jsonData, err := json.MarshalIndent(expandedConfig, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
@@ -4315,6 +4327,117 @@ Examples:
 
 For more information, visit: https://dev.helix.agent
 `)
+}
+
+// expandEnvInMCPServers expands {env:VAR_NAME} placeholders in MCP server configurations
+func expandEnvInMCPServers(mcpServers map[string]OpenCodeMCPServerDefNew, envVars map[string]string) map[string]OpenCodeMCPServerDefNew {
+	result := make(map[string]OpenCodeMCPServerDefNew)
+	for name, server := range mcpServers {
+		expanded := server
+		if expanded.Environment != nil {
+			expandedEnv := make(map[string]string)
+			for key, value := range expanded.Environment {
+				expandedEnv[key] = expandEnvValue(value, envVars)
+			}
+			expanded.Environment = expandedEnv
+		}
+		if expanded.Headers != nil {
+			expandedHeaders := make(map[string]string)
+			for key, value := range expanded.Headers {
+				expandedHeaders[key] = expandEnvValue(value, envVars)
+			}
+			expanded.Headers = expandedHeaders
+		}
+		result[name] = expanded
+	}
+	return result
+}
+
+// expandEnvInConfig recursively expands {env:VAR_NAME} placeholders in a configuration map
+func expandEnvInConfig(config interface{}, envVars map[string]string) interface{} {
+	switch v := config.(type) {
+	case map[string]interface{}:
+		result := make(map[string]interface{})
+		for key, val := range v {
+			result[key] = expandEnvInConfig(val, envVars)
+		}
+		return result
+	case []interface{}:
+		result := make([]interface{}, len(v))
+		for i, val := range v {
+			result[i] = expandEnvInConfig(val, envVars)
+		}
+		return result
+	case string:
+		return expandEnvValue(v, envVars)
+	default:
+		return v
+	}
+}
+
+// expandEnvInOpenCodeConfig expands {env:VAR_NAME} placeholders in OpenCode configuration
+func expandEnvInOpenCodeConfig(config OpenCodeConfig, envVars map[string]string) (OpenCodeConfig, error) {
+	// Convert config to map[string]interface{}
+	data, err := json.Marshal(config)
+	if err != nil {
+		return config, fmt.Errorf("failed to marshal config: %w", err)
+	}
+	var configMap map[string]interface{}
+	if err := json.Unmarshal(data, &configMap); err != nil {
+		return config, fmt.Errorf("failed to unmarshal config: %w", err)
+	}
+	// Expand environment variables
+	expandedMap := expandEnvInConfig(configMap, envVars)
+	// Convert back to OpenCodeConfig
+	expandedData, err := json.Marshal(expandedMap)
+	if err != nil {
+		return config, fmt.Errorf("failed to marshal expanded config: %w", err)
+	}
+	var expandedConfig OpenCodeConfig
+	if err := json.Unmarshal(expandedData, &expandedConfig); err != nil {
+		return config, fmt.Errorf("failed to unmarshal expanded config: %w", err)
+	}
+	return expandedConfig, nil
+}
+
+// expandEnvValue expands {env:VAR_NAME} placeholders with actual environment variable values
+func expandEnvValue(value string, envVars map[string]string) string {
+	if strings.HasPrefix(value, "{env:") && strings.HasSuffix(value, "}") {
+		envVar := strings.TrimSuffix(strings.TrimPrefix(value, "{env:"), "}")
+		if val, ok := envVars[envVar]; ok && val != "" {
+			return val
+		}
+	}
+	return value
+}
+
+// loadEnvVars loads environment variables from .env and environment
+func loadEnvVars() map[string]string {
+	envVars := make(map[string]string)
+	// Load from .env file
+	if data, err := os.ReadFile(".env"); err == nil {
+		lines := strings.Split(string(data), "\n")
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if line == "" || strings.HasPrefix(line, "#") {
+				continue
+			}
+			parts := strings.SplitN(line, "=", 2)
+			if len(parts) == 2 {
+				key := strings.TrimSpace(parts[0])
+				value := strings.Trim(strings.TrimSpace(parts[1]), "\"'")
+				envVars[key] = value
+			}
+		}
+	}
+	// Also load from environment (overrides .env)
+	for _, env := range os.Environ() {
+		parts := strings.SplitN(env, "=", 2)
+		if len(parts) == 2 {
+			envVars[parts[0]] = parts[1]
+		}
+	}
+	return envVars
 }
 
 func showVersion() {

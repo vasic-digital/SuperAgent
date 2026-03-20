@@ -880,7 +880,7 @@ func extractBestResponse(debateResult *DebateResult) string {
 // Phase Caching and Resumption Methods
 
 // savePhaseToCache saves a phase result to the cache
-func (so *SpecKitOrchestrator) savePhaseToCache(flowID string, phase SpecKitPhase, result *SpecKitPhaseResult) error {
+func (so *SpecKitOrchestrator) savePhaseToCache(flowID string, phase SpecKitPhase, result *SpecKitPhaseResult) error { //nolint:unused
 	if !so.enableCaching {
 		return nil
 	}
@@ -913,7 +913,7 @@ func (so *SpecKitOrchestrator) savePhaseToCache(flowID string, phase SpecKitPhas
 }
 
 // loadPhaseFromCache loads a cached phase result
-func (so *SpecKitOrchestrator) loadPhaseFromCache(flowID string, phase SpecKitPhase) (*SpecKitPhaseResult, error) {
+func (so *SpecKitOrchestrator) loadPhaseFromCache(flowID string, phase SpecKitPhase) (*SpecKitPhaseResult, error) { //nolint:unused
 	if !so.enableCaching {
 		return nil, fmt.Errorf("caching disabled")
 	}
@@ -940,7 +940,7 @@ func (so *SpecKitOrchestrator) loadPhaseFromCache(flowID string, phase SpecKitPh
 }
 
 // saveFlowToCache saves the complete flow result to cache
-func (so *SpecKitOrchestrator) saveFlowToCache(result *SpecKitFlowResult) error {
+func (so *SpecKitOrchestrator) saveFlowToCache(result *SpecKitFlowResult) error { //nolint:unused
 	if !so.enableCaching {
 		return nil
 	}
@@ -969,7 +969,7 @@ func (so *SpecKitOrchestrator) saveFlowToCache(result *SpecKitFlowResult) error 
 }
 
 // loadFlowFromCache loads a complete flow result from cache
-func (so *SpecKitOrchestrator) loadFlowFromCache(flowID string) (*SpecKitFlowResult, error) {
+func (so *SpecKitOrchestrator) loadFlowFromCache(flowID string) (*SpecKitFlowResult, error) { //nolint:unused
 	if !so.enableCaching {
 		return nil, fmt.Errorf("caching disabled")
 	}
@@ -997,7 +997,7 @@ func (so *SpecKitOrchestrator) loadFlowFromCache(flowID string) (*SpecKitFlowRes
 }
 
 // clearFlowCache clears all cached data for a flow
-func (so *SpecKitOrchestrator) clearFlowCache(flowID string) error {
+func (so *SpecKitOrchestrator) clearFlowCache(flowID string) error { //nolint:unused
 	if !so.enableCaching {
 		return nil
 	}
@@ -1012,7 +1012,7 @@ func (so *SpecKitOrchestrator) clearFlowCache(flowID string) error {
 }
 
 // resumeFlow resumes a SpecKit flow from the last cached phase
-func (so *SpecKitOrchestrator) resumeFlow(ctx context.Context, flowID string, userRequest string, intentResult *EnhancedIntentResult) (*SpecKitFlowResult, error) {
+func (so *SpecKitOrchestrator) resumeFlow(ctx context.Context, flowID string, userRequest string, intentResult *EnhancedIntentResult) (*SpecKitFlowResult, error) { //nolint:unused
 	// Try to load cached flow
 	cachedFlow, err := so.loadFlowFromCache(flowID)
 	if err != nil {
@@ -1124,8 +1124,8 @@ func (so *SpecKitOrchestrator) resumeFlow(ctx context.Context, flowID string, us
 			cachedFlow.Duration = cachedFlow.EndTime.Sub(cachedFlow.StartTime)
 
 			// Save partial progress
-			if err := so.saveFlowToCache(cachedFlow); err != nil {
-				so.logger.WithError(err).Warn("[SpecKit Resumption] Failed to save partial progress")
+			if saveErr := so.saveFlowToCache(cachedFlow); saveErr != nil {
+				so.logger.WithError(saveErr).Warn("[SpecKit Resumption] Failed to save partial progress")
 			}
 
 			return cachedFlow, fmt.Errorf("phase %s failed during resumption: %w", phase, err)
@@ -1191,20 +1191,20 @@ func (so *SpecKitOrchestrator) resumeFlow(ctx context.Context, flowID string, us
 
 // Helper functions for file operations
 
-func ensureDir(dir string) error {
+func ensureDir(dir string) error { //nolint:unused
 	// #nosec G301 -- speckit cache directories use standard 0750 permissions
 	return os.MkdirAll(dir, 0750)
 }
 
-func writeFile(path string, data []byte) error {
+func writeFile(path string, data []byte) error { //nolint:unused
 	// #nosec G306 -- speckit phase cache files use standard 0600 permissions
 	return os.WriteFile(path, data, 0600)
 }
 
-func readFile(path string) ([]byte, error) {
+func readFile(path string) ([]byte, error) { //nolint:unused
 	return os.ReadFile(path)
 }
 
-func removeDir(dir string) error {
+func removeDir(dir string) error { //nolint:unused
 	return os.RemoveAll(dir)
 }

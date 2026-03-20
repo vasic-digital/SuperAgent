@@ -699,7 +699,7 @@ func (a *Adapter) copyBuildContexts(
 
 		// Create parent directory on remote
 		mkdirCmd := fmt.Sprintf("mkdir -p %s", remoteParent)
-		if _, err := a.executor.Execute(ctx, host, mkdirCmd); err != nil {
+		if _, err = a.executor.Execute(ctx, host, mkdirCmd); err != nil {
 			a.logger.Warn("Failed to create remote directory %s: %v", remoteParent, err)
 			continue
 		}

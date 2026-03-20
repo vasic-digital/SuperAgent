@@ -143,10 +143,6 @@ func NewVulavulaProviderWithRetry(apiKey, baseURL, model string, retryConfig Ret
 
 func (p *VulavulaProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
 	startTime := time.Now()
-	requestID := req.ID
-	if requestID == "" {
-		requestID = fmt.Sprintf("vulavula-%d", time.Now().UnixNano())
-	}
 
 	vReq := p.convertRequest(req)
 

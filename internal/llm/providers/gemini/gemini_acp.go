@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -47,8 +48,6 @@ type GeminiACPProvider struct {
 	respMu    sync.RWMutex
 }
 
-const geminiACPProtocolVersion = 1
-
 // ACP message types for Gemini
 type geminiACPRequest struct {
 	JSONRPC string      `json:"jsonrpc"`
@@ -81,10 +80,10 @@ type geminiClientCapabilities struct {
 }
 
 type geminiInitializeResponse struct {
-	ProtocolVersion   int                      `json:"protocolVersion"`
-	AgentInfo         geminiAgentInfo           `json:"agentInfo"`
-	AgentCapabilities geminiAgentCapabilities   `json:"agentCapabilities"`
-	AuthMethods       []geminiAuthMethod        `json:"authMethods"`
+	ProtocolVersion   int                     `json:"protocolVersion"`
+	AgentInfo         geminiAgentInfo         `json:"agentInfo"`
+	AgentCapabilities geminiAgentCapabilities `json:"agentCapabilities"`
+	AuthMethods       []geminiAuthMethod      `json:"authMethods"`
 }
 
 type geminiAgentInfo struct {
@@ -94,8 +93,8 @@ type geminiAgentInfo struct {
 }
 
 type geminiAgentCapabilities struct {
-	LoadSession        bool                      `json:"loadSession"`
-	PromptCapabilities geminiPromptCapabilities   `json:"promptCapabilities"`
+	LoadSession        bool                     `json:"loadSession"`
+	PromptCapabilities geminiPromptCapabilities `json:"promptCapabilities"`
 }
 
 type geminiPromptCapabilities struct {
@@ -302,6 +301,12 @@ func (p *GeminiACPProvider) readResponses() {
 // handleNotification handles ACP notifications
 func (p *GeminiACPProvider) handleNotification(resp *geminiACPResponse) {
 	// Handle session/update notifications for streaming
+	if resp.Method == "session/update" {
+		// Parse notification and handle streaming updates
+		// This could be used for real-time streaming in the future
+		// For now, just log the notification
+		log.Printf("[GeminiACP] session/update notification: %v", resp)
+	}
 }
 
 // sendRequest sends an ACP request and waits for response
@@ -409,9 +414,9 @@ func (p *GeminiACPProvider) Stop() {
 	defer p.mu.Unlock()
 
 	if p.cmd != nil && p.cmd.Process != nil {
-		_ = p.stdin.Close()
-		_ = p.cmd.Process.Kill()
-		_ = p.cmd.Wait()
+		_ = p.stdin.Close()      //nolint:errcheck
+		_ = p.cmd.Process.Kill() //nolint:errcheck
+		_ = p.cmd.Wait()         //nolint:errcheck
 	}
 	p.isRunning = false
 	p.initialized = false
@@ -638,11 +643,11 @@ func testGeminiACPAvailability() bool {
 	}
 
 	defer func() {
-		_ = stdin.Close()
+		_ = stdin.Close() //nolint:errcheck
 		if cmd.Process != nil {
-			_ = cmd.Process.Kill()
+			_ = cmd.Process.Kill() //nolint:errcheck
 		}
-		_ = cmd.Wait()
+		_ = cmd.Wait() //nolint:errcheck
 	}()
 
 	testReq := `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"clientCapabilities":{"fileSystem":false}}}`

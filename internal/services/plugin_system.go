@@ -61,7 +61,7 @@ type RoundRobinLoadBalancer struct {
 
 // LeastLoadedLoadBalancer implements least-loaded load balancing
 type LeastLoadedLoadBalancer struct {
-	mu sync.RWMutex
+	mu sync.RWMutex //nolint:unused
 }
 
 // FailoverManager handles automatic failover
@@ -928,9 +928,9 @@ func (sr *ServiceRegistry) DiscoverServices(serviceType string) []*ServiceEndpoi
 
 // WeightedRoundRobinLoadBalancer implements weighted round-robin
 type WeightedRoundRobinLoadBalancer struct {
-	mu      sync.Mutex
-	current map[string]int
-	weights map[string]int
+	mu      sync.Mutex     //nolint:unused
+	current map[string]int //nolint:unused
+	weights map[string]int //nolint:unused
 }
 
 // RandomLoadBalancer implements random load balancing

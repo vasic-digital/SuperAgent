@@ -15,7 +15,6 @@ import (
 // The map is lazily initialized via sync.Once to avoid eager work
 // at package import time.
 var (
-	infraOnce      sync.Once
 	infraResults   map[string]bool
 	infraResultsMu sync.Once
 	infraMu        sync.RWMutex

@@ -225,7 +225,7 @@ func (b *Broker) restoreSubscription(sub *rabbitSubscription) {
 	}
 
 	// Set QoS
-	if err := ch.Qos(b.config.PrefetchCount, b.config.PrefetchSize, false); err != nil {
+	if err = ch.Qos(b.config.PrefetchCount, b.config.PrefetchSize, false); err != nil {
 		b.logger.Warn("Failed to set QoS", zap.Error(err))
 	}
 
@@ -463,13 +463,13 @@ func (b *Broker) Subscribe(ctx context.Context, topic string, handler messaging.
 	if options.Prefetch > 0 {
 		prefetch = options.Prefetch
 	}
-	if err := ch.Qos(prefetch, b.config.PrefetchSize, false); err != nil {
+	if err = ch.Qos(prefetch, b.config.PrefetchSize, false); err != nil {
 		_ = ch.Close()
 		return nil, fmt.Errorf("failed to set QoS: %w", err)
 	}
 
 	// Ensure exchange exists
-	if err := b.ensureExchange(topic); err != nil {
+	if err = b.ensureExchange(topic); err != nil {
 		_ = ch.Close()
 		return nil, err
 	}
@@ -500,7 +500,7 @@ func (b *Broker) Subscribe(ctx context.Context, topic string, handler messaging.
 
 	// Bind queue to exchange
 	routingKey := "#" // Subscribe to all messages on this topic
-	if err := ch.QueueBind(q.Name, routingKey, topic, false, nil); err != nil {
+	if err = ch.QueueBind(q.Name, routingKey, topic, false, nil); err != nil {
 		_ = ch.Close()
 		return nil, fmt.Errorf("failed to bind queue: %w", err)
 	}

@@ -74,8 +74,8 @@ func (c *DebateFormationChallenge) Execute(
 	} else {
 		// Form a debate group from top providers.
 		group := DebateGroup{
-			Name:     "primary",
-			Strategy: "confidence_weighted",
+			Name:     "primary",             //nolint:govet
+			Strategy: "confidence_weighted", //nolint:govet
 		}
 		for i := 0; i < groupSize && i < len(verified); i++ {
 			group.Members = append(

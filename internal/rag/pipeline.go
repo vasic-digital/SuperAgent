@@ -167,7 +167,7 @@ func (p *Pipeline) ensureCollection(ctx context.Context) error {
 
 	switch p.config.VectorDBType {
 	case VectorDBChroma:
-		_, err := p.chromaAdapter.GetCollection(ctx, p.config.CollectionName)
+		_, err = p.chromaAdapter.GetCollection(ctx, p.config.CollectionName)
 		if err != nil {
 			// Create collection
 			_, err = p.chromaAdapter.CreateCollection(ctx, p.config.CollectionName, nil)

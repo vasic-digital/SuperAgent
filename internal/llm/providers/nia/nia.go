@@ -143,10 +143,6 @@ func NewNiaProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryCon
 
 func (p *NiaProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
 	startTime := time.Now()
-	requestID := req.ID
-	if requestID == "" {
-		requestID = fmt.Sprintf("nia-%d", time.Now().UnixNano())
-	}
 
 	nReq := p.convertRequest(req)
 

@@ -144,10 +144,6 @@ func NewModalProviderWithRetry(apiKey, apiKeyID, baseURL, model string, retryCon
 
 func (p *ModalProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
 	startTime := time.Now()
-	requestID := req.ID
-	if requestID == "" {
-		requestID = fmt.Sprintf("modal-%d", time.Now().UnixNano())
-	}
 
 	mReq := p.convertRequest(req)
 

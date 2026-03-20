@@ -144,10 +144,6 @@ func NewSarvamProviderWithRetry(apiKey, baseURL, model string, retryConfig Retry
 
 func (p *SarvamProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
 	startTime := time.Now()
-	requestID := req.ID
-	if requestID == "" {
-		requestID = fmt.Sprintf("sarvam-%d", time.Now().UnixNano())
-	}
 
 	sReq := p.convertRequest(req)
 

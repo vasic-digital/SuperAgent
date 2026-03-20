@@ -620,8 +620,14 @@ Constitution with 26 rules (26 mandatory) across categories: Quality: 2, Safety:
 
 ### CI/CD
 
-**Manual CI/CD Only** (Priority: 1)
-- NO GitHub Actions enabled. All CI/CD workflows and pipelines must be executed manually only.
+**Manual CI/CD Only - NO Automated Pipelines or Git Hooks** (Priority: 1)
+- **NO GitHub Actions, GitLab CI/CD, Jenkins, CircleCI, Travis CI, or any automated pipeline** may exist in this repository!
+- **NO Git hooks (pre-commit, pre-push, post-commit, etc.)** may be installed or configured
+- **NO `.github/workflows/` directory** allowed
+- **NO `.gitlab-ci.yml` file** allowed  
+- **NO Jenkinsfile, .travis.yml, .circleci, or any other CI configuration** allowed
+- All builds, tests, and quality checks must be executed manually only via Makefile targets
+- This rule is permanent and non-negotiable
 
 ---
 

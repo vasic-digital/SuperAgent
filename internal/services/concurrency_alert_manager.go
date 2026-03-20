@@ -146,10 +146,10 @@ type alertTrackingInfo struct {
 
 // rateLimitTracker tracks rate limiting state for a channel
 type rateLimitTracker struct {
-	mu           sync.RWMutex
-	count        int       // Number of alerts in current window
-	windowStart  time.Time // Start of current window
-	resetPending bool      // Whether a reset is pending
+	mu           sync.RWMutex //nolint:unused
+	count        int          // Number of alerts in current window
+	windowStart  time.Time    // Start of current window
+	resetPending bool         // Whether a reset is pending
 }
 
 // circuitBreakerState tracks circuit breaker state for a channel
@@ -258,7 +258,7 @@ func (am *ConcurrencyAlertManager) recordRateLimitUsage(channel string) {
 }
 
 // getRateLimitTracker returns the current rate limit state for a channel (for debugging/monitoring)
-func (am *ConcurrencyAlertManager) getRateLimitTracker(channel string) *rateLimitTracker {
+func (am *ConcurrencyAlertManager) getRateLimitTracker(channel string) *rateLimitTracker { //nolint:unused
 	am.mu.RLock()
 	defer am.mu.RUnlock()
 	return am.rateLimitTrackers[channel]
@@ -407,7 +407,7 @@ func (am *ConcurrencyAlertManager) recordCircuitBreakerFailure(channel string) {
 }
 
 // getCircuitBreakerState returns the current circuit breaker state for a channel (for debugging/monitoring)
-func (am *ConcurrencyAlertManager) getCircuitBreakerState(channel string) *circuitBreakerState {
+func (am *ConcurrencyAlertManager) getCircuitBreakerState(channel string) *circuitBreakerState { //nolint:unused
 	am.mu.RLock()
 	defer am.mu.RUnlock()
 	return am.circuitBreakerStates[channel]
@@ -1409,7 +1409,7 @@ func (am *ConcurrencyAlertManager) buildWebhookPayload(alert ConcurrencyAlert) (
 // buildSlackPayload builds Slack webhook payload
 func (am *ConcurrencyAlertManager) buildSlackPayload(alert ConcurrencyAlert) map[string]interface{} {
 	// Determine color based on severity
-	color := "good"
+	var color string
 	switch alert.Severity {
 	case SeverityCritical:
 		color = "danger"
@@ -1629,19 +1629,19 @@ func (am *ConcurrencyAlertManager) sendEmailWithTLS(addr string, auth smtp.Auth,
 
 	// Authenticate if credentials provided
 	if auth != nil {
-		if err := client.Auth(auth); err != nil {
-			return fmt.Errorf("SMTP authentication failed: %w", err)
+		if authErr := client.Auth(auth); authErr != nil {
+			return fmt.Errorf("SMTP authentication failed: %w", authErr)
 		}
 	}
 
 	// Set sender and recipients
-	if err := client.Mail(fromAddress); err != nil {
-		return fmt.Errorf("failed to set sender: %w", err)
+	if mailErr := client.Mail(fromAddress); mailErr != nil {
+		return fmt.Errorf("failed to set sender: %w", mailErr)
 	}
 
 	for _, recipient := range am.config.EmailRecipients {
-		if err := client.Rcpt(recipient); err != nil {
-			return fmt.Errorf("failed to set recipient %s: %w", recipient, err)
+		if rcptErr := client.Rcpt(recipient); rcptErr != nil {
+			return fmt.Errorf("failed to set recipient %s: %w", recipient, rcptErr)
 		}
 	}
 
@@ -1675,28 +1675,28 @@ func (am *ConcurrencyAlertManager) sendEmailWithSTARTTLS(addr string, auth smtp.
 			ServerName: am.config.SMTPHost,
 			MinVersion: tls.VersionTLS12,
 		}
-		if err := client.StartTLS(config); err != nil {
+		if tlsErr := client.StartTLS(config); tlsErr != nil {
 			am.logger.Warning("STARTTLS failed, continuing without TLS", logrus.Fields{
-				"error": err.Error(),
+				"error": tlsErr.Error(),
 			})
 		}
 	}
 
 	// Authenticate if credentials provided
 	if auth != nil {
-		if err := client.Auth(auth); err != nil {
-			return fmt.Errorf("SMTP authentication failed: %w", err)
+		if authErr := client.Auth(auth); authErr != nil {
+			return fmt.Errorf("SMTP authentication failed: %w", authErr)
 		}
 	}
 
 	// Set sender and recipients
-	if err := client.Mail(fromAddress); err != nil {
-		return fmt.Errorf("failed to set sender: %w", err)
+	if mailErr := client.Mail(fromAddress); mailErr != nil {
+		return fmt.Errorf("failed to set sender: %w", mailErr)
 	}
 
 	for _, recipient := range am.config.EmailRecipients {
-		if err := client.Rcpt(recipient); err != nil {
-			return fmt.Errorf("failed to set recipient %s: %w", recipient, err)
+		if rcptErr := client.Rcpt(recipient); rcptErr != nil {
+			return fmt.Errorf("failed to set recipient %s: %w", recipient, rcptErr)
 		}
 	}
 

@@ -446,6 +446,8 @@ func (s *Service) checkServiceHealth(ctx context.Context) {
 }
 
 // markServiceUnavailable marks a service as temporarily unavailable.
+//
+//nolint:unused
 func (s *Service) markServiceUnavailable(service string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

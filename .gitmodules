@@ -394,3 +394,15 @@
 [submodule "cli_agents/junie"]
 	path = cli_agents/junie
 	url = git@github.com:JetBrains/junie.git
+[submodule "HelixQA"]
+	path = HelixQA
+	url = git@github.com:HelixDevelopment/HelixQA.git
+[submodule "DocProcessor"]
+	path = DocProcessor
+	url = git@github.com:vasic-digital/DocProcessor.git
+[submodule "LLMOrchestrator"]
+	path = LLMOrchestrator
+	url = git@github.com:vasic-digital/LLMOrchestrator.git
+[submodule "VisionEngine"]
+	path = VisionEngine
+	url = git@github.com:vasic-digital/VisionEngine.git

@@ -66,7 +66,7 @@ func convertToExtractedTasks(internal []*models.BackgroundTask) []*extractedmode
 }
 
 // convertTaskStatus converts internal TaskStatus to extracted TaskStatus
-func convertTaskStatus(status models.TaskStatus) extractedmodels.TaskStatus {
+func convertTaskStatus(status models.TaskStatus) extractedmodels.TaskStatus { //nolint:unused
 	return extractedmodels.TaskStatus(status)
 }
 
@@ -204,7 +204,7 @@ func convertToInternalStuckAnalysis(extracted *extractedbackground.StuckAnalysis
 }
 
 // convertToExtractedStuckAnalysis converts internal StuckAnalysis to extracted StuckAnalysis
-func convertToExtractedStuckAnalysis(internal *StuckAnalysis) *extractedbackground.StuckAnalysis {
+func convertToExtractedStuckAnalysis(internal *StuckAnalysis) *extractedbackground.StuckAnalysis { //nolint:unused
 	if internal == nil {
 		return nil
 	}
@@ -262,7 +262,7 @@ func convertToInternalWorkerStatus(extracted *extractedbackground.WorkerStatus) 
 }
 
 // convertToExtractedWorkerStatus converts internal WorkerStatus to extracted WorkerStatus
-func convertToExtractedWorkerStatus(internal *WorkerStatus) *extractedbackground.WorkerStatus {
+func convertToExtractedWorkerStatus(internal *WorkerStatus) *extractedbackground.WorkerStatus { //nolint:unused
 	if internal == nil {
 		return nil
 	}

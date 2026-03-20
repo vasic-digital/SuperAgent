@@ -265,10 +265,10 @@ func TestDebateSecurityService_Sanitize(t *testing.T) {
 			BlockedPatterns:      []string{`secret\-\w+`},
 			ContentFilterEnabled: true,
 		}
-		svc := NewDebateSecurityServiceWithConfig(logger, config)
+		securitySvc := NewDebateSecurityServiceWithConfig(logger, config)
 
 		response := "This contains secret-password123"
-		sanitized, err := svc.SanitizeResponse(ctx, response)
+		sanitized, err := securitySvc.SanitizeResponse(ctx, response)
 		assert.NoError(t, err)
 		assert.Contains(t, sanitized, "[FILTERED]")
 	})

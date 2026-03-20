@@ -35,8 +35,8 @@ type ProviderHealth struct {
 	ErrorCount    int64
 	TotalRequests int64
 	LastError     string
-	Weight        float64 // Dynamic weight based on performance
-	mu            sync.RWMutex
+	Weight        float64      // Dynamic weight based on performance
+	mu            sync.RWMutex //nolint:unused
 }
 
 // Routing strategies
@@ -156,7 +156,7 @@ type WeightedStrategy struct {
 // HealthBasedStrategy implements health-based routing
 type HealthBasedStrategy struct {
 	circuitBreakers  *CircuitBreakerPattern
-	providerRegistry interface {
+	providerRegistry interface { //nolint:unused
 		GetCircuitBreaker(name string) *CircuitBreaker
 	}
 }
@@ -569,7 +569,7 @@ func (s *LatencyBasedStrategy) SelectProvider(providers map[string]LLMProvider, 
 	lowestLatency := math.MaxFloat64
 
 	// Collect providers with metrics
-	providersWithMetrics := make([]string, 0)
+	providersWithMetrics := make([]string, 0) //nolint:unused
 	providersWithoutMetrics := make([]string, 0)
 
 	for name := range providers {
@@ -581,7 +581,7 @@ func (s *LatencyBasedStrategy) SelectProvider(providers map[string]LLMProvider, 
 
 		if hasHistory {
 			avgLatency := metrics.GetAverageLatency()
-			providersWithMetrics = append(providersWithMetrics, name)
+			providersWithMetrics = append(providersWithMetrics, name) //nolint:staticcheck
 
 			if avgLatency < lowestLatency {
 				lowestLatency = avgLatency

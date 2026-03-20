@@ -580,7 +580,7 @@ func (r *StandardBenchmarkRunner) evaluateResponse(ctx context.Context, run *Ben
 	}
 
 	// Code execution evaluation
-	if task.TestCases != nil && len(task.TestCases) > 0 && r.codeExecutor != nil {
+	if len(task.TestCases) > 0 && r.codeExecutor != nil {
 		testResults, err := r.codeExecutor.Validate(ctx, response, "python", task.TestCases)
 		if err != nil {
 			return false, 0

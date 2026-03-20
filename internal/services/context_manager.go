@@ -673,7 +673,7 @@ func (cm *ContextManager) extractKeywords(requestType string) []string {
 	return keywords
 }
 
-func (cm *ContextManager) isRelevant(entry *ContextEntry, requestType string) bool {
+func (cm *ContextManager) isRelevant(entry *ContextEntry, requestType string) bool { //nolint:unused
 	// Simple relevance logic - can be enhanced with ML
 	switch requestType {
 	case "code_completion":

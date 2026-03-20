@@ -95,10 +95,10 @@ type GeminiCLIProvider struct {
 
 // geminiJSONResponse represents the JSON output from Gemini CLI
 type geminiJSONResponse struct {
-	Content string                 `json:"content"`
-	Model   string                 `json:"model"`
-	Usage   geminiUsageResponse    `json:"usage"`
-	Error   string                 `json:"error,omitempty"`
+	Content string              `json:"content"`
+	Model   string              `json:"model"`
+	Usage   geminiUsageResponse `json:"usage"`
+	Error   string              `json:"error,omitempty"`
 }
 
 // geminiUsageResponse represents the usage field from Gemini CLI JSON output
@@ -110,11 +110,11 @@ type geminiUsageResponse struct {
 
 // geminiStreamEvent represents a single JSONL event from Gemini CLI streaming
 type geminiStreamEvent struct {
-	Type      string              `json:"type"`
-	SessionID string              `json:"sessionId,omitempty"`
-	Content   string              `json:"content,omitempty"`
+	Type      string               `json:"type"`
+	SessionID string               `json:"sessionId,omitempty"`
+	Content   string               `json:"content,omitempty"`
 	Usage     *geminiUsageResponse `json:"usage,omitempty"`
-	Error     string              `json:"error,omitempty"`
+	Error     string               `json:"error,omitempty"`
 }
 
 // Known Gemini CLI models
@@ -524,7 +524,7 @@ func (p *GeminiCLIProvider) CompleteStream(
 			}
 		}
 
-		_ = cmd.Wait()
+		_ = cmd.Wait() //nolint:errcheck
 
 		// If no result event was received, send final aggregated response
 		finalContent := fullContent.String()

@@ -144,10 +144,6 @@ func NewUpstageProviderWithRetry(apiKey, baseURL, model string, retryConfig Retr
 
 func (p *UpstageProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
 	startTime := time.Now()
-	requestID := req.ID
-	if requestID == "" {
-		requestID = fmt.Sprintf("upstage-%d", time.Now().UnixNano())
-	}
 
 	uReq := p.convertRequest(req)
 

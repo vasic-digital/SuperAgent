@@ -144,10 +144,6 @@ func NewKimiProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryCo
 
 func (p *KimiProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
 	startTime := time.Now()
-	requestID := req.ID
-	if requestID == "" {
-		requestID = fmt.Sprintf("kimi-%d", time.Now().UnixNano())
-	}
 
 	kReq := p.convertRequest(req)
 

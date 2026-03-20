@@ -147,10 +147,6 @@ func NewZhipuProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryC
 
 func (p *ZhipuProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
 	startTime := time.Now()
-	requestID := req.ID
-	if requestID == "" {
-		requestID = fmt.Sprintf("zhipu-%d", time.Now().UnixNano())
-	}
 
 	zReq := p.convertRequest(req)
 

@@ -159,10 +159,7 @@ func IsRetryable(err error) bool {
 		return true
 	}
 	var networkErr *NetworkError
-	if errors.As(err, &networkErr) {
-		return true
-	}
-	return false
+	return errors.As(err, &networkErr)
 }
 
 // IsCacheMiss checks if the error is a cache miss

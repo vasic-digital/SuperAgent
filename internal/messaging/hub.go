@@ -353,9 +353,9 @@ func (h *MessagingHub) SubscribeTasks(ctx context.Context, queue string, handler
 	if h.fallback != nil {
 		h.metrics.FallbackUsages.Add(1)
 		sub, err = h.fallback.Subscribe(ctx, queue, func(ctx context.Context, msg *Message) error {
-			task, err := TaskFromMessage(msg)
-			if err != nil {
-				return err
+			task, err2 := TaskFromMessage(msg)
+			if err2 != nil {
+				return err2
 			}
 			return wrappedHandler(ctx, task)
 		}, opts...)
@@ -453,9 +453,9 @@ func (h *MessagingHub) SubscribeEvents(ctx context.Context, topic string, handle
 	if h.fallback != nil {
 		h.metrics.FallbackUsages.Add(1)
 		sub, err = h.fallback.Subscribe(ctx, topic, func(ctx context.Context, msg *Message) error {
-			event, err := EventFromMessage(msg)
-			if err != nil {
-				return err
+			event, err2 := EventFromMessage(msg)
+			if err2 != nil {
+				return err2
 			}
 			return wrappedHandler(ctx, event)
 		}, opts...)

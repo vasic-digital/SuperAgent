@@ -148,7 +148,7 @@ func (p *HTTPClientPool) GetClient(host string) *http.Client {
 	defer p.mu.Unlock()
 
 	// Double-check after acquiring write lock
-	if client, exists := p.clients[host]; exists {
+	if client, exists = p.clients[host]; exists {
 		return client
 	}
 
@@ -200,9 +200,9 @@ func (p *HTTPClientPool) DoWithContext(ctx context.Context, req *http.Request) (
 		// Clone request for retry
 		reqCopy := req.Clone(ctx)
 		if req.Body != nil && req.GetBody != nil {
-			body, err := req.GetBody()
-			if err != nil {
-				return nil, fmt.Errorf("failed to get request body: %w", err)
+			body, err2 := req.GetBody()
+			if err2 != nil {
+				return nil, fmt.Errorf("failed to get request body: %w", err2)
 			}
 			reqCopy.Body = body
 		}

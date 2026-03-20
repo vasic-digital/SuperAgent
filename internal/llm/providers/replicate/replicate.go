@@ -511,7 +511,7 @@ func (p *Provider) pollPrediction(ctx context.Context, url string) (*PredictionR
 	}
 }
 
-func (p *Provider) calculateBackoff(attempt int) time.Duration {
+func (p *Provider) calculateBackoff(attempt int) time.Duration { //nolint:unused
 	delay := p.retryConfig.InitialDelay
 	for i := 1; i < attempt; i++ {
 		delay = time.Duration(float64(delay) * p.retryConfig.Multiplier)

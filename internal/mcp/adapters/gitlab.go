@@ -455,7 +455,7 @@ func (p *GitLabProject) Serialize() ([]byte, error) {
 	return json.Marshal(p)
 }
 
-func formatGitLabProjects(projects []GitLabProject) string {
+func formatGitLabProjects(projects []GitLabProject) string { //nolint:unused
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("Found %d projects:\n\n", len(projects)))
 

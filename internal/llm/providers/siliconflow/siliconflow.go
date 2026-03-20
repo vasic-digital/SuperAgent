@@ -145,10 +145,6 @@ func NewSiliconFlowProviderWithRetry(apiKey, baseURL, model string, retryConfig 
 
 func (p *SiliconFlowProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
 	startTime := time.Now()
-	requestID := req.ID
-	if requestID == "" {
-		requestID = fmt.Sprintf("siliconflow-%d", time.Now().UnixNano())
-	}
 
 	sfReq := p.convertRequest(req)
 

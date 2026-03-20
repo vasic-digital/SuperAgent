@@ -152,8 +152,15 @@ func (tr *ToolRegistry) RefreshTools(ctx context.Context) error {
 	}
 
 	// Add LSP-based tools (code actions)
-	if tr.lspClient != nil {
-		// LSP tools would be added here when implemented
+	if tr.lspClient != nil { //nolint:staticcheck
+		// Placeholder LSP tool until full implementation
+		wrapper := &LSPToolWrapper{
+			name:        "lsp_diagnostic",
+			description: "Get diagnostics from LSP server (placeholder)",
+			client:      tr.lspClient,
+		}
+		tr.tools[wrapper.Name()] = wrapper
+		log.Printf("Added placeholder LSP tool: %s", wrapper.Name())
 	}
 
 	tr.lastRefresh = time.Now()
@@ -243,8 +250,42 @@ func (w *MCPToolWrapper) Source() string {
 	return "mcp"
 }
 
-// LSPToolWrapper would wrap LSP-based tools (code actions, etc.)
-// Implementation would be added when LSP tools are implemented
+// LSPToolWrapper wraps LSP-based tools (code actions, etc.)
+type LSPToolWrapper struct {
+	name        string
+	description string
+	client      *LSPClient
+}
+
+func (w *LSPToolWrapper) Name() string {
+	return w.name
+}
+
+func (w *LSPToolWrapper) Description() string {
+	return w.description
+}
+
+func (w *LSPToolWrapper) Parameters() map[string]interface{} {
+	// Return minimal schema for LSP tool
+	return map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"file": map[string]interface{}{
+				"type":        "string",
+				"description": "File path",
+			},
+		},
+	}
+}
+
+func (w *LSPToolWrapper) Execute(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	// Placeholder implementation
+	return nil, fmt.Errorf("LSP tools not yet implemented")
+}
+
+func (w *LSPToolWrapper) Source() string {
+	return "lsp"
+}
 
 // UnifiedSearchOptions configures unified tool search
 type UnifiedSearchOptions struct {

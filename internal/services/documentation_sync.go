@@ -66,7 +66,7 @@ func (ds *DocumentationSync) SyncConstitutionToDocumentation(projectRoot string,
 func (ds *DocumentationSync) generateConstitutionSection(constitution *Constitution) string {
 	var content strings.Builder
 
-	content.WriteString(fmt.Sprintf("# Project Constitution\n\n"))
+	content.WriteString("# Project Constitution\n\n")
 	content.WriteString(fmt.Sprintf("**Version:** %s | **Updated:** %s\n\n",
 		constitution.Version,
 		constitution.UpdatedAt.Format("2006-01-02 15:04")))

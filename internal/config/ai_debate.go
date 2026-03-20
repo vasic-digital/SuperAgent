@@ -238,9 +238,8 @@ func (p *DebateParticipant) Validate(globalMaxRounds int) error {
 	}
 
 	// Validate maximal repeat rounds
-	maxRounds := globalMaxRounds
 	if p.MaximalRepeatRounds != nil {
-		maxRounds = *p.MaximalRepeatRounds
+		maxRounds := *p.MaximalRepeatRounds
 		if maxRounds < 1 {
 			return fmt.Errorf("participant %s maximal_repeat_rounds must be at least 1, got %d", p.Name, maxRounds)
 		}

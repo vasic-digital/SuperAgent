@@ -727,9 +727,9 @@ func (t *HTTPMCPTransport) Send(ctx context.Context, message interface{}) error 
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("HTTP request failed with status %d - failed to read error body: %w", resp.StatusCode, err)
+		body, err2 := io.ReadAll(resp.Body)
+		if err2 != nil {
+			return fmt.Errorf("HTTP request failed with status %d - failed to read error body: %w", resp.StatusCode, err2)
 		}
 		return fmt.Errorf("HTTP request failed with status %d: %s", resp.StatusCode, string(body))
 	}

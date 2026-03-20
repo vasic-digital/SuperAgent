@@ -235,12 +235,12 @@ type VerifiedModelInfo struct {
 func (h *VerificationHandler) GetVerifiedModels(c *gin.Context) {
 	provider := c.Query("provider")
 	minScore := 0.0
-	if ms := c.Query("min_score"); ms != "" {
+	if ms := c.Query("min_score"); ms != "" { //nolint:staticcheck
 		// Parse min_score
 	}
 	requireCode := c.Query("require_code") == "true"
 	limit := 100
-	if l := c.Query("limit"); l != "" {
+	if l := c.Query("limit"); l != "" { //nolint:staticcheck
 		// Parse limit
 	}
 

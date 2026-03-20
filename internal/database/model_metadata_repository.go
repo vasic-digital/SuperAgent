@@ -263,11 +263,10 @@ func (r *ModelMetadataRepository) ListModels(ctx context.Context, providerID str
 	if offset > 0 {
 		query += fmt.Sprintf(" OFFSET $%d", argIdx)
 		args = append(args, offset)
-		argIdx++
 	}
 
 	var total int
-	countArgs := args
+	var countArgs []interface{}
 	if limit > 0 {
 		countArgs = args[:len(args)-2]
 	} else {

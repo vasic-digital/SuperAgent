@@ -2,7 +2,6 @@ package gemini
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
@@ -532,7 +531,7 @@ func (p *GeminiUnifiedProvider) SetPreferredMethod(method string) {
 
 // GetAvailableAccessMethods returns all currently available access methods.
 func (p *GeminiUnifiedProvider) GetAvailableAccessMethods() []string {
-	_ = p.Initialize()
+	_ = p.Initialize() //nolint:errcheck
 
 	var methods []string
 
@@ -601,39 +600,4 @@ func GetGeminiProviderInfo() map[string]interface{} {
 		"tier":               1,
 		"priority":           1,
 	}
-}
-
-// buildPromptFromRequest extracts a text prompt from an LLMRequest.
-// Shared helper used by CLI and ACP sub-providers.
-func buildPromptFromRequest(req *models.LLMRequest) string {
-	var b []byte
-
-	for _, msg := range req.Messages {
-		switch msg.Role {
-		case "system":
-			b = append(b, "System: "...)
-			b = append(b, msg.Content...)
-			b = append(b, "\n\n"...)
-		case "user":
-			b = append(b, msg.Content...)
-			b = append(b, '\n')
-		case "assistant":
-			b = append(b, "Assistant: "...)
-			b = append(b, msg.Content...)
-			b = append(b, "\n\n"...)
-		}
-	}
-
-	prompt := string(b)
-	if prompt == "" && req.Prompt != "" {
-		prompt = req.Prompt
-	}
-
-	return prompt
-}
-
-// marshalJSON is a convenience wrapper that ignores marshal errors for metadata.
-func marshalJSON(v interface{}) string {
-	data, _ := json.Marshal(v) //nolint:errcheck
-	return string(data)
 }

@@ -178,10 +178,8 @@ func (l *LongTermMemory) Store(lesson string, importance float64, context map[st
 	for _, entry := range l.entries {
 		if entry.Content == lesson {
 			entry.Importance = (entry.Importance + importance) / 2
-			if context != nil {
-				for k, v := range context {
-					entry.Context[k] = v
-				}
+			for k, v := range context {
+				entry.Context[k] = v
 			}
 			entry.Access()
 			return entry

@@ -130,8 +130,8 @@ var _ llmprovider.LLMProvider = (*adaptedProvider)(nil)
 // to the orchestrator.ProviderRegistry interface.
 // It also supports OAuth and CLI-based providers via DebateTeamConfig fallback.
 type ProviderRegistryBridge struct {
-	registry       *services.ProviderRegistry
-	debateTeamCfg  *services.DebateTeamConfig
+	registry      *services.ProviderRegistry
+	debateTeamCfg *services.DebateTeamConfig
 }
 
 // NewProviderRegistryBridge creates a new bridge to the services provider registry.

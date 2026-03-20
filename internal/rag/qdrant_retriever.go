@@ -54,7 +54,7 @@ func (r *QdrantDenseRetriever) Retrieve(ctx context.Context, query string, opts 
 	}
 
 	// Add filters if specified
-	if opts.Filter != nil && len(opts.Filter) > 0 {
+	if len(opts.Filter) > 0 {
 		qdrantOpts.Filter = opts.Filter
 	}
 
@@ -121,7 +121,7 @@ func pointToDocument(point qdrant.ScoredPoint) *Document {
 	return doc
 }
 
-func extractMetadata(payload map[string]interface{}) map[string]interface{} {
+func extractMetadata(payload map[string]interface{}) map[string]interface{} { //nolint:unused
 	if payload == nil {
 		return make(map[string]interface{})
 	}
@@ -129,7 +129,7 @@ func extractMetadata(payload map[string]interface{}) map[string]interface{} {
 }
 
 // toFloat32Slice converts float64 slice to float32 slice for embeddings
-func toFloat32Slice(embedding []float64) []float32 {
+func toFloat32Slice(embedding []float64) []float32 { //nolint:unused
 	result := make([]float32, len(embedding))
 	for i, v := range embedding {
 		result[i] = float32(v)

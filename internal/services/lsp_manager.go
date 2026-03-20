@@ -889,7 +889,7 @@ func (m *LSPManager) ExecuteLSPRequest(ctx context.Context, req LSPRequest) (*LS
 }
 
 // openDocument sends textDocument/didOpen notification
-func (m *LSPManager) openDocument(ctx context.Context, conn *LSPConnection, fileURI, languageID, text string) error {
+func (m *LSPManager) openDocument(ctx context.Context, conn *LSPConnection, fileURI, languageID, text string) error { //nolint:unused
 	params := LSPDidOpenTextDocumentParams{
 		TextDocument: LSPTextDocumentItem{
 			URI:        fileURI,

@@ -244,7 +244,7 @@ func RunMigration(db *PostgresDB, migrations []string) error {
 }
 
 // Migrations for the LLM facade
-var migrations = []string{
+var migrations = []string{ //nolint:unused
 	`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`,
 
 	`CREATE TABLE IF NOT EXISTS users (
