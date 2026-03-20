@@ -16,14 +16,12 @@ require (
 	digital.vasic.containers v0.0.0-00010101000000-000000000000
 	digital.vasic.database v0.0.0-00010101000000-000000000000
 	digital.vasic.debate v0.0.0-00010101000000-000000000000
-	digital.vasic.docprocessor v0.0.0-00010101000000-000000000000
 	digital.vasic.eventbus v0.0.0-00010101000000-000000000000
 	digital.vasic.formatters v0.0.0-00010101000000-000000000000
 	digital.vasic.helixmemory v0.0.0-00010101000000-000000000000
 	digital.vasic.helixqa v0.0.0-00010101000000-000000000000
 	digital.vasic.helixspecifier v0.0.0-00010101000000-000000000000
 	digital.vasic.llmops v0.0.0-00010101000000-000000000000
-	digital.vasic.llmorchestrator v0.0.0-00010101000000-000000000000
 	digital.vasic.llmprovider v0.0.0
 	digital.vasic.llmsverifier v0.0.0-00010101000000-000000000000
 	digital.vasic.mcp v0.0.0-00010101000000-000000000000
@@ -40,7 +38,6 @@ require (
 	digital.vasic.streaming v0.0.0-00010101000000-000000000000
 	digital.vasic.toolschema v0.0.0-00010101000000-000000000000
 	digital.vasic.vectordb v0.0.0-00010101000000-000000000000
-	digital.vasic.visionengine v0.0.0-00010101000000-000000000000
 	github.com/ClickHouse/ch-go v0.69.0
 	github.com/ClickHouse/clickhouse-go/v2 v2.41.0
 	github.com/DATA-DOG/go-sqlmock v1.5.2

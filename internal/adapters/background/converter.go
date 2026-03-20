@@ -142,11 +142,13 @@ func convertToInternalStuckAnalysis(extracted *extractedbackground.StuckAnalysis
 }
 
 // convertTaskStatus converts internal TaskStatus to extracted TaskStatus
+// nolint:unused // Used in tests and for future adapter expansion
 func convertTaskStatus(status internalmodels.TaskStatus) extractedmodels.TaskStatus {
 	return extractedmodels.TaskStatus(status)
 }
 
 // convertToExtractedSystemResources converts internal SystemResources to extracted SystemResources
+// nolint:unused // Used in tests and for future adapter expansion
 func convertToExtractedSystemResources(internal *internalbackground.SystemResources) *extractedbackground.SystemResources {
 	if internal == nil {
 		return nil
@@ -163,6 +165,7 @@ func convertToExtractedSystemResources(internal *internalbackground.SystemResour
 }
 
 // convertToExtractedStuckAnalysis converts internal StuckAnalysis to extracted StuckAnalysis
+// nolint:unused // Used in tests and for future adapter expansion
 func convertToExtractedStuckAnalysis(internal *internalbackground.StuckAnalysis) *extractedbackground.StuckAnalysis {
 	if internal == nil {
 		return nil

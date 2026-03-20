@@ -1,0 +1,321 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixAgent Debate Orchestrator Test Bank
+# Tests debate sessions, rounds, voting, and consensus
+
+version: "1.0"
+name: "HelixAgent Debate Orchestrator"
+description: "Comprehensive QA tests for debate orchestration system"
+metadata:
+  author: "HelixDevelopment"
+  app: "HelixAgent"
+  version: "1.0.0"
+
+test_cases:
+  # ==================== Session Management ====================
+  - id: DEBATE-SESSION-001
+    name: "Create debate session with minimal config"
+    category: functional
+    priority: critical
+    platforms: [desktop]
+    steps:
+      - name: "Create session"
+        action: "POST /v1/debate with topic only"
+        expected: "Session created with defaults"
+      - name: "Verify defaults applied"
+        action: "Check config uses default topology and voting"
+        expected: "Mesh topology, weighted voting"
+    tags: [session, creation, defaults]
+    estimated_duration: "10s"
+
+  - id: DEBATE-SESSION-002
+    name: "Create debate with custom topology"
+    category: functional
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Create star topology session"
+        action: "POST /v1/debate with topology: star"
+        expected: "Session created with star topology"
+      - name: "Verify topology applied"
+        action: "GET /v1/debate/{id}/config"
+        expected: "Topology is star"
+    tags: [session, topology, config]
+    estimated_duration: "10s"
+
+  - id: DEBATE-SESSION-003
+    name: "Create debate with specific providers"
+    category: functional
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Create session with providers"
+        action: "POST /v1/debate with providers: [openai, anthropic, gemini]"
+        expected: "Session uses specified providers"
+      - name: "Verify provider assignment"
+        action: "Check positions use correct providers"
+        expected: "Each position has correct provider"
+    tags: [session, providers, selection]
+    estimated_duration: "15s"
+
+  # ==================== Round Execution ====================
+  - id: DEBATE-ROUND-001
+    name: "Execute initial proposal round"
+    category: integration
+    priority: critical
+    platforms: [desktop]
+    steps:
+      - name: "Create debate"
+        action: "POST /v1/debate with topic"
+        expected: "Session created"
+      - name: "Start proposal phase"
+        action: "POST /v1/debate/{id}/round with phase: proposal"
+        expected: "Round started"
+      - name: "Wait for completion"
+        action: "Poll round status"
+        expected: "All positions generate proposals"
+      - name: "Verify responses"
+        action: "Check each position has content"
+        expected: "5 proposals generated"
+    tags: [round, proposal, execution]
+    estimated_duration: "60s"
+
+  - id: DEBATE-ROUND-002
+    name: "Execute critique round after proposal"
+    category: integration
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Complete proposal round"
+        action: "Run proposal phase"
+        expected: "Proposals available"
+      - name: "Start critique round"
+        action: "POST /v1/debate/{id}/round with phase: critique"
+        expected: "Critique round started"
+      - name: "Verify critiques reference proposals"
+        action: "Check critique content"
+        expected: "Critiques address proposal points"
+    tags: [round, critique, flow]
+    estimated_duration: "90s"
+
+  # ==================== Voting ====================
+  - id: DEBATE-VOTE-001
+    name: "Weighted voting produces consensus"
+    category: functional
+    priority: critical
+    platforms: [desktop]
+    steps:
+      - name: "Complete debate rounds"
+        action: "Run full debate to voting phase"
+        expected: "All rounds complete"
+      - name: "Execute voting"
+        action: "POST /v1/debate/{id}/vote"
+        expected: "Vote calculated"
+      - name: "Verify winner selected"
+        action: "Check winner_position in response"
+        expected: "Single winner identified"
+    tags: [voting, consensus, weighted]
+    estimated_duration: "120s"
+
+  - id: DEBATE-VOTE-002
+    name: "Borda count voting with ranking"
+    category: functional
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Create debate with borda voting"
+        action: "POST /v1/debate with voting_method: borda"
+        expected: "Session uses borda method"
+      - name: "Complete and vote"
+        action: "Run full debate and vote"
+        expected: "Ranked results returned"
+      - name: "Verify ranking"
+        action: "Check all positions ranked"
+        expected: "Complete ranking available"
+    tags: [voting, borda, ranking]
+    estimated_duration: "120s"
+
+  - id: DEBATE-VOTE-003
+    name: "Condorcet voting with cycle detection"
+    category: functional
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Create condorcet debate"
+        action: "POST /v1/debate with voting_method: condorcet"
+        expected: "Session uses condorcet"
+      - name: "Run and vote"
+        action: "Complete debate and vote"
+        expected: "Vote results"
+      - name: "Check for cycles"
+        action: "Verify cycle detection if needed"
+        expected: "Borda fallback if cycle detected"
+    tags: [voting, condorcet, cycle]
+    estimated_duration: "120s"
+
+  # ==================== Reflexion ====================
+  - id: DEBATE-REFLEXION-001
+    name: "Reflexion improves debate quality"
+    category: integration
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Create debate with reflexion"
+        action: "POST /v1/debate with reflexion_enabled: true"
+        expected: "Reflexion enabled"
+      - name: "Run reflexion round"
+        action: "Execute reflexion phase"
+        expected: "Self-critique generated"
+      - name: "Verify improvement"
+        action: "Compare pre/post reflexion quality"
+        expected: "Quality metrics improved"
+    tags: [reflexion, improvement, quality]
+    estimated_duration: "90s"
+
+  # ==================== Dehallucination ====================
+  - id: DEBATE-DEHALL-001
+    name: "Dehallucination removes false claims"
+    category: integration
+    priority: critical
+    platforms: [desktop]
+    steps:
+      - name: "Create debate with dehallucination"
+        action: "POST /v1/debate with dehallucination: true"
+        expected: "Dehallucination phase included"
+      - name: "Run dehallucination"
+        action: "Execute dehallucination phase"
+        expected: "Fact-checking performed"
+      - name: "Verify claims validated"
+        action: "Check output for verified claims only"
+        expected: "Unverified claims removed"
+    tags: [dehallucination, accuracy, fact-check]
+    estimated_duration: "90s"
+
+  # ==================== Self-Evolvement ====================
+  - id: DEBATE-EVOLVE-001
+    name: "Self-evolvement adapts responses"
+    category: integration
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Enable self-evolvement"
+        action: "POST /v1/debate with self_evolvement: true"
+        expected: "Evolvement enabled"
+      - name: "Run evolvement phase"
+        action: "Execute self-evolvement"
+        expected: "Responses adapted"
+      - name: "Verify adaptation"
+        action: "Check responses show improvement"
+        expected: "Better quality after evolution"
+    tags: [evolvement, adaptation, quality]
+    estimated_duration: "90s"
+
+  # ==================== Persistence ====================
+  - id: DEBATE-PERSIST-001
+    name: "Debate session persists to database"
+    category: functional
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Create and run debate"
+        action: "Complete full debate"
+        expected: "Debate completes"
+      - name: "Query database"
+        action: "SELECT from debate_sessions"
+        expected: "Session record exists"
+      - name: "Verify data integrity"
+        action: "Check all fields populated"
+        expected: "Complete session data"
+    tags: [persistence, database, storage]
+    estimated_duration: "30s"
+
+  - id: DEBATE-PERSIST-002
+    name: "Debate turns are persisted"
+    category: functional
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Run multi-round debate"
+        action: "Complete 3+ rounds"
+        expected: "Rounds complete"
+      - name: "Query turns"
+        action: "SELECT from debate_turns"
+        expected: "All turns present"
+      - name: "Verify turn ordering"
+        action: "Check turn sequence is correct"
+        expected: "Proper chronological order"
+    tags: [persistence, turns, history]
+    estimated_duration: "30s"
+
+  # ==================== Provenance ====================
+  - id: DEBATE-PROV-001
+    name: "Provenance tracks all events"
+    category: functional
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Run debate"
+        action: "Complete full debate"
+        expected: "Debate completes"
+      - name: "Query provenance"
+        action: "GET /v1/debate/{id}/provenance"
+        expected: "Event log returned"
+      - name: "Verify event count"
+        action: "Count events in log"
+        expected: "All phases tracked"
+    tags: [provenance, audit, tracking]
+    estimated_duration: "30s"
+
+  # ==================== Approval Gates ====================
+  - id: DEBATE-GATE-001
+    name: "Approval gate blocks progression"
+    category: functional
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Create debate with gates"
+        action: "POST /v1/debate with approval_gates: true"
+        expected: "Gates enabled"
+      - name: "Try to skip gate"
+        action: "POST /v1/debate/{id}/round without approval"
+        expected: "Request blocked with 403"
+      - name: "Approve and proceed"
+        action: "POST /v1/debate/{id}/approve then continue"
+        expected: "Round starts after approval"
+    tags: [approval, gates, control]
+    estimated_duration: "30s"
+
+  # ==================== Performance ====================
+  - id: DEBATE-PERF-001
+    name: "Parallel LLM execution improves speed"
+    category: performance
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Run parallel debate"
+        action: "Execute round with parallel execution"
+        expected: "Round completes"
+      - name: "Measure duration"
+        action: "Compare to sequential execution"
+        expected: "At least 2x faster"
+    tags: [performance, parallel, speed]
+    estimated_duration: "60s"
+
+  - id: DEBATE-PERF-002
+    name: "Early consensus detection saves time"
+    category: performance
+    priority: medium
+    platforms: [desktop]
+    steps:
+      - name: "Create simple topic"
+        action: "POST /v1/debate with obvious answer topic"
+        expected: "Session created"
+      - name: "Run debate"
+        action: "Execute with early termination enabled"
+        expected: "Consensus detected early"
+      - name: "Verify early stop"
+        action: "Check not all rounds executed"
+        expected: "Debate terminated early"
+    tags: [performance, consensus, optimization]
+    estimated_duration: "30s"

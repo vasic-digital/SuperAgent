@@ -1,0 +1,393 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixAgent LLM Providers Test Bank
+# Tests all 43+ LLM provider integrations
+
+version: "1.0"
+name: "HelixAgent LLM Providers"
+description: "Comprehensive QA tests for all LLM provider integrations"
+metadata:
+  author: "HelixDevelopment"
+  app: "HelixAgent"
+  version: "1.0.0"
+
+test_cases:
+  # ==================== OpenAI Compatible Providers ====================
+  - id: PROV-OPENAI-001
+    name: "OpenAI GPT-4 completion"
+    category: integration
+    priority: critical
+    platforms: [desktop]
+    steps:
+      - name: "Send completion request"
+        action: "POST /v1/chat/completions with model: gpt-4"
+        expected: "Completion returned"
+      - name: "Verify response"
+        action: "Check response structure and content"
+        expected: "Valid OpenAI response format"
+    tags: [openai, completion, api]
+    estimated_duration: "20s"
+
+  - id: PROV-ANTHROPIC-001
+    name: "Anthropic Claude completion"
+    category: integration
+    priority: critical
+    platforms: [desktop]
+    steps:
+      - name: "Send Claude request"
+        action: "POST /v1/chat/completions with model: claude-3-5-sonnet"
+        expected: "Completion returned"
+      - name: "Verify Claude response"
+        action: "Check response has proper structure"
+        expected: "Valid Anthropic response converted to OpenAI format"
+    tags: [anthropic, claude, completion]
+    estimated_duration: "20s"
+
+  - id: PROV-GEMINI-001
+    name: "Google Gemini completion"
+    category: integration
+    priority: critical
+    platforms: [desktop]
+    steps:
+      - name: "Send Gemini request"
+        action: "POST /v1/chat/completions with model: gemini-1.5-pro"
+        expected: "Completion returned"
+      - name: "Verify response"
+        action: "Check Gemini response converted properly"
+        expected: "OpenAI-compatible format"
+    tags: [gemini, google, completion]
+    estimated_duration: "20s"
+
+  - id: PROV-DEEPSEEK-001
+    name: "DeepSeek completion"
+    category: integration
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Send DeepSeek request"
+        action: "POST /v1/chat/completions with model: deepseek-chat"
+        expected: "Completion returned"
+      - name: "Verify response"
+        action: "Check response structure"
+        expected: "Valid response"
+    tags: [deepseek, completion, api]
+    estimated_duration: "20s"
+
+  # ==================== OpenRouter ====================
+  - id: PROV-OPENROUTER-001
+    name: "OpenRouter multi-model access"
+    category: integration
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Request via OpenRouter"
+        action: "POST /v1/chat/completions with model: openrouter/auto"
+        expected: "Completion from best model"
+      - name: "Verify routing"
+        action: "Check model used in response"
+        expected: "Model identifier in response"
+    tags: [openrouter, routing, completion]
+    estimated_duration: "25s"
+
+  # ==================== Chinese Providers ====================
+  - id: PROV-QWEN-001
+    name: "Alibaba Qwen completion"
+    category: integration
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Send Qwen request"
+        action: "POST /v1/chat/completions with model: qwen-max"
+        expected: "Completion returned"
+      - name: "Verify response"
+        action: "Check Chinese text handling"
+        expected: "Proper UTF-8 encoding"
+    tags: [qwen, alibaba, chinese]
+    estimated_duration: "20s"
+
+  - id: PROV-ZHIPU-001
+    name: "Zhipu AI completion"
+    category: integration
+    priority: medium
+    platforms: [desktop]
+    steps:
+      - name: "Send Zhipu request"
+        action: "POST /v1/chat/completions with model: glm-4"
+        expected: "Completion returned"
+    tags: [zhipu, chinese, completion]
+    estimated_duration: "20s"
+
+  # ==================== Open Source Providers ====================
+  - id: PROV-OLLAMA-001
+    name: "Ollama local model"
+    category: integration
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Send Ollama request"
+        action: "POST /v1/chat/completions with model: ollama/llama3"
+        expected: "Completion from local model"
+      - name: "Verify local execution"
+        action: "Check response source"
+        expected: "Local inference performed"
+    tags: [ollama, local, opensource]
+    estimated_duration: "30s"
+
+  - id: PROV-MISTRAL-001
+    name: "Mistral AI completion"
+    category: integration
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Send Mistral request"
+        action: "POST /v1/chat/completions with model: mistral-large"
+        expected: "Completion returned"
+    tags: [mistral, completion, api]
+    estimated_duration: "20s"
+
+  # ==================== Specialized Providers ====================
+  - id: PROV-CEREBRAS-001
+    name: "Cerebras fast inference"
+    category: integration
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Send Cerebras request"
+        action: "POST /v1/chat/completions with model: llama3.1-70b"
+        expected: "Fast completion"
+      - name: "Verify speed"
+        action: "Measure response time"
+        expected: "Response under 5 seconds"
+    tags: [cerebras, speed, inference]
+    estimated_duration: "15s"
+
+  - id: PROV-GROQ-001
+    name: "Groq fast inference"
+    category: integration
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Send Groq request"
+        action: "POST /v1/chat/completions with model: groq/llama3-70b"
+        expected: "Ultra-fast completion"
+      - name: "Verify speed"
+        action: "Measure TTFT"
+        expected: "TTFT under 1 second"
+    tags: [groq, speed, inference]
+    estimated_duration: "10s"
+
+  - id: PROV-PERPLEXITY-001
+    name: "Perplexity with citations"
+    category: integration
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Send Perplexity request"
+        action: "POST /v1/chat/completions with model: perplexity/llama3.1-70b"
+        expected: "Response with citations"
+    tags: [perplexity, citations, search]
+    estimated_duration: "25s"
+
+  # ==================== Tool-Enabled Providers ====================
+  - id: PROV-TOOLS-001
+    name: "OpenAI function calling"
+    category: integration
+    priority: critical
+    platforms: [desktop]
+    steps:
+      - name: "Send request with tools"
+        action: "POST /v1/chat/completions with tools definition"
+        expected: "Tool call returned"
+      - name: "Verify tool format"
+        action: "Check tool_call structure"
+        expected: "Valid function call format"
+    tags: [openai, tools, function-calling]
+    estimated_duration: "20s"
+
+  - id: PROV-TOOLS-002
+    name: "Anthropic tool use"
+    category: integration
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Send Claude request with tools"
+        action: "POST /v1/chat/completions with claude and tools"
+        expected: "Tool use response"
+      - name: "Verify conversion"
+        action: "Check Anthropic tools converted to OpenAI format"
+        expected: "Proper format conversion"
+    tags: [anthropic, tools, conversion]
+    estimated_duration: "20s"
+
+  # ==================== Streaming ====================
+  - id: PROV-STREAM-001
+    name: "Streaming with SSE format"
+    category: integration
+    priority: critical
+    platforms: [desktop]
+    steps:
+      - name: "Request streaming"
+        action: "POST /v1/chat/completions with stream: true"
+        expected: "SSE stream established"
+      - name: "Collect chunks"
+        action: "Read all data: events"
+        expected: "Multiple chunks received"
+      - name: "Verify completion"
+        action: "Check [DONE] marker"
+        expected: "Stream ends properly"
+    tags: [streaming, sse, api]
+    estimated_duration: "30s"
+
+  # ==================== Fallback Chain ====================
+  - id: PROV-FALLBACK-001
+    name: "Fallback on provider failure"
+    category: integration
+    priority: critical
+    platforms: [desktop]
+    steps:
+      - name: "Force provider failure"
+        action: "Use invalid API key for primary"
+        expected: "Fallback triggered"
+      - name: "Verify fallback"
+        action: "Check response from secondary provider"
+        expected: "Successful completion via fallback"
+    tags: [fallback, resilience, providers]
+    estimated_duration: "30s"
+
+  - id: PROV-FALLBACK-002
+    name: "Circuit breaker opens on repeated failures"
+    category: integration
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Trigger multiple failures"
+        action: "Send 5 failing requests"
+        expected: "Circuit breaker opens"
+      - name: "Verify circuit state"
+        action: "GET /v1/monitoring/circuit-breakers"
+        expected: "Circuit shows open state"
+    tags: [circuit-breaker, resilience, failures]
+    estimated_duration: "40s"
+
+  # ==================== Health Checks ====================
+  - id: PROV-HEALTH-001
+    name: "Provider health check"
+    category: functional
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Trigger health check"
+        action: "POST /v1/providers/health-check"
+        expected: "All providers checked"
+      - name: "Verify results"
+        action: "GET /v1/providers"
+        expected: "Health status updated"
+    tags: [health, providers, monitoring]
+    estimated_duration: "60s"
+
+  # ==================== Verification ====================
+  - id: PROV-VERIFY-001
+    name: "Provider verification scoring"
+    category: functional
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Run verification"
+        action: "POST /v1/verification/run"
+        expected: "Verification started"
+      - name: "Wait for completion"
+        action: "Poll verification status"
+        expected: "Verification completes"
+      - name: "Check scores"
+        action: "GET /v1/scoring"
+        expected: "Provider scores available"
+    tags: [verification, scoring, providers]
+    estimated_duration: "120s"
+
+  # ==================== Dynamic Model Discovery ====================
+  - id: PROV-DISCOVERY-001
+    name: "Discover models from provider"
+    category: functional
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Trigger discovery"
+        action: "POST /v1/discovery/refresh"
+        expected: "Discovery completed"
+      - name: "Verify models"
+        action: "GET /v1/models"
+        expected: "All available models listed"
+    tags: [discovery, models, providers]
+    estimated_duration: "60s"
+
+  # ==================== Error Handling ====================
+  - id: PROV-ERROR-001
+    name: "Rate limit handling"
+    category: negative
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Exceed rate limit"
+        action: "Send burst of requests"
+        expected: "429 rate limit error"
+      - name: "Verify error format"
+        action: "Check error response"
+        expected: "Proper error with retry-after"
+    tags: [error, rate-limit, providers]
+    estimated_duration: "20s"
+
+  - id: PROV-ERROR-002
+    name: "Invalid model error"
+    category: negative
+    priority: medium
+    platforms: [desktop]
+    steps:
+      - name: "Request non-existent model"
+        action: "POST /v1/chat/completions with model: invalid-model"
+        expected: "404 or 400 error"
+      - name: "Verify error message"
+        action: "Check error is informative"
+        expected: "Clear error message"
+    tags: [error, validation, providers]
+    estimated_duration: "10s"
+
+  # ==================== CLI Proxy Providers ====================
+  - id: PROV-CLI-001
+    name: "Claude CLI proxy"
+    category: integration
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Use Claude CLI mode"
+        action: "POST /v1/chat/completions via claude CLI"
+        expected: "Completion from Claude CLI"
+      - name: "Verify session continuity"
+        action: "Send follow-up message"
+        expected: "Context maintained"
+    tags: [claude, cli, proxy]
+    estimated_duration: "30s"
+
+  - id: PROV-CLI-002
+    name: "Gemini CLI proxy"
+    category: integration
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Use Gemini CLI mode"
+        action: "POST /v1/chat/completions via gemini CLI"
+        expected: "Completion from Gemini CLI"
+    tags: [gemini, cli, proxy]
+    estimated_duration: "30s"
+
+  - id: PROV-CLI-003
+    name: "Qwen ACP mode"
+    category: integration
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Use Qwen ACP"
+        action: "POST /v1/chat/completions via qwen ACP"
+        expected: "Completion from Qwen ACP"
+    tags: [qwen, acp, cli]
+    estimated_duration: "30s"

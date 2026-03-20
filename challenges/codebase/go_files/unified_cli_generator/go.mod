@@ -2,6 +2,6 @@ module unified-cli-generator
 
 go 1.24.0
 
-require llm-verifier v0.0.0
+require digital.vasic.llmsverifier v0.0.0
 
-replace llm-verifier => ../../../../LLMsVerifier/llm-verifier
+replace digital.vasic.llmsverifier => ../../../../LLMsVerifier/llm-verifier

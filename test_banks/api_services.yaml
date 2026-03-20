@@ -1,0 +1,381 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixAgent API Services Test Bank
+# Tests all API endpoints, providers, and core services
+
+version: "1.0"
+name: "HelixAgent API Services"
+description: "Comprehensive QA tests for HelixAgent API endpoints and services"
+metadata:
+  author: "HelixDevelopment"
+  app: "HelixAgent"
+  version: "1.0.0"
+
+test_cases:
+  # ==================== Health & Monitoring ====================
+  - id: API-HEALTH-001
+    name: "Health endpoint returns healthy status"
+    category: functional
+    priority: critical
+    platforms: [desktop]
+    steps:
+      - name: "Start HelixAgent server"
+        action: "Run ./bin/helixagent"
+        expected: "Server starts successfully"
+      - name: "Check health endpoint"
+        action: "GET http://localhost:7061/v1/health"
+        expected: "Response status 200 with healthy status"
+      - name: "Verify response structure"
+        action: "Validate JSON response contains status, version, timestamp"
+        expected: "All required fields present"
+    tags: [health, api, core]
+    estimated_duration: "10s"
+
+  - id: API-HEALTH-002
+    name: "Monitoring status endpoint returns comprehensive data"
+    category: functional
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Check monitoring status"
+        action: "GET http://localhost:7061/v1/monitoring/status"
+        expected: "Response status 200"
+      - name: "Verify provider health data"
+        action: "Check providers array in response"
+        expected: "Provider health status included"
+      - name: "Verify circuit breaker status"
+        action: "Check circuit_breakers in response"
+        expected: "Circuit breaker states included"
+    tags: [monitoring, api, providers]
+    estimated_duration: "15s"
+
+  # ==================== Provider Registry ====================
+  - id: API-PROVIDER-001
+    name: "Provider list returns all registered providers"
+    category: functional
+    priority: critical
+    platforms: [desktop]
+    steps:
+      - name: "Request provider list"
+        action: "GET http://localhost:7061/v1/providers"
+        expected: "Response status 200 with providers array"
+      - name: "Verify provider count"
+        action: "Check providers array length >= 40"
+        expected: "At least 40 providers registered"
+      - name: "Verify provider structure"
+        action: "Validate each provider has id, name, status"
+        expected: "All providers have required fields"
+    tags: [providers, registry, api]
+    estimated_duration: "10s"
+
+  - id: API-PROVIDER-002
+    name: "Provider health check updates status"
+    category: functional
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Trigger provider health check"
+        action: "POST http://localhost:7061/v1/providers/health-check"
+        expected: "Response status 200"
+      - name: "Verify health check completed"
+        action: "Check response contains checked_at timestamp"
+        expected: "Timestamp present and recent"
+    tags: [providers, health, api]
+    estimated_duration: "20s"
+
+  # ==================== LLM Completion ====================
+  - id: API-LLM-001
+    name: "Chat completion with default provider"
+    category: functional
+    priority: critical
+    platforms: [desktop]
+    steps:
+      - name: "Send chat completion request"
+        action: "POST http://localhost:7061/v1/chat/completions with model helixagent-debate"
+        expected: "Response status 200 with completion"
+      - name: "Verify response structure"
+        action: "Check response has choices, usage, model fields"
+        expected: "OpenAI-compatible response format"
+      - name: "Verify content"
+        action: "Check choices[0].message.content is non-empty"
+        expected: "Generated content present"
+    tags: [llm, completion, api]
+    estimated_duration: "30s"
+
+  - id: API-LLM-002
+    name: "Streaming chat completion"
+    category: functional
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Send streaming request"
+        action: "POST http://localhost:7061/v1/chat/completions with stream: true"
+        expected: "SSE stream established"
+      - name: "Receive chunks"
+        action: "Collect data: events from stream"
+        expected: "Multiple chunks received"
+      - name: "Verify stream completion"
+        action: "Check final [DONE] message"
+        expected: "Stream ends gracefully"
+    tags: [llm, streaming, api]
+    estimated_duration: "45s"
+
+  # ==================== Debate Orchestration ====================
+  - id: API-DEBATE-001
+    name: "Create debate session"
+    category: functional
+    priority: critical
+    platforms: [desktop]
+    steps:
+      - name: "Create new debate"
+        action: "POST http://localhost:7061/v1/debate with topic and config"
+        expected: "Response status 201 with session_id"
+      - name: "Verify session creation"
+        action: "Check session_id is valid UUID"
+        expected: "Valid session identifier returned"
+      - name: "Check debate status"
+        action: "GET http://localhost:7061/v1/debate/{session_id}"
+        expected: "Session exists with pending status"
+    tags: [debate, api, orchestration]
+    estimated_duration: "20s"
+
+  - id: API-DEBATE-002
+    name: "Execute full debate round"
+    category: integration
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Create debate session"
+        action: "POST http://localhost:7061/v1/debate with topic"
+        expected: "Session created"
+      - name: "Start debate round"
+        action: "POST http://localhost:7061/v1/debate/{session_id}/round"
+        expected: "Round started"
+      - name: "Wait for round completion"
+        action: "Poll for round completion"
+        expected: "Round completes within timeout"
+      - name: "Verify round results"
+        action: "GET http://localhost:7061/v1/debate/{session_id}/rounds"
+        expected: "Round results present with responses"
+    tags: [debate, round, api]
+    estimated_duration: "60s"
+
+  # ==================== MCP Protocol ====================
+  - id: API-MCP-001
+    name: "MCP server list returns all servers"
+    category: functional
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Request MCP servers"
+        action: "GET http://localhost:7061/v1/mcp/servers"
+        expected: "Response status 200 with servers array"
+      - name: "Verify server count"
+        action: "Check servers array length >= 15"
+        expected: "At least 15 MCP servers registered"
+      - name: "Verify server structure"
+        action: "Validate each server has name, status, type"
+        expected: "All servers have required fields"
+    tags: [mcp, servers, api]
+    estimated_duration: "10s"
+
+  - id: API-MCP-002
+    name: "Execute MCP tool"
+    category: integration
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "List available tools"
+        action: "GET http://localhost:7061/v1/mcp/tools"
+        expected: "Tools list returned"
+      - name: "Execute tool"
+        action: "POST http://localhost:7061/v1/mcp/execute with tool_name and params"
+        expected: "Tool execution result"
+      - name: "Verify result"
+        action: "Check result contains output or error"
+        expected: "Valid tool response structure"
+    tags: [mcp, tools, execution]
+    estimated_duration: "20s"
+
+  # ==================== Embeddings ====================
+  - id: API-EMBED-001
+    name: "Generate text embeddings"
+    category: functional
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Request embeddings"
+        action: "POST http://localhost:7061/v1/embeddings with text input"
+        expected: "Response status 200 with embeddings"
+      - name: "Verify embedding vector"
+        action: "Check data[0].embedding is array of floats"
+        expected: "Valid embedding vector"
+      - name: "Check dimensions"
+        action: "Validate embedding dimension matches model"
+        expected: "Correct embedding dimension"
+    tags: [embeddings, api]
+    estimated_duration: "15s"
+
+  # ==================== Vector Database ====================
+  - id: API-VECTOR-001
+    name: "Upsert vectors to collection"
+    category: functional
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Create collection"
+        action: "POST http://localhost:7061/v1/vectordb/collections with name and dimension"
+        expected: "Collection created"
+      - name: "Upsert vectors"
+        action: "POST http://localhost:7061/v1/vectordb/upsert with vectors"
+        expected: "Vectors stored successfully"
+      - name: "Search vectors"
+        action: "POST http://localhost:7061/v1/vectordb/search with query vector"
+        expected: "Similar vectors returned"
+    tags: [vectordb, search, api]
+    estimated_duration: "20s"
+
+  # ==================== RAG ====================
+  - id: API-RAG-001
+    name: "RAG retrieval with context"
+    category: integration
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Index documents"
+        action: "POST http://localhost:7061/v1/rag/index with documents"
+        expected: "Documents indexed"
+      - name: "Query RAG"
+        action: "POST http://localhost:7061/v1/rag/query with question"
+        expected: "Context-aware response with sources"
+      - name: "Verify sources"
+        action: "Check response includes source_documents"
+        expected: "Sources properly cited"
+    tags: [rag, retrieval, api]
+    estimated_duration: "30s"
+
+  # ==================== Formatters ====================
+  - id: API-FMT-001
+    name: "Format code with auto-detection"
+    category: functional
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Format Go code"
+        action: "POST http://localhost:7061/v1/format with Go code"
+        expected: "Formatted code returned"
+      - name: "Verify formatting"
+        action: "Check formatted code is valid Go"
+        expected: "No syntax errors"
+    tags: [formatters, code, api]
+    estimated_duration: "10s"
+
+  - id: API-FMT-002
+    name: "List available formatters"
+    category: functional
+    priority: medium
+    platforms: [desktop]
+    steps:
+      - name: "Request formatters list"
+        action: "GET http://localhost:7061/v1/formatters"
+        expected: "List of formatters returned"
+      - name: "Verify formatter count"
+        action: "Check formatters array length >= 20"
+        expected: "At least 20 formatters available"
+    tags: [formatters, list, api]
+    estimated_duration: "5s"
+
+  # ==================== Background Tasks ====================
+  - id: API-TASK-001
+    name: "Submit background task"
+    category: functional
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Create task"
+        action: "POST http://localhost:7061/v1/tasks with task definition"
+        expected: "Task ID returned"
+      - name: "Check task status"
+        action: "GET http://localhost:7061/v1/tasks/{task_id}"
+        expected: "Task status present"
+      - name: "Wait for completion"
+        action: "Poll until task status is completed or failed"
+        expected: "Task completes within timeout"
+    tags: [tasks, background, api]
+    estimated_duration: "30s"
+
+  # ==================== Error Handling ====================
+  - id: API-ERROR-001
+    name: "Invalid request returns proper error"
+    category: negative
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Send malformed request"
+        action: "POST http://localhost:7061/v1/chat/completions with empty body"
+        expected: "Response status 400"
+      - name: "Verify error structure"
+        action: "Check error response has code, message fields"
+        expected: "Proper error format"
+    tags: [error, validation, api]
+    estimated_duration: "5s"
+
+  - id: API-ERROR-002
+    name: "Non-existent resource returns 404"
+    category: negative
+    priority: medium
+    platforms: [desktop]
+    steps:
+      - name: "Request non-existent debate"
+        action: "GET http://localhost:7061/v1/debate/non-existent-id"
+        expected: "Response status 404"
+      - name: "Verify error message"
+        action: "Check error message indicates not found"
+        expected: "Clear not found message"
+    tags: [error, 404, api]
+    estimated_duration: "5s"
+
+  # ==================== Authentication ====================
+  - id: API-AUTH-001
+    name: "Protected endpoint requires authentication"
+    category: security
+    priority: critical
+    platforms: [desktop]
+    steps:
+      - name: "Access protected endpoint without token"
+        action: "GET http://localhost:7061/v1/admin/config without Authorization header"
+        expected: "Response status 401"
+      - name: "Access with valid token"
+        action: "GET http://localhost:7061/v1/admin/config with valid JWT"
+        expected: "Response status 200"
+    tags: [auth, security, api]
+    estimated_duration: "10s"
+
+  # ==================== Performance ====================
+  - id: API-PERF-001
+    name: "Health check response time under 100ms"
+    category: performance
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Measure health check latency"
+        action: "Time GET http://localhost:7061/v1/health"
+        expected: "Response time < 100ms"
+    tags: [performance, latency, api]
+    estimated_duration: "5s"
+
+  - id: API-PERF-002
+    name: "Concurrent requests handled correctly"
+    category: performance
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Send 10 concurrent requests"
+        action: "Parallel GET http://localhost:7061/v1/providers"
+        expected: "All requests succeed"
+      - name: "Verify no race conditions"
+        action: "Check responses are consistent"
+        expected: "No corrupted data"
+    tags: [performance, concurrency, api]
+    estimated_duration: "20s"
