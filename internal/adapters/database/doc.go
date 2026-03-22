@@ -49,7 +49,11 @@
 //
 //	client, err := adapter.NewClient(cfg)
 //	db := client.Database() // Returns database.Database interface
-//	pool := client.Pool()   // Returns *pgxpool.Pool
+//	pool := client.Pool()   // Returns *pgxpool.Pool (lazy connection)
+//
+// Note: The client uses lazy initialization - the PostgreSQL connection is
+// established on first use (Pool(), Ping(), Exec(), etc.) via sync.Once.
+// This reduces startup time when database operations aren't immediately needed.
 //
 // # Repository Pattern
 //

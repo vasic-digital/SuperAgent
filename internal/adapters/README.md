@@ -55,6 +55,26 @@ Several adapters use build-tag-selected factories for conditional compilation:
 - `specifier/factory_helixspecifier.go` -- Active when HelixSpecifier is present
 - `specifier/factory_standard.go` -- Fallback (no-op)
 
+## Performance Optimizations
+
+Several adapters implement performance optimizations to reduce startup time
+and prevent resource exhaustion:
+
+### Lazy Loading
+- **Database adapter**: Uses `sync.Once` for deferred PostgreSQL connection establishment
+- **Containers adapter**: Runtime detection deferred until first use with `sync.Once`
+- Connection errors are handled at operation time, not startup
+
+### Concurrency Control  
+- **Containers adapter**: Weighted semaphore limits concurrent container operations
+- Semaphore weight: `2 * CPU cores` (capped between 2 and 10)
+- Prevents system overload from too many simultaneous `docker compose` commands
+
+### Thread Safety
+- All lazy initialization is thread-safe via `sync.Once`
+- Concurrent access to adapters is safe
+- Race conditions prevented with proper synchronization
+
 ## Testing
 
 Each adapter subdirectory contains `*_test.go` files. Total: 30+ test files
@@ -64,4 +84,10 @@ Run all adapter tests:
 
 ```bash
 go test ./internal/adapters/...
+```
+
+Run security-focused adapter tests:
+
+```bash
+go test -tags security ./internal/adapters/...
 ```

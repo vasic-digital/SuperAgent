@@ -53,13 +53,20 @@ start_infrastructure
 # Step 2: Run Go tests with resource limits (30-40% host resources)
 echo ""
 echo "=== Running Go Tests (with resource limits) ==="
-GOMAXPROCS=2 nice -n 19 ionice -c 3 go test ./... -p 1 -v -race -count=1 2>&1 | tee "${PROJECT_ROOT}/reports/go_tests.log"
-TEST_EXIT_CODE=${PIPESTATUS[0]}
-if [ ${TEST_EXIT_CODE} -eq 0 ]; then
-    echo "✓ Go tests passed"
+# Get all packages excluding vendor.bak
+PACKAGES=$(go list ./... | grep -v vendor.bak)
+if [ -z "$PACKAGES" ]; then
+    echo "No packages found to test"
+    TEST_EXIT_CODE=0
 else
-    echo "✗ Go tests failed with exit code ${TEST_EXIT_CODE}"
-    # Continue to challenges, but record failure
+    GOMAXPROCS=2 nice -n 19 ionice -c 3 go test $PACKAGES -p 1 -v -race -count=1 2>&1 | tee "${PROJECT_ROOT}/reports/go_tests.log"
+    TEST_EXIT_CODE=${PIPESTATUS[0]}
+    if [ ${TEST_EXIT_CODE} -eq 0 ]; then
+        echo "✓ Go tests passed"
+    else
+        echo "✗ Go tests failed with exit code ${TEST_EXIT_CODE}"
+        # Continue to challenges, but record failure
+    fi
 fi
 
 # Step 3: Run all challenge scripts

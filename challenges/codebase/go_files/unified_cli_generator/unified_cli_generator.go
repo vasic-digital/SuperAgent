@@ -155,12 +155,12 @@ func (g *UnifiedCLIGenerator) extractStats(result *cliagents.GenerationResult) C
 
 	switch cfg := result.Config.(type) {
 	case *cliagents.OpenCodeConfig:
-		stats.MCPServers = len(cfg.MCP)
+		stats.MCPServers = len(cfg.MCPServers)
 		stats.Agents = len(cfg.Agent)
 		stats.Tools = len(cfg.Tools)
 	case *cliagents.CrushConfig:
 		stats.MCPServers = len(cfg.MCP)
-		stats.Agents = len(cfg.Agents)
+		stats.Agents = 0
 	case *cliagents.KiloCodeConfig:
 		stats.MCPServers = len(cfg.MCP)
 		stats.Agents = len(cfg.Agents)

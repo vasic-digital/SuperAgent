@@ -2,6 +2,7 @@ package helixqa
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"

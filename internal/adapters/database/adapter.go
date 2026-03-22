@@ -7,10 +7,10 @@ package database
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	db "digital.vasic.database/pkg/database"
@@ -23,8 +23,43 @@ import (
 // Client wraps the digital.vasic.database postgres client and provides
 // backward-compatible methods for HelixAgent's existing code.
 type Client struct {
-	pg   *postgres.Client
-	pool *pgxpool.Pool
+	pg          *postgres.Client
+	pool        *pgxpool.Pool
+	connectOnce sync.Once
+	connectErr  error
+}
+
+// errorRow implements db.Row for returning connection errors
+type errorRow struct {
+	err error
+}
+
+func (r *errorRow) Scan(dest ...any) error {
+	return r.err
+}
+
+// initConnection establishes the database connection if not already connected.
+// This method is safe for concurrent calls and uses sync.Once for idempotency.
+func (c *Client) initConnection(ctx context.Context) error {
+	c.connectOnce.Do(func() {
+		// Connect with timeout if context doesn't have one
+		if _, hasDeadline := ctx.Deadline(); !hasDeadline {
+			var cancel context.CancelFunc
+			ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
+			defer cancel()
+		}
+		c.connectErr = c.pg.Connect(ctx)
+		if c.connectErr == nil {
+			c.pool = c.pg.Pool()
+			log.Printf("Connected to PostgreSQL database")
+		}
+	})
+	return c.connectErr
+}
+
+// ensureConnected establishes the database connection using background context.
+func (c *Client) ensureConnected() error {
+	return c.initConnection(context.Background())
 }
 
 // NewClient creates a new database client using the extracted database module.
@@ -33,22 +68,13 @@ func NewClient(cfg *config.Config) (*Client, error) {
 	// Build postgres config from HelixAgent config
 	pgCfg := buildPostgresConfig(cfg)
 
-	// Create the postgres client
+	// Create the postgres client (not connected yet)
 	pg := postgres.New(pgCfg)
 
-	// Connect with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	if err := pg.Connect(ctx); err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
-	}
-
-	log.Printf("Connected to PostgreSQL database: %s", pgCfg.DBName)
-
+	// Return client with lazy connection
 	return &Client{
 		pg:   pg,
-		pool: pg.Pool(),
+		pool: nil, // will be set after connection
 	}, nil
 }
 
@@ -59,6 +85,11 @@ func NewClientWithFallback(cfg *config.Config) (*Client, error) {
 	if err != nil {
 		log.Printf("Database connection failed: %v, standalone mode may be used", err)
 		return nil, err
+	}
+	// Try to ping with short timeout to verify connectivity
+	if pingErr := client.Ping(); pingErr != nil {
+		log.Printf("Database ping failed: %v, standalone mode may be used", pingErr)
+		return nil, pingErr
 	}
 	return client, nil
 }
@@ -114,6 +145,9 @@ func buildPostgresConfig(cfg *config.Config) *postgres.Config {
 // Pool returns the underlying pgxpool.Pool for direct access.
 // This provides backward compatibility with existing repository code.
 func (c *Client) Pool() *pgxpool.Pool {
+	if err := c.ensureConnected(); err != nil {
+		return nil
+	}
 	return c.pool
 }
 
@@ -129,11 +163,17 @@ func (c *Client) Close() error {
 
 // Ping tests the database connection.
 func (c *Client) Ping() error {
+	if err := c.ensureConnected(); err != nil {
+		return err
+	}
 	return c.pg.HealthCheck(context.Background())
 }
 
 // HealthCheck performs a health check on the database.
 func (c *Client) HealthCheck() error {
+	if err := c.ensureConnected(); err != nil {
+		return err
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	return c.pg.HealthCheck(ctx)
@@ -142,6 +182,9 @@ func (c *Client) HealthCheck() error {
 // Exec executes a query that doesn't return rows.
 // This method provides backward compatibility with the old interface.
 func (c *Client) Exec(query string, args ...any) error {
+	if err := c.ensureConnected(); err != nil {
+		return err
+	}
 	_, err := c.pg.Exec(context.Background(), query, args...)
 	return err
 }
@@ -149,6 +192,9 @@ func (c *Client) Exec(query string, args ...any) error {
 // Query executes a query that returns rows.
 // Returns results as a slice of any for backward compatibility.
 func (c *Client) Query(query string, args ...any) ([]any, error) {
+	if err := c.ensureConnected(); err != nil {
+		return nil, err
+	}
 	rows, err := c.pg.Query(context.Background(), query, args...)
 	if err != nil {
 		return nil, err
@@ -167,16 +213,26 @@ func (c *Client) Query(query string, args ...any) ([]any, error) {
 
 // QueryRow executes a query expected to return at most one row.
 func (c *Client) QueryRow(query string, args ...any) db.Row {
+	if err := c.ensureConnected(); err != nil {
+		// Return a row that will return the connection error on Scan
+		return &errorRow{err: err}
+	}
 	return c.pg.QueryRow(context.Background(), query, args...)
 }
 
 // Begin starts a new transaction.
 func (c *Client) Begin(ctx context.Context) (db.Tx, error) {
+	if err := c.initConnection(ctx); err != nil {
+		return nil, err
+	}
 	return c.pg.Begin(ctx)
 }
 
 // Migrate runs the provided migration statements.
 func (c *Client) Migrate(ctx context.Context, migrations []string) error {
+	if err := c.initConnection(ctx); err != nil {
+		return err
+	}
 	return c.pg.Migrate(ctx, migrations)
 }
 

@@ -2,7 +2,14 @@ package containers
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"net"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -10,8 +17,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"dev.helix.agent/internal/config"
 	"digital.vasic.containers/pkg/compose"
 	"digital.vasic.containers/pkg/distribution"
+	"digital.vasic.containers/pkg/endpoint"
 	"digital.vasic.containers/pkg/health"
 	"digital.vasic.containers/pkg/logging"
 	"digital.vasic.containers/pkg/remote"
@@ -21,7 +30,8 @@ import (
 
 // mockRuntime implements runtime.ContainerRuntime for testing.
 type mockRuntime struct {
-	name string
+	name      string
+	listError error
 }
 
 func (m *mockRuntime) Name() string { return m.name }
@@ -66,6 +76,9 @@ func (m *mockRuntime) Status(
 func (m *mockRuntime) List(
 	ctx context.Context, filter runtime.ListFilter,
 ) ([]runtime.ContainerInfo, error) {
+	if m.listError != nil {
+		return nil, m.listError
+	}
 	return nil, nil
 }
 
@@ -174,6 +187,36 @@ func (m *mockDistributor) HostStatus(
 	return &remote.HostResources{Host: hostName}, nil
 }
 
+// mockHealthChecker implements health.HealthChecker.
+type mockHealthChecker struct {
+	checkResults    map[string]bool
+	checkAllResults []*health.HealthResult
+}
+
+func (m *mockHealthChecker) Check(ctx context.Context, target health.HealthTarget) *health.HealthResult {
+	if m.checkResults != nil {
+		if healthy, ok := m.checkResults[target.Name]; ok {
+			return &health.HealthResult{
+				Healthy: healthy,
+				Error:   "",
+			}
+		}
+	}
+	// Default healthy
+	return &health.HealthResult{Healthy: true}
+}
+
+func (m *mockHealthChecker) CheckAll(ctx context.Context, targets []health.HealthTarget) []*health.HealthResult {
+	if m.checkAllResults != nil {
+		return m.checkAllResults
+	}
+	results := make([]*health.HealthResult, len(targets))
+	for i := range targets {
+		results[i] = &health.HealthResult{Healthy: true}
+	}
+	return results
+}
+
 // mockHostManager implements remote.HostManager.
 type mockHostManager struct {
 	hosts map[string]remote.RemoteHost
@@ -255,6 +298,25 @@ func TestAdapter_DetectRuntime_WithExisting(t *testing.T) {
 	assert.Equal(t, "docker", name)
 }
 
+func TestAdapter_DetectRuntime_WithoutRuntime(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping runtime detection in short mode")
+	}
+	// Create adapter without runtime; will attempt auto-detection
+	adapter, err := NewAdapter(WithLogger(logging.NopLogger{}))
+	require.NoError(t, err)
+
+	// This may succeed if Docker/Podman is available, or fail otherwise
+	name, err := adapter.DetectRuntime(context.Background())
+	if err != nil {
+		// Runtime not available, skip test
+		t.Skipf("No container runtime detected: %v", err)
+	}
+	// If we get here, runtime was detected
+	assert.NotEmpty(t, name)
+	assert.Contains(t, []string{"docker", "podman"}, name)
+}
+
 func TestAdapter_RuntimeAvailable(t *testing.T) {
 	rt := &mockRuntime{name: "docker"}
 	adapter, err := NewAdapter(
@@ -266,6 +328,19 @@ func TestAdapter_RuntimeAvailable(t *testing.T) {
 	assert.True(t, adapter.RuntimeAvailable(
 		context.Background(),
 	))
+}
+
+func TestAdapter_RuntimeAvailable_WithoutRuntime(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping runtime detection in short mode")
+	}
+	adapter, err := NewAdapter(WithLogger(logging.NopLogger{}))
+	require.NoError(t, err)
+
+	available := adapter.RuntimeAvailable(context.Background())
+	// Could be true or false depending on environment
+	// Just verify no panic
+	t.Logf("Runtime available: %v", available)
 }
 
 func TestAdapter_ComposeUp(t *testing.T) {
@@ -552,6 +627,288 @@ func TestAdapter_HealthCheck_WithChecker(t *testing.T) {
 	)
 	require.NoError(t, err)
 	assert.False(t, result.Healthy)
+}
+
+func TestAdapter_HealthCheck_WithMockChecker(t *testing.T) {
+	checker := &mockHealthChecker{
+		checkResults: map[string]bool{
+			"service1": true,
+			"service2": false,
+		},
+	}
+	adapter, err := NewAdapter(
+		WithHealthChecker(checker),
+		WithLogger(logging.NopLogger{}),
+	)
+	require.NoError(t, err)
+
+	// Healthy service
+	result, err := adapter.HealthCheck(
+		context.Background(),
+		"service1", "localhost", "8080",
+		"/health", "http", 5*time.Second,
+	)
+	require.NoError(t, err)
+	assert.True(t, result.Healthy)
+
+	// Unhealthy service
+	result, err = adapter.HealthCheck(
+		context.Background(),
+		"service2", "localhost", "8080",
+		"/health", "http", 5*time.Second,
+	)
+	require.NoError(t, err)
+	assert.False(t, result.Healthy)
+}
+
+func TestAdapter_HealthCheckAll(t *testing.T) {
+	checker := &mockHealthChecker{
+		checkAllResults: []*health.HealthResult{
+			{Healthy: true},
+			{Healthy: false, Error: "connection refused"},
+		},
+	}
+	adapter, err := NewAdapter(
+		WithHealthChecker(checker),
+		WithLogger(logging.NopLogger{}),
+	)
+	require.NoError(t, err)
+
+	targets := []health.HealthTarget{
+		{Name: "service1", Host: "localhost", Port: "8080"},
+		{Name: "service2", Host: "localhost", Port: "9090"},
+	}
+	errors := adapter.HealthCheckAll(context.Background(), targets)
+	assert.Len(t, errors, 1)
+	assert.Contains(t, errors, "service2")
+	assert.ErrorContains(t, errors["service2"], "connection refused")
+}
+
+func TestAdapter_HealthCheckAll_NoChecker(t *testing.T) {
+	adapter, err := NewAdapter(WithLogger(logging.NopLogger{}))
+	require.NoError(t, err)
+
+	errors := adapter.HealthCheckAll(context.Background(), []health.HealthTarget{})
+	assert.Empty(t, errors)
+}
+
+func TestAdapter_StatusAll(t *testing.T) {
+	rt := &mockRuntime{name: "docker"}
+	adapter, err := NewAdapter(
+		WithRuntime(rt),
+		WithLogger(logging.NopLogger{}),
+	)
+	require.NoError(t, err)
+
+	status, err := adapter.StatusAll(context.Background())
+	require.NoError(t, err)
+	assert.Empty(t, status) // mock returns empty list
+}
+
+func TestAdapter_StatusAll_NoRuntime(t *testing.T) {
+	adapter, err := NewAdapter(WithLogger(logging.NopLogger{}))
+	require.NoError(t, err)
+
+	_, err = adapter.StatusAll(context.Background())
+	assert.Error(t, err)
+}
+
+func TestAdapter_ListContainers(t *testing.T) {
+	orch := &mockOrchestrator{}
+	adapter, err := NewAdapter(
+		WithOrchestrator(orch),
+		WithProjectDir("/tmp/project"),
+		WithLogger(logging.NopLogger{}),
+	)
+	require.NoError(t, err)
+
+	status, err := adapter.ListContainers(context.Background(), "docker-compose.yml")
+	require.NoError(t, err)
+	assert.Nil(t, status) // mock returns nil
+}
+
+func TestAdapter_ListContainers_NoOrchestrator(t *testing.T) {
+	adapter, err := NewAdapter(WithLogger(logging.NopLogger{}))
+	require.NoError(t, err)
+
+	_, err = adapter.ListContainers(context.Background(), "docker-compose.yml")
+	assert.Error(t, err)
+}
+
+func TestAdapter_ToHealthTarget(t *testing.T) {
+	adapter, _ := NewAdapter(WithLogger(logging.NopLogger{}))
+	target := adapter.ToHealthTarget(
+		"postgres", "localhost", "5432",
+		"/health", "tcp", 5*time.Second, true,
+	)
+	assert.Equal(t, "postgres", target.Name)
+	assert.Equal(t, "localhost", target.Host)
+	assert.Equal(t, "5432", target.Port)
+	assert.Equal(t, "/health", target.Path)
+	assert.Equal(t, health.HealthType("tcp"), target.Type)
+	assert.Equal(t, 5*time.Second, target.Timeout)
+	assert.True(t, target.Required)
+}
+
+func TestAdapter_BootAll(t *testing.T) {
+	rt := &mockRuntime{name: "docker"}
+	orch := &mockOrchestrator{}
+	hc := &mockHealthChecker{}
+	adapter, err := NewAdapter(
+		WithRuntime(rt),
+		WithOrchestrator(orch),
+		WithHealthChecker(hc),
+		WithLogger(logging.NopLogger{}),
+	)
+	require.NoError(t, err)
+
+	endpoints := map[string]endpoint.ServiceEndpoint{}
+	summary, err := adapter.BootAll(context.Background(), endpoints)
+	require.NoError(t, err)
+	assert.NotNil(t, summary)
+}
+
+func TestAdapter_BootAll_WithDistributor(t *testing.T) {
+	dist := &mockDistributor{}
+	hm := &mockHostManager{hosts: map[string]remote.RemoteHost{}}
+	adapter, err := NewAdapter(
+		WithDistributor(dist),
+		WithHostManager(hm),
+		WithLogger(logging.NopLogger{}),
+	)
+	require.NoError(t, err)
+
+	endpoints := map[string]endpoint.ServiceEndpoint{}
+	summary, err := adapter.BootAll(context.Background(), endpoints)
+	require.NoError(t, err)
+	assert.NotNil(t, summary)
+}
+
+func TestNewAdapterFromConfig_NoRuntime(t *testing.T) {
+	// Create a temporary directory as project root
+	tmpDir := t.TempDir()
+	// Change working directory to tmpDir
+	oldDir, err := os.Getwd()
+	require.NoError(t, err)
+	defer os.Chdir(oldDir)
+	err = os.Chdir(tmpDir)
+	require.NoError(t, err)
+
+	// Create Containers/.env file with remote distribution disabled
+	containersDir := filepath.Join(tmpDir, "Containers")
+	err = os.MkdirAll(containersDir, 0755)
+	require.NoError(t, err)
+	envPath := filepath.Join(containersDir, ".env")
+	err = os.WriteFile(envPath, []byte("CONTAINERS_REMOTE_ENABLED=false\n"), 0644)
+	require.NoError(t, err)
+
+	cfg := &config.Config{}
+	adapter, err := NewAdapterFromConfig(cfg)
+	require.NoError(t, err)
+	assert.NotNil(t, adapter)
+	// No runtime should be detected (since we're in a temp dir with no Docker/Podman)
+	// But adapter may still have nil runtime.
+	// This test at least exercises the loading of .env file.
+}
+
+func TestAdapter_StatusAll_WithListError(t *testing.T) {
+	rt := &mockRuntime{name: "docker", listError: fmt.Errorf("runtime error")}
+	adapter, err := NewAdapter(
+		WithRuntime(rt),
+		WithLogger(logging.NopLogger{}),
+	)
+	require.NoError(t, err)
+
+	_, err = adapter.StatusAll(context.Background())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "list containers")
+}
+
+func TestAdapter_RemoteComposeUp_NoRemoteDistribution(t *testing.T) {
+	adapter, _ := NewAdapter(WithLogger(logging.NopLogger{}))
+	err := adapter.RemoteComposeUp(context.Background(), "docker-compose.yml", "default")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "remote distribution not configured")
+}
+
+func TestAdapter_RemoteEnabled_WithDistributorOnly(t *testing.T) {
+	adapter, _ := NewAdapter(WithLogger(logging.NopLogger{}))
+	adapter.distributor = &mockDistributor{}
+	// hostManager nil
+	assert.False(t, adapter.RemoteEnabled())
+}
+
+func TestAdapter_HealthCheckHTTP_Success(t *testing.T) {
+	// Start a test HTTP server that returns 200 OK
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	adapter, err := NewAdapter(WithLogger(logging.NopLogger{}))
+	require.NoError(t, err)
+
+	err = adapter.HealthCheckHTTP(server.URL)
+	assert.NoError(t, err)
+}
+
+func TestAdapter_HealthCheckHTTP_Failure(t *testing.T) {
+	// Start a test HTTP server that returns 500 Internal Server Error
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	adapter, err := NewAdapter(WithLogger(logging.NopLogger{}))
+	require.NoError(t, err)
+
+	err = adapter.HealthCheckHTTP(server.URL)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "health check failed with status: 500")
+}
+
+func TestAdapter_HealthCheckHTTP_ConnectionError(t *testing.T) {
+	adapter, err := NewAdapter(WithLogger(logging.NopLogger{}))
+	require.NoError(t, err)
+
+	// Use a non-existent URL to cause connection error
+	err = adapter.HealthCheckHTTP("http://localhost:99999/invalid")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot connect")
+}
+
+func TestAdapter_HealthCheckTCP_Success(t *testing.T) {
+	// Start a test TCP server
+	listener, err := net.Listen("tcp", "localhost:0")
+	require.NoError(t, err)
+	defer listener.Close()
+
+	go func() {
+		for {
+			conn, err := listener.Accept()
+			if err != nil {
+				return
+			}
+			conn.Close()
+		}
+	}()
+
+	adapter, err := NewAdapter(WithLogger(logging.NopLogger{}))
+	require.NoError(t, err)
+
+	host, portStr, _ := net.SplitHostPort(listener.Addr().String())
+	port, _ := strconv.Atoi(portStr)
+	ok := adapter.HealthCheckTCP(host, port)
+	assert.True(t, ok)
+}
+
+func TestAdapter_HealthCheckTCP_Failure(t *testing.T) {
+	adapter, err := NewAdapter(WithLogger(logging.NopLogger{}))
+	require.NoError(t, err)
+
+	// Use a port that is unlikely to be listening
+	ok := adapter.HealthCheckTCP("localhost", 65535)
+	assert.False(t, ok)
 }
 
 func TestLogrusAdapter(t *testing.T) {

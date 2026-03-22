@@ -6,6 +6,13 @@
 // detection, compose up/down, health checking, remote distribution)
 // through the Containers module interfaces. All direct exec.Command
 // calls to docker/podman should be replaced with adapter methods.
+//
+// Performance Features:
+//   - Lazy runtime detection: Container runtime (Docker/Podman) detection
+//     is deferred until first use via sync.Once
+//   - Concurrency control: Weighted semaphore limits concurrent container
+//     operations (2 * CPU cores, capped 2-10) to prevent system overload
+//   - Thread-safe initialization: All lazy initialization is thread-safe
 package containers
 
 import (
@@ -15,8 +22,12 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
 	"time"
+
+	"golang.org/x/sync/semaphore"
 
 	"digital.vasic.containers/pkg/boot"
 	"digital.vasic.containers/pkg/compose"
@@ -28,7 +39,7 @@ import (
 	"digital.vasic.containers/pkg/network"
 	"digital.vasic.containers/pkg/orchestrator"
 	"digital.vasic.containers/pkg/remote"
-	"digital.vasic.containers/pkg/runtime"
+	containersruntime "digital.vasic.containers/pkg/runtime"
 	"digital.vasic.containers/pkg/scheduler"
 	"digital.vasic.containers/pkg/volume"
 
@@ -39,7 +50,10 @@ import (
 // Adapter bridges HelixAgent's container management with the
 // Containers module.
 type Adapter struct {
-	runtime       runtime.ContainerRuntime
+	runtimeInitOnce sync.Once
+	runtimeInitErr  error
+
+	runtime       containersruntime.ContainerRuntime
 	orchestrator  compose.ComposeOrchestrator
 	healthChecker health.HealthChecker
 	distributor   distribution.Distributor
@@ -50,13 +64,17 @@ type Adapter struct {
 	logger        logging.Logger
 	projectDir    string
 	httpClient    *http.Client
+
+	// concurrentOpsSem limits concurrent container operations to prevent
+	// overwhelming the system. Default weight is 2 * CPU cores, max 10.
+	concurrentOpsSem *semaphore.Weighted
 }
 
 // Option configures the Adapter.
 type Option func(*Adapter)
 
 // WithRuntime sets the container runtime.
-func WithRuntime(r runtime.ContainerRuntime) Option {
+func WithRuntime(r containersruntime.ContainerRuntime) Option {
 	return func(a *Adapter) { a.runtime = r }
 }
 
@@ -92,8 +110,18 @@ func WithProjectDir(dir string) Option {
 
 // NewAdapter creates a container Adapter with the given options.
 func NewAdapter(opts ...Option) (*Adapter, error) {
+	// Calculate max concurrent operations: 2 * CPU cores, capped between 2 and 10
+	maxConcurrent := 2 * runtime.NumCPU()
+	if maxConcurrent < 2 {
+		maxConcurrent = 2
+	}
+	if maxConcurrent > 10 {
+		maxConcurrent = 10
+	}
+
 	a := &Adapter{
-		httpClient: &http.Client{Timeout: 10 * time.Second},
+		httpClient:       &http.Client{Timeout: 10 * time.Second},
+		concurrentOpsSem: semaphore.NewWeighted(int64(maxConcurrent)),
 	}
 	for _, opt := range opts {
 		opt(a)
@@ -123,14 +151,24 @@ func NewAdapterFromConfig(cfg *config.Config) (*Adapter, error) {
 
 	logger := &logrusAdapter{}
 
+	// Calculate max concurrent operations: 2 * CPU cores, capped between 2 and 10
+	maxConcurrent := 2 * runtime.NumCPU()
+	if maxConcurrent < 2 {
+		maxConcurrent = 2
+	}
+	if maxConcurrent > 10 {
+		maxConcurrent = 10
+	}
+
 	a := &Adapter{
-		logger:     logger,
-		projectDir: projectDir,
-		httpClient: &http.Client{Timeout: 10 * time.Second},
+		logger:           logger,
+		projectDir:       projectDir,
+		httpClient:       &http.Client{Timeout: 10 * time.Second},
+		concurrentOpsSem: semaphore.NewWeighted(int64(maxConcurrent)),
 	}
 
 	// Auto-detect local runtime.
-	rt, err := runtime.AutoDetect(context.Background())
+	rt, err := containersruntime.AutoDetect(context.Background())
 	if err != nil {
 		logger.Warn(
 			"container runtime not available: %v", err,
@@ -308,6 +346,37 @@ func (a *Adapter) setupDistribution(
 	return nil
 }
 
+// initRuntime lazily initializes the container runtime and orchestrator.
+// It uses sync.Once to ensure initialization happens only once.
+func (a *Adapter) initRuntime(ctx context.Context) error {
+	a.runtimeInitOnce.Do(func() {
+		// If runtime already set (e.g., via WithRuntime), skip auto-detection
+		if a.runtime != nil {
+			a.runtimeInitErr = nil
+			return
+		}
+
+		// Auto-detect container runtime
+		rt, err := containersruntime.AutoDetect(ctx)
+		if err != nil {
+			a.runtimeInitErr = fmt.Errorf("no container runtime found: %w", err)
+			return
+		}
+		a.runtime = rt
+
+		// Try to create orchestrator if runtime detected
+		orch, orchErr := compose.NewDefaultOrchestrator(
+			a.projectDir, a.logger,
+		)
+		if orchErr == nil {
+			a.orchestrator = orch
+		}
+		// Note: orchestrator creation error is not fatal
+		a.runtimeInitErr = nil
+	})
+	return a.runtimeInitErr
+}
+
 // DetectRuntime returns the name of the detected container runtime
 // (e.g., "docker" or "podman"). If no runtime is available, returns
 // an error.
@@ -317,20 +386,13 @@ func (a *Adapter) DetectRuntime(
 	if a.runtime != nil {
 		return a.runtime.Name(), nil
 	}
-	rt, err := runtime.AutoDetect(ctx)
-	if err != nil {
-		return "", fmt.Errorf(
-			"no container runtime found: %w", err,
-		)
+	if err := a.initRuntime(ctx); err != nil {
+		return "", err
 	}
-	a.runtime = rt
-	orch, orchErr := compose.NewDefaultOrchestrator(
-		a.projectDir, a.logger,
-	)
-	if orchErr == nil {
-		a.orchestrator = orch
+	if a.runtime == nil {
+		return "", fmt.Errorf("container runtime not initialized")
 	}
-	return rt.Name(), nil
+	return a.runtime.Name(), nil
 }
 
 // RuntimeAvailable returns true if a container runtime is detected.
@@ -338,12 +400,14 @@ func (a *Adapter) RuntimeAvailable(ctx context.Context) bool {
 	if a.runtime != nil {
 		return a.runtime.IsAvailable(ctx)
 	}
-	rt, err := runtime.AutoDetect(ctx)
-	if err != nil {
+	// Try to initialize runtime if not already done
+	if err := a.initRuntime(ctx); err != nil {
 		return false
 	}
-	a.runtime = rt
-	return true
+	if a.runtime == nil {
+		return false
+	}
+	return a.runtime.IsAvailable(ctx)
 }
 
 // ComposeUp starts services from a compose file with the given
@@ -353,6 +417,14 @@ func (a *Adapter) ComposeUp(
 ) error {
 	if a.orchestrator == nil {
 		return fmt.Errorf("compose orchestrator not available")
+	}
+
+	// Acquire semaphore to limit concurrent container operations
+	if a.concurrentOpsSem != nil {
+		if err := a.concurrentOpsSem.Acquire(ctx, 1); err != nil {
+			return err
+		}
+		defer a.concurrentOpsSem.Release(1)
 	}
 
 	absFile := composeFile
@@ -379,6 +451,14 @@ func (a *Adapter) ComposeDown(
 		return fmt.Errorf("compose orchestrator not available")
 	}
 
+	// Acquire semaphore to limit concurrent container operations
+	if a.concurrentOpsSem != nil {
+		if err := a.concurrentOpsSem.Acquire(ctx, 1); err != nil {
+			return err
+		}
+		defer a.concurrentOpsSem.Release(1)
+	}
+
 	absFile := composeFile
 	if !filepath.IsAbs(composeFile) {
 		absFile = filepath.Join(a.projectDir, composeFile)
@@ -401,6 +481,14 @@ func (a *Adapter) ComposeStatus(
 		return nil, fmt.Errorf(
 			"compose orchestrator not available",
 		)
+	}
+
+	// Acquire semaphore to limit concurrent container operations
+	if a.concurrentOpsSem != nil {
+		if err := a.concurrentOpsSem.Acquire(ctx, 1); err != nil {
+			return nil, err
+		}
+		defer a.concurrentOpsSem.Release(1)
 	}
 
 	absFile := composeFile
@@ -574,8 +662,17 @@ func (a *Adapter) StatusAll(
 	if a.runtime == nil {
 		return status, fmt.Errorf("no container runtime available")
 	}
+
+	// Acquire semaphore to limit concurrent container operations
+	if a.concurrentOpsSem != nil {
+		if err := a.concurrentOpsSem.Acquire(ctx, 1); err != nil {
+			return status, err
+		}
+		defer a.concurrentOpsSem.Release(1)
+	}
+
 	containers, err := a.runtime.List(
-		ctx, runtime.ListFilter{},
+		ctx, containersruntime.ListFilter{},
 	)
 	if err != nil {
 		return status, fmt.Errorf("list containers: %w", err)
@@ -871,7 +968,7 @@ func (a *Adapter) Shutdown(ctx context.Context) error {
 }
 
 // Runtime returns the underlying container runtime. May be nil.
-func (a *Adapter) Runtime() runtime.ContainerRuntime {
+func (a *Adapter) Runtime() containersruntime.ContainerRuntime {
 	return a.runtime
 }
 
