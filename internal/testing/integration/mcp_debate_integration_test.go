@@ -309,6 +309,9 @@ func TestMCPServerConnectivity(t *testing.T) {
 
 // TestMCPServerInitialize tests MCP protocol initialization
 func TestMCPServerInitialize(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping MCP integration test in -short mode (requires running MCP servers)")
+	}
 	for _, server := range CoreMCPServers {
 		t.Run(server.Name, func(t *testing.T) {
 			testutil.RequireExternalService(t, server.Name, "localhost", fmt.Sprintf("%d", server.Port))
@@ -324,6 +327,9 @@ func TestMCPServerInitialize(t *testing.T) {
 
 // TestMCPServerToolDiscovery tests MCP tool discovery
 func TestMCPServerToolDiscovery(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping MCP integration test in -short mode")
+	}
 	for _, server := range CoreMCPServers {
 		t.Run(server.Name, func(t *testing.T) {
 			testutil.RequireExternalService(t, server.Name, "localhost", fmt.Sprintf("%d", server.Port))
@@ -345,6 +351,9 @@ func TestMCPServerToolDiscovery(t *testing.T) {
 
 // TestMCPToolExecution tests actual MCP tool execution
 func TestMCPToolExecution(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping MCP integration test in -short mode")
+	}
 	testCases := []struct {
 		server    string
 		port      int
@@ -400,6 +409,9 @@ func TestMCPToolExecution(t *testing.T) {
 
 // TestMCPDebateIntegration tests MCP tools with AI Debate system
 func TestMCPDebateIntegration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping MCP integration test in -short mode")
+	}
 	// First, collect MCP tool results
 	mcpContext := &MCPContext{
 		ToolResults: make([]ToolResult, 0),
@@ -460,6 +472,9 @@ func TestMCPDebateIntegration(t *testing.T) {
 
 // TestMCPContextualDebate tests debate with multiple MCP tool contexts
 func TestMCPContextualDebate(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping MCP integration test in -short mode")
+	}
 	ctx := context.Background()
 	mcpContext := &MCPContext{
 		ToolResults: make([]ToolResult, 0),
@@ -539,6 +554,9 @@ func TestMCPContextualDebate(t *testing.T) {
 
 // TestAllMCPServersForDebate tests that all MCP servers can provide context for debate
 func TestAllMCPServersForDebate(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping MCP integration test in -short mode")
+	}
 	runningServers := 0
 
 	for _, server := range CoreMCPServers {

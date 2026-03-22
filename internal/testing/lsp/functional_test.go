@@ -174,6 +174,9 @@ var LSPServers = []LSPServerConfig{
 
 // TestLSPServerInitialize tests LSP server initialization
 func TestLSPServerInitialize(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping LSP functional test in short mode")
+	}
 	for _, server := range LSPServers {
 		t.Run(server.Name, func(t *testing.T) {
 			client, err := NewLSPClient(fmt.Sprintf("localhost:%d", server.Port), 10*time.Second)
@@ -202,6 +205,9 @@ func TestLSPServerInitialize(t *testing.T) {
 
 // TestLSPServerShutdown tests LSP server shutdown
 func TestLSPServerShutdown(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping LSP functional test in short mode")
+	}
 	for _, server := range LSPServers {
 		t.Run(server.Name, func(t *testing.T) {
 			client, err := NewLSPClient(fmt.Sprintf("localhost:%d", server.Port), 10*time.Second)

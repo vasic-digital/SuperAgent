@@ -8,6 +8,16 @@ import (
 )
 
 func TestDefaultInfraConfig(t *testing.T) {
+	// Clear env vars that override defaults so we test actual fallback values
+	t.Setenv("DB_HOST", "")
+	t.Setenv("DB_PORT", "")
+	t.Setenv("REDIS_HOST", "")
+	t.Setenv("REDIS_PORT", "")
+	t.Setenv("MOCK_LLM_HOST", "")
+	t.Setenv("MOCK_LLM_PORT", "")
+	t.Setenv("HELIXAGENT_HOST", "")
+	t.Setenv("HELIXAGENT_PORT", "")
+
 	cfg := DefaultInfraConfig()
 	assert.Equal(t, "localhost", cfg.PostgresHost)
 	assert.Equal(t, "15432", cfg.PostgresPort)

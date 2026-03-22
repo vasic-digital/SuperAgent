@@ -255,6 +255,9 @@ func TestLLMProviderCompletion(t *testing.T) {
 
 // TestMCPContextWithLLMProvider tests providing MCP context to LLM providers
 func TestMCPContextWithLLMProvider(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping MCP integration test in -short mode")
+	}
 	// First, collect MCP tool results
 	mcpContext := &MCPToolContext{
 		AvailableServers: make([]MCPServerInfo, 0),

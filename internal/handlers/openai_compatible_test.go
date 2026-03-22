@@ -2087,8 +2087,9 @@ func TestUnifiedHandler_FullDebateDialogueFlow(t *testing.T) {
 	cfg := &config.Config{}
 	handler := NewUnifiedHandler(registry, cfg)
 
-	// Verify showDebateDialogue is enabled by default
-	assert.True(t, handler.showDebateDialogue, "Debate dialogue should be enabled by default")
+	// Enable debate dialogue for this test (disabled by default in favor of intent-based routing)
+	handler.showDebateDialogue = true
+	assert.True(t, handler.showDebateDialogue, "Debate dialogue should be enabled after explicit activation")
 
 	// Test topic processing
 	longTopic := strings.Repeat("This is a very long topic ", 10)
@@ -2257,8 +2258,9 @@ func TestUnifiedHandler_DebateDialogueFlow_WithPreviousResponses(t *testing.T) {
 	cfg := &config.Config{}
 	handler := NewUnifiedHandler(registry, cfg)
 
-	// Verify showDebateDialogue setting
-	assert.True(t, handler.showDebateDialogue, "Debate dialogue should be enabled")
+	// Enable debate dialogue for this test (disabled by default in favor of intent-based routing)
+	handler.showDebateDialogue = true
+	assert.True(t, handler.showDebateDialogue, "Debate dialogue should be enabled after explicit activation")
 
 	// Test that enabling/disabling works
 	handler.showDebateDialogue = false

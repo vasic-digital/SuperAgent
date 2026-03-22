@@ -19,6 +19,11 @@ import (
 // =============================================================================
 
 func setupBackgroundTaskTestDB(t *testing.T) (*pgxpool.Pool, *BackgroundTaskRepository) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in -short mode")
+		return nil, nil
+	}
+
 	ctx := context.Background()
 	connString := getTestDBConnString()
 
@@ -37,6 +42,16 @@ func setupBackgroundTaskTestDB(t *testing.T) (*pgxpool.Pool, *BackgroundTaskRepo
 
 	if err := pool.Ping(ctx); err != nil {
 		t.Skipf("Skipping test: database connection failed: %v", err)
+		pool.Close()
+		return nil, nil
+	}
+
+	// Verify the required table exists before running integration tests
+	var exists bool
+	err = pool.QueryRow(ctx,
+		"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'background_tasks')").Scan(&exists)
+	if err != nil || !exists {
+		t.Skipf("Skipping test: background_tasks table does not exist (schema not applied)")
 		pool.Close()
 		return nil, nil
 	}

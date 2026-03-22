@@ -2,12 +2,25 @@ package qdrant_test
 
 import (
 	"context"
+	"fmt"
+	"net"
 	"testing"
+	"time"
 
 	adapter "dev.helix.agent/internal/adapters/vectordb/qdrant"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// isQdrantAvailable checks whether a Qdrant server is reachable on the default port.
+func isQdrantAvailable() bool {
+	conn, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", 6333), 2*time.Second)
+	if err != nil {
+		return false
+	}
+	_ = conn.Close()
+	return true
+}
 
 // ============================================================================
 // DefaultConfig Tests
@@ -176,6 +189,10 @@ func TestNewClient_NilConfig_UsesDefault(t *testing.T) {
 }
 
 func TestNewClient_Connect_FailsWithoutQdrant(t *testing.T) {
+	if isQdrantAvailable() {
+		t.Skip("Skipping negative-path test: Qdrant is running on localhost:6333")
+	}
+
 	cfg := adapter.DefaultConfig()
 	client, err := adapter.NewClient(cfg, nil)
 	require.NoError(t, err)
@@ -198,6 +215,10 @@ func TestNewClient_Close(t *testing.T) {
 }
 
 func TestNewClient_HealthCheck_FailsWithoutQdrant(t *testing.T) {
+	if isQdrantAvailable() {
+		t.Skip("Skipping negative-path test: Qdrant is running on localhost:6333")
+	}
+
 	cfg := adapter.DefaultConfig()
 	client, err := adapter.NewClient(cfg, nil)
 	require.NoError(t, err)
