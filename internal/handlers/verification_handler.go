@@ -152,6 +152,7 @@ type BatchVerifyResponse struct {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/verifier/verify/batch [post]
 func (h *VerificationHandler) BatchVerify(c *gin.Context) {
+
 	if !h.checkVerificationService(c) {
 		return
 	}
@@ -215,6 +216,7 @@ func (h *VerificationHandler) BatchVerify(c *gin.Context) {
 // @Failure 404 {object} ErrorResponse
 // @Router /api/v1/verifier/status/{model_id} [get]
 func (h *VerificationHandler) GetVerificationStatus(c *gin.Context) {
+
 	if !h.checkVerificationService(c) {
 		return
 	}
@@ -268,6 +270,7 @@ type VerifiedModelInfo struct {
 // @Success 200 {object} GetVerifiedModelsResponse
 // @Router /api/v1/verifier/models [get]
 func (h *VerificationHandler) GetVerifiedModels(c *gin.Context) {
+
 	if !h.checkRegistry(c) {
 		return
 	}
@@ -339,6 +342,7 @@ type TestCodeVisibilityResponse struct {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/verifier/test/code-visibility [post]
 func (h *VerificationHandler) TestCodeVisibility(c *gin.Context) {
+
 	if !h.checkVerificationService(c) {
 		return
 	}
@@ -416,6 +420,7 @@ type ReVerifyModelRequest struct {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/verifier/reverify [post]
 func (h *VerificationHandler) ReVerifyModel(c *gin.Context) {
+
 	if !h.checkVerificationService(c) {
 		return
 	}
@@ -467,6 +472,7 @@ type VerificationHealthResponse struct {
 // @Success 200 {object} VerificationHealthResponse
 // @Router /api/v1/verifier/health [get]
 func (h *VerificationHandler) GetVerificationHealth(c *gin.Context) {
+
 	if !h.checkVerificationService(c) {
 		return
 	}

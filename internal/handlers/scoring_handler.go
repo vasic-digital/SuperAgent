@@ -116,6 +116,7 @@ type BatchScoreResponse struct {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/verifier/scores/batch [post]
 func (h *ScoringHandler) BatchCalculateScores(c *gin.Context) {
+
 	if !h.checkScoringService(c) {
 		return
 	}
@@ -183,6 +184,7 @@ type ModelWithScoreInfo struct {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/verifier/scores/top [get]
 func (h *ScoringHandler) GetTopModels(c *gin.Context) {
+
 	if !h.checkScoringService(c) {
 		return
 	}
@@ -238,6 +240,7 @@ type GetModelsByScoreRangeRequest struct {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/verifier/scores/range [get]
 func (h *ScoringHandler) GetModelsByScoreRange(c *gin.Context) {
+
 	if !h.checkScoringService(c) {
 		return
 	}
@@ -313,6 +316,7 @@ type ScoringWeightsDetail struct {
 // @Success 200 {object} ScoringWeightsResponse
 // @Router /api/v1/verifier/scores/weights [get]
 func (h *ScoringHandler) GetScoringWeights(c *gin.Context) {
+
 	if !h.checkScoringService(c) {
 		return
 	}
@@ -355,6 +359,7 @@ type UpdateScoringWeightsRequest struct {
 // @Failure 400 {object} ErrorResponse
 // @Router /api/v1/verifier/scores/weights [put]
 func (h *ScoringHandler) UpdateScoringWeights(c *gin.Context) {
+
 	if !h.checkScoringService(c) {
 		return
 	}
@@ -404,6 +409,7 @@ func (h *ScoringHandler) UpdateScoringWeights(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/verifier/scores/{model_id}/name [get]
 func (h *ScoringHandler) GetModelNameWithScore(c *gin.Context) {
+
 	if !h.checkScoringService(c) {
 		return
 	}
@@ -437,6 +443,7 @@ type InvalidateCacheRequest struct {
 // @Success 200 {object} map[string]string
 // @Router /api/v1/verifier/scores/cache/invalidate [post]
 func (h *ScoringHandler) InvalidateCache(c *gin.Context) {
+
 	if !h.checkScoringService(c) {
 		return
 	}
@@ -489,6 +496,7 @@ type CompareModelsResponse struct {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/verifier/scores/compare [post]
 func (h *ScoringHandler) CompareModels(c *gin.Context) {
+
 	if !h.checkScoringService(c) {
 		return
 	}

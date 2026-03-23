@@ -164,6 +164,10 @@ func (h *BenchmarkHandler) StartBenchmark(c *gin.Context) {
 // @Failure 500 {object} VerifierErrorResponse
 // @Router /v1/benchmark/results [get]
 func (h *BenchmarkHandler) ListBenchmarkResults(c *gin.Context) {
+
+	if !h.checkSystem(c) {
+		return
+	}
 	runner := h.system.GetRunner()
 	if runner == nil {
 		c.JSON(
@@ -207,6 +211,10 @@ func (h *BenchmarkHandler) ListBenchmarkResults(c *gin.Context) {
 // @Failure 500 {object} VerifierErrorResponse
 // @Router /v1/benchmark/results/{id} [get]
 func (h *BenchmarkHandler) GetBenchmarkResult(c *gin.Context) {
+
+	if !h.checkSystem(c) {
+		return
+	}
 	runner := h.system.GetRunner()
 	if runner == nil {
 		c.JSON(

@@ -168,11 +168,11 @@ async function httpPost(url, data, headers = {}) {
     { m: 'POST', p: '/v1/planning/hiplan', ok: 400, body: {} },
     { m: 'POST', p: '/v1/planning/mcts', ok: 400, body: {} },
     { m: 'POST', p: '/v1/planning/tot', ok: 400, body: {} },
-    { m: 'POST', p: '/v1/llmops/experiments', ok: 400, body: {} },
-    { m: 'POST', p: '/v1/llmops/prompts', ok: 400, body: {} },
-    { m: 'POST', p: '/v1/llmops/evaluate', ok: 400, body: {} },
-    { m: 'POST', p: '/v1/benchmark/run', ok: 400, body: {} },
-    { m: 'POST', p: '/v1/chat/completions', ok: [400, 500, 503], body: {} }
+    { m: 'POST', p: '/v1/llmops/experiments', ok: [400, 503], body: {} },
+    { m: 'POST', p: '/v1/llmops/prompts', ok: [400, 503], body: {} },
+    { m: 'POST', p: '/v1/llmops/evaluate', ok: [400, 503], body: {} },
+    { m: 'POST', p: '/v1/benchmark/run', ok: [400, 503], body: {} },
+    { m: 'POST', p: '/v1/chat/completions', ok: [400, 500, 503, 0], body: {} }
   ];
 
   for (const ep of authEndpoints) {

@@ -64,6 +64,19 @@ func NewBackgroundTaskHandler(
 	}
 }
 
+// checkTaskServices returns false and writes a 503 response if the core task
+// services (repository and queue) have not been initialised.
+func (h *BackgroundTaskHandler) checkTaskServices(c *gin.Context) bool {
+	if h.repository == nil || h.queue == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error":   "service_unavailable",
+			"message": "Background task service not initialized",
+		})
+		return false
+	}
+	return true
+}
+
 // CreateTaskRequest represents the request to create a task
 type CreateTaskRequest struct {
 	TaskType           string                     `json:"task_type" binding:"required"`
@@ -111,6 +124,9 @@ type WebhookConfigRequest struct {
 
 // CreateTask handles POST /v1/tasks
 func (h *BackgroundTaskHandler) CreateTask(c *gin.Context) {
+	if !h.checkTaskServices(c) {
+		return
+	}
 	var req CreateTaskRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -242,6 +258,10 @@ func (h *BackgroundTaskHandler) CreateTask(c *gin.Context) {
 
 // GetTask handles GET /v1/tasks/:id
 func (h *BackgroundTaskHandler) GetTask(c *gin.Context) {
+
+	if !h.checkTaskServices(c) {
+		return
+	}
 	taskID := c.Param("id")
 
 	task, err := h.repository.GetByID(c.Request.Context(), taskID)
@@ -260,6 +280,10 @@ func (h *BackgroundTaskHandler) GetTask(c *gin.Context) {
 
 // GetTaskStatus handles GET /v1/tasks/:id/status
 func (h *BackgroundTaskHandler) GetTaskStatus(c *gin.Context) {
+
+	if !h.checkTaskServices(c) {
+		return
+	}
 	taskID := c.Param("id")
 
 	task, err := h.repository.GetByID(c.Request.Context(), taskID)
@@ -305,6 +329,10 @@ func (h *BackgroundTaskHandler) GetTaskStatus(c *gin.Context) {
 
 // GetTaskLogs handles GET /v1/tasks/:id/logs
 func (h *BackgroundTaskHandler) GetTaskLogs(c *gin.Context) {
+
+	if !h.checkTaskServices(c) {
+		return
+	}
 	taskID := c.Param("id")
 	limitStr := c.DefaultQuery("limit", "100")
 	limit, _ := strconv.Atoi(limitStr) //nolint:errcheck
@@ -342,6 +370,10 @@ func (h *BackgroundTaskHandler) GetTaskLogs(c *gin.Context) {
 
 // GetTaskResources handles GET /v1/tasks/:id/resources
 func (h *BackgroundTaskHandler) GetTaskResources(c *gin.Context) {
+
+	if !h.checkTaskServices(c) {
+		return
+	}
 	taskID := c.Param("id")
 	limitStr := c.DefaultQuery("limit", "10")
 	limit, _ := strconv.Atoi(limitStr) //nolint:errcheck
@@ -386,6 +418,10 @@ func (h *BackgroundTaskHandler) GetTaskResources(c *gin.Context) {
 
 // GetTaskEvents handles GET /v1/tasks/:id/events (SSE)
 func (h *BackgroundTaskHandler) GetTaskEvents(c *gin.Context) {
+
+	if !h.checkTaskServices(c) {
+		return
+	}
 	taskID := c.Param("id")
 
 	// Verify task exists
@@ -450,6 +486,10 @@ func (h *BackgroundTaskHandler) HandleWebSocket(c *gin.Context) {
 
 // PauseTask handles POST /v1/tasks/:id/pause
 func (h *BackgroundTaskHandler) PauseTask(c *gin.Context) {
+
+	if !h.checkTaskServices(c) {
+		return
+	}
 	taskID := c.Param("id")
 
 	task, err := h.repository.GetByID(c.Request.Context(), taskID)
@@ -495,6 +535,10 @@ func (h *BackgroundTaskHandler) PauseTask(c *gin.Context) {
 
 // ResumeTask handles POST /v1/tasks/:id/resume
 func (h *BackgroundTaskHandler) ResumeTask(c *gin.Context) {
+
+	if !h.checkTaskServices(c) {
+		return
+	}
 	taskID := c.Param("id")
 
 	task, err := h.repository.GetByID(c.Request.Context(), taskID)
@@ -539,6 +583,10 @@ func (h *BackgroundTaskHandler) ResumeTask(c *gin.Context) {
 
 // CancelTask handles POST /v1/tasks/:id/cancel
 func (h *BackgroundTaskHandler) CancelTask(c *gin.Context) {
+
+	if !h.checkTaskServices(c) {
+		return
+	}
 	taskID := c.Param("id")
 
 	task, err := h.repository.GetByID(c.Request.Context(), taskID)
@@ -590,6 +638,10 @@ func (h *BackgroundTaskHandler) CancelTask(c *gin.Context) {
 
 // DeleteTask handles DELETE /v1/tasks/:id
 func (h *BackgroundTaskHandler) DeleteTask(c *gin.Context) {
+
+	if !h.checkTaskServices(c) {
+		return
+	}
 	taskID := c.Param("id")
 
 	task, err := h.repository.GetByID(c.Request.Context(), taskID)
@@ -632,6 +684,10 @@ func (h *BackgroundTaskHandler) DeleteTask(c *gin.Context) {
 
 // ListTasks handles GET /v1/tasks
 func (h *BackgroundTaskHandler) ListTasks(c *gin.Context) {
+
+	if !h.checkTaskServices(c) {
+		return
+	}
 	status := c.Query("status")
 	limitStr := c.DefaultQuery("limit", "50")
 	offsetStr := c.DefaultQuery("offset", "0")
@@ -685,6 +741,10 @@ func (h *BackgroundTaskHandler) ListTasks(c *gin.Context) {
 
 // GetQueueStats handles GET /v1/tasks/queue/stats
 func (h *BackgroundTaskHandler) GetQueueStats(c *gin.Context) {
+
+	if !h.checkTaskServices(c) {
+		return
+	}
 	ctx := c.Request.Context()
 
 	pending, _ := h.queue.GetPendingCount(ctx)   //nolint:errcheck
@@ -878,6 +938,10 @@ func (h *BackgroundTaskHandler) DeleteWebhook(c *gin.Context) {
 
 // AnalyzeTask handles GET /v1/tasks/:id/analyze
 func (h *BackgroundTaskHandler) AnalyzeTask(c *gin.Context) {
+
+	if !h.checkTaskServices(c) {
+		return
+	}
 	taskID := c.Param("id")
 
 	task, err := h.repository.GetByID(c.Request.Context(), taskID)

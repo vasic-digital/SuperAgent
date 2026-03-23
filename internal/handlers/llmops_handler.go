@@ -197,6 +197,7 @@ func (h *LLMOpsHandler) CreateExperiment(c *gin.Context) {
 // @Failure 500 {object} VerifierErrorResponse
 // @Router /v1/llmops/experiments [get]
 func (h *LLMOpsHandler) ListExperiments(c *gin.Context) {
+
 	if !h.checkSystem(c) {
 		return
 	}
@@ -238,6 +239,7 @@ func (h *LLMOpsHandler) ListExperiments(c *gin.Context) {
 // @Failure 404 {object} VerifierErrorResponse
 // @Router /v1/llmops/experiments/{id} [get]
 func (h *LLMOpsHandler) GetExperiment(c *gin.Context) {
+
 	if !h.checkSystem(c) {
 		return
 	}
@@ -273,6 +275,7 @@ func (h *LLMOpsHandler) GetExperiment(c *gin.Context) {
 // @Failure 500 {object} VerifierErrorResponse
 // @Router /v1/llmops/evaluate [post]
 func (h *LLMOpsHandler) CreateEvaluation(c *gin.Context) {
+
 	if !h.checkSystem(c) {
 		return
 	}
@@ -319,6 +322,7 @@ func (h *LLMOpsHandler) CreateEvaluation(c *gin.Context) {
 // @Failure 500 {object} VerifierErrorResponse
 // @Router /v1/llmops/prompts [get]
 func (h *LLMOpsHandler) ListPrompts(c *gin.Context) {
+
 	if !h.checkSystem(c) {
 		return
 	}
@@ -360,6 +364,7 @@ func (h *LLMOpsHandler) ListPrompts(c *gin.Context) {
 // @Failure 500 {object} VerifierErrorResponse
 // @Router /v1/llmops/prompts [post]
 func (h *LLMOpsHandler) CreatePromptVersion(c *gin.Context) {
+
 	if !h.checkSystem(c) {
 		return
 	}
