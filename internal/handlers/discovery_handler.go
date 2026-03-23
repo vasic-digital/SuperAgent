@@ -25,6 +25,19 @@ func NewDiscoveryHandler(ds *verifier.ModelDiscoveryService) *DiscoveryHandler {
 	}
 }
 
+
+// checkDiscoveryService returns true if the discovery service is available.
+func (h *DiscoveryHandler) checkDiscoveryService(c *gin.Context) bool {
+	if h.discoveryService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error":   "service_unavailable",
+			"message": "Model discovery service not initialized",
+		})
+		return false
+	}
+	return true
+}
+
 // DiscoveredModelResponse represents a discovered model response
 type DiscoveredModelResponse struct {
 	ModelID      string   `json:"model_id"`
@@ -46,6 +59,9 @@ type DiscoveredModelResponse struct {
 // @Success 200 {object} map[string]interface{}
 // @Router /api/v1/verifier/discovery/models [get]
 func (h *DiscoveryHandler) GetDiscoveredModels(c *gin.Context) {
+	if !h.checkDiscoveryService(c) {
+		return
+	}
 	models := h.discoveryService.GetDiscoveredModels()
 
 	response := make([]DiscoveredModelResponse, len(models))
@@ -89,6 +105,10 @@ type SelectedModelResponse struct {
 // @Success 200 {object} map[string]interface{}
 // @Router /api/v1/verifier/discovery/selected [get]
 func (h *DiscoveryHandler) GetSelectedModels(c *gin.Context) {
+
+	if !h.checkDiscoveryService(c) {
+		return
+	}
 	models := h.discoveryService.GetSelectedModels()
 
 	response := make([]SelectedModelResponse, len(models))
@@ -121,6 +141,10 @@ func (h *DiscoveryHandler) GetSelectedModels(c *gin.Context) {
 // @Success 200 {object} verifier.DiscoveryStats
 // @Router /api/v1/verifier/discovery/stats [get]
 func (h *DiscoveryHandler) GetDiscoveryStats(c *gin.Context) {
+
+	if !h.checkDiscoveryService(c) {
+		return
+	}
 	stats := h.discoveryService.GetDiscoveryStats()
 
 	c.JSON(http.StatusOK, gin.H{
@@ -156,6 +180,10 @@ type TriggerDiscoveryRequest struct {
 // @Failure 400 {object} ErrorResponse
 // @Router /api/v1/verifier/discovery/trigger [post]
 func (h *DiscoveryHandler) TriggerDiscovery(c *gin.Context) {
+
+	if !h.checkDiscoveryService(c) {
+		return
+	}
 	var req TriggerDiscoveryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, VerifierErrorResponse{Error: err.Error()})
@@ -197,6 +225,10 @@ func (h *DiscoveryHandler) TriggerDiscovery(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Router /api/v1/verifier/discovery/ensemble [get]
 func (h *DiscoveryHandler) GetEnsembleModels(c *gin.Context) {
+
+	if !h.checkDiscoveryService(c) {
+		return
+	}
 	models := h.discoveryService.GetSelectedModels()
 
 	type EnsembleModel struct {
@@ -260,6 +292,10 @@ func (h *DiscoveryHandler) GetEnsembleModels(c *gin.Context) {
 // @Failure 404 {object} ErrorResponse
 // @Router /api/v1/verifier/discovery/ensemble/{model_id} [get]
 func (h *DiscoveryHandler) GetModelForDebate(c *gin.Context) {
+
+	if !h.checkDiscoveryService(c) {
+		return
+	}
 	modelID := c.Param("model_id")
 
 	model, found := h.discoveryService.GetModelForDebate(modelID)

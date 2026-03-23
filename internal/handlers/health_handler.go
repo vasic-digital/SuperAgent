@@ -20,6 +20,18 @@ func NewHealthHandler(hs *verifier.HealthService) *HealthHandler {
 	}
 }
 
+// checkHealthService returns true if the health service is available, false + JSON error if not.
+func (h *HealthHandler) checkHealthService(c *gin.Context) bool {
+	if h.healthService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error":   "service_unavailable",
+			"message": "Health service not initialized",
+		})
+		return false
+	}
+	return true
+}
+
 // ProviderHealthResponse represents provider health response
 type ProviderHealthResponse struct {
 	ProviderID    string  `json:"provider_id"`
@@ -45,6 +57,9 @@ type ProviderHealthResponse struct {
 // @Failure 404 {object} ErrorResponse
 // @Router /api/v1/verifier/health/providers/{provider_id} [get]
 func (h *HealthHandler) GetProviderHealth(c *gin.Context) {
+	if !h.checkHealthService(c) {
+		return
+	}
 	providerID := c.Param("provider_id")
 
 	health, err := h.healthService.GetProviderHealth(providerID)
@@ -100,6 +115,9 @@ type HealthSummary struct {
 // @Success 200 {object} GetAllProvidersHealthResponse
 // @Router /api/v1/verifier/health/providers [get]
 func (h *HealthHandler) GetAllProvidersHealth(c *gin.Context) {
+	if !h.checkHealthService(c) {
+		return
+	}
 	providers := h.healthService.GetAllProviderHealth()
 
 	resp := GetAllProvidersHealthResponse{
@@ -170,6 +188,10 @@ type GetHealthyProvidersResponse struct {
 // @Success 200 {object} GetHealthyProvidersResponse
 // @Router /api/v1/verifier/health/healthy [get]
 func (h *HealthHandler) GetHealthyProviders(c *gin.Context) {
+
+	if !h.checkHealthService(c) {
+		return
+	}
 	providers := h.healthService.GetHealthyProviders()
 
 	c.JSON(http.StatusOK, GetHealthyProvidersResponse{
@@ -201,6 +223,10 @@ type GetFastestProviderResponse struct {
 // @Failure 404 {object} ErrorResponse
 // @Router /api/v1/verifier/health/fastest [post]
 func (h *HealthHandler) GetFastestProvider(c *gin.Context) {
+
+	if !h.checkHealthService(c) {
+		return
+	}
 	var req GetFastestProviderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, VerifierErrorResponse{Error: err.Error()})
@@ -240,6 +266,10 @@ type CircuitBreakerResponse struct {
 // @Failure 404 {object} ErrorResponse
 // @Router /api/v1/verifier/health/circuit/{provider_id} [get]
 func (h *HealthHandler) GetCircuitBreakerStatus(c *gin.Context) {
+
+	if !h.checkHealthService(c) {
+		return
+	}
 	providerID := c.Param("provider_id")
 
 	cb := h.healthService.GetCircuitBreaker(providerID)
@@ -271,6 +301,10 @@ type RecordSuccessRequest struct {
 // @Failure 400 {object} ErrorResponse
 // @Router /api/v1/verifier/health/record/success [post]
 func (h *HealthHandler) RecordSuccess(c *gin.Context) {
+
+	if !h.checkHealthService(c) {
+		return
+	}
 	var req RecordSuccessRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, VerifierErrorResponse{Error: err.Error()})
@@ -301,6 +335,10 @@ type RecordFailureRequest struct {
 // @Failure 400 {object} ErrorResponse
 // @Router /api/v1/verifier/health/record/failure [post]
 func (h *HealthHandler) RecordFailure(c *gin.Context) {
+
+	if !h.checkHealthService(c) {
+		return
+	}
 	var req RecordFailureRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, VerifierErrorResponse{Error: err.Error()})
@@ -332,6 +370,10 @@ type HealthAddProviderRequest struct {
 // @Failure 400 {object} VerifierErrorResponse
 // @Router /api/v1/verifier/health/providers [post]
 func (h *HealthHandler) AddProvider(c *gin.Context) {
+
+	if !h.checkHealthService(c) {
+		return
+	}
 	var req HealthAddProviderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, VerifierErrorResponse{Error: err.Error()})
@@ -356,6 +398,10 @@ func (h *HealthHandler) AddProvider(c *gin.Context) {
 // @Success 200 {object} map[string]string
 // @Router /api/v1/verifier/health/providers/{provider_id} [delete]
 func (h *HealthHandler) RemoveProvider(c *gin.Context) {
+
+	if !h.checkHealthService(c) {
+		return
+	}
 	providerID := c.Param("provider_id")
 
 	h.healthService.RemoveProvider(providerID)
@@ -375,6 +421,10 @@ func (h *HealthHandler) RemoveProvider(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Router /api/v1/verifier/health/available/{provider_id} [get]
 func (h *HealthHandler) IsProviderAvailable(c *gin.Context) {
+
+	if !h.checkHealthService(c) {
+		return
+	}
 	providerID := c.Param("provider_id")
 
 	available := h.healthService.IsProviderAvailable(providerID)
@@ -406,6 +456,10 @@ type LatencyStatsResponse struct {
 // @Failure 404 {object} ErrorResponse
 // @Router /api/v1/verifier/health/latency/{provider_id} [get]
 func (h *HealthHandler) GetProviderLatency(c *gin.Context) {
+
+	if !h.checkHealthService(c) {
+		return
+	}
 	providerID := c.Param("provider_id")
 
 	latency, err := h.healthService.GetProviderLatency(providerID)
@@ -437,6 +491,10 @@ type HealthServiceStatusResponse struct {
 // @Success 200 {object} HealthServiceStatusResponse
 // @Router /api/v1/verifier/health/status [get]
 func (h *HealthHandler) GetHealthServiceStatus(c *gin.Context) {
+
+	if !h.checkHealthService(c) {
+		return
+	}
 	providers := h.healthService.GetAllProviderHealth()
 
 	c.JSON(http.StatusOK, HealthServiceStatusResponse{
