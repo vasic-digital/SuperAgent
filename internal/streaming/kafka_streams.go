@@ -105,15 +105,18 @@ func (csp *ConversationStreamProcessor) Start(ctx context.Context) error {
 
 	csp.logger.Info("Stream processor started successfully")
 
-	// Wait for stop signal
+	// Wait for stop signal — unsubscribe on context cancellation.
+	// Note: this goroutine does NOT call Stop() to avoid WaitGroup deadlock
+	// (Stop calls wg.Wait which would wait for this goroutine).
+	// Instead it just unsubscribes and signals via stopOnce.
 	go func() {
 		<-ctx.Done()
 		if err := sub.Unsubscribe(); err != nil {
 			csp.logger.Error("failed to unsubscribe", zap.Error(err))
 		}
-		if err := csp.Stop(); err != nil {
-			csp.logger.Error("failed to stop stream processor", zap.Error(err))
-		}
+		csp.stopOnce.Do(func() {
+			close(csp.stopChan)
+		})
 	}()
 
 	return nil
