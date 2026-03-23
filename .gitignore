@@ -92,3 +92,11 @@ releases/web/
 # CLI agent local memory/state directories
 .junie/
 .gemini/
+
+# Video recordings from HelixQA sessions
+qa-results/**/*.mp4
+qa-results/**/*.webm
+qa-results/**/*.mkv
+qa-results/**/*.avi
+qa-results/**/*.mov
+**/*.screenrecord
