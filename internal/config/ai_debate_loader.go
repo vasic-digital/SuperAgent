@@ -94,6 +94,8 @@ func (l *AIDebateConfigLoader) LoadFromString(yamlContent string) (*AIDebateConf
 
 // GetConfig returns the loaded configuration
 func (l *AIDebateConfigLoader) GetConfig() *AIDebateConfig {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
 	return l.config
 }
 
