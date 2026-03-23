@@ -1,0 +1,14 @@
+{"version":"1.0","name":"Concurrency Safety Bank","challenges":[
+{"id":"CONC-001","name":"SSE Manager has sync.Once","category":"concurrency","priority":"critical","assertions":[{"type":"contains","target":"source","expected":"stopOnce sync.Once"}]},
+{"id":"CONC-002","name":"SSE Manager has atomic.Bool","category":"concurrency","priority":"critical","assertions":[{"type":"contains","target":"source","expected":"closed atomic.Bool"}]},
+{"id":"CONC-003","name":"Kafka Transport has sync.Once","category":"concurrency","priority":"critical","assertions":[{"type":"contains","target":"source","expected":"stopOnce sync.Once"}]},
+{"id":"CONC-004","name":"MCP Pool uses atomic.Bool","category":"concurrency","priority":"critical","assertions":[{"type":"contains","target":"source","expected":"closed atomic.Bool"}]},
+{"id":"CONC-005","name":"Plugin HotReload has WaitGroup","category":"concurrency","priority":"critical","assertions":[{"type":"contains","target":"source","expected":"wg sync.WaitGroup"}]},
+{"id":"CONC-006","name":"Integration Orchestrator mutex active","category":"concurrency","priority":"critical","assertions":[{"type":"not_empty","target":"mutex_active"}]},
+{"id":"CONC-007","name":"ActiveDebate has RWMutex","category":"concurrency","priority":"high","assertions":[{"type":"contains","target":"source","expected":"mu sync.RWMutex"}]},
+{"id":"CONC-008","name":"Debate participant panic recovery","category":"concurrency","priority":"critical","assertions":[{"type":"contains","target":"source","expected":"participant.*panicked"}]},
+{"id":"CONC-009","name":"Config loader uses RLock","category":"concurrency","priority":"high","assertions":[{"type":"contains","target":"source","expected":"l.mu.RLock"}]},
+{"id":"CONC-010","name":"Polling store panic recovery","category":"concurrency","priority":"high","assertions":[{"type":"contains","target":"source","expected":"cleanup loop panicked"}]},
+{"id":"CONC-011","name":"Benchmark runner deep-copy","category":"concurrency","priority":"high","assertions":[{"type":"contains","target":"source","expected":"copyBenchmarkRun"}]},
+{"id":"CONC-012","name":"WebSocket lock ordering documented","category":"concurrency","priority":"medium","assertions":[{"type":"contains","target":"source","expected":"Lock ordering"}]}
+]}

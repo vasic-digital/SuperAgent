@@ -1,0 +1,12 @@
+{"version":"1.0","name":"Dead Code Elimination Bank","challenges":[
+{"id":"DEAD-001","name":"internal/embedding removed","category":"codehealth","priority":"critical","assertions":[{"type":"not_empty","target":"dir_not_exists","expected":"internal/embedding"}]},
+{"id":"DEAD-002","name":"Agentic handler exists","category":"codehealth","priority":"critical","assertions":[{"type":"not_empty","target":"file_exists","expected":"internal/handlers/agentic_handler.go"}]},
+{"id":"DEAD-003","name":"Planning handler exists","category":"codehealth","priority":"critical","assertions":[{"type":"not_empty","target":"file_exists","expected":"internal/handlers/planning_handler.go"}]},
+{"id":"DEAD-004","name":"LLMOps handler exists","category":"codehealth","priority":"critical","assertions":[{"type":"not_empty","target":"file_exists","expected":"internal/handlers/llmops_handler.go"}]},
+{"id":"DEAD-005","name":"Benchmark handler exists","category":"codehealth","priority":"critical","assertions":[{"type":"not_empty","target":"file_exists","expected":"internal/handlers/benchmark_handler.go"}]},
+{"id":"DEAD-006","name":"Observability adapter exists","category":"codehealth","priority":"high","assertions":[{"type":"not_empty","target":"file_exists","expected":"internal/adapters/observability/adapter.go"}]},
+{"id":"DEAD-007","name":"Events adapter exists","category":"codehealth","priority":"high","assertions":[{"type":"not_empty","target":"file_exists","expected":"internal/adapters/events/adapter.go"}]},
+{"id":"DEAD-008","name":"HTTP adapter exists","category":"codehealth","priority":"high","assertions":[{"type":"not_empty","target":"file_exists","expected":"internal/adapters/http/adapter.go"}]},
+{"id":"DEAD-009","name":"Deprecated packages marked","category":"codehealth","priority":"high","assertions":[{"type":"contains","target":"source","expected":"DEPRECATED"}]},
+{"id":"DEAD-010","name":"GraphQL feature-flagged","category":"codehealth","priority":"medium","assertions":[{"type":"contains","target":"source","expected":"GRAPHQL_ENABLED"}]}
+]}

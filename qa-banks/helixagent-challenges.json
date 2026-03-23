@@ -1,0 +1,10 @@
+{"version":"1.0","name":"Challenge Infrastructure Bank","challenges":[
+{"id":"CHAL-001","name":"Challenge framework exists","category":"challenges","priority":"critical","assertions":[{"type":"not_empty","target":"file_exists","expected":"challenges/scripts/challenge_framework.sh"}]},
+{"id":"CHAL-002","name":"Dead code elimination challenge","category":"challenges","priority":"high","assertions":[{"type":"not_empty","target":"file_exists","expected":"challenges/scripts/dead_code_elimination_challenge.sh"}]},
+{"id":"CHAL-003","name":"Concurrency safety challenge","category":"challenges","priority":"high","assertions":[{"type":"not_empty","target":"file_exists","expected":"challenges/scripts/concurrency_safety_comprehensive_challenge.sh"}]},
+{"id":"CHAL-004","name":"New endpoints challenge","category":"challenges","priority":"high","assertions":[{"type":"not_empty","target":"file_exists","expected":"challenges/scripts/new_endpoints_challenge.sh"}]},
+{"id":"CHAL-005","name":"HelixQA validation challenge","category":"challenges","priority":"high","assertions":[{"type":"not_empty","target":"file_exists","expected":"challenges/scripts/helixqa_validation_challenge.sh"}]},
+{"id":"CHAL-006","name":"450+ challenge scripts total","category":"challenges","priority":"critical","assertions":[{"type":"min_count","target":"challenge_scripts","expected":"450"}]},
+{"id":"CHAL-007","name":"10+ QA test banks","category":"challenges","priority":"high","assertions":[{"type":"min_count","target":"qa_banks","expected":"10"}]},
+{"id":"CHAL-008","name":"All challenge scripts executable","category":"challenges","priority":"high","assertions":[{"type":"not_empty","target":"all_executable"}]}
+]}

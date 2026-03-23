@@ -1,0 +1,14 @@
+{"version":"1.0","name":"Documentation Completeness Bank","challenges":[
+{"id":"DOC-001","name":"LLMProvider has docs","category":"docs","priority":"high","assertions":[{"type":"not_empty","target":"dir_exists","expected":"LLMProvider/docs"}]},
+{"id":"DOC-002","name":"BackgroundTasks has docs","category":"docs","priority":"high","assertions":[{"type":"not_empty","target":"dir_exists","expected":"BackgroundTasks/docs"}]},
+{"id":"DOC-003","name":"ConversationContext has docs","category":"docs","priority":"high","assertions":[{"type":"not_empty","target":"dir_exists","expected":"ConversationContext/docs"}]},
+{"id":"DOC-004","name":"DebateOrchestrator has docs","category":"docs","priority":"high","assertions":[{"type":"not_empty","target":"dir_exists","expected":"DebateOrchestrator/docs"}]},
+{"id":"DOC-005","name":"Models has SCHEMA.md","category":"docs","priority":"medium","assertions":[{"type":"not_empty","target":"file_exists","expected":"Models/docs/SCHEMA.md"}]},
+{"id":"DOC-006","name":"Architecture diagram rendered","category":"docs","priority":"high","assertions":[{"type":"not_empty","target":"file_exists","expected":"docs/diagrams/rendered/architecture.svg"}]},
+{"id":"DOC-007","name":"Debate flow diagram rendered","category":"docs","priority":"high","assertions":[{"type":"not_empty","target":"file_exists","expected":"docs/diagrams/rendered/debate-orchestration-flow.svg"}]},
+{"id":"DOC-008","name":"4 new user manuals exist","category":"docs","priority":"high","assertions":[{"type":"min_count","target":"user_manuals_34_37","expected":"4"}]},
+{"id":"DOC-009","name":"4 new video courses exist","category":"docs","priority":"high","assertions":[{"type":"min_count","target":"courses_66_69","expected":"4"}]},
+{"id":"DOC-010","name":"4 new labs exist","category":"docs","priority":"high","assertions":[{"type":"min_count","target":"labs_14_17","expected":"4"}]},
+{"id":"DOC-011","name":"SQL schemas for new features","category":"docs","priority":"high","assertions":[{"type":"min_count","target":"new_sql_schemas","expected":"3"}]},
+{"id":"DOC-012","name":"CLAUDE.md has new endpoints","category":"docs","priority":"critical","assertions":[{"type":"contains","target":"CLAUDE.md","expected":"agentic"}]}
+]}

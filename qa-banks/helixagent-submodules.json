@@ -1,0 +1,10 @@
+{"version":"1.0","name":"Submodule Health Bank","challenges":[
+{"id":"SUB-001","name":"37 submodules in .gitmodules","category":"submodules","priority":"critical","assertions":[{"type":"min_count","target":"gitmodules_count","expected":"37"}]},
+{"id":"SUB-002","name":"All submodules use SSH URLs","category":"submodules","priority":"critical","assertions":[{"type":"not_empty","target":"ssh_urls_only"}]},
+{"id":"SUB-003","name":"EventBus submodule exists","category":"submodules","priority":"high","assertions":[{"type":"not_empty","target":"dir_exists","expected":"EventBus"}]},
+{"id":"SUB-004","name":"HelixMemory submodule exists","category":"submodules","priority":"high","assertions":[{"type":"not_empty","target":"dir_exists","expected":"HelixMemory"}]},
+{"id":"SUB-005","name":"HelixSpecifier submodule exists","category":"submodules","priority":"high","assertions":[{"type":"not_empty","target":"dir_exists","expected":"HelixSpecifier"}]},
+{"id":"SUB-006","name":"Containers submodule exists","category":"submodules","priority":"critical","assertions":[{"type":"not_empty","target":"dir_exists","expected":"Containers"}]},
+{"id":"SUB-007","name":"All replace directives valid","category":"submodules","priority":"critical","assertions":[{"type":"not_empty","target":"replace_dirs_exist"}]},
+{"id":"SUB-008","name":"Root go.mod has 37 replaces","category":"submodules","priority":"high","assertions":[{"type":"min_count","target":"replace_count","expected":"37"}]}
+]}
