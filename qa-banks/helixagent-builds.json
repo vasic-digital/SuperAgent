@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "name": "HelixAgent Build Validation Bank",
+  "challenges": [
+    {"id": "BUILD-001", "name": "helixagent binary exists", "category": "build", "priority": "critical", "assertions": [{"type": "not_empty", "target": "file_exists", "expected": "bin/helixagent"}]},
+    {"id": "BUILD-002", "name": "api binary exists", "category": "build", "priority": "critical", "assertions": [{"type": "not_empty", "target": "file_exists", "expected": "bin/api"}]},
+    {"id": "BUILD-003", "name": "grpc-server binary exists", "category": "build", "priority": "critical", "assertions": [{"type": "not_empty", "target": "file_exists", "expected": "bin/grpc-server"}]},
+    {"id": "BUILD-004", "name": "cognee-mock binary exists", "category": "build", "priority": "high", "assertions": [{"type": "not_empty", "target": "file_exists", "expected": "bin/cognee-mock"}]},
+    {"id": "BUILD-005", "name": "debug binary exists", "category": "build", "priority": "high", "assertions": [{"type": "not_empty", "target": "file_exists", "expected": "bin/helixagent-debug"}]},
+    {"id": "BUILD-006", "name": "helixqa binary exists", "category": "build", "priority": "high", "assertions": [{"type": "not_empty", "target": "file_exists", "expected": "bin/helixqa"}]},
+    {"id": "BUILD-007", "name": "Release versions tracked", "category": "build", "priority": "high", "assertions": [{"type": "not_empty", "target": "file_exists", "expected": "releases/.version-data"}]},
+    {"id": "BUILD-008", "name": "7 apps have version codes", "category": "build", "priority": "high", "assertions": [{"type": "min_count", "target": "version_codes", "expected": "7"}]},
+    {"id": "BUILD-009", "name": "Releases directory gitignored", "category": "build", "priority": "critical", "assertions": [{"type": "contains", "target": ".gitignore", "expected": "releases/helixagent"}]},
+    {"id": "BUILD-010", "name": "Go build succeeds", "category": "build", "priority": "critical", "assertions": [{"type": "not_empty", "target": "build_success"}]}
+  ]
+}

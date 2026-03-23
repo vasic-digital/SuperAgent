@@ -1,0 +1,18 @@
+{
+  "version": "1.0",
+  "name": "HelixAgent Security Validation Bank",
+  "challenges": [
+    {"id": "SEC-001", "name": "No auth returns 401 on protected endpoints", "category": "security", "priority": "critical", "assertions": [{"type": "http_status_unauthorized", "target": "GET /v1/llmops/experiments"}]},
+    {"id": "SEC-002", "name": "Invalid JWT returns 401", "category": "security", "priority": "critical", "assertions": [{"type": "http_status_unauthorized", "target": "GET /v1/providers with bad token"}]},
+    {"id": "SEC-003", "name": "Health endpoint is public (no auth needed)", "category": "security", "priority": "critical", "assertions": [{"type": "http_status_ok", "target": "GET /health"}]},
+    {"id": "SEC-004", "name": "API key not leaked in responses", "category": "security", "priority": "critical", "assertions": [{"type": "not_empty", "target": "no_api_key_in_body"}]},
+    {"id": "SEC-005", "name": "TLS MinVersion set on QUIC server", "category": "security", "priority": "critical", "assertions": [{"type": "contains", "target": "source_code", "expected": "tls.VersionTLS12"}]},
+    {"id": "SEC-006", "name": "No SQL injection in provider names", "category": "security", "priority": "high", "assertions": [{"type": "not_empty", "target": "sql_safe"}]},
+    {"id": "SEC-007", "name": "Response headers do not leak server version", "category": "security", "priority": "high", "assertions": [{"type": "not_empty", "target": "no_server_header"}]},
+    {"id": "SEC-008", "name": "CORS headers present on responses", "category": "security", "priority": "high", "assertions": [{"type": "not_empty", "target": "cors_configured"}]},
+    {"id": "SEC-009", "name": "Rate limiting configured", "category": "security", "priority": "high", "assertions": [{"type": "contains", "target": "features", "expected": "rate_limiting"}]},
+    {"id": "SEC-010", "name": "Nosemgrep annotations documented", "category": "security", "priority": "medium", "assertions": [{"type": "not_empty", "target": "nosemgrep_justified"}]},
+    {"id": "SEC-011", "name": "Circuit breakers on all providers", "category": "security", "priority": "high", "assertions": [{"type": "not_empty", "target": "circuit_breakers"}]},
+    {"id": "SEC-012", "name": "Panic recovery in goroutines", "category": "security", "priority": "critical", "assertions": [{"type": "contains", "target": "source_code", "expected": "recover()"}]}
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "name": "HelixAgent Debate System Bank",
+  "challenges": [
+    {"id": "DEB-001", "name": "Debate endpoint exists", "category": "functional", "priority": "critical", "assertions": [{"type": "not_empty", "target": "endpoint_exists", "expected": "/v1/debate"}]},
+    {"id": "DEB-002", "name": "Debate service initialized", "category": "functional", "priority": "critical", "assertions": [{"type": "not_empty", "target": "service_active"}]},
+    {"id": "DEB-003", "name": "Debate orchestrator has 8 phases", "category": "functional", "priority": "high", "assertions": [{"type": "contains", "target": "source_code", "expected": "Dehallucination"}]},
+    {"id": "DEB-004", "name": "6 voting methods available", "category": "functional", "priority": "high", "assertions": [{"type": "min_count", "target": "voting_methods", "expected": "6"}]},
+    {"id": "DEB-005", "name": "4 topology types supported", "category": "functional", "priority": "high", "assertions": [{"type": "min_count", "target": "topology_types", "expected": "4"}]},
+    {"id": "DEB-006", "name": "Reflexion framework connected", "category": "functional", "priority": "high", "assertions": [{"type": "not_empty", "target": "reflexion_active"}]},
+    {"id": "DEB-007", "name": "Debate participant panic recovery", "category": "stability", "priority": "critical", "assertions": [{"type": "contains", "target": "source_code", "expected": "participant.*panicked"}]},
+    {"id": "DEB-008", "name": "HelixMemory integration active", "category": "functional", "priority": "high", "assertions": [{"type": "not_empty", "target": "helixmemory_active"}]},
+    {"id": "DEB-009", "name": "Cross-debate learning enabled", "category": "functional", "priority": "medium", "assertions": [{"type": "not_empty", "target": "cross_debate_learning"}]},
+    {"id": "DEB-010", "name": "Debate performance optimizer", "category": "performance", "priority": "high", "assertions": [{"type": "not_empty", "target": "performance_optimizer"}]}
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "name": "HelixAgent Observability Bank",
+  "challenges": [
+    {"id": "OBS-001", "name": "Prometheus metrics endpoint", "category": "monitoring", "priority": "high", "assertions": [{"type": "not_empty", "target": "endpoint_exists", "expected": "/metrics"}]},
+    {"id": "OBS-002", "name": "Feature flags in response headers", "category": "monitoring", "priority": "high", "assertions": [{"type": "contains", "target": "response.headers", "expected": "X-Features-Enabled"}]},
+    {"id": "OBS-003", "name": "Debug pprof heap endpoint", "category": "monitoring", "priority": "medium", "assertions": [{"type": "not_empty", "target": "endpoint_exists", "expected": "/debug/pprof/heap"}]},
+    {"id": "OBS-004", "name": "Debug pprof goroutine endpoint", "category": "monitoring", "priority": "medium", "assertions": [{"type": "not_empty", "target": "endpoint_exists", "expected": "/debug/pprof/goroutine"}]},
+    {"id": "OBS-005", "name": "Observability adapter compiled", "category": "functional", "priority": "high", "assertions": [{"type": "not_empty", "target": "adapter_exists", "expected": "observability"}]},
+    {"id": "OBS-006", "name": "Events adapter compiled", "category": "functional", "priority": "high", "assertions": [{"type": "not_empty", "target": "adapter_exists", "expected": "events"}]},
+    {"id": "OBS-007", "name": "HTTP client pool adapter compiled", "category": "functional", "priority": "high", "assertions": [{"type": "not_empty", "target": "adapter_exists", "expected": "http"}]},
+    {"id": "OBS-008", "name": "62+ lazy loading sites", "category": "performance", "priority": "high", "assertions": [{"type": "min_count", "target": "sync_once_count", "expected": "62"}]}
+  ]
+}
