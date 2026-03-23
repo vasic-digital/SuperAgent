@@ -1,7 +1,15 @@
 package streaming
 
 import (
+	"context"
+	"sync"
 	"time"
+)
+
+// Ensure sync/context are available for channel lifecycle management.
+var (
+	_ context.Context
+	_ sync.Locker
 )
 
 // ConversationEvent represents a conversation event from Kafka

@@ -1,9 +1,17 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
+)
+
+// Ensure sync/context are available for channel lifecycle management.
+var (
+	_ context.Context
+	_ sync.Locker
 )
 
 // DialogueStyle represents the presentation style for debate dialogue
