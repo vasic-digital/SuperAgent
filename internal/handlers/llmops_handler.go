@@ -28,6 +28,19 @@ func NewLLMOpsHandler(system *llmops.LLMOpsSystem) *LLMOpsHandler {
 	}
 }
 
+// checkSystem returns false and writes a 503 response if the LLMOps system
+// has not been initialised.
+func (h *LLMOpsHandler) checkSystem(c *gin.Context) bool {
+	if h.system == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error":   "service_unavailable",
+			"message": "LLMOps system not initialized",
+		})
+		return false
+	}
+	return true
+}
+
 // --- request / response types ---
 
 // CreateExperimentRequest represents a request to create an A/B experiment
@@ -138,6 +151,9 @@ type ListPromptsResponse struct {
 // @Failure 500 {object} VerifierErrorResponse
 // @Router /v1/llmops/experiments [post]
 func (h *LLMOpsHandler) CreateExperiment(c *gin.Context) {
+	if !h.checkSystem(c) {
+		return
+	}
 	var req CreateExperimentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, VerifierErrorResponse{Error: err.Error()})
@@ -181,6 +197,9 @@ func (h *LLMOpsHandler) CreateExperiment(c *gin.Context) {
 // @Failure 500 {object} VerifierErrorResponse
 // @Router /v1/llmops/experiments [get]
 func (h *LLMOpsHandler) ListExperiments(c *gin.Context) {
+	if !h.checkSystem(c) {
+		return
+	}
 	mgr := h.system.GetExperimentManager()
 	if mgr == nil {
 		c.JSON(
@@ -219,6 +238,9 @@ func (h *LLMOpsHandler) ListExperiments(c *gin.Context) {
 // @Failure 404 {object} VerifierErrorResponse
 // @Router /v1/llmops/experiments/{id} [get]
 func (h *LLMOpsHandler) GetExperiment(c *gin.Context) {
+	if !h.checkSystem(c) {
+		return
+	}
 	mgr := h.system.GetExperimentManager()
 	if mgr == nil {
 		c.JSON(
@@ -251,6 +273,9 @@ func (h *LLMOpsHandler) GetExperiment(c *gin.Context) {
 // @Failure 500 {object} VerifierErrorResponse
 // @Router /v1/llmops/evaluate [post]
 func (h *LLMOpsHandler) CreateEvaluation(c *gin.Context) {
+	if !h.checkSystem(c) {
+		return
+	}
 	var req CreateEvaluationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, VerifierErrorResponse{Error: err.Error()})
@@ -294,6 +319,9 @@ func (h *LLMOpsHandler) CreateEvaluation(c *gin.Context) {
 // @Failure 500 {object} VerifierErrorResponse
 // @Router /v1/llmops/prompts [get]
 func (h *LLMOpsHandler) ListPrompts(c *gin.Context) {
+	if !h.checkSystem(c) {
+		return
+	}
 	registry := h.system.GetPromptRegistry()
 	if registry == nil {
 		c.JSON(
@@ -332,6 +360,9 @@ func (h *LLMOpsHandler) ListPrompts(c *gin.Context) {
 // @Failure 500 {object} VerifierErrorResponse
 // @Router /v1/llmops/prompts [post]
 func (h *LLMOpsHandler) CreatePromptVersion(c *gin.Context) {
+	if !h.checkSystem(c) {
+		return
+	}
 	var req CreatePromptVersionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, VerifierErrorResponse{Error: err.Error()})

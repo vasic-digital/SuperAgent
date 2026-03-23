@@ -1,0 +1,10 @@
+P99 Latency Baseline Report
+===========================
+Date: 2026-03-16
+Samples: 200
+Min: 1.104µs
+Mean: 537.719µs
+P50: 600.743µs
+P90: 1.083988ms
+P99: 1.269148ms
+Max: 1.545294ms

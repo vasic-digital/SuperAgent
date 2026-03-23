@@ -21,6 +21,19 @@ func NewScoringHandler(ss *verifier.ScoringService) *ScoringHandler {
 	}
 }
 
+// checkScoringService returns false and writes a 503 response if the scoring
+// service has not been initialised.
+func (h *ScoringHandler) checkScoringService(c *gin.Context) bool {
+	if h.scoringService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error":   "service_unavailable",
+			"message": "Scoring service not initialized",
+		})
+		return false
+	}
+	return true
+}
+
 // GetModelScoreResponse represents a model score response
 type GetModelScoreResponse struct {
 	ModelID      string                `json:"model_id"`
@@ -52,6 +65,9 @@ type ScoreComponentsDetail struct {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/verifier/scores/{model_id} [get]
 func (h *ScoringHandler) GetModelScore(c *gin.Context) {
+	if !h.checkScoringService(c) {
+		return
+	}
 	modelID := c.Param("model_id")
 
 	result, err := h.scoringService.CalculateScore(c.Request.Context(), modelID)
@@ -100,6 +116,9 @@ type BatchScoreResponse struct {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/verifier/scores/batch [post]
 func (h *ScoringHandler) BatchCalculateScores(c *gin.Context) {
+	if !h.checkScoringService(c) {
+		return
+	}
 	var req BatchScoreRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, VerifierErrorResponse{Error: err.Error()})
@@ -164,6 +183,9 @@ type ModelWithScoreInfo struct {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/verifier/scores/top [get]
 func (h *ScoringHandler) GetTopModels(c *gin.Context) {
+	if !h.checkScoringService(c) {
+		return
+	}
 	limit := 10
 	if l := c.Query("limit"); l != "" {
 		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 {
@@ -216,6 +238,9 @@ type GetModelsByScoreRangeRequest struct {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/verifier/scores/range [get]
 func (h *ScoringHandler) GetModelsByScoreRange(c *gin.Context) {
+	if !h.checkScoringService(c) {
+		return
+	}
 	minScore := 0.0
 	maxScore := 10.0
 	limit := 50
@@ -288,6 +313,9 @@ type ScoringWeightsDetail struct {
 // @Success 200 {object} ScoringWeightsResponse
 // @Router /api/v1/verifier/scores/weights [get]
 func (h *ScoringHandler) GetScoringWeights(c *gin.Context) {
+	if !h.checkScoringService(c) {
+		return
+	}
 	weights := h.scoringService.GetWeights()
 
 	total := weights.ResponseSpeed + weights.ModelEfficiency +
@@ -327,6 +355,9 @@ type UpdateScoringWeightsRequest struct {
 // @Failure 400 {object} ErrorResponse
 // @Router /api/v1/verifier/scores/weights [put]
 func (h *ScoringHandler) UpdateScoringWeights(c *gin.Context) {
+	if !h.checkScoringService(c) {
+		return
+	}
 	var req UpdateScoringWeightsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, VerifierErrorResponse{Error: err.Error()})
@@ -373,6 +404,9 @@ func (h *ScoringHandler) UpdateScoringWeights(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/verifier/scores/{model_id}/name [get]
 func (h *ScoringHandler) GetModelNameWithScore(c *gin.Context) {
+	if !h.checkScoringService(c) {
+		return
+	}
 	modelID := c.Param("model_id")
 
 	name, err := h.scoringService.GetModelNameWithScore(c.Request.Context(), modelID, modelID)
@@ -403,6 +437,9 @@ type InvalidateCacheRequest struct {
 // @Success 200 {object} map[string]string
 // @Router /api/v1/verifier/scores/cache/invalidate [post]
 func (h *ScoringHandler) InvalidateCache(c *gin.Context) {
+	if !h.checkScoringService(c) {
+		return
+	}
 	var req InvalidateCacheRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, VerifierErrorResponse{Error: err.Error()})
@@ -452,6 +489,9 @@ type CompareModelsResponse struct {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/verifier/scores/compare [post]
 func (h *ScoringHandler) CompareModels(c *gin.Context) {
+	if !h.checkScoringService(c) {
+		return
+	}
 	var req CompareModelsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, VerifierErrorResponse{Error: err.Error()})

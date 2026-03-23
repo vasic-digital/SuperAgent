@@ -1,0 +1,613 @@
+{
+  "session_id": "full-qa-1774295087727",
+  "timestamp": "2026-03-23T19:44:47.727Z",
+  "total": 82,
+  "passed": 72,
+  "failed": 10,
+  "categories": {
+    "website": {
+      "passed": 23,
+      "failed": 0
+    },
+    "responsive": {
+      "passed": 9,
+      "failed": 0
+    },
+    "api-public": {
+      "passed": 5,
+      "failed": 0
+    },
+    "api-auth": {
+      "passed": 15,
+      "failed": 10
+    },
+    "security": {
+      "passed": 8,
+      "failed": 0
+    },
+    "errors": {
+      "passed": 6,
+      "failed": 0
+    },
+    "edge": {
+      "passed": 6,
+      "failed": 0
+    }
+  },
+  "results": [
+    {
+      "category": "website",
+      "name": "index.html",
+      "passed": true,
+      "detail": "status=200 len=23590",
+      "ts": "2026-03-23T19:44:21.426Z"
+    },
+    {
+      "category": "website",
+      "name": "features.html",
+      "passed": true,
+      "detail": "status=200 len=8939",
+      "ts": "2026-03-23T19:44:21.868Z"
+    },
+    {
+      "category": "website",
+      "name": "pricing.html",
+      "passed": true,
+      "detail": "status=200 len=8141",
+      "ts": "2026-03-23T19:44:22.390Z"
+    },
+    {
+      "category": "website",
+      "name": "changelog.html",
+      "passed": true,
+      "detail": "status=200 len=9178",
+      "ts": "2026-03-23T19:44:22.775Z"
+    },
+    {
+      "category": "website",
+      "name": "contact.html",
+      "passed": true,
+      "detail": "status=200 len=8089",
+      "ts": "2026-03-23T19:44:23.155Z"
+    },
+    {
+      "category": "website",
+      "name": "privacy.html",
+      "passed": true,
+      "detail": "status=200 len=10378",
+      "ts": "2026-03-23T19:44:23.619Z"
+    },
+    {
+      "category": "website",
+      "name": "terms.html",
+      "passed": true,
+      "detail": "status=200 len=12616",
+      "ts": "2026-03-23T19:44:24.015Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/index.html",
+      "passed": true,
+      "detail": "status=200 len=10372",
+      "ts": "2026-03-23T19:44:24.450Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/api.html",
+      "passed": true,
+      "detail": "status=200 len=28712",
+      "ts": "2026-03-23T19:44:25.003Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/architecture.html",
+      "passed": true,
+      "detail": "status=200 len=8401",
+      "ts": "2026-03-23T19:44:25.450Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/ai-debate.html",
+      "passed": true,
+      "detail": "status=200 len=16063",
+      "ts": "2026-03-23T19:44:25.891Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/bigdata.html",
+      "passed": true,
+      "detail": "status=200 len=7063",
+      "ts": "2026-03-23T19:44:26.269Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/deployment.html",
+      "passed": true,
+      "detail": "status=200 len=15466",
+      "ts": "2026-03-23T19:44:26.713Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/faq.html",
+      "passed": true,
+      "detail": "status=200 len=17268",
+      "ts": "2026-03-23T19:44:27.094Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/grpc.html",
+      "passed": true,
+      "detail": "status=200 len=8478",
+      "ts": "2026-03-23T19:44:27.486Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/memory.html",
+      "passed": true,
+      "detail": "status=200 len=9704",
+      "ts": "2026-03-23T19:44:27.850Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/optimization.html",
+      "passed": true,
+      "detail": "status=200 len=18354",
+      "ts": "2026-03-23T19:44:28.284Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/protocols.html",
+      "passed": true,
+      "detail": "status=200 len=11728",
+      "ts": "2026-03-23T19:44:28.690Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/quickstart.html",
+      "passed": true,
+      "detail": "status=200 len=3964",
+      "ts": "2026-03-23T19:44:29.088Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/security.html",
+      "passed": true,
+      "detail": "status=200 len=9980",
+      "ts": "2026-03-23T19:44:29.480Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/support.html",
+      "passed": true,
+      "detail": "status=200 len=5425",
+      "ts": "2026-03-23T19:44:29.845Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/troubleshooting.html",
+      "passed": true,
+      "detail": "status=200 len=9855",
+      "ts": "2026-03-23T19:44:30.277Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/tutorial.html",
+      "passed": true,
+      "detail": "status=200 len=5505",
+      "ts": "2026-03-23T19:44:30.683Z"
+    },
+    {
+      "category": "responsive",
+      "name": "mobile-index.html",
+      "passed": true,
+      "detail": "375x812",
+      "ts": "2026-03-23T19:44:31.200Z"
+    },
+    {
+      "category": "responsive",
+      "name": "mobile-features.html",
+      "passed": true,
+      "detail": "375x812",
+      "ts": "2026-03-23T19:44:31.492Z"
+    },
+    {
+      "category": "responsive",
+      "name": "mobile-docs/api.html",
+      "passed": true,
+      "detail": "375x812",
+      "ts": "2026-03-23T19:44:31.791Z"
+    },
+    {
+      "category": "responsive",
+      "name": "tablet-index.html",
+      "passed": true,
+      "detail": "768x1024",
+      "ts": "2026-03-23T19:44:32.132Z"
+    },
+    {
+      "category": "responsive",
+      "name": "tablet-features.html",
+      "passed": true,
+      "detail": "768x1024",
+      "ts": "2026-03-23T19:44:32.459Z"
+    },
+    {
+      "category": "responsive",
+      "name": "tablet-docs/api.html",
+      "passed": true,
+      "detail": "768x1024",
+      "ts": "2026-03-23T19:44:32.813Z"
+    },
+    {
+      "category": "responsive",
+      "name": "desktop-index.html",
+      "passed": true,
+      "detail": "1920x1080",
+      "ts": "2026-03-23T19:44:33.193Z"
+    },
+    {
+      "category": "responsive",
+      "name": "desktop-features.html",
+      "passed": true,
+      "detail": "1920x1080",
+      "ts": "2026-03-23T19:44:33.716Z"
+    },
+    {
+      "category": "responsive",
+      "name": "desktop-docs/api.html",
+      "passed": true,
+      "detail": "1920x1080",
+      "ts": "2026-03-23T19:44:34.124Z"
+    },
+    {
+      "category": "api-public",
+      "name": "/health",
+      "passed": true,
+      "detail": "len=20",
+      "ts": "2026-03-23T19:44:34.607Z"
+    },
+    {
+      "category": "api-public",
+      "name": "/v1/providers",
+      "passed": true,
+      "detail": "len=38604",
+      "ts": "2026-03-23T19:44:34.972Z"
+    },
+    {
+      "category": "api-public",
+      "name": "/v1/startup/verification",
+      "passed": true,
+      "detail": "len=24128",
+      "ts": "2026-03-23T19:44:35.347Z"
+    },
+    {
+      "category": "api-public",
+      "name": "/debug/pprof/ (optional, ENABLE_PPROF needed)",
+      "passed": true,
+      "detail": "skipped - not enabled",
+      "ts": "2026-03-23T19:44:35.731Z"
+    },
+    {
+      "category": "api-public",
+      "name": "/debug/pprof/goroutine?debug=1 (optional, ENABLE_PPROF needed)",
+      "passed": true,
+      "detail": "skipped - not enabled",
+      "ts": "2026-03-23T19:44:36.051Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/providers",
+      "passed": true,
+      "detail": "status=200 expected=200",
+      "ts": "2026-03-23T19:44:36.067Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/discovery/models",
+      "passed": true,
+      "detail": "status=503 expected=503",
+      "ts": "2026-03-23T19:44:36.069Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/discovery/stats",
+      "passed": true,
+      "detail": "status=503 expected=503",
+      "ts": "2026-03-23T19:44:36.071Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/discovery/ensemble",
+      "passed": true,
+      "detail": "status=503 expected=503",
+      "ts": "2026-03-23T19:44:36.072Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/scoring/weights",
+      "passed": false,
+      "detail": "status=500 expected=200|503",
+      "ts": "2026-03-23T19:44:36.073Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/scoring/top",
+      "passed": false,
+      "detail": "status=500 expected=200|503",
+      "ts": "2026-03-23T19:44:36.076Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/verification/status",
+      "passed": false,
+      "detail": "status=500 expected=200|503",
+      "ts": "2026-03-23T19:44:36.077Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/verification/models",
+      "passed": false,
+      "detail": "status=500 expected=200|503",
+      "ts": "2026-03-23T19:44:36.079Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/verification/health",
+      "passed": false,
+      "detail": "status=500 expected=200|503",
+      "ts": "2026-03-23T19:44:36.081Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/health/providers",
+      "passed": true,
+      "detail": "status=503 expected=503",
+      "ts": "2026-03-23T19:44:36.082Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/health/circuit-breakers",
+      "passed": true,
+      "detail": "status=503 expected=503",
+      "ts": "2026-03-23T19:44:36.082Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/health/status",
+      "passed": true,
+      "detail": "status=503 expected=503",
+      "ts": "2026-03-23T19:44:36.083Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/llmops/experiments",
+      "passed": false,
+      "detail": "status=500 expected=200|503",
+      "ts": "2026-03-23T19:44:36.084Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/llmops/prompts",
+      "passed": false,
+      "detail": "status=500 expected=200|503",
+      "ts": "2026-03-23T19:44:36.085Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/benchmark/results",
+      "passed": false,
+      "detail": "status=500 expected=200|503",
+      "ts": "2026-03-23T19:44:36.086Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/tasks",
+      "passed": false,
+      "detail": "status=500 expected=200|503",
+      "ts": "2026-03-23T19:44:36.087Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "POST /v1/agentic/workflows",
+      "passed": true,
+      "detail": "status=400 expected=400",
+      "ts": "2026-03-23T19:44:36.088Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "POST /v1/planning/hiplan",
+      "passed": true,
+      "detail": "status=400 expected=400",
+      "ts": "2026-03-23T19:44:36.088Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "POST /v1/planning/mcts",
+      "passed": true,
+      "detail": "status=400 expected=400",
+      "ts": "2026-03-23T19:44:36.089Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "POST /v1/planning/tot",
+      "passed": true,
+      "detail": "status=400 expected=400",
+      "ts": "2026-03-23T19:44:36.090Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "POST /v1/llmops/experiments",
+      "passed": true,
+      "detail": "status=400 expected=400",
+      "ts": "2026-03-23T19:44:36.090Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "POST /v1/llmops/prompts",
+      "passed": true,
+      "detail": "status=400 expected=400",
+      "ts": "2026-03-23T19:44:36.091Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "POST /v1/llmops/evaluate",
+      "passed": true,
+      "detail": "status=400 expected=400",
+      "ts": "2026-03-23T19:44:36.091Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "POST /v1/benchmark/run",
+      "passed": true,
+      "detail": "status=400 expected=400",
+      "ts": "2026-03-23T19:44:36.092Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "POST /v1/chat/completions",
+      "passed": false,
+      "detail": "status=0 expected=400|500|503",
+      "ts": "2026-03-23T19:44:46.093Z"
+    },
+    {
+      "category": "security",
+      "name": "No auth blocked (401 or 503)",
+      "passed": true,
+      "detail": "status=500",
+      "ts": "2026-03-23T19:44:46.095Z"
+    },
+    {
+      "category": "security",
+      "name": "Bad token returns 401",
+      "passed": true,
+      "detail": "status=403",
+      "ts": "2026-03-23T19:44:46.096Z"
+    },
+    {
+      "category": "security",
+      "name": "Health is public (no auth)",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-23T19:44:46.096Z"
+    },
+    {
+      "category": "security",
+      "name": "No server version leak",
+      "passed": true,
+      "detail": "server header: none",
+      "ts": "2026-03-23T19:44:46.097Z"
+    },
+    {
+      "category": "security",
+      "name": "Feature headers present",
+      "passed": true,
+      "detail": "features: batch,metrics,mcp,rate_limiting,brotli,websocket,c",
+      "ts": "2026-03-23T19:44:46.097Z"
+    },
+    {
+      "category": "security",
+      "name": "Transport header present",
+      "passed": true,
+      "detail": "transport: h3",
+      "ts": "2026-03-23T19:44:46.097Z"
+    },
+    {
+      "category": "security",
+      "name": "Compression header present",
+      "passed": true,
+      "detail": "compression: br",
+      "ts": "2026-03-23T19:44:46.097Z"
+    },
+    {
+      "category": "security",
+      "name": "Streaming header present",
+      "passed": true,
+      "detail": "streaming: websocket",
+      "ts": "2026-03-23T19:44:46.097Z"
+    },
+    {
+      "category": "errors",
+      "name": "404 on unknown path",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-23T19:44:46.097Z"
+    },
+    {
+      "category": "errors",
+      "name": "404 on unknown v1 path",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-23T19:44:46.097Z"
+    },
+    {
+      "category": "errors",
+      "name": "Invalid JSON returns error",
+      "passed": true,
+      "detail": "status=400",
+      "ts": "2026-03-23T19:44:46.098Z"
+    },
+    {
+      "category": "errors",
+      "name": "Unavailable service returns 503",
+      "passed": true,
+      "detail": "status=503",
+      "ts": "2026-03-23T19:44:46.098Z"
+    },
+    {
+      "category": "errors",
+      "name": "Nil service returns 503 not 500",
+      "passed": true,
+      "detail": "status=503",
+      "ts": "2026-03-23T19:44:46.098Z"
+    },
+    {
+      "category": "errors",
+      "name": "503 has JSON error structure",
+      "passed": true,
+      "detail": "error: service_unavailable",
+      "ts": "2026-03-23T19:44:46.099Z"
+    },
+    {
+      "category": "edge",
+      "name": "Long URL handled",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-23T19:44:46.099Z"
+    },
+    {
+      "category": "edge",
+      "name": "URL-encoded path handled",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-23T19:44:46.099Z"
+    },
+    {
+      "category": "edge",
+      "name": "Empty POST body handled",
+      "passed": true,
+      "detail": "status=400",
+      "ts": "2026-03-23T19:44:46.100Z"
+    },
+    {
+      "category": "edge",
+      "name": "5 concurrent requests succeed",
+      "passed": true,
+      "detail": "statuses: 200,200,200,200,200",
+      "ts": "2026-03-23T19:44:46.101Z"
+    },
+    {
+      "category": "edge",
+      "name": "Double slash handled",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-23T19:44:46.102Z"
+    },
+    {
+      "category": "edge",
+      "name": "Trailing slash handled",
+      "passed": true,
+      "detail": "status=301",
+      "ts": "2026-03-23T19:44:46.102Z"
+    }
+  ]
+}

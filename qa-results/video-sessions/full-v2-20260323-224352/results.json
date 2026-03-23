@@ -1,0 +1,613 @@
+{
+  "session_id": "full-qa-1774295047093",
+  "timestamp": "2026-03-23T19:44:07.093Z",
+  "total": 82,
+  "passed": 40,
+  "failed": 42,
+  "categories": {
+    "website": {
+      "passed": 0,
+      "failed": 23
+    },
+    "responsive": {
+      "passed": 0,
+      "failed": 9
+    },
+    "api-public": {
+      "passed": 5,
+      "failed": 0
+    },
+    "api-auth": {
+      "passed": 15,
+      "failed": 10
+    },
+    "security": {
+      "passed": 8,
+      "failed": 0
+    },
+    "errors": {
+      "passed": 6,
+      "failed": 0
+    },
+    "edge": {
+      "passed": 6,
+      "failed": 0
+    }
+  },
+  "results": [
+    {
+      "category": "website",
+      "name": "index.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8090/index.html\nCall ",
+      "ts": "2026-03-23T19:43:52.912Z"
+    },
+    {
+      "category": "website",
+      "name": "features.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8090/features.html\nCa",
+      "ts": "2026-03-23T19:43:52.930Z"
+    },
+    {
+      "category": "website",
+      "name": "pricing.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8090/pricing.html\nCal",
+      "ts": "2026-03-23T19:43:52.934Z"
+    },
+    {
+      "category": "website",
+      "name": "changelog.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8090/changelog.html\nC",
+      "ts": "2026-03-23T19:43:52.940Z"
+    },
+    {
+      "category": "website",
+      "name": "contact.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8090/contact.html\nCal",
+      "ts": "2026-03-23T19:43:52.945Z"
+    },
+    {
+      "category": "website",
+      "name": "privacy.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8090/privacy.html\nCal",
+      "ts": "2026-03-23T19:43:52.953Z"
+    },
+    {
+      "category": "website",
+      "name": "terms.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8090/terms.html\nCall ",
+      "ts": "2026-03-23T19:43:52.959Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/index.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8090/docs/index.html\n",
+      "ts": "2026-03-23T19:43:52.972Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/api.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8090/docs/api.html\nCa",
+      "ts": "2026-03-23T19:43:52.984Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/architecture.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8090/docs/architectur",
+      "ts": "2026-03-23T19:43:52.993Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/ai-debate.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8090/docs/ai-debate.h",
+      "ts": "2026-03-23T19:43:52.997Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/bigdata.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8090/docs/bigdata.htm",
+      "ts": "2026-03-23T19:43:53.001Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/deployment.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8090/docs/deployment.",
+      "ts": "2026-03-23T19:43:53.010Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/faq.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8090/docs/faq.html\nCa",
+      "ts": "2026-03-23T19:43:53.014Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/grpc.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8090/docs/grpc.html\nC",
+      "ts": "2026-03-23T19:43:53.017Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/memory.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8090/docs/memory.html",
+      "ts": "2026-03-23T19:43:53.024Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/optimization.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8090/docs/optimizatio",
+      "ts": "2026-03-23T19:43:53.027Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/protocols.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8090/docs/protocols.h",
+      "ts": "2026-03-23T19:43:53.032Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/quickstart.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8090/docs/quickstart.",
+      "ts": "2026-03-23T19:43:53.035Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/security.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8090/docs/security.ht",
+      "ts": "2026-03-23T19:43:53.038Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/support.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8090/docs/support.htm",
+      "ts": "2026-03-23T19:43:53.042Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/troubleshooting.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8090/docs/troubleshoo",
+      "ts": "2026-03-23T19:43:53.046Z"
+    },
+    {
+      "category": "website",
+      "name": "docs/tutorial.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8090/docs/tutorial.ht",
+      "ts": "2026-03-23T19:43:53.053Z"
+    },
+    {
+      "category": "responsive",
+      "name": "mobile-index.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8",
+      "ts": "2026-03-23T19:43:53.061Z"
+    },
+    {
+      "category": "responsive",
+      "name": "mobile-features.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8",
+      "ts": "2026-03-23T19:43:53.066Z"
+    },
+    {
+      "category": "responsive",
+      "name": "mobile-docs/api.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8",
+      "ts": "2026-03-23T19:43:53.072Z"
+    },
+    {
+      "category": "responsive",
+      "name": "tablet-index.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8",
+      "ts": "2026-03-23T19:43:53.080Z"
+    },
+    {
+      "category": "responsive",
+      "name": "tablet-features.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8",
+      "ts": "2026-03-23T19:43:53.086Z"
+    },
+    {
+      "category": "responsive",
+      "name": "tablet-docs/api.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8",
+      "ts": "2026-03-23T19:43:53.090Z"
+    },
+    {
+      "category": "responsive",
+      "name": "desktop-index.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8",
+      "ts": "2026-03-23T19:43:53.097Z"
+    },
+    {
+      "category": "responsive",
+      "name": "desktop-features.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8",
+      "ts": "2026-03-23T19:43:53.100Z"
+    },
+    {
+      "category": "responsive",
+      "name": "desktop-docs/api.html",
+      "passed": false,
+      "detail": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8",
+      "ts": "2026-03-23T19:43:53.105Z"
+    },
+    {
+      "category": "api-public",
+      "name": "/health",
+      "passed": true,
+      "detail": "len=20",
+      "ts": "2026-03-23T19:43:53.453Z"
+    },
+    {
+      "category": "api-public",
+      "name": "/v1/providers",
+      "passed": true,
+      "detail": "len=38604",
+      "ts": "2026-03-23T19:43:53.797Z"
+    },
+    {
+      "category": "api-public",
+      "name": "/v1/startup/verification",
+      "passed": true,
+      "detail": "len=24128",
+      "ts": "2026-03-23T19:43:54.169Z"
+    },
+    {
+      "category": "api-public",
+      "name": "/debug/pprof/ (optional, ENABLE_PPROF needed)",
+      "passed": true,
+      "detail": "skipped - not enabled",
+      "ts": "2026-03-23T19:43:54.520Z"
+    },
+    {
+      "category": "api-public",
+      "name": "/debug/pprof/goroutine?debug=1 (optional, ENABLE_PPROF needed)",
+      "passed": true,
+      "detail": "skipped - not enabled",
+      "ts": "2026-03-23T19:43:54.837Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/providers",
+      "passed": true,
+      "detail": "status=200 expected=200",
+      "ts": "2026-03-23T19:43:54.847Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/discovery/models",
+      "passed": true,
+      "detail": "status=503 expected=503",
+      "ts": "2026-03-23T19:43:54.848Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/discovery/stats",
+      "passed": true,
+      "detail": "status=503 expected=503",
+      "ts": "2026-03-23T19:43:54.849Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/discovery/ensemble",
+      "passed": true,
+      "detail": "status=503 expected=503",
+      "ts": "2026-03-23T19:43:54.849Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/scoring/weights",
+      "passed": false,
+      "detail": "status=500 expected=200|503",
+      "ts": "2026-03-23T19:43:54.850Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/scoring/top",
+      "passed": false,
+      "detail": "status=500 expected=200|503",
+      "ts": "2026-03-23T19:43:54.851Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/verification/status",
+      "passed": false,
+      "detail": "status=500 expected=200|503",
+      "ts": "2026-03-23T19:43:54.853Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/verification/models",
+      "passed": false,
+      "detail": "status=500 expected=200|503",
+      "ts": "2026-03-23T19:43:54.854Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/verification/health",
+      "passed": false,
+      "detail": "status=500 expected=200|503",
+      "ts": "2026-03-23T19:43:54.856Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/health/providers",
+      "passed": true,
+      "detail": "status=503 expected=503",
+      "ts": "2026-03-23T19:43:54.856Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/health/circuit-breakers",
+      "passed": true,
+      "detail": "status=503 expected=503",
+      "ts": "2026-03-23T19:43:54.857Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/health/status",
+      "passed": true,
+      "detail": "status=503 expected=503",
+      "ts": "2026-03-23T19:43:54.857Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/llmops/experiments",
+      "passed": false,
+      "detail": "status=500 expected=200|503",
+      "ts": "2026-03-23T19:43:54.858Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/llmops/prompts",
+      "passed": false,
+      "detail": "status=500 expected=200|503",
+      "ts": "2026-03-23T19:43:54.858Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/benchmark/results",
+      "passed": false,
+      "detail": "status=500 expected=200|503",
+      "ts": "2026-03-23T19:43:54.859Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "GET /v1/tasks",
+      "passed": false,
+      "detail": "status=500 expected=200|503",
+      "ts": "2026-03-23T19:43:54.860Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "POST /v1/agentic/workflows",
+      "passed": true,
+      "detail": "status=400 expected=400",
+      "ts": "2026-03-23T19:43:54.861Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "POST /v1/planning/hiplan",
+      "passed": true,
+      "detail": "status=400 expected=400",
+      "ts": "2026-03-23T19:43:54.861Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "POST /v1/planning/mcts",
+      "passed": true,
+      "detail": "status=400 expected=400",
+      "ts": "2026-03-23T19:43:54.861Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "POST /v1/planning/tot",
+      "passed": true,
+      "detail": "status=400 expected=400",
+      "ts": "2026-03-23T19:43:54.862Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "POST /v1/llmops/experiments",
+      "passed": true,
+      "detail": "status=400 expected=400",
+      "ts": "2026-03-23T19:43:54.862Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "POST /v1/llmops/prompts",
+      "passed": true,
+      "detail": "status=400 expected=400",
+      "ts": "2026-03-23T19:43:54.862Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "POST /v1/llmops/evaluate",
+      "passed": true,
+      "detail": "status=400 expected=400",
+      "ts": "2026-03-23T19:43:54.863Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "POST /v1/benchmark/run",
+      "passed": true,
+      "detail": "status=400 expected=400",
+      "ts": "2026-03-23T19:43:54.863Z"
+    },
+    {
+      "category": "api-auth",
+      "name": "POST /v1/chat/completions",
+      "passed": false,
+      "detail": "status=0 expected=400|500|503",
+      "ts": "2026-03-23T19:44:04.864Z"
+    },
+    {
+      "category": "security",
+      "name": "No auth blocked (401 or 503)",
+      "passed": true,
+      "detail": "status=500",
+      "ts": "2026-03-23T19:44:04.866Z"
+    },
+    {
+      "category": "security",
+      "name": "Bad token returns 401",
+      "passed": true,
+      "detail": "status=403",
+      "ts": "2026-03-23T19:44:04.866Z"
+    },
+    {
+      "category": "security",
+      "name": "Health is public (no auth)",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-23T19:44:04.866Z"
+    },
+    {
+      "category": "security",
+      "name": "No server version leak",
+      "passed": true,
+      "detail": "server header: none",
+      "ts": "2026-03-23T19:44:04.867Z"
+    },
+    {
+      "category": "security",
+      "name": "Feature headers present",
+      "passed": true,
+      "detail": "features: gzip,acp,batch,tool_calling,debate,metrics,vision,",
+      "ts": "2026-03-23T19:44:04.867Z"
+    },
+    {
+      "category": "security",
+      "name": "Transport header present",
+      "passed": true,
+      "detail": "transport: h3",
+      "ts": "2026-03-23T19:44:04.867Z"
+    },
+    {
+      "category": "security",
+      "name": "Compression header present",
+      "passed": true,
+      "detail": "compression: br",
+      "ts": "2026-03-23T19:44:04.867Z"
+    },
+    {
+      "category": "security",
+      "name": "Streaming header present",
+      "passed": true,
+      "detail": "streaming: websocket",
+      "ts": "2026-03-23T19:44:04.867Z"
+    },
+    {
+      "category": "errors",
+      "name": "404 on unknown path",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-23T19:44:04.867Z"
+    },
+    {
+      "category": "errors",
+      "name": "404 on unknown v1 path",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-23T19:44:04.867Z"
+    },
+    {
+      "category": "errors",
+      "name": "Invalid JSON returns error",
+      "passed": true,
+      "detail": "status=400",
+      "ts": "2026-03-23T19:44:04.868Z"
+    },
+    {
+      "category": "errors",
+      "name": "Unavailable service returns 503",
+      "passed": true,
+      "detail": "status=503",
+      "ts": "2026-03-23T19:44:04.868Z"
+    },
+    {
+      "category": "errors",
+      "name": "Nil service returns 503 not 500",
+      "passed": true,
+      "detail": "status=503",
+      "ts": "2026-03-23T19:44:04.868Z"
+    },
+    {
+      "category": "errors",
+      "name": "503 has JSON error structure",
+      "passed": true,
+      "detail": "error: service_unavailable",
+      "ts": "2026-03-23T19:44:04.869Z"
+    },
+    {
+      "category": "edge",
+      "name": "Long URL handled",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-23T19:44:04.869Z"
+    },
+    {
+      "category": "edge",
+      "name": "URL-encoded path handled",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-23T19:44:04.869Z"
+    },
+    {
+      "category": "edge",
+      "name": "Empty POST body handled",
+      "passed": true,
+      "detail": "status=400",
+      "ts": "2026-03-23T19:44:04.870Z"
+    },
+    {
+      "category": "edge",
+      "name": "5 concurrent requests succeed",
+      "passed": true,
+      "detail": "statuses: 200,200,200,200,200",
+      "ts": "2026-03-23T19:44:04.871Z"
+    },
+    {
+      "category": "edge",
+      "name": "Double slash handled",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-23T19:44:04.872Z"
+    },
+    {
+      "category": "edge",
+      "name": "Trailing slash handled",
+      "passed": true,
+      "detail": "status=301",
+      "ts": "2026-03-23T19:44:04.872Z"
+    }
+  ]
+}

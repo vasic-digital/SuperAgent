@@ -25,6 +25,19 @@ func NewBenchmarkHandler(system *benchmark.BenchmarkSystem) *BenchmarkHandler {
 	}
 }
 
+// checkSystem returns false and writes a 503 response if the benchmark system
+// has not been initialised.
+func (h *BenchmarkHandler) checkSystem(c *gin.Context) bool {
+	if h.system == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error":   "service_unavailable",
+			"message": "Benchmark system not initialized",
+		})
+		return false
+	}
+	return true
+}
+
 // --- request / response types ---
 
 // StartBenchmarkRequest represents a request to start a benchmark run
@@ -69,6 +82,9 @@ type ListBenchmarkRunsResponse struct {
 // @Failure 500 {object} VerifierErrorResponse
 // @Router /v1/benchmark/run [post]
 func (h *BenchmarkHandler) StartBenchmark(c *gin.Context) {
+	if !h.checkSystem(c) {
+		return
+	}
 	var req StartBenchmarkRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, VerifierErrorResponse{Error: err.Error()})

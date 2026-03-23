@@ -32,6 +32,32 @@ func NewVerificationHandler(
 	}
 }
 
+// checkVerificationService returns false and writes a 503 response if the
+// verification service has not been initialised.
+func (h *VerificationHandler) checkVerificationService(c *gin.Context) bool {
+	if h.verificationService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error":   "service_unavailable",
+			"message": "Verification service not initialized",
+		})
+		return false
+	}
+	return true
+}
+
+// checkRegistry returns false and writes a 503 response if the provider
+// registry has not been initialised.
+func (h *VerificationHandler) checkRegistry(c *gin.Context) bool {
+	if h.registry == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error":   "service_unavailable",
+			"message": "Provider registry not initialized",
+		})
+		return false
+	}
+	return true
+}
+
 // VerifyModelRequest represents a model verification request
 type VerifyModelRequest struct {
 	ModelID    string   `json:"model_id" binding:"required"`
@@ -67,6 +93,9 @@ type VerifyModelResponse struct {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/verifier/verify [post]
 func (h *VerificationHandler) VerifyModel(c *gin.Context) {
+	if !h.checkVerificationService(c) {
+		return
+	}
 	var req VerifyModelRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, VerifierErrorResponse{Error: err.Error()})
@@ -123,6 +152,9 @@ type BatchVerifyResponse struct {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/verifier/verify/batch [post]
 func (h *VerificationHandler) BatchVerify(c *gin.Context) {
+	if !h.checkVerificationService(c) {
+		return
+	}
 	var req BatchVerifyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, VerifierErrorResponse{Error: err.Error()})
@@ -183,6 +215,9 @@ func (h *VerificationHandler) BatchVerify(c *gin.Context) {
 // @Failure 404 {object} ErrorResponse
 // @Router /api/v1/verifier/status/{model_id} [get]
 func (h *VerificationHandler) GetVerificationStatus(c *gin.Context) {
+	if !h.checkVerificationService(c) {
+		return
+	}
 	modelID := c.Param("model_id")
 
 	result, err := h.verificationService.GetVerificationStatus(c.Request.Context(), modelID)
@@ -233,6 +268,9 @@ type VerifiedModelInfo struct {
 // @Success 200 {object} GetVerifiedModelsResponse
 // @Router /api/v1/verifier/models [get]
 func (h *VerificationHandler) GetVerifiedModels(c *gin.Context) {
+	if !h.checkRegistry(c) {
+		return
+	}
 	provider := c.Query("provider")
 	minScore := 0.0
 	if ms := c.Query("min_score"); ms != "" { //nolint:staticcheck
@@ -301,6 +339,9 @@ type TestCodeVisibilityResponse struct {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/verifier/test/code-visibility [post]
 func (h *VerificationHandler) TestCodeVisibility(c *gin.Context) {
+	if !h.checkVerificationService(c) {
+		return
+	}
 	var req TestCodeVisibilityRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, VerifierErrorResponse{Error: err.Error()})
@@ -375,6 +416,9 @@ type ReVerifyModelRequest struct {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/verifier/reverify [post]
 func (h *VerificationHandler) ReVerifyModel(c *gin.Context) {
+	if !h.checkVerificationService(c) {
+		return
+	}
 	var req ReVerifyModelRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, VerifierErrorResponse{Error: err.Error()})
@@ -423,6 +467,12 @@ type VerificationHealthResponse struct {
 // @Success 200 {object} VerificationHealthResponse
 // @Router /api/v1/verifier/health [get]
 func (h *VerificationHandler) GetVerificationHealth(c *gin.Context) {
+	if !h.checkVerificationService(c) {
+		return
+	}
+	if !h.checkRegistry(c) {
+		return
+	}
 	stats, _ := h.verificationService.GetStats(c.Request.Context()) //nolint:errcheck
 	healthy := h.registry.GetHealthyProviders()
 
