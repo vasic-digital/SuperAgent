@@ -100,3 +100,4 @@ qa-results/**/*.mkv
 qa-results/**/*.avi
 qa-results/**/*.mov
 **/*.screenrecord
+node_modules/

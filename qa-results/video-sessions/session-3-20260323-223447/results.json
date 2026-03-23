@@ -1,0 +1,57 @@
+{
+  "session_id": "video-qa-1774294498666",
+  "timestamp": "2026-03-23T19:34:58.666Z",
+  "total": 8,
+  "passed": 8,
+  "failed": 0,
+  "results": [
+    {
+      "name": "Website loads",
+      "passed": true,
+      "detail": "Title: HelixAgent - AI-Powered Multi-Provider LLM Orchestration Platform",
+      "timestamp": "2026-03-23T19:34:50.042Z"
+    },
+    {
+      "name": "Features page loads",
+      "passed": true,
+      "detail": "Content length: 8939",
+      "timestamp": "2026-03-23T19:34:51.199Z"
+    },
+    {
+      "name": "API health endpoint",
+      "passed": true,
+      "detail": "{\"status\":\"healthy\"}",
+      "timestamp": "2026-03-23T19:34:51.828Z"
+    },
+    {
+      "name": "API providers endpoint",
+      "passed": true,
+      "detail": "Has provider data: true",
+      "timestamp": "2026-03-23T19:34:52.384Z"
+    },
+    {
+      "name": "All website pages load",
+      "passed": true,
+      "detail": "4 pages tested",
+      "timestamp": "2026-03-23T19:34:54.458Z"
+    },
+    {
+      "name": "API docs page",
+      "passed": true,
+      "detail": "Contains endpoint docs: true",
+      "timestamp": "2026-03-23T19:34:55.727Z"
+    },
+    {
+      "name": "Responsive design check",
+      "passed": true,
+      "detail": "Mobile + Desktop screenshots captured",
+      "timestamp": "2026-03-23T19:34:57.260Z"
+    },
+    {
+      "name": "404 error handling",
+      "passed": true,
+      "detail": "Status: 404",
+      "timestamp": "2026-03-23T19:34:57.283Z"
+    }
+  ]
+}
