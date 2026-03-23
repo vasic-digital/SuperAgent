@@ -1,0 +1,149 @@
+version: "1.0"
+name: "HelixAgent API Test Bank"
+description: "Comprehensive QA tests for HelixAgent API endpoints"
+metadata:
+  author: "vasic-digital"
+  app: "HelixAgent"
+  version: "1.0.0"
+
+test_cases:
+  # ==================== Health & Status ====================
+  - id: API-HEALTH-001
+    name: "Health endpoint returns healthy"
+    category: functional
+    priority: critical
+    platforms: [web]
+    steps:
+      - name: "Send GET /health"
+        action: "HTTP GET http://localhost:7061/health"
+        expected: "200 OK with {status: healthy}"
+      - name: "Verify JSON response"
+        action: "Parse response body as JSON"
+        expected: "status field equals 'healthy'"
+    tags: [health, api, core]
+    estimated_duration: "2s"
+    expected_result: "Health endpoint responds with healthy status"
+
+  - id: API-HEALTH-002
+    name: "Health endpoint responds under load"
+    category: performance
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "Send 10 concurrent GET /health"
+        action: "HTTP GET http://localhost:7061/health x10 concurrent"
+        expected: "All 10 return 200 OK"
+      - name: "Verify response times"
+        action: "Measure response latency"
+        expected: "All under 500ms"
+    tags: [health, performance, concurrent]
+    estimated_duration: "5s"
+
+  # ==================== Providers ====================
+  - id: API-PROV-001
+    name: "List providers returns non-empty"
+    category: functional
+    priority: critical
+    platforms: [web]
+    steps:
+      - name: "Send GET /v1/providers"
+        action: "HTTP GET http://localhost:7061/v1/providers"
+        expected: "200 OK with providers array"
+      - name: "Verify provider count"
+        action: "Check count field"
+        expected: "count > 0"
+      - name: "Verify provider structure"
+        action: "Check first provider has name, supported_models"
+        expected: "Provider has required fields"
+    tags: [providers, api, core]
+    estimated_duration: "3s"
+
+  # ==================== New Endpoints ====================
+  - id: API-AGENTIC-001
+    name: "Agentic workflows endpoint accessible"
+    category: functional
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "Send POST /v1/agentic/workflows"
+        action: "HTTP POST http://localhost:7061/v1/agentic/workflows with auth"
+        expected: "400 Bad Request (missing body) or 200 OK"
+    tags: [agentic, api, new]
+    estimated_duration: "2s"
+
+  - id: API-PLAN-001
+    name: "Planning HiPlan endpoint accessible"
+    category: functional
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "Send POST /v1/planning/hiplan"
+        action: "HTTP POST http://localhost:7061/v1/planning/hiplan with auth"
+        expected: "400 Bad Request (missing body) or 200 OK"
+    tags: [planning, api, new]
+    estimated_duration: "2s"
+
+  - id: API-LLMOPS-001
+    name: "LLMOps experiments endpoint accessible"
+    category: functional
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "Send GET /v1/llmops/experiments"
+        action: "HTTP GET http://localhost:7061/v1/llmops/experiments with auth"
+        expected: "200 OK with experiments array"
+    tags: [llmops, api, new]
+    estimated_duration: "2s"
+
+  - id: API-BENCH-001
+    name: "Benchmark results endpoint accessible"
+    category: functional
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "Send GET /v1/benchmark/results"
+        action: "HTTP GET http://localhost:7061/v1/benchmark/results with auth"
+        expected: "200 OK with results array"
+    tags: [benchmark, api, new]
+    estimated_duration: "2s"
+
+  # ==================== Chat Completion ====================
+  - id: API-CHAT-001
+    name: "Chat completion with strongest provider"
+    category: functional
+    priority: critical
+    platforms: [web]
+    steps:
+      - name: "Send chat completion request"
+        action: "HTTP POST /v1/chat/completions with model=helixagent-debate"
+        expected: "200 OK with choices array"
+      - name: "Verify response structure"
+        action: "Check choices[0].message.content"
+        expected: "Non-empty content string"
+    tags: [chat, api, core, llm]
+    estimated_duration: "30s"
+
+  # ==================== Error Handling ====================
+  - id: API-ERR-001
+    name: "Unauthorized request returns 401"
+    category: security
+    priority: critical
+    platforms: [web]
+    steps:
+      - name: "Send request without auth"
+        action: "HTTP GET /v1/providers without Authorization header"
+        expected: "401 Unauthorized"
+    tags: [security, auth, error]
+    estimated_duration: "2s"
+
+  - id: API-ERR-002
+    name: "Invalid endpoint returns 404"
+    category: functional
+    priority: medium
+    platforms: [web]
+    steps:
+      - name: "Send request to non-existent endpoint"
+        action: "HTTP GET /v1/nonexistent"
+        expected: "404 Not Found"
+    tags: [error, routing]
+    estimated_duration: "2s"

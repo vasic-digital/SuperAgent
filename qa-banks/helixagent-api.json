@@ -1,0 +1,142 @@
+{
+  "version": "1.0",
+  "name": "HelixAgent API Test Bank",
+  "challenges": [
+    {
+      "id": "API-HEALTH-001",
+      "name": "Health endpoint returns healthy status",
+      "category": "functional",
+      "priority": "critical",
+      "assertions": [
+        {
+          "type": "http_status_ok",
+          "target": "GET http://localhost:7061/health"
+        },
+        {
+          "type": "contains",
+          "target": "response.body",
+          "expected": "healthy"
+        }
+      ]
+    },
+    {
+      "id": "API-PROV-001",
+      "name": "List providers returns non-empty array",
+      "category": "functional",
+      "priority": "critical",
+      "assertions": [
+        {
+          "type": "http_status_ok",
+          "target": "GET http://localhost:7061/v1/providers"
+        },
+        {
+          "type": "not_empty",
+          "target": "response.body.providers"
+        }
+      ]
+    },
+    {
+      "id": "API-AUTH-001",
+      "name": "Unauthorized request returns 401",
+      "category": "security",
+      "priority": "critical",
+      "assertions": [
+        {
+          "type": "http_status_unauthorized",
+          "target": "GET http://localhost:7061/v1/llmops/experiments"
+        }
+      ]
+    },
+    {
+      "id": "API-AGENTIC-001",
+      "name": "Agentic workflows endpoint responds",
+      "category": "functional",
+      "priority": "high",
+      "assertions": [
+        {
+          "type": "not_empty",
+          "target": "endpoint_exists",
+          "expected": "/v1/agentic/workflows"
+        }
+      ]
+    },
+    {
+      "id": "API-PLAN-001",
+      "name": "Planning endpoints respond",
+      "category": "functional",
+      "priority": "high",
+      "assertions": [
+        {
+          "type": "not_empty",
+          "target": "endpoint_exists",
+          "expected": "/v1/planning/hiplan"
+        }
+      ]
+    },
+    {
+      "id": "API-LLMOPS-001",
+      "name": "LLMOps experiments endpoint responds",
+      "category": "functional",
+      "priority": "high",
+      "assertions": [
+        {
+          "type": "not_empty",
+          "target": "endpoint_exists",
+          "expected": "/v1/llmops/experiments"
+        }
+      ]
+    },
+    {
+      "id": "API-BENCH-001",
+      "name": "Benchmark results endpoint responds",
+      "category": "functional",
+      "priority": "high",
+      "assertions": [
+        {
+          "type": "not_empty",
+          "target": "endpoint_exists",
+          "expected": "/v1/benchmark/results"
+        }
+      ]
+    },
+    {
+      "id": "API-DISC-001",
+      "name": "Discovery endpoint returns 503 when service unavailable",
+      "category": "functional",
+      "priority": "medium",
+      "assertions": [
+        {
+          "type": "contains",
+          "target": "response.body",
+          "expected": "service_unavailable"
+        }
+      ]
+    },
+    {
+      "id": "API-ERR-001",
+      "name": "Non-existent endpoint returns 404",
+      "category": "functional",
+      "priority": "medium",
+      "assertions": [
+        {
+          "type": "not_empty",
+          "target": "response.status",
+          "expected": "404"
+        }
+      ]
+    },
+    {
+      "id": "API-GRAPHQL-001",
+      "name": "GraphQL endpoint responds when enabled",
+      "category": "functional",
+      "priority": "low",
+      "assertions": [
+        {
+          "type": "not_empty",
+          "target": "endpoint_exists",
+          "expected": "/v1/graphql"
+        }
+      ]
+    }
+  ]
+}
