@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "name": "HelixAgent Stress Test Bank",
+  "challenges": [
+    {"id": "STRESS-001", "name": "10 concurrent health checks", "category": "stress", "priority": "critical", "assertions": [{"type": "all_pass", "target": "concurrent_health_10"}]},
+    {"id": "STRESS-002", "name": "10 concurrent provider lists", "category": "stress", "priority": "high", "assertions": [{"type": "all_pass", "target": "concurrent_providers_10"}]},
+    {"id": "STRESS-003", "name": "Rapid sequential health checks", "category": "stress", "priority": "high", "assertions": [{"type": "all_pass", "target": "rapid_health_100"}]},
+    {"id": "STRESS-004", "name": "Mixed endpoint load", "category": "stress", "priority": "high", "assertions": [{"type": "all_pass", "target": "mixed_load_50"}]},
+    {"id": "STRESS-005", "name": "No goroutine leaks under load", "category": "stability", "priority": "critical", "assertions": [{"type": "not_empty", "target": "goroutine_stable"}]}
+  ]
+}
