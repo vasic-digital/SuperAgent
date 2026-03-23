@@ -124,6 +124,9 @@ var EmbeddingProviders = []EmbeddingProviderConfig{
 
 // TestEmbeddingProviderDiscovery tests provider discovery endpoint
 func TestEmbeddingProviderDiscovery(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping functional test in short mode")
+	}
 	testutil.RequireHTTPEndpoint(t, "embeddings", "http://localhost:8080/v1/embeddings/health")
 	client := NewEmbeddingClient("http://localhost:8080")
 
@@ -136,6 +139,9 @@ func TestEmbeddingProviderDiscovery(t *testing.T) {
 
 // TestEmbeddingGeneration tests actual embedding generation
 func TestEmbeddingGeneration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping functional test in short mode")
+	}
 	testutil.RequireHTTPEndpoint(t, "embeddings", "http://localhost:8080/v1/embeddings/health")
 	client := NewEmbeddingClient("http://localhost:8080")
 
@@ -177,6 +183,9 @@ func TestEmbeddingGeneration(t *testing.T) {
 
 // TestEmbeddingSimilarity tests that similar texts have similar embeddings
 func TestEmbeddingSimilarity(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping functional test in short mode")
+	}
 	testutil.RequireHTTPEndpoint(t, "embeddings", "http://localhost:8080/v1/embeddings/health")
 	client := NewEmbeddingClient("http://localhost:8080")
 

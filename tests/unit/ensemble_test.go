@@ -8,6 +8,9 @@ import (
 )
 
 func TestRunEnsembleBasic(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping ensemble test in short mode — requires LLM provider connectivity")
+	}
 	// Build a minimal request and ensure ensemble runs without error
 	req := &models.LLMRequest{
 		ID: "req-1",

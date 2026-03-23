@@ -94,8 +94,16 @@ func TestGeminiProvider_ValidateConfig(t *testing.T) {
 		require.NotNil(t, provider)
 
 		valid, errors := provider.ValidateConfig(nil)
-		assert.False(t, valid)
-		assert.NotEmpty(t, errors)
+		// GeminiUnifiedProvider supports CLI/OAuth fallback, so validation
+		// passes when Gemini CLI is installed even without an API key.
+		// The result is environment-dependent.
+		if gemini.IsGeminiCLIInstalled() {
+			assert.True(t, valid, "should be valid when Gemini CLI is available as fallback")
+			assert.Empty(t, errors)
+		} else {
+			assert.False(t, valid, "should be invalid without API key and without CLI fallback")
+			assert.NotEmpty(t, errors)
+		}
 	})
 
 	t.Run("missing model uses default", func(t *testing.T) {

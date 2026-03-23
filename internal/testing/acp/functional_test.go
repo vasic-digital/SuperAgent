@@ -141,6 +141,9 @@ var ACPAgents = []ACPAgentConfig{
 
 // TestACPAgentDiscovery tests agent discovery endpoint
 func TestACPAgentDiscovery(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping functional test in short mode")
+	}
 	testutil.RequireHTTPEndpoint(t, "acp", "http://localhost:8080/v1/acp/health")
 	client := NewACPClient("http://localhost:8080")
 
@@ -153,6 +156,9 @@ func TestACPAgentDiscovery(t *testing.T) {
 
 // TestACPAgentInfo tests getting agent information
 func TestACPAgentInfo(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping functional test in short mode")
+	}
 	testutil.RequireHTTPEndpoint(t, "acp", "http://localhost:8080/v1/acp/health")
 	client := NewACPClient("http://localhost:8080")
 
@@ -172,6 +178,9 @@ func TestACPAgentInfo(t *testing.T) {
 
 // TestACPAgentExecution tests actual agent task execution
 func TestACPAgentExecution(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping functional test in short mode")
+	}
 	testutil.RequireHTTPEndpoint(t, "acp", "http://localhost:8080/v1/acp/health")
 	client := NewACPClient("http://localhost:8080")
 
