@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "name": "HelixAgent Provider Validation Bank",
+  "challenges": [
+    {"id": "PROV-V-001", "name": "DeepSeek provider registered", "category": "functional", "priority": "critical", "assertions": [{"type": "contains", "target": "response.body", "expected": "deepseek"}]},
+    {"id": "PROV-V-002", "name": "Gemini provider registered", "category": "functional", "priority": "critical", "assertions": [{"type": "contains", "target": "response.body", "expected": "gemini"}]},
+    {"id": "PROV-V-003", "name": "Mistral provider registered", "category": "functional", "priority": "critical", "assertions": [{"type": "contains", "target": "response.body", "expected": "mistral"}]},
+    {"id": "PROV-V-004", "name": "OpenRouter provider registered", "category": "functional", "priority": "high", "assertions": [{"type": "contains", "target": "response.body", "expected": "openrouter"}]},
+    {"id": "PROV-V-005", "name": "Nvidia provider registered", "category": "functional", "priority": "high", "assertions": [{"type": "contains", "target": "response.body", "expected": "nvidia"}]},
+    {"id": "PROV-V-006", "name": "HuggingFace provider registered", "category": "functional", "priority": "high", "assertions": [{"type": "contains", "target": "response.body", "expected": "huggingface"}]},
+    {"id": "PROV-V-007", "name": "Venice provider registered", "category": "functional", "priority": "medium", "assertions": [{"type": "contains", "target": "response.body", "expected": "venice"}]},
+    {"id": "PROV-V-008", "name": "Together provider registered", "category": "functional", "priority": "medium", "assertions": [{"type": "contains", "target": "response.body", "expected": "together"}]},
+    {"id": "PROV-V-009", "name": "Replicate provider registered", "category": "functional", "priority": "medium", "assertions": [{"type": "contains", "target": "response.body", "expected": "replicate"}]},
+    {"id": "PROV-V-010", "name": "SambaNova provider registered", "category": "functional", "priority": "medium", "assertions": [{"type": "contains", "target": "response.body", "expected": "sambanova"}]},
+    {"id": "PROV-V-011", "name": "At least 20 providers active", "category": "functional", "priority": "critical", "assertions": [{"type": "min_count", "target": "response.body.count", "expected": "20"}]},
+    {"id": "PROV-V-012", "name": "All providers have models", "category": "functional", "priority": "high", "assertions": [{"type": "all_valid", "target": "response.body.providers[].supported_models"}]},
+    {"id": "PROV-V-013", "name": "No duplicate provider names", "category": "functional", "priority": "high", "assertions": [{"type": "no_duplicates", "target": "response.body.providers[].name"}]},
+    {"id": "PROV-V-014", "name": "All providers support streaming", "category": "functional", "priority": "medium", "assertions": [{"type": "all_valid", "target": "response.body.providers[].supports_streaming"}]},
+    {"id": "PROV-V-015", "name": "Provider list is deterministic", "category": "stability", "priority": "high", "assertions": [{"type": "not_empty", "target": "response.body.providers"}]}
+  ]
+}

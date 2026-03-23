@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "name": "HelixAgent Routing & Error Handling Bank",
+  "challenges": [
+    {"id": "ROUTE-001", "name": "Root path returns redirect or content", "category": "functional", "priority": "medium", "assertions": [{"type": "not_empty", "target": "response.status"}]},
+    {"id": "ROUTE-002", "name": "Health at /health", "category": "functional", "priority": "critical", "assertions": [{"type": "http_status_ok", "target": "GET /health"}]},
+    {"id": "ROUTE-003", "name": "Providers at /v1/providers", "category": "functional", "priority": "critical", "assertions": [{"type": "http_status_ok", "target": "GET /v1/providers"}]},
+    {"id": "ROUTE-004", "name": "Chat completions endpoint exists", "category": "functional", "priority": "critical", "assertions": [{"type": "not_empty", "target": "endpoint_exists", "expected": "/v1/chat/completions"}]},
+    {"id": "ROUTE-005", "name": "Scoring endpoints exist", "category": "functional", "priority": "high", "assertions": [{"type": "not_empty", "target": "endpoint_exists", "expected": "/v1/scoring"}]},
+    {"id": "ROUTE-006", "name": "Verification endpoints exist", "category": "functional", "priority": "high", "assertions": [{"type": "not_empty", "target": "endpoint_exists", "expected": "/v1/verification"}]},
+    {"id": "ROUTE-007", "name": "Tasks endpoints exist", "category": "functional", "priority": "high", "assertions": [{"type": "not_empty", "target": "endpoint_exists", "expected": "/v1/tasks"}]},
+    {"id": "ROUTE-008", "name": "Debug pprof endpoint exists", "category": "functional", "priority": "medium", "assertions": [{"type": "not_empty", "target": "endpoint_exists", "expected": "/debug/pprof"}]},
+    {"id": "ROUTE-009", "name": "Invalid method returns 405", "category": "functional", "priority": "medium", "assertions": [{"type": "not_empty", "target": "response.status"}]},
+    {"id": "ROUTE-010", "name": "Double slash path handled", "category": "security", "priority": "medium", "assertions": [{"type": "not_empty", "target": "response.status"}]},
+    {"id": "ROUTE-011", "name": "Response has feature headers", "category": "functional", "priority": "high", "assertions": [{"type": "contains", "target": "response.headers", "expected": "X-Features-Enabled"}]},
+    {"id": "ROUTE-012", "name": "Response has transport header", "category": "functional", "priority": "high", "assertions": [{"type": "contains", "target": "response.headers", "expected": "X-Transport-Protocol"}]},
+    {"id": "ROUTE-013", "name": "Brotli compression available", "category": "performance", "priority": "high", "assertions": [{"type": "contains", "target": "response.headers", "expected": "X-Compression-Available"}]},
+    {"id": "ROUTE-014", "name": "Streaming method header present", "category": "functional", "priority": "medium", "assertions": [{"type": "contains", "target": "response.headers", "expected": "X-Streaming-Method"}]},
+    {"id": "ROUTE-015", "name": "Content-Type is JSON", "category": "functional", "priority": "high", "assertions": [{"type": "contains", "target": "response.headers", "expected": "application/json"}]}
+  ]
+}

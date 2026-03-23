@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "name": "HelixAgent Infrastructure Validation Bank",
+  "challenges": [
+    {"id": "INFRA-001", "name": "PostgreSQL container running", "category": "infrastructure", "priority": "critical", "assertions": [{"type": "not_empty", "target": "container_running", "expected": "helixagent-postgres"}]},
+    {"id": "INFRA-002", "name": "Redis container running", "category": "infrastructure", "priority": "critical", "assertions": [{"type": "not_empty", "target": "container_running", "expected": "helixagent-redis"}]},
+    {"id": "INFRA-003", "name": "ChromaDB container running", "category": "infrastructure", "priority": "high", "assertions": [{"type": "not_empty", "target": "container_running", "expected": "helixagent-chromadb"}]},
+    {"id": "INFRA-004", "name": "Cognee container running", "category": "infrastructure", "priority": "high", "assertions": [{"type": "not_empty", "target": "container_running", "expected": "helixagent-cognee"}]},
+    {"id": "INFRA-005", "name": "At least 20 containers running", "category": "infrastructure", "priority": "critical", "assertions": [{"type": "min_count", "target": "container_count", "expected": "20"}]},
+    {"id": "INFRA-006", "name": "MCP filesystem server healthy", "category": "infrastructure", "priority": "high", "assertions": [{"type": "not_empty", "target": "container_healthy", "expected": "helixagent-mcp-filesystem"}]},
+    {"id": "INFRA-007", "name": "MCP memory server healthy", "category": "infrastructure", "priority": "high", "assertions": [{"type": "not_empty", "target": "container_healthy", "expected": "helixagent-mcp-memory"}]},
+    {"id": "INFRA-008", "name": "MCP git server healthy", "category": "infrastructure", "priority": "high", "assertions": [{"type": "not_empty", "target": "container_healthy", "expected": "helixagent-mcp-git"}]},
+    {"id": "INFRA-009", "name": "Server port 7061 listening", "category": "infrastructure", "priority": "critical", "assertions": [{"type": "not_empty", "target": "port_listening", "expected": "7061"}]},
+    {"id": "INFRA-010", "name": "PostgreSQL port 5432 listening", "category": "infrastructure", "priority": "critical", "assertions": [{"type": "not_empty", "target": "port_listening", "expected": "5432"}]}
+  ]
+}
