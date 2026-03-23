@@ -1,3 +1,6 @@
+// DEPRECATED: This package is superseded by the extracted Storage/ submodule
+// (module digital.vasic.storage). It has zero production imports and is retained
+// only for reference. New code should use the submodule via adapters.
 package minio
 
 import (

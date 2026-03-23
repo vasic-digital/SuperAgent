@@ -1,3 +1,7 @@
+// DEPRECATED: This package is superseded by the extracted VectorDB/ submodule
+// (module digital.vasic.vectordb). It has zero production imports and is retained
+// only for reference. New code should use the submodule via adapters.
+//
 // Package milvus provides a client for Milvus vector database.
 package milvus
 

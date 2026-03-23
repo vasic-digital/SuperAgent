@@ -717,7 +717,8 @@ func (r *StandardBenchmarkRunner) calculateSummary(results []*BenchmarkResult, t
 	return summary
 }
 
-// GetRun gets a benchmark run
+// GetRun gets a benchmark run. Returns a deep copy to avoid data races
+// with concurrently-mutated shared state in executeRun.
 func (r *StandardBenchmarkRunner) GetRun(ctx context.Context, runID string) (*BenchmarkRun, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -727,10 +728,11 @@ func (r *StandardBenchmarkRunner) GetRun(ctx context.Context, runID string) (*Be
 		return nil, fmt.Errorf("run not found: %s", runID)
 	}
 
-	return run, nil
+	return copyBenchmarkRun(run), nil
 }
 
-// ListRuns lists benchmark runs
+// ListRuns lists benchmark runs. Returns deep copies to avoid data races
+// with concurrently-mutated shared state in executeRun.
 func (r *StandardBenchmarkRunner) ListRuns(ctx context.Context, filter *RunFilter) ([]*BenchmarkRun, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -738,7 +740,7 @@ func (r *StandardBenchmarkRunner) ListRuns(ctx context.Context, filter *RunFilte
 	var result []*BenchmarkRun
 	for _, run := range r.runs {
 		if r.matchesFilter(run, filter) {
-			result = append(result, run)
+			result = append(result, copyBenchmarkRun(run))
 		}
 	}
 
@@ -796,11 +798,19 @@ func (r *StandardBenchmarkRunner) CancelRun(ctx context.Context, runID string) e
 	return nil
 }
 
-// CompareRuns compares two benchmark runs
+// CompareRuns compares two benchmark runs. Deep copies are taken under
+// the lock so the comparison logic operates on stable snapshots.
 func (r *StandardBenchmarkRunner) CompareRuns(ctx context.Context, runID1, runID2 string) (*RunComparison, error) {
 	r.mu.RLock()
-	run1, ok1 := r.runs[runID1]
-	run2, ok2 := r.runs[runID2]
+	raw1, ok1 := r.runs[runID1]
+	raw2, ok2 := r.runs[runID2]
+	var run1, run2 *BenchmarkRun
+	if ok1 {
+		run1 = copyBenchmarkRun(raw1)
+	}
+	if ok2 {
+		run2 = copyBenchmarkRun(raw2)
+	}
 	r.mu.RUnlock()
 
 	if !ok1 {
@@ -860,4 +870,94 @@ func (r *StandardBenchmarkRunner) AddBenchmark(benchmark *Benchmark, tasks []*Be
 	r.benchmarks[benchmark.ID] = benchmark
 	r.tasks[benchmark.ID] = tasks
 	benchmark.TaskCount = len(tasks)
+}
+
+// copyBenchmarkRun returns a deep copy of a BenchmarkRun so that callers
+// of GetRun/ListRuns/CompareRuns receive an isolated snapshot that is safe
+// to read without holding the runner mutex — even while executeRun is
+// concurrently mutating the original.
+func copyBenchmarkRun(src *BenchmarkRun) *BenchmarkRun {
+	if src == nil {
+		return nil
+	}
+
+	dst := &BenchmarkRun{
+		ID:            src.ID,
+		Name:          src.Name,
+		Description:   src.Description,
+		BenchmarkType: src.BenchmarkType,
+		ProviderName:  src.ProviderName,
+		ModelName:     src.ModelName,
+		Status:        src.Status,
+		CreatedAt:     src.CreatedAt,
+	}
+
+	// Deep copy Config
+	if src.Config != nil {
+		cfgCopy := *src.Config
+		if src.Config.Difficulties != nil {
+			cfgCopy.Difficulties = make([]DifficultyLevel, len(src.Config.Difficulties))
+			copy(cfgCopy.Difficulties, src.Config.Difficulties)
+		}
+		if src.Config.Tags != nil {
+			cfgCopy.Tags = make([]string, len(src.Config.Tags))
+			copy(cfgCopy.Tags, src.Config.Tags)
+		}
+		dst.Config = &cfgCopy
+	}
+
+	// Deep copy Results slice
+	if src.Results != nil {
+		dst.Results = make([]*BenchmarkResult, len(src.Results))
+		for i, r := range src.Results {
+			rCopy := *r
+			if r.TestResults != nil {
+				rCopy.TestResults = make([]*TestCaseResult, len(r.TestResults))
+				for j, tr := range r.TestResults {
+					trCopy := *tr
+					rCopy.TestResults[j] = &trCopy
+				}
+			}
+			if r.Metadata != nil {
+				rCopy.Metadata = make(map[string]interface{}, len(r.Metadata))
+				for k, v := range r.Metadata {
+					rCopy.Metadata[k] = v
+				}
+			}
+			dst.Results[i] = &rCopy
+		}
+	}
+
+	// Deep copy Summary
+	if src.Summary != nil {
+		sCopy := *src.Summary
+		if src.Summary.ByDifficulty != nil {
+			sCopy.ByDifficulty = make(map[DifficultyLevel]*DifficultySummary,
+				len(src.Summary.ByDifficulty))
+			for k, v := range src.Summary.ByDifficulty {
+				vCopy := *v
+				sCopy.ByDifficulty[k] = &vCopy
+			}
+		}
+		if src.Summary.ByTag != nil {
+			sCopy.ByTag = make(map[string]*TagSummary, len(src.Summary.ByTag))
+			for k, v := range src.Summary.ByTag {
+				vCopy := *v
+				sCopy.ByTag[k] = &vCopy
+			}
+		}
+		dst.Summary = &sCopy
+	}
+
+	// Deep copy time pointers
+	if src.StartTime != nil {
+		t := *src.StartTime
+		dst.StartTime = &t
+	}
+	if src.EndTime != nil {
+		t := *src.EndTime
+		dst.EndTime = &t
+	}
+
+	return dst
 }

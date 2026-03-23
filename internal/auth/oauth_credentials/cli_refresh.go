@@ -1,3 +1,7 @@
+// DEPRECATED: This package is superseded by the extracted Auth/ submodule
+// (module digital.vasic.auth). It has zero production imports and is retained
+// only for reference. New code should use the submodule via adapters.
+//
 // Package oauth_credentials provides CLI-based OAuth2 token refresh functionality
 // for Qwen Code CLI, enabling automatic token refresh by invoking the CLI.
 package oauth_credentials

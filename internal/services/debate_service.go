@@ -885,6 +885,12 @@ func (ds *DebateService) executeRound(
 		wg.Add(1)
 		go func(p ParticipantConfig) {
 			defer wg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					ds.logger.Errorf("participant %s goroutine panicked (recovered): %v", p.Name, r)
+					errorChan <- fmt.Errorf("participant %s panicked: %v", p.Name, r)
+				}
+			}()
 
 			// Track fallback chain for logging
 			fallbackChain := []FallbackChainEntry{{
@@ -2045,6 +2051,11 @@ func (ds *DebateService) analyzeWithHelixMemory(ctx context.Context, content str
 
 	// Store debate analysis result in HelixMemory for future reference
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				ds.logger.Errorf("HelixMemory store goroutine panicked (recovered): %v", r)
+			}
+		}()
 		storeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		debateMemory := &helixmem.Memory{

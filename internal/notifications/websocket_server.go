@@ -21,7 +21,11 @@ type WebSocketClientInterface interface {
 	ID() string
 }
 
-// WebSocketServer manages WebSocket connections
+// WebSocketServer manages WebSocket connections.
+//
+// Lock ordering: clientsMu MUST be acquired before globalClientsMu.
+// Never acquire globalClientsMu while holding clientsMu, or deadlock will occur.
+// Broadcast operations acquire only one lock at a time (clients then global).
 type WebSocketServer struct {
 	// Task-specific clients
 	clients   map[string]map[string]WebSocketClientInterface

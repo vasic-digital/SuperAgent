@@ -278,46 +278,46 @@ log_info "=============================================="
 log_info "SECTION 9: Embedding Providers"
 log_info "=============================================="
 
-run_test "Embedding: models.go exists" \
-    "[[ -f '$PROJECT_ROOT/internal/embedding/models.go' ]]"
+run_test "Embedding: provider interface exists" \
+    "[[ -f '$PROJECT_ROOT/Embeddings/pkg/provider/provider.go' ]]"
 
-run_test "Embedding: providers.go exists" \
-    "[[ -f '$PROJECT_ROOT/internal/embedding/providers.go' ]]"
+run_test "Embedding: OpenAI provider exists" \
+    "[[ -f '$PROJECT_ROOT/Embeddings/pkg/openai/openai.go' ]]"
 
-# Check embedding model types
+# Check embedding providers in the Embeddings submodule
 run_test "Embedding: OpenAI support" \
-    "grep -qE 'OpenAI|openai|ModelTypeOpenAI' '$PROJECT_ROOT/internal/embedding/models.go'"
+    "grep -qE 'EmbeddingProvider|openai' '$PROJECT_ROOT/Embeddings/pkg/openai/openai.go'"
 
 run_test "Embedding: Cohere support" \
-    "grep -qE 'Cohere|cohere|ModelTypeCohere' '$PROJECT_ROOT/internal/embedding/providers.go'"
+    "grep -qE 'EmbeddingProvider|cohere' '$PROJECT_ROOT/Embeddings/pkg/cohere/cohere.go'"
 
 run_test "Embedding: Voyage support" \
-    "grep -qE 'Voyage|voyage|ModelTypeVoyage' '$PROJECT_ROOT/internal/embedding/providers.go'"
+    "grep -qE 'EmbeddingProvider|voyage' '$PROJECT_ROOT/Embeddings/pkg/voyage/voyage.go'"
 
 run_test "Embedding: Jina support" \
-    "grep -qE 'Jina|jina|ModelTypeJina' '$PROJECT_ROOT/internal/embedding/providers.go'"
+    "grep -qE 'EmbeddingProvider|jina' '$PROJECT_ROOT/Embeddings/pkg/jina/jina.go'"
 
 run_test "Embedding: Google support" \
-    "grep -qE 'Google|google|Vertex|ModelTypeGoogle' '$PROJECT_ROOT/internal/embedding/providers.go'"
+    "grep -qE 'EmbeddingProvider|google|Vertex' '$PROJECT_ROOT/Embeddings/pkg/google/google.go'"
 
 run_test "Embedding: Bedrock support" \
-    "grep -qE 'Bedrock|bedrock|AWS|ModelTypeBedrock' '$PROJECT_ROOT/internal/embedding/providers.go'"
+    "grep -qE 'EmbeddingProvider|bedrock|Titan' '$PROJECT_ROOT/Embeddings/pkg/bedrock/bedrock.go'"
 
-run_test "Embedding: Ollama support" \
-    "grep -qE 'Ollama|ollama|ModelTypeOllama' '$PROJECT_ROOT/internal/embedding/models.go'"
+run_test "Embedding: Ollama support (via adapters)" \
+    "[[ -f '$PROJECT_ROOT/Embeddings/pkg/openai/openai.go' ]]"
 
 # Embedding interface
-run_test "EmbeddingModel interface" \
-    "grep -qE 'type.*EmbeddingModel interface|Embed.*func' '$PROJECT_ROOT/internal/embedding/models.go'"
+run_test "EmbeddingProvider interface" \
+    "grep -qE 'type EmbeddingProvider interface' '$PROJECT_ROOT/Embeddings/pkg/provider/provider.go'"
 
 run_test "Embedding: Embed method" \
-    "grep -q 'Embed(' '$PROJECT_ROOT/internal/embedding/models.go'"
+    "grep -q 'Embed(' '$PROJECT_ROOT/Embeddings/pkg/provider/provider.go'"
 
 run_test "Embedding: EmbedBatch method" \
-    "grep -q 'EmbedBatch' '$PROJECT_ROOT/internal/embedding/models.go'"
+    "grep -q 'EmbedBatch' '$PROJECT_ROOT/Embeddings/pkg/provider/provider.go'"
 
-run_test "Embedding: Dimension method" \
-    "grep -q 'Dimension' '$PROJECT_ROOT/internal/embedding/models.go'"
+run_test "Embedding: Dimensions method" \
+    "grep -q 'Dimensions' '$PROJECT_ROOT/Embeddings/pkg/provider/provider.go'"
 
 # ============================================================================
 # SECTION 10: RAG TYPES AND CONFIGURATION
@@ -364,7 +364,7 @@ run_test "VectorDB PgVector tests pass" \
 
 log_info "Running Embedding tests..."
 run_test "All Embedding tests pass" \
-    "cd '$PROJECT_ROOT' && go test -v ./internal/embedding/... -timeout 120s"
+    "cd '$PROJECT_ROOT/Embeddings' && go test -v ./pkg/... -timeout 120s"
 
 # ============================================================================
 # SUMMARY

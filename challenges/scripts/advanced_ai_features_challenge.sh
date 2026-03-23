@@ -309,13 +309,13 @@ check_file_exists "internal/mcp/adapters/notion.go" "Notion Adapter"
 # ============================================
 echo -e "\n${YELLOW}=== Testing Embedding Models ===${NC}"
 
-check_file_exists "internal/embedding/models.go" "Embedding Models implementation"
-check_struct_exists "internal/embedding/models.go" "OpenAIEmbedding"
-check_struct_exists "internal/embedding/models.go" "OllamaEmbedding"
-check_struct_exists "internal/embedding/models.go" "HuggingFaceEmbedding"
-check_interface_exists "internal/embedding/models.go" "EmbeddingModel"
-check_function_exists "internal/embedding/models.go" "Embed"
-check_function_exists "internal/embedding/models.go" "EmbedBatch"
+check_file_exists "Embeddings/pkg/provider/provider.go" "Embedding Provider interface"
+check_file_exists "Embeddings/pkg/openai/openai.go" "OpenAI Embedding provider"
+check_file_exists "Embeddings/pkg/cohere/cohere.go" "Cohere Embedding provider"
+check_file_exists "Embeddings/pkg/voyage/voyage.go" "Voyage Embedding provider"
+check_interface_exists "Embeddings/pkg/provider/provider.go" "EmbeddingProvider"
+check_function_exists "Embeddings/pkg/provider/provider.go" "Embed"
+check_function_exists "Embeddings/pkg/provider/provider.go" "EmbedBatch"
 
 # ============================================
 # 13. Unit Tests

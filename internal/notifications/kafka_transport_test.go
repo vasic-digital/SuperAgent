@@ -242,6 +242,48 @@ func TestNotificationHubKafkaIntegration_PublishAudit(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestKafkaTransport_Stop_DoubleCloseNoPanic(t *testing.T) {
+	config := DefaultKafkaTransportConfig()
+	transport := NewKafkaTransport(nil, nil, config)
+
+	transport.Start()
+	assert.True(t, transport.started)
+
+	// First stop should succeed normally
+	assert.NotPanics(t, func() {
+		transport.Stop()
+	})
+
+	// Second stop must not panic (double-close protection via sync.Once)
+	assert.NotPanics(t, func() {
+		transport.Stop()
+	})
+}
+
+func TestKafkaTransport_Stop_ConcurrentStopNoPanic(t *testing.T) {
+	config := DefaultKafkaTransportConfig()
+	transport := NewKafkaTransport(nil, nil, config)
+
+	transport.Start()
+	assert.True(t, transport.started)
+
+	// 10 goroutines all calling Stop concurrently — must not panic
+	const goroutines = 10
+	done := make(chan struct{}, goroutines)
+
+	assert.NotPanics(t, func() {
+		for i := 0; i < goroutines; i++ {
+			go func() {
+				defer func() { done <- struct{}{} }()
+				transport.Stop()
+			}()
+		}
+		for i := 0; i < goroutines; i++ {
+			<-done
+		}
+	})
+}
+
 func TestRandomNotificationString(t *testing.T) {
 	str1 := randomNotificationString(8)
 	time.Sleep(time.Millisecond)

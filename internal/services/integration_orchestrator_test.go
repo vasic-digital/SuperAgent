@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -1362,4 +1364,150 @@ func TestIntegrationOrchestrator_executeStep_WithRetry(t *testing.T) {
 	assert.Nil(t, result)
 	// Should have attempted retries (but still fail)
 	assert.Equal(t, 2, step.RetryCount)
+}
+
+func TestIntegrationOrchestrator_ConcurrentWorkflowAccess(t *testing.T) {
+	orch := NewIntegrationOrchestrator(nil, nil, nil, nil)
+
+	const numGoroutines = 50
+	var wg sync.WaitGroup
+
+	// Phase 1: Register 50 workflows concurrently
+	wg.Add(numGoroutines)
+	for i := 0; i < numGoroutines; i++ {
+		go func(idx int) {
+			defer wg.Done()
+			id := fmt.Sprintf("workflow-%d", idx)
+			// Simulate what ExecuteCodeAnalysis / ExecuteToolChain do:
+			// write to the map under lock
+			orch.mu.Lock()
+			orch.workflows[id] = &Workflow{
+				ID:        id,
+				Name:      fmt.Sprintf("Workflow %d", idx),
+				Status:    "completed",
+				Results:   make(map[string]any),
+				CreatedAt: time.Now(),
+			}
+			orch.mu.Unlock()
+		}(i)
+	}
+	wg.Wait()
+
+	// Verify all 50 workflows were registered
+	ids := orch.ListWorkflows()
+	assert.Len(t, ids, numGoroutines)
+
+	// Phase 2: Concurrent reads (GetWorkflow) and writes (DeleteWorkflow) at the same time
+	wg.Add(numGoroutines * 2)
+	for i := 0; i < numGoroutines; i++ {
+		// Reader goroutine
+		go func(idx int) {
+			defer wg.Done()
+			id := fmt.Sprintf("workflow-%d", idx)
+			_ = orch.GetWorkflow(id)
+		}(i)
+		// Deleter goroutine (deletes odd indices)
+		go func(idx int) {
+			defer wg.Done()
+			if idx%2 == 1 {
+				id := fmt.Sprintf("workflow-%d", idx)
+				orch.DeleteWorkflow(id)
+			}
+		}(i)
+	}
+	wg.Wait()
+
+	// Phase 3: Concurrent ListWorkflows while re-adding deleted workflows
+	wg.Add(numGoroutines)
+	for i := 0; i < numGoroutines; i++ {
+		go func(idx int) {
+			defer wg.Done()
+			if idx%2 == 0 {
+				_ = orch.ListWorkflows()
+			} else {
+				id := fmt.Sprintf("workflow-new-%d", idx)
+				orch.mu.Lock()
+				orch.workflows[id] = &Workflow{
+					ID:     id,
+					Name:   fmt.Sprintf("New Workflow %d", idx),
+					Status: "pending",
+				}
+				orch.mu.Unlock()
+			}
+		}(i)
+	}
+	wg.Wait()
+
+	// Verify we have some workflows left and the map is in a consistent state
+	finalIDs := orch.ListWorkflows()
+	assert.Greater(t, len(finalIDs), 0)
+
+	// Verify each listed workflow is actually retrievable
+	for _, id := range finalIDs {
+		wf := orch.GetWorkflow(id)
+		assert.NotNil(t, wf, "workflow %s listed but not retrievable", id)
+	}
+}
+
+func TestIntegrationOrchestrator_GetWorkflow(t *testing.T) {
+	orch := NewIntegrationOrchestrator(nil, nil, nil, nil)
+
+	t.Run("not found returns nil", func(t *testing.T) {
+		wf := orch.GetWorkflow("nonexistent")
+		assert.Nil(t, wf)
+	})
+
+	t.Run("found returns workflow", func(t *testing.T) {
+		orch.mu.Lock()
+		orch.workflows["test-wf"] = &Workflow{ID: "test-wf", Name: "Test"}
+		orch.mu.Unlock()
+
+		wf := orch.GetWorkflow("test-wf")
+		require.NotNil(t, wf)
+		assert.Equal(t, "test-wf", wf.ID)
+		assert.Equal(t, "Test", wf.Name)
+	})
+}
+
+func TestIntegrationOrchestrator_ListWorkflows(t *testing.T) {
+	orch := NewIntegrationOrchestrator(nil, nil, nil, nil)
+
+	t.Run("empty", func(t *testing.T) {
+		ids := orch.ListWorkflows()
+		assert.Empty(t, ids)
+	})
+
+	t.Run("with workflows", func(t *testing.T) {
+		orch.mu.Lock()
+		orch.workflows["wf-1"] = &Workflow{ID: "wf-1"}
+		orch.workflows["wf-2"] = &Workflow{ID: "wf-2"}
+		orch.mu.Unlock()
+
+		ids := orch.ListWorkflows()
+		assert.Len(t, ids, 2)
+		assert.Contains(t, ids, "wf-1")
+		assert.Contains(t, ids, "wf-2")
+	})
+}
+
+func TestIntegrationOrchestrator_DeleteWorkflow(t *testing.T) {
+	orch := NewIntegrationOrchestrator(nil, nil, nil, nil)
+
+	t.Run("delete nonexistent returns false", func(t *testing.T) {
+		ok := orch.DeleteWorkflow("nonexistent")
+		assert.False(t, ok)
+	})
+
+	t.Run("delete existing returns true", func(t *testing.T) {
+		orch.mu.Lock()
+		orch.workflows["to-delete"] = &Workflow{ID: "to-delete"}
+		orch.mu.Unlock()
+
+		ok := orch.DeleteWorkflow("to-delete")
+		assert.True(t, ok)
+
+		// Verify it's gone
+		wf := orch.GetWorkflow("to-delete")
+		assert.Nil(t, wf)
+	})
 }

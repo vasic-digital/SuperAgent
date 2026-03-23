@@ -1,3 +1,8 @@
+// DEPRECATED: This package is superseded by the extracted Streaming/ submodule
+// (module digital.vasic.streaming). It has zero production imports (only one
+// integration test) and is retained only for reference. New code should use
+// the submodule via adapters.
+//
 // Package streaming provides comprehensive streaming support for all streaming types.
 // HelixAgent supports ALL streaming mechanisms to ensure compatibility with every CLI agent.
 package streaming

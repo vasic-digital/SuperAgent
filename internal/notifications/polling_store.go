@@ -194,6 +194,11 @@ func (s *PollingStore) ClearTaskEvents(taskID string) {
 // cleanupLoop periodically removes expired events
 func (s *PollingStore) cleanupLoop() {
 	defer s.wg.Done()
+	defer func() {
+		if r := recover(); r != nil {
+			s.logger.Errorf("cleanup loop panicked (recovered): %v", r)
+		}
+	}()
 
 	ticker := time.NewTicker(s.config.CleanupInterval)
 	defer ticker.Stop()

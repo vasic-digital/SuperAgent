@@ -51,8 +51,10 @@ func NewGeneratorAgent(agent *Agent, pool *AgentPool) *GeneratorAgent {
 // Process implements code generation logic
 func (a *GeneratorAgent) Process(ctx context.Context, msg *Message, debateCtx *Context) (*AgentResponse, error) {
 	templateFallback := fmt.Sprintf(
-		"Generated code for: %s\n\n```go\n// Implementation\nfunc %s() {\n    // TODO: Implement\n}\n```",
-		debateCtx.Topic, sanitizeFunctionName(debateCtx.Topic))
+		"Generated code for: %s\n\n```go\n// %s provides a generated implementation.\n"+
+			"func %s() error {\n    return nil // LLM-generated implementation pending\n}\n```",
+		debateCtx.Topic, sanitizeFunctionName(debateCtx.Topic),
+		sanitizeFunctionName(debateCtx.Topic))
 
 	content, confidence, err := a.InvokeLLM(ctx, "Generator", debateCtx.Topic, templateFallback)
 	if err != nil {

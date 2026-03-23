@@ -164,6 +164,8 @@ make monitoring-reset-circuits / force-health-check
 - `llm/ensemble.go` — Ensemble orchestration
 - `services/` — Business logic: provider_registry, ensemble, debate_service, debate_team_config, llm_intent_classifier, context_manager, mcp_client, lsp_manager, plugin_system
 - `handlers/` — HTTP handlers (BackgroundTask, Discovery, Scoring, Verification, Health + core) | `middleware/` — Auth, rate limiting, CORS
+- `handlers/agentic_handler.go` — Agentic workflow endpoints | `handlers/planning_handler.go` — AI planning endpoints
+- `handlers/llmops_handler.go` — LLM operations endpoints | `handlers/benchmark_handler.go` — Benchmarking endpoints
 - `background/` — Task queue, worker pool, resource monitor | `notifications/` — SSE, WebSocket, Webhooks
 - `cache/` — Redis + in-memory | `database/` — PostgreSQL/pgx | `models/` — Data models/enums
 - `debate/` — Orchestrator framework: agents, topology, protocol, voting, cognitive, knowledge, reflexion, gates, evaluation, audit, tools (13 packages)
@@ -182,6 +184,7 @@ make monitoring-reset-circuits / force-health-check
 - `verifier/` — Startup verification orchestrator and adapters
 - `challenges/` — HelixAgent-specific challenge implementations (plugin, infra bridge, shell adapter, 22 Go-native userflow challenges with dependency graph)
 - `adapters/` — Bridge layer connecting internal types to extracted modules (20+ adapter files with 75+ tests)
+- `adapters/observability/` — OpenTelemetry integration adapter | `adapters/events/` — EventBus integration adapter | `adapters/http/` — HTTP/3 client pool adapter
 
 ### Extracted Modules (submodules)
 
@@ -439,6 +442,9 @@ CI_RESOURCE_LIMIT=medium make ci-all  # Medium resource limits (default: low)
 ./challenges/scripts/coverage_gate_challenge.sh                 # Coverage threshold enforcement
 ./challenges/scripts/lazy_loading_validation_challenge.sh       # sync.Once lazy loading validation
 ./challenges/scripts/monitoring_dashboard_challenge.sh          # Prometheus metrics and dashboard validation
+./challenges/scripts/dead_code_elimination_challenge.sh        # 15 tests
+./challenges/scripts/concurrency_safety_comprehensive_challenge.sh  # 20 tests
+./challenges/scripts/new_endpoints_challenge.sh                # 12 tests
 # Go-native userflow challenges (22): run with --run-challenges=userflow
 ```
 
@@ -451,7 +457,7 @@ make verifier-verify MODEL=gpt-4 PROVIDER=openai
 
 ## Protocol Endpoints
 
-MCP `/v1/mcp` | ACP `/v1/acp` | LSP `/v1/lsp` | Embeddings `/v1/embeddings` | Vision `/v1/vision` | Cognee `/v1/cognee` (optional) | Startup `/v1/startup/verification` | BigData `/v1/bigdata/health` | Tasks `/v1/tasks` | Discovery `/v1/discovery` | Scoring `/v1/scoring` | Verification `/v1/verification` | Health `/v1/health`
+MCP `/v1/mcp` | ACP `/v1/acp` | LSP `/v1/lsp` | Embeddings `/v1/embeddings` | Vision `/v1/vision` | Cognee `/v1/cognee` (optional) | Startup `/v1/startup/verification` | BigData `/v1/bigdata/health` | Tasks `/v1/tasks` | Discovery `/v1/discovery` | Scoring `/v1/scoring` | Verification `/v1/verification` | Health `/v1/health` | Agentic `/v1/agentic/workflows` | Planning `/v1/planning/{hiplan,mcts,tot}` | LLMOps `/v1/llmops/{experiments,evaluate,prompts}` | Benchmark `/v1/benchmark/{run,results}` | GraphQL `/v1/graphql` (feature-flagged, `GRAPHQL_ENABLED=true`)
 
 Fallback: routes to strongest LLM by score, falls back on failure.
 

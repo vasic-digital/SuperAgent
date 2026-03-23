@@ -1,0 +1,84 @@
+flowchart TD
+    START([Receive Debate Request]) --> TEAM[Select Debate Team<br/>5 positions x 5 LLMs = 25 total]
+
+    TEAM --> P1
+
+    subgraph P1["Phase 1: Dehallucination"]
+        P1A[Each LLM identifies<br/>potential hallucinations]
+        P1B[Cross-validate factual<br/>claims across providers]
+        P1C[Flag unverifiable assertions]
+        P1A --> P1B --> P1C
+    end
+
+    P1 --> P2
+
+    subgraph P2["Phase 2: SelfEvolvement"]
+        P2A[LLMs reflect on<br/>own weaknesses]
+        P2B[Episodic memory buffer<br/>lookup - Reflexion]
+        P2C[Apply accumulated wisdom<br/>from prior sessions]
+        P2A --> P2B --> P2C
+    end
+
+    P2 --> P3
+
+    subgraph P3["Phase 3: Proposal"]
+        P3A[LLM 1 proposal]
+        P3B[LLM 2 proposal]
+        P3C[LLM 3 proposal]
+        P3D[LLM 4 proposal]
+        P3E[LLM 5 proposal]
+    end
+
+    P3 --> P4
+
+    subgraph P4["Phase 4: Critique"]
+        P4A[Each LLM critiques<br/>all other proposals]
+        P4B[Identify logical flaws,<br/>missing context, errors]
+        P4A --> P4B
+    end
+
+    P4 --> P5
+
+    subgraph P5["Phase 5: Review"]
+        P5A[Aggregate critiques<br/>per proposal]
+        P5B[Score proposals by<br/>critique severity]
+        P5A --> P5B
+    end
+
+    P5 --> P6
+
+    subgraph P6["Phase 6: Optimization"]
+        P6A[Top proposals revised<br/>based on critiques]
+        P6B[Early termination if<br/>consensus detected]
+        P6A --> P6B
+    end
+
+    P6 --> P7
+
+    subgraph P7["Phase 7: Adversarial"]
+        P7A[Red team attacks<br/>refined proposals]
+        P7B[Blue team defends<br/>with evidence]
+        P7C[Structured adversarial report]
+        P7A --> P7B --> P7C
+    end
+
+    P7 --> P8
+
+    subgraph P8["Phase 8: Convergence"]
+        P8A{Consensus<br/>reached?}
+        P8B[Voting: Weighted /<br/>Borda / Condorcet /<br/>Majority / Plurality]
+        P8C[Final synthesis<br/>with provenance]
+        P8A -->|Yes| P8C
+        P8A -->|No| P8B --> P8C
+    end
+
+    P8 --> DONE([Return Debate Result<br/>with full audit trail])
+
+    style P1 fill:#E3F2FD
+    style P2 fill:#E8F5E9
+    style P3 fill:#FFF8E1
+    style P4 fill:#FCE4EC
+    style P5 fill:#F3E5F5
+    style P6 fill:#FFF3E0
+    style P7 fill:#FFEBEE
+    style P8 fill:#E0F7FA

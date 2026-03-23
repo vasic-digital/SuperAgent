@@ -1,3 +1,7 @@
+// DEPRECATED: This package is superseded by the extracted ToolSchema/ submodule
+// (module digital.vasic.toolschema). It has zero production imports and is
+// retained only for reference. New code should use the submodule via adapters.
+//
 // Package tools provides the tool schema registry for HelixAgent.
 //
 // This package manages the 21 tools available to HelixAgent and ensures

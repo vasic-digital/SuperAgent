@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -870,4 +871,98 @@ func TestNewHotReloadManager_WithExistingPluginDir(t *testing.T) {
 		assert.True(t, manager.enabled)
 		_ = manager.watcher.Close()
 	}
+}
+
+func TestHotReloadManager_StartStop_NoGoroutineLeak(t *testing.T) {
+	// Verify goroutine count doesn't grow after Start+Stop cycle
+	tmpDir := t.TempDir()
+	registry := NewRegistry()
+
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		t.Skipf("Could not create watcher: %v", err)
+	}
+
+	err = watcher.Add(tmpDir)
+	if err != nil {
+		_ = watcher.Close()
+		t.Skipf("Could not add path to watcher: %v", err)
+	}
+
+	manager := &HotReloadManager{
+		registry:    registry,
+		loader:      NewLoader(registry),
+		watcher:     watcher,
+		pluginPaths: []string{tmpDir},
+		pluginMap:   make(map[string]string),
+		enabled:     true,
+		stopChan:    make(chan struct{}),
+	}
+
+	// Record goroutine count before start
+	goroutinesBefore := runtime.NumGoroutine()
+
+	ctx := context.Background()
+	err = manager.Start(ctx)
+	assert.NoError(t, err)
+
+	// Goroutine count should have increased (watchLoop running)
+	time.Sleep(50 * time.Millisecond)
+	goroutinesDuring := runtime.NumGoroutine()
+	assert.Greater(t, goroutinesDuring, goroutinesBefore,
+		"Expected goroutine count to increase after Start")
+
+	// Stop and wait for goroutine cleanup
+	err = manager.Stop()
+	assert.NoError(t, err)
+
+	// Allow brief settling time for runtime to collect goroutines
+	time.Sleep(50 * time.Millisecond)
+	goroutinesAfter := runtime.NumGoroutine()
+
+	// Goroutine count should be back to baseline (within a small margin
+	// for runtime jitter from other test goroutines)
+	assert.LessOrEqual(t, goroutinesAfter, goroutinesBefore+2,
+		"Goroutine leak detected: before=%d, after=%d", goroutinesBefore, goroutinesAfter)
+}
+
+func TestHotReloadManager_DoubleStop_NoPanic(t *testing.T) {
+	// Call Stop() twice and verify no panic from double-close on stopChan
+	tmpDir := t.TempDir()
+	registry := NewRegistry()
+
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		t.Skipf("Could not create watcher: %v", err)
+	}
+
+	err = watcher.Add(tmpDir)
+	if err != nil {
+		_ = watcher.Close()
+		t.Skipf("Could not add path to watcher: %v", err)
+	}
+
+	manager := &HotReloadManager{
+		registry:    registry,
+		loader:      NewLoader(registry),
+		watcher:     watcher,
+		pluginPaths: []string{tmpDir},
+		pluginMap:   make(map[string]string),
+		enabled:     true,
+		stopChan:    make(chan struct{}),
+	}
+
+	ctx := context.Background()
+	err = manager.Start(ctx)
+	assert.NoError(t, err)
+
+	// First Stop should succeed
+	err = manager.Stop()
+	assert.NoError(t, err)
+
+	// Second Stop must NOT panic (sync.Once protects double-close)
+	assert.NotPanics(t, func() {
+		err = manager.Stop()
+		assert.NoError(t, err)
+	}, "Second call to Stop() should not panic")
 }

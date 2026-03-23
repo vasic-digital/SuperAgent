@@ -1,3 +1,7 @@
+// DEPRECATED: This package is superseded by the extracted Concurrency/ submodule
+// (module digital.vasic.concurrency). It has zero production imports (only stress
+// tests) and is retained only for reference. New code should use the submodule
+// via adapters.
 package concurrency
 
 import (

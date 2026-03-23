@@ -143,17 +143,17 @@ EMBEDDING_MODELS=(
     "qwen" "gte" "codeBERT"
 )
 
-run_test "Embedding registry exists" \
-    "[[ -f '$PROJECT_ROOT/internal/embeddings/models/registry.go' ]] || [[ -f '$PROJECT_ROOT/internal/embedding/models.go' ]]"
+run_test "Embedding provider interface exists" \
+    "[[ -f '$PROJECT_ROOT/Embeddings/pkg/provider/provider.go' ]] || [[ -f '$PROJECT_ROOT/internal/embeddings/models/registry.go' ]]"
 
-run_test "Embedding models have tests" \
-    "[[ -f '$PROJECT_ROOT/internal/embeddings/models/registry_test.go' ]] || [[ -f '$PROJECT_ROOT/internal/embedding/models_test.go' ]]"
+run_test "Embedding providers have tests" \
+    "ls '$PROJECT_ROOT/Embeddings/pkg/openai/'*_test.go > /dev/null 2>&1 || ls '$PROJECT_ROOT/internal/embeddings/models/'*_test.go > /dev/null 2>&1"
 
 log_info "Verifying embedding model support..."
 for model in "${EMBEDDING_MODELS[@]}"; do
     model_pattern=$(echo "$model" | tr '[:upper:]' '[:lower:]')
     run_test "Embedding model support: $model" \
-        "grep -qi '$model_pattern' '$PROJECT_ROOT/internal/embedding/models.go' || grep -qi '$model_pattern' '$PROJECT_ROOT/internal/embeddings/models/registry.go'"
+        "grep -rqi '$model_pattern' '$PROJECT_ROOT/Embeddings/pkg/' || grep -rqi '$model_pattern' '$PROJECT_ROOT/internal/embeddings/models/'"
 done
 
 # ============================================================================

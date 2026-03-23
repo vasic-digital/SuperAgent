@@ -97,12 +97,14 @@ func NewDefaultCircuitBreaker(providerID string, provider LLMProvider) *CircuitB
 }
 
 // AddListener adds a listener for state changes and returns an ID for removal.
-// Returns -1 if max listeners reached (listener not added).
+// Returns -1 and logs a warning if max listeners reached (listener not added).
 func (cb *CircuitBreaker) AddListener(listener CircuitBreakerListener) int {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
 	// PERFORMANCE FIX: Limit listener count to prevent memory leaks
 	if len(cb.listeners) >= MaxCircuitBreakerListeners {
+		logrus.Warnf("circuit breaker %s: listener limit reached (%d), listener not added",
+			cb.providerID, MaxCircuitBreakerListeners)
 		return -1
 	}
 	id := cb.nextListenerID

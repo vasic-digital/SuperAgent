@@ -12,6 +12,7 @@ import (
 
 	"dev.helix.agent/internal/services"
 	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestProviderAutoDiscovery tests the provider auto-discovery system
@@ -165,8 +166,10 @@ func testBestProviderSelection(t *testing.T) {
 	t.Run("DebateGroupProviders", func(t *testing.T) {
 		debateProviders := discovery.GetDebateGroupProviders(2, 5)
 		t.Logf("GetDebateGroupProviders(2, 5) returned %d providers", len(debateProviders))
-
+		// Validate returned providers have required fields populated
 		for _, p := range debateProviders {
+			assert.NotEmpty(t, p.Name, "provider name must not be empty")
+			assert.GreaterOrEqual(t, p.Score, 0.0, "provider score must be non-negative")
 			t.Logf("  - %s (score: %.2f, verified: %v)", p.Name, p.Score, p.Verified)
 		}
 	})

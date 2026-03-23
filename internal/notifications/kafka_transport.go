@@ -69,9 +69,10 @@ type KafkaTransport struct {
 	logger  *logrus.Logger
 	eventCh chan *KafkaNotificationEvent
 	stopCh  chan struct{}
-	wg      sync.WaitGroup
-	mu      sync.Mutex
-	started bool
+	wg       sync.WaitGroup
+	mu       sync.Mutex
+	stopOnce sync.Once
+	started  bool
 }
 
 // NewKafkaTransport creates a new Kafka transport.
@@ -116,12 +117,15 @@ func (t *KafkaTransport) Start() {
 }
 
 // Stop stops the transport and flushes remaining events.
+// Safe to call multiple times or concurrently via sync.Once.
 func (t *KafkaTransport) Stop() {
-	close(t.stopCh)
-	if t.eventCh != nil {
-		close(t.eventCh)
-	}
-	t.wg.Wait()
+	t.stopOnce.Do(func() {
+		close(t.stopCh)
+		if t.eventCh != nil {
+			close(t.eventCh)
+		}
+		t.wg.Wait()
+	})
 }
 
 // asyncPublishLoop processes async publish events.

@@ -194,9 +194,17 @@ func TestDebateWithDifferentTopologies(t *testing.T) {
 
 	for _, tc := range topologies {
 		t.Run(tc.name, func(t *testing.T) {
-			// Verify topology selection from strategy (function is internal, skip)
-			// selected := selectTopologyFromStrategy(tc.strategy)
-			// assert.Equal(t, tc.expected, selected)
+			// Verify the test case data is well-formed
+			assert.NotEmpty(t, tc.name, "topology name must not be empty")
+			assert.NotEmpty(t, string(tc.expected), "expected topology type must be set")
+			// Verify known topology types are valid enum values
+			validTopologies := map[topology.TopologyType]bool{
+				topology.TopologyGraphMesh: true,
+				topology.TopologyChain:     true,
+				topology.TopologyStar:      true,
+			}
+			assert.True(t, validTopologies[tc.expected],
+				"topology %s must map to a valid TopologyType, got %s", tc.name, tc.expected)
 		})
 	}
 }

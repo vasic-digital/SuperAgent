@@ -53,12 +53,12 @@ func TestOpenRouterAPI_SimpleCompletion(t *testing.T) {
 	defer cancel()
 
 	req := &models.LLMRequest{
-		ID:    "test-openrouter-simple-completion",
-		Model: "meta-llama/llama-4-scout",
+		ID: "test-openrouter-simple-completion",
 		Messages: []models.Message{
 			{Role: "user", Content: "Reply with just the word 'hello'"},
 		},
 		ModelParams: models.ModelParameters{
+			Model:       "meta-llama/llama-4-scout",
 			MaxTokens:   64,
 			Temperature: 0.0,
 		},
@@ -95,12 +95,12 @@ func TestOpenRouterAPI_StreamingCompletion(t *testing.T) {
 	defer cancel()
 
 	req := &models.LLMRequest{
-		ID:    "test-openrouter-streaming",
-		Model: "meta-llama/llama-4-scout",
+		ID: "test-openrouter-streaming",
 		Messages: []models.Message{
 			{Role: "user", Content: "Count from 1 to 5, one number per line."},
 		},
 		ModelParams: models.ModelParameters{
+			Model:       "meta-llama/llama-4-scout",
 			MaxTokens:   256,
 			Temperature: 0.0,
 		},
@@ -155,7 +155,7 @@ func TestOpenRouterAPI_ModelDiscovery(t *testing.T) {
 
 	caps := provider.GetCapabilities()
 	require.NotNil(t, caps, "capabilities should not be nil")
-	assert.Equal(t, "openrouter", caps.ProviderID)
+	assert.Equal(t, "OpenRouter", caps.Metadata["provider"])
 	assert.True(t, caps.SupportsStreaming, "should support streaming")
 }
 
@@ -180,8 +180,7 @@ func TestOpenRouterAPI_MultipleModels(t *testing.T) {
 			defer cancel()
 
 			req := &models.LLMRequest{
-				ID:    "test-openrouter-model-" + model,
-				Model: model,
+				ID: "test-openrouter-model-" + model,
 				Messages: []models.Message{
 					{
 						Role:    "user",
@@ -189,6 +188,7 @@ func TestOpenRouterAPI_MultipleModels(t *testing.T) {
 					},
 				},
 				ModelParams: models.ModelParameters{
+					Model:       model,
 					MaxTokens:   32,
 					Temperature: 0.0,
 				},

@@ -1,0 +1,68 @@
+graph TB
+    subgraph API["API Layer"]
+        GIN[Gin HTTP Server]
+        ROUTER[Router]
+        MW[Middleware<br/>Auth, Rate Limit, CORS]
+        GIN --> ROUTER --> MW
+    end
+
+    subgraph SVC["Services"]
+        ENS[Ensemble Service]
+        DEB[Debate Service]
+        CTX[Context Manager]
+        REG[Provider Registry]
+        INT[Intent Classifier]
+    end
+
+    subgraph NEW["New Integrations"]
+        AGN[Agentic Workflows]
+        PLN[Planning Algorithms]
+        OPS[LLMOps]
+        BEN[Benchmarks]
+        OBS[Observability]
+        EVT[Event Bus]
+    end
+
+    subgraph PROV["LLM Providers (43)"]
+        CL[Claude]
+        DS[DeepSeek]
+        GM[Gemini]
+        MS[Mistral]
+        OR[OpenRouter]
+        QW[Qwen]
+        ZA[ZAI]
+        ZN[Zen]
+        CB[Cerebras]
+        OL[Ollama]
+        MORE[... +33 more]
+    end
+
+    subgraph INFRA["Infrastructure"]
+        PG[(PostgreSQL)]
+        RD[(Redis)]
+        CHR[(ChromaDB)]
+        KFK[(Kafka)]
+    end
+
+    subgraph MOD["Extracted Modules (37)"]
+        CON[Containers]
+        CHL[Challenges]
+        SEC[Security]
+        VDB[VectorDB]
+        EMB[Embeddings]
+        MEM[Memory]
+        RAG_M[RAG]
+        FMT[Formatters]
+        MCP[MCP Module]
+        HM[HelixMemory]
+        HS[HelixSpecifier]
+    end
+
+    MW --> SVC
+    MW --> NEW
+    SVC --> REG --> PROV
+    DEB --> REG
+    ENS --> REG
+    SVC --> INFRA
+    NEW --> SVC
+    SVC --> MOD

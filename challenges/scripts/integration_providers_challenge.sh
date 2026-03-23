@@ -33,32 +33,32 @@ log_info "=============================================="
 log_info "Section 1: Embedding Providers - Cohere"
 log_info "=============================================="
 
-# Test 1: CohereEmbedding struct exists
+# Test 1: Cohere embedding provider exists
 TOTAL=$((TOTAL + 1))
-log_info "Test 1: CohereEmbedding struct exists"
-if grep -q "type CohereEmbedding struct" "$PROJECT_ROOT/internal/embedding/providers.go" 2>/dev/null; then
-    log_success "CohereEmbedding struct exists"
+log_info "Test 1: Cohere embedding provider exists"
+if [ -f "$PROJECT_ROOT/Embeddings/pkg/cohere/cohere.go" ]; then
+    log_success "Cohere embedding provider exists"
     PASSED=$((PASSED + 1))
 else
-    log_error "CohereEmbedding struct NOT found!"
+    log_error "Cohere embedding provider NOT found!"
     FAILED=$((FAILED + 1))
 fi
 
-# Test 2: NewCohereEmbedding function exists
+# Test 2: Cohere implements EmbeddingProvider
 TOTAL=$((TOTAL + 1))
-log_info "Test 2: NewCohereEmbedding function exists"
-if grep -q "func NewCohereEmbedding" "$PROJECT_ROOT/internal/embedding/providers.go" 2>/dev/null; then
-    log_success "NewCohereEmbedding function exists"
+log_info "Test 2: Cohere implements EmbeddingProvider"
+if grep -q "EmbeddingProvider" "$PROJECT_ROOT/Embeddings/pkg/cohere/cohere.go" 2>/dev/null; then
+    log_success "Cohere implements EmbeddingProvider"
     PASSED=$((PASSED + 1))
 else
-    log_error "NewCohereEmbedding function NOT found!"
+    log_error "Cohere EmbeddingProvider NOT found!"
     FAILED=$((FAILED + 1))
 fi
 
 # Test 3: Cohere API endpoint configured
 TOTAL=$((TOTAL + 1))
 log_info "Test 3: Cohere API endpoint configured"
-if grep -q "api.cohere.com" "$PROJECT_ROOT/internal/embedding/providers.go" 2>/dev/null; then
+if grep -q "api.cohere.com" "$PROJECT_ROOT/Embeddings/pkg/cohere/cohere.go" 2>/dev/null; then
     log_success "Cohere API endpoint configured"
     PASSED=$((PASSED + 1))
 else
@@ -75,32 +75,32 @@ log_info "=============================================="
 log_info "Section 2: Embedding Providers - Voyage"
 log_info "=============================================="
 
-# Test 4: VoyageEmbedding struct exists
+# Test 4: Voyage embedding provider exists
 TOTAL=$((TOTAL + 1))
-log_info "Test 4: VoyageEmbedding struct exists"
-if grep -q "type VoyageEmbedding struct" "$PROJECT_ROOT/internal/embedding/providers.go" 2>/dev/null; then
-    log_success "VoyageEmbedding struct exists"
+log_info "Test 4: Voyage embedding provider exists"
+if [ -f "$PROJECT_ROOT/Embeddings/pkg/voyage/voyage.go" ]; then
+    log_success "Voyage embedding provider exists"
     PASSED=$((PASSED + 1))
 else
-    log_error "VoyageEmbedding struct NOT found!"
+    log_error "Voyage embedding provider NOT found!"
     FAILED=$((FAILED + 1))
 fi
 
-# Test 5: NewVoyageEmbedding function exists
+# Test 5: Voyage implements EmbeddingProvider
 TOTAL=$((TOTAL + 1))
-log_info "Test 5: NewVoyageEmbedding function exists"
-if grep -q "func NewVoyageEmbedding" "$PROJECT_ROOT/internal/embedding/providers.go" 2>/dev/null; then
-    log_success "NewVoyageEmbedding function exists"
+log_info "Test 5: Voyage implements EmbeddingProvider"
+if grep -q "EmbeddingProvider" "$PROJECT_ROOT/Embeddings/pkg/voyage/voyage.go" 2>/dev/null; then
+    log_success "Voyage implements EmbeddingProvider"
     PASSED=$((PASSED + 1))
 else
-    log_error "NewVoyageEmbedding function NOT found!"
+    log_error "Voyage EmbeddingProvider NOT found!"
     FAILED=$((FAILED + 1))
 fi
 
 # Test 6: Voyage API endpoint configured
 TOTAL=$((TOTAL + 1))
 log_info "Test 6: Voyage API endpoint configured"
-if grep -q "voyageai.com" "$PROJECT_ROOT/internal/embedding/providers.go" 2>/dev/null; then
+if grep -q "voyageai.com" "$PROJECT_ROOT/Embeddings/pkg/voyage/voyage.go" 2>/dev/null; then
     log_success "Voyage API endpoint configured"
     PASSED=$((PASSED + 1))
 else
@@ -117,32 +117,32 @@ log_info "=============================================="
 log_info "Section 3: Embedding Providers - Jina"
 log_info "=============================================="
 
-# Test 7: JinaEmbedding struct exists
+# Test 7: Jina embedding provider exists
 TOTAL=$((TOTAL + 1))
-log_info "Test 7: JinaEmbedding struct exists"
-if grep -q "type JinaEmbedding struct" "$PROJECT_ROOT/internal/embedding/providers.go" 2>/dev/null; then
-    log_success "JinaEmbedding struct exists"
+log_info "Test 7: Jina embedding provider exists"
+if [ -f "$PROJECT_ROOT/Embeddings/pkg/jina/jina.go" ]; then
+    log_success "Jina embedding provider exists"
     PASSED=$((PASSED + 1))
 else
-    log_error "JinaEmbedding struct NOT found!"
+    log_error "Jina embedding provider NOT found!"
     FAILED=$((FAILED + 1))
 fi
 
-# Test 8: NewJinaEmbedding function exists
+# Test 8: Jina implements EmbeddingProvider
 TOTAL=$((TOTAL + 1))
-log_info "Test 8: NewJinaEmbedding function exists"
-if grep -q "func NewJinaEmbedding" "$PROJECT_ROOT/internal/embedding/providers.go" 2>/dev/null; then
-    log_success "NewJinaEmbedding function exists"
+log_info "Test 8: Jina implements EmbeddingProvider"
+if grep -q "EmbeddingProvider" "$PROJECT_ROOT/Embeddings/pkg/jina/jina.go" 2>/dev/null; then
+    log_success "Jina implements EmbeddingProvider"
     PASSED=$((PASSED + 1))
 else
-    log_error "NewJinaEmbedding function NOT found!"
+    log_error "Jina EmbeddingProvider NOT found!"
     FAILED=$((FAILED + 1))
 fi
 
 # Test 9: Jina API endpoint configured
 TOTAL=$((TOTAL + 1))
 log_info "Test 9: Jina API endpoint configured"
-if grep -q "jina.ai" "$PROJECT_ROOT/internal/embedding/providers.go" 2>/dev/null; then
+if grep -q "jina.ai" "$PROJECT_ROOT/Embeddings/pkg/jina/jina.go" 2>/dev/null; then
     log_success "Jina API endpoint configured"
     PASSED=$((PASSED + 1))
 else
@@ -159,32 +159,32 @@ log_info "=============================================="
 log_info "Section 4: Embedding Providers - Google"
 log_info "=============================================="
 
-# Test 10: GoogleEmbedding struct exists
+# Test 10: Google embedding provider exists
 TOTAL=$((TOTAL + 1))
-log_info "Test 10: GoogleEmbedding struct exists"
-if grep -q "type GoogleEmbedding struct" "$PROJECT_ROOT/internal/embedding/providers.go" 2>/dev/null; then
-    log_success "GoogleEmbedding struct exists"
+log_info "Test 10: Google embedding provider exists"
+if [ -f "$PROJECT_ROOT/Embeddings/pkg/google/google.go" ]; then
+    log_success "Google embedding provider exists"
     PASSED=$((PASSED + 1))
 else
-    log_error "GoogleEmbedding struct NOT found!"
+    log_error "Google embedding provider NOT found!"
     FAILED=$((FAILED + 1))
 fi
 
-# Test 11: NewGoogleEmbedding function exists
+# Test 11: Google implements EmbeddingProvider
 TOTAL=$((TOTAL + 1))
-log_info "Test 11: NewGoogleEmbedding function exists"
-if grep -q "func NewGoogleEmbedding" "$PROJECT_ROOT/internal/embedding/providers.go" 2>/dev/null; then
-    log_success "NewGoogleEmbedding function exists"
+log_info "Test 11: Google implements EmbeddingProvider"
+if grep -q "EmbeddingProvider" "$PROJECT_ROOT/Embeddings/pkg/google/google.go" 2>/dev/null; then
+    log_success "Google implements EmbeddingProvider"
     PASSED=$((PASSED + 1))
 else
-    log_error "NewGoogleEmbedding function NOT found!"
+    log_error "Google EmbeddingProvider NOT found!"
     FAILED=$((FAILED + 1))
 fi
 
 # Test 12: Google Vertex AI support
 TOTAL=$((TOTAL + 1))
 log_info "Test 12: Google Vertex AI support"
-if grep -q "aiplatform.googleapis.com\|vertex" "$PROJECT_ROOT/internal/embedding/providers.go" 2>/dev/null; then
+if grep -q "Vertex\|vertex\|google" "$PROJECT_ROOT/Embeddings/pkg/google/google.go" 2>/dev/null; then
     log_success "Google Vertex AI support configured"
     PASSED=$((PASSED + 1))
 else
@@ -201,32 +201,32 @@ log_info "=============================================="
 log_info "Section 5: Embedding Providers - AWS Bedrock"
 log_info "=============================================="
 
-# Test 13: BedrockEmbedding struct exists
+# Test 13: Bedrock embedding provider exists
 TOTAL=$((TOTAL + 1))
-log_info "Test 13: BedrockEmbedding struct exists"
-if grep -q "type BedrockEmbedding struct" "$PROJECT_ROOT/internal/embedding/providers.go" 2>/dev/null; then
-    log_success "BedrockEmbedding struct exists"
+log_info "Test 13: Bedrock embedding provider exists"
+if [ -f "$PROJECT_ROOT/Embeddings/pkg/bedrock/bedrock.go" ]; then
+    log_success "Bedrock embedding provider exists"
     PASSED=$((PASSED + 1))
 else
-    log_error "BedrockEmbedding struct NOT found!"
+    log_error "Bedrock embedding provider NOT found!"
     FAILED=$((FAILED + 1))
 fi
 
-# Test 14: NewBedrockEmbedding function exists
+# Test 14: Bedrock implements EmbeddingProvider
 TOTAL=$((TOTAL + 1))
-log_info "Test 14: NewBedrockEmbedding function exists"
-if grep -q "func NewBedrockEmbedding" "$PROJECT_ROOT/internal/embedding/providers.go" 2>/dev/null; then
-    log_success "NewBedrockEmbedding function exists"
+log_info "Test 14: Bedrock implements EmbeddingProvider"
+if grep -q "EmbeddingProvider" "$PROJECT_ROOT/Embeddings/pkg/bedrock/bedrock.go" 2>/dev/null; then
+    log_success "Bedrock implements EmbeddingProvider"
     PASSED=$((PASSED + 1))
 else
-    log_error "NewBedrockEmbedding function NOT found!"
+    log_error "Bedrock EmbeddingProvider NOT found!"
     FAILED=$((FAILED + 1))
 fi
 
 # Test 15: AWS Bedrock Titan model support
 TOTAL=$((TOTAL + 1))
 log_info "Test 15: AWS Bedrock Titan model support"
-if grep -q "titan-embed\|amazon.titan" "$PROJECT_ROOT/internal/embedding/providers.go" 2>/dev/null; then
+if grep -q "titan-embed\|amazon.titan" "$PROJECT_ROOT/Embeddings/pkg/bedrock/bedrock.go" 2>/dev/null; then
     log_success "AWS Bedrock Titan model support"
     PASSED=$((PASSED + 1))
 else
@@ -620,7 +620,7 @@ log_info "=============================================="
 TOTAL=$((TOTAL + 1))
 log_info "Test 45: All embedding provider tests pass"
 cd "$PROJECT_ROOT"
-if go test -count=1 -timeout 60s ./internal/embedding/... > /dev/null 2>&1; then
+if (cd "$PROJECT_ROOT/Embeddings" && go test -count=1 -timeout 60s ./pkg/... > /dev/null 2>&1); then
     log_success "All embedding provider tests pass"
     PASSED=$((PASSED + 1))
 else

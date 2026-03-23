@@ -1,5 +1,10 @@
 // Package lsp provides LSP-AI integration for AI-powered code intelligence.
 // Implements context-aware completions, semantic analysis, and intelligent refactoring.
+//
+// DEPRECATED: This package is superseded by internal/services/lsp_manager.go which is
+// the active LSP implementation used by the router's LSP handler. This package is retained
+// for reference but has zero production imports. Consider consolidating unique functionality
+// into services/lsp_manager if needed.
 package lsp
 
 import (

@@ -134,12 +134,12 @@ fi
 
 section "Embedding Provider Verification"
 
-# Test embedding providers
-EMBEDDING_PROVIDERS=("OpenAI" "Ollama" "HuggingFace")
+# Test embedding providers in the Embeddings submodule
+EMBEDDING_PROVIDERS=("openai" "cohere" "voyage" "jina" "google" "bedrock")
 
 for provider in "${EMBEDDING_PROVIDERS[@]}"; do
     echo -e "${BLUE}Testing:${NC} Embedding $provider"
-    if grep -r "type ${provider}Embedding\|${provider}Embedder" internal/embedding/models.go > /dev/null 2>&1; then
+    if [ -f "Embeddings/pkg/$provider/$provider.go" ]; then
         pass "Embedding $provider defined"
     else
         fail "Embedding $provider missing"
@@ -147,11 +147,11 @@ for provider in "${EMBEDDING_PROVIDERS[@]}"; do
 done
 
 # Test embedding interface
-echo -e "${BLUE}Testing:${NC} Embedding Model Interface"
-if grep -r "type EmbeddingModel interface\|Embed.*\[\]float64\|EmbedBatch" internal/embedding/models.go > /dev/null 2>&1; then
-    pass "Embedding Model interface defined"
+echo -e "${BLUE}Testing:${NC} Embedding Provider Interface"
+if grep -r "type EmbeddingProvider interface" Embeddings/pkg/provider/provider.go > /dev/null 2>&1; then
+    pass "Embedding Provider interface defined"
 else
-    fail "Embedding Model interface missing"
+    fail "Embedding Provider interface missing"
 fi
 
 section "Provider Error Handling Tests"

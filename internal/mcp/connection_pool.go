@@ -76,7 +76,7 @@ type MCPConnectionPool struct {
 	config       *MCPPoolConfig
 	logger       *logrus.Logger
 	metrics      *PoolMetrics
-	closed       bool
+	closed       atomic.Bool
 }
 
 // MCPPoolConfig holds configuration for the connection pool
@@ -142,7 +142,7 @@ func (p *MCPConnectionPool) RegisterServer(config MCPServerConfig) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	if p.closed {
+	if p.closed.Load() {
 		return fmt.Errorf("pool is closed")
 	}
 
@@ -281,6 +281,8 @@ func (p *MCPConnectionPool) connectLocalServer(ctx context.Context, conn *MCPCon
 	}
 
 	// Create the command
+	// nosemgrep: go.lang.security.audit.dangerous-exec-command.dangerous-exec-command
+	// Security: Command comes from admin-configured MCPServerConfig (YAML/code), not user input.
 	cmd := exec.CommandContext(ctx, conn.Config.Command[0], conn.Config.Command[1:]...)
 
 	// Set environment variables
@@ -541,11 +543,11 @@ func (p *MCPConnectionPool) Close() error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	if p.closed {
+	if p.closed.Load() {
 		return nil
 	}
 
-	p.closed = true
+	p.closed.Store(true)
 
 	for name, conn := range p.connections {
 		conn.mu.Lock()
@@ -654,6 +656,8 @@ func (t *StdioMCPTransport) Receive(ctx context.Context) (interface{}, error) {
 		return nil, io.EOF
 	}
 
+	// nosemgrep: go.lang.security.deserialization.unsafe-deserialization-interface.go-unsafe-deserialization-interface
+	// MCP JSON-RPC protocol requires dynamic message types — interface{} is intentional.
 	var message interface{}
 	if err := json.Unmarshal(t.scanner.Bytes(), &message); err != nil {
 		return nil, err
@@ -754,6 +758,8 @@ func (t *HTTPMCPTransport) Receive(ctx context.Context) (interface{}, error) {
 		return nil, fmt.Errorf("no response data available")
 	}
 
+	// nosemgrep: go.lang.security.deserialization.unsafe-deserialization-interface.go-unsafe-deserialization-interface
+	// MCP HTTP transport returns dynamic JSON-RPC responses — interface{} is intentional.
 	var response interface{}
 	if err := json.Unmarshal(t.responseData, &response); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)

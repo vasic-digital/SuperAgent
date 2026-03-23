@@ -32,7 +32,8 @@ func NewQUICServer(addr string, handler http.Handler, logger *logrus.Logger, cer
 		WriteTimeout: 300 * time.Second, // 5 minutes for SSE streaming support
 		IdleTimeout:  120 * time.Second,
 		TLSConfig: &tls.Config{
-			NextProtos: []string{"h2", "http/1.1"}, // Support HTTP/2 and HTTP/1.1
+			MinVersion: tls.VersionTLS12,             // Minimum TLS 1.2 per security best practices
+			NextProtos: []string{"h2", "http/1.1"},   // Support HTTP/2 and HTTP/1.1
 		},
 	}
 
@@ -123,7 +124,9 @@ func (s *QUICServer) SetTLSConfig(tlsConfig *tls.Config) {
 // EnableHTTP3Support configures the server for optimal HTTP/3 support
 func (s *QUICServer) EnableHTTP3Support() {
 	if s.httpServer.TLSConfig == nil {
-		s.httpServer.TLSConfig = &tls.Config{}
+		s.httpServer.TLSConfig = &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		}
 	}
 
 	// Configure TLS for HTTP/3

@@ -674,6 +674,102 @@ Standardized benchmarking against industry suites (`digital.vasic.benchmark`):
 
 ---
 
+## Integrated Packages
+
+### 38. Agentic Workflow REST API
+
+Full HTTP API for graph-based workflow orchestration:
+
+**Endpoints:**
+- `POST /v1/agentic/workflows` -- Create and execute a workflow
+- `GET /v1/agentic/workflows/:id` -- Get workflow status, state, and history
+
+**Features:**
+- 6 node types: agent, tool, condition, parallel, human, subgraph
+- Conditional edge routing with runtime evaluation
+- Configurable checkpointing and self-correction
+- Integration with AI debate system as a node handler
+
+---
+
+### 39. Planning Algorithm REST API
+
+Three AI planning algorithms accessible via HTTP:
+
+**Endpoints:**
+- `POST /v1/planning/hiplan` -- Hierarchical planning (goal decomposition into milestones and steps)
+- `POST /v1/planning/mcts` -- Monte Carlo Tree Search (probabilistic solution space exploration)
+- `POST /v1/planning/tot` -- Tree of Thoughts (deliberate reasoning with BFS/DFS/beam search)
+
+**Features:**
+- Configurable search depth, branching, and timeout per algorithm
+- Parallel milestone execution (HiPlan) and parallel simulation (MCTS)
+- Adaptive planning with runtime plan modification
+- Pruning and backtracking in Tree of Thoughts
+
+---
+
+### 40. LLMOps REST API
+
+Production operations tooling for LLM-powered applications:
+
+**Endpoints:**
+- `POST /v1/llmops/experiments` -- Create A/B experiments with variant traffic splitting
+- `GET /v1/llmops/experiments` -- List experiments
+- `GET /v1/llmops/experiments/:id` -- Get experiment details and results
+- `POST /v1/llmops/evaluate` -- Run continuous evaluation pipelines
+- `POST /v1/llmops/prompts` -- Create versioned prompt templates
+- `GET /v1/llmops/prompts` -- List prompt versions
+
+**Features:**
+- Statistical A/B testing with consistent user-variant assignment
+- Golden, synthetic, and production dataset management
+- Prompt versioning with variable substitution and activation
+- Alert manager integration for quality regression detection
+
+---
+
+### 41. Benchmarking REST API
+
+Standardized LLM benchmarking via HTTP:
+
+**Endpoints:**
+- `POST /v1/benchmark/run` -- Start a benchmark suite
+- `GET /v1/benchmark/results` -- List benchmark results
+- `GET /v1/benchmark/results/:id` -- Get specific benchmark result
+
+**Supported Suites:**
+- SWE-bench (software engineering tasks on real GitHub issues)
+- HumanEval (code generation correctness, 164 problems)
+- MMLU (multitask language understanding, 57 academic subjects)
+
+**Features:**
+- Per-provider and per-model score comparison
+- Parallel benchmark execution with resource limits
+- Historical trend tracking and automated regression alerts
+
+---
+
+### 42. Concurrency Safety Patterns
+
+Production-grade concurrency patterns applied across all HelixAgent services:
+
+**Patterns:**
+- `sync.Once` for idempotent shutdown (prevents double-close panics)
+- `atomic.Bool` for lock-free coordination flags
+- `sync.WaitGroup` goroutine lifecycle tracking (Add/Done/Wait)
+- Panic recovery in all goroutines (prevents process crashes)
+- Race detector validation across the entire codebase
+
+**Applied In:**
+- SSE streaming handlers
+- Cache invalidation loops
+- Model refresh deduplication
+- Debate log tracking
+- ACP shutdown sequences
+
+---
+
 ## Summary Table
 
 | Category | Feature Count | Status |
@@ -691,9 +787,18 @@ Standardized benchmarking against industry suites (`digital.vasic.benchmark`):
 | RAG | 1 | Production |
 | Deployment | 2 | Production |
 | AI/ML Advanced | 5 | Production |
-| **Total** | **40+** | |
+| Integrated Packages | 5 | Production |
+| **Total** | **45+** | |
 
 ---
+
+## New in Version 1.3.0
+
+- **Agentic Workflow REST API** - Full HTTP API for graph-based workflow orchestration with 6 node types, checkpointing, and self-correction
+- **Planning Algorithm REST API** - Three planning endpoints (HiPlan, MCTS, Tree of Thoughts) for complex problem decomposition
+- **LLMOps REST API** - A/B experimentation, continuous evaluation pipelines, and prompt versioning
+- **Benchmarking REST API** - Standardized LLM benchmarking against SWE-bench, HumanEval, and MMLU
+- **Concurrency Safety Patterns** - sync.Once idempotent shutdown, atomic.Bool lock-free flags, panic recovery across all services
 
 ## New in Version 1.2.0
 
@@ -714,5 +819,5 @@ Standardized benchmarking against industry suites (`digital.vasic.benchmark`):
 
 ---
 
-**Last Updated**: February 2026
-**Version**: 1.2.0
+**Last Updated**: March 2026
+**Version**: 1.3.0

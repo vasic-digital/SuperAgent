@@ -111,7 +111,11 @@ func DefaultOrchestratorConfig() OrchestratorConfig {
 }
 
 // ActiveDebate tracks an active debate session.
+// ActiveDebate tracks an in-progress debate.
+// Fields are protected by mu — acquire before reading or writing Status
+// or any other mutable field after the debate has been started.
 type ActiveDebate struct {
+	mu              sync.RWMutex
 	ID              string
 	Config          *DebateRequest
 	Protocol        *protocol.Protocol

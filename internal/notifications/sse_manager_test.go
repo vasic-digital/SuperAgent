@@ -545,6 +545,95 @@ func TestSSEConfig(t *testing.T) {
 	assert.Equal(t, 2000, config.MaxClients)
 }
 
+// Tests for concurrent senders + Stop not panicking (send-on-closed-channel)
+func TestSSEManager_Stop_ConcurrentSendersNoPanic(t *testing.T) {
+	logger := testLogger()
+
+	t.Run("concurrent broadcast during stop does not panic", func(t *testing.T) {
+		manager := NewSSEManager(nil, logger)
+
+		// Register several clients with buffered channels
+		const numClients = 10
+		for i := 0; i < numClients; i++ {
+			ch := make(chan []byte, 100)
+			_ = manager.RegisterClient("task-1", ch)
+		}
+
+		globalCh := make(chan []byte, 100)
+		_ = manager.RegisterGlobalClient(globalCh)
+
+		// Launch concurrent senders that keep broadcasting
+		var senderWg sync.WaitGroup
+		const numSenders = 20
+		stop := make(chan struct{})
+
+		for i := 0; i < numSenders; i++ {
+			senderWg.Add(1)
+			go func(id int) {
+				defer senderWg.Done()
+				for {
+					select {
+					case <-stop:
+						return
+					default:
+						data := []byte(`{"sender":"active"}`)
+						manager.Broadcast("task-1", data)
+						_ = manager.BroadcastEvent("task-1", "test", map[string]string{"key": "val"})
+						manager.BroadcastAll(data)
+					}
+				}
+			}(i)
+		}
+
+		// Let senders run briefly, then stop the manager concurrently
+		time.Sleep(10 * time.Millisecond)
+		err := manager.Stop()
+		assert.NoError(t, err)
+
+		// Signal senders to finish
+		close(stop)
+		senderWg.Wait()
+
+		// Additional broadcasts after stop should silently return (no panic)
+		manager.Broadcast("task-1", []byte(`{"after":"stop"}`))
+		_ = manager.BroadcastEvent("task-1", "late", map[string]string{"x": "y"})
+		manager.BroadcastAll([]byte(`{"after":"stop"}`))
+	})
+
+	t.Run("double stop does not panic", func(t *testing.T) {
+		manager := NewSSEManager(nil, logger)
+
+		ch := make(chan []byte, 10)
+		_ = manager.RegisterClient("task-1", ch)
+
+		err1 := manager.Stop()
+		assert.NoError(t, err1)
+
+		// Second Stop must not panic (double-close protection)
+		err2 := manager.Stop()
+		assert.NoError(t, err2)
+	})
+
+	t.Run("concurrent stops do not panic", func(t *testing.T) {
+		manager := NewSSEManager(nil, logger)
+
+		ch := make(chan []byte, 10)
+		_ = manager.RegisterClient("task-1", ch)
+		_ = manager.RegisterGlobalClient(make(chan []byte, 10))
+
+		var stopWg sync.WaitGroup
+		const numStoppers = 10
+		for i := 0; i < numStoppers; i++ {
+			stopWg.Add(1)
+			go func() {
+				defer stopWg.Done()
+				_ = manager.Stop()
+			}()
+		}
+		stopWg.Wait()
+	})
+}
+
 // Tests for SSE event data marshaling
 func TestSSEManager_EventDataMarshaling(t *testing.T) {
 	logger := testLogger()

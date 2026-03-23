@@ -23,6 +23,8 @@ type HotReloadManager struct {
 	mu          sync.RWMutex
 	enabled     bool
 	stopChan    chan struct{}
+	wg          sync.WaitGroup
+	stopOnce    sync.Once
 }
 
 // HotReloadConfig holds configuration for hot-reload functionality
@@ -75,8 +77,12 @@ func (h *HotReloadManager) Start(ctx context.Context) error {
 		fmt.Printf("Failed to load existing plugins: %v\n", err)
 	}
 
-	// Start the watch loop
-	go h.watchLoop(ctx)
+	// Start the watch loop with WaitGroup tracking
+	h.wg.Add(1)
+	go func() {
+		defer h.wg.Done()
+		h.watchLoop(ctx)
+	}()
 
 	fmt.Printf("Plugin hot-reload manager started successfully")
 	return nil
@@ -86,8 +92,11 @@ func (h *HotReloadManager) Start(ctx context.Context) error {
 func (h *HotReloadManager) Stop() error {
 	fmt.Printf("Stopping plugin hot-reload manager")
 
-	close(h.stopChan)
+	h.stopOnce.Do(func() {
+		close(h.stopChan)
+	})
 	_ = h.watcher.Close()
+	h.wg.Wait()
 
 	fmt.Printf("Plugin hot-reload manager stopped")
 	return nil

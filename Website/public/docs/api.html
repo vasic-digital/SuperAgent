@@ -226,6 +226,90 @@ Production:  https://api.yourdomain.com</code></pre>
                                 <td>None</td>
                                 <td>Prometheus metrics</td>
                             </tr>
+                            <tr>
+                                <td><code>/v1/agentic/workflows</code></td>
+                                <td>POST</td>
+                                <td>Bearer Token</td>
+                                <td>Create and execute an agentic workflow</td>
+                            </tr>
+                            <tr>
+                                <td><code>/v1/agentic/workflows/:id</code></td>
+                                <td>GET</td>
+                                <td>Bearer Token</td>
+                                <td>Get workflow status and results</td>
+                            </tr>
+                            <tr>
+                                <td><code>/v1/planning/hiplan</code></td>
+                                <td>POST</td>
+                                <td>Bearer Token</td>
+                                <td>Hierarchical planning (goal decomposition)</td>
+                            </tr>
+                            <tr>
+                                <td><code>/v1/planning/mcts</code></td>
+                                <td>POST</td>
+                                <td>Bearer Token</td>
+                                <td>Monte Carlo Tree Search planning</td>
+                            </tr>
+                            <tr>
+                                <td><code>/v1/planning/tot</code></td>
+                                <td>POST</td>
+                                <td>Bearer Token</td>
+                                <td>Tree of Thoughts reasoning</td>
+                            </tr>
+                            <tr>
+                                <td><code>/v1/llmops/experiments</code></td>
+                                <td>POST</td>
+                                <td>Bearer Token</td>
+                                <td>Create an A/B experiment</td>
+                            </tr>
+                            <tr>
+                                <td><code>/v1/llmops/experiments</code></td>
+                                <td>GET</td>
+                                <td>Bearer Token</td>
+                                <td>List all experiments</td>
+                            </tr>
+                            <tr>
+                                <td><code>/v1/llmops/experiments/:id</code></td>
+                                <td>GET</td>
+                                <td>Bearer Token</td>
+                                <td>Get experiment details and results</td>
+                            </tr>
+                            <tr>
+                                <td><code>/v1/llmops/evaluate</code></td>
+                                <td>POST</td>
+                                <td>Bearer Token</td>
+                                <td>Run continuous evaluation pipeline</td>
+                            </tr>
+                            <tr>
+                                <td><code>/v1/llmops/prompts</code></td>
+                                <td>POST</td>
+                                <td>Bearer Token</td>
+                                <td>Create a prompt version</td>
+                            </tr>
+                            <tr>
+                                <td><code>/v1/llmops/prompts</code></td>
+                                <td>GET</td>
+                                <td>Bearer Token</td>
+                                <td>List prompt versions</td>
+                            </tr>
+                            <tr>
+                                <td><code>/v1/benchmark/run</code></td>
+                                <td>POST</td>
+                                <td>Bearer Token</td>
+                                <td>Start a benchmark suite (SWE-bench, HumanEval, MMLU)</td>
+                            </tr>
+                            <tr>
+                                <td><code>/v1/benchmark/results</code></td>
+                                <td>GET</td>
+                                <td>Bearer Token</td>
+                                <td>List benchmark results</td>
+                            </tr>
+                            <tr>
+                                <td><code>/v1/benchmark/results/:id</code></td>
+                                <td>GET</td>
+                                <td>Bearer Token</td>
+                                <td>Get specific benchmark result</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -603,6 +687,339 @@ console.log(response.choices[0].message.content);</code></pre>
                             <tr>
                                 <td><code>ensemble_failed</code></td>
                                 <td>Ensemble processing failed</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Agentic Workflows Section -->
+    <section class="documentation">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Agentic Workflows</h2>
+                <p class="section-description">
+                    Graph-based workflow orchestration for autonomous multi-step AI tasks
+                </p>
+            </div>
+
+            <div class="doc-card">
+                <h3 class="doc-title">POST /v1/agentic/workflows</h3>
+                <p>Create and execute a graph-based agentic workflow with conditional branching, checkpointing, and self-correction.</p>
+                <div class="code-block">
+                    <pre><code class="language-json">{
+  "name": "code-review-pipeline",
+  "description": "Automated code review with security analysis",
+  "nodes": [
+    {"id": "analyze", "name": "Code Analyzer", "type": "agent"},
+    {"id": "security", "name": "Security Check", "type": "tool"},
+    {"id": "decision", "name": "Severity Check", "type": "condition"},
+    {"id": "auto_fix", "name": "Auto Fixer", "type": "agent"},
+    {"id": "report", "name": "Report Generator", "type": "agent"}
+  ],
+  "edges": [
+    {"from": "analyze", "to": "security"},
+    {"from": "security", "to": "decision"},
+    {"from": "decision", "to": "auto_fix", "label": "low_severity"},
+    {"from": "auto_fix", "to": "report"}
+  ],
+  "entry_point": "analyze",
+  "end_nodes": ["report"],
+  "config": {
+    "max_iterations": 50,
+    "timeout_seconds": 600,
+    "enable_checkpoints": true,
+    "enable_self_correction": true
+  },
+  "input": {
+    "query": "Review the authentication module"
+  }
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="doc-card">
+                <h3 class="doc-title">GET /v1/agentic/workflows/:id</h3>
+                <p>Retrieve the status, state, and execution history of a workflow.</p>
+                <div class="code-block">
+                    <pre><code class="language-json">{
+  "id": "wf-abc123",
+  "name": "code-review-pipeline",
+  "status": "completed",
+  "state": {
+    "current_node": "report",
+    "variables": {"findings_count": 3, "severity": "medium"},
+    "history": [
+      {"node_id": "analyze", "start_time": "...", "end_time": "..."},
+      {"node_id": "security", "start_time": "...", "end_time": "..."},
+      {"node_id": "decision", "start_time": "...", "end_time": "..."},
+      {"node_id": "auto_fix", "start_time": "...", "end_time": "..."},
+      {"node_id": "report", "start_time": "...", "end_time": "..."}
+    ]
+  },
+  "created_at": "2026-03-23T10:30:00Z",
+  "completed_at": "2026-03-23T10:35:12Z"
+}</code></pre>
+                </div>
+
+                <h4>Node Types</h4>
+                <div class="table-responsive">
+                    <table class="api-table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>agent</code></td>
+                                <td>LLM-based reasoning and generation</td>
+                            </tr>
+                            <tr>
+                                <td><code>tool</code></td>
+                                <td>Tool execution (formatter, search, database)</td>
+                            </tr>
+                            <tr>
+                                <td><code>condition</code></td>
+                                <td>Conditional branching based on state</td>
+                            </tr>
+                            <tr>
+                                <td><code>parallel</code></td>
+                                <td>Execute downstream nodes simultaneously</td>
+                            </tr>
+                            <tr>
+                                <td><code>human</code></td>
+                                <td>Pause for human input or approval</td>
+                            </tr>
+                            <tr>
+                                <td><code>subgraph</code></td>
+                                <td>Embed a nested workflow</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Planning Algorithms Section -->
+    <section class="features">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">AI Planning Algorithms</h2>
+                <p class="section-description">
+                    Three algorithms for complex problem decomposition and deliberate reasoning
+                </p>
+            </div>
+
+            <div class="doc-card">
+                <h3 class="doc-title">POST /v1/planning/hiplan</h3>
+                <p>Hierarchical planning: decompose a high-level goal into milestones and executable steps.</p>
+                <div class="code-block">
+                    <pre><code class="language-json">{
+  "goal": "Build a production-ready authentication system with JWT and OAuth",
+  "config": {
+    "max_milestones": 8,
+    "max_steps_per_milestone": 10,
+    "enable_parallel_milestones": true,
+    "enable_adaptive_planning": true,
+    "timeout_seconds": 300
+  }
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="doc-card">
+                <h3 class="doc-title">POST /v1/planning/mcts</h3>
+                <p>Monte Carlo Tree Search: probabilistic exploration of solution spaces using UCB1 selection.</p>
+                <div class="code-block">
+                    <pre><code class="language-json">{
+  "goal": "Find the optimal database schema for a multi-tenant application",
+  "config": {
+    "exploration_constant": 1.414,
+    "max_depth": 8,
+    "max_iterations": 500,
+    "simulation_count": 10,
+    "enable_parallel": true,
+    "parallel_workers": 4,
+    "timeout_seconds": 60
+  }
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="doc-card">
+                <h3 class="doc-title">POST /v1/planning/tot</h3>
+                <p>Tree of Thoughts: deliberate reasoning through branching thought chains with BFS, DFS, or beam search.</p>
+                <div class="code-block">
+                    <pre><code class="language-json">{
+  "problem": "Design an error handling strategy for distributed microservices",
+  "config": {
+    "max_depth": 6,
+    "max_branches": 4,
+    "min_score": 0.4,
+    "search_strategy": "beam",
+    "beam_width": 3,
+    "temperature": 0.7,
+    "enable_backtracking": true,
+    "timeout_seconds": 120
+  }
+}</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- LLMOps Section -->
+    <section class="documentation">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">LLM Operations (LLMOps)</h2>
+                <p class="section-description">
+                    A/B experimentation, continuous evaluation, and prompt versioning for production AI
+                </p>
+            </div>
+
+            <div class="doc-card">
+                <h3 class="doc-title">POST /v1/llmops/experiments</h3>
+                <p>Create an A/B experiment to compare prompt versions, models, or configurations.</p>
+                <div class="code-block">
+                    <pre><code class="language-json">{
+  "name": "prompt-v2-vs-v1",
+  "description": "Compare new system prompt against baseline",
+  "variants": [
+    {
+      "name": "control",
+      "prompt_name": "system-prompt",
+      "prompt_version": "1.0.0",
+      "model_name": "deepseek-chat",
+      "is_control": true
+    },
+    {
+      "name": "treatment",
+      "prompt_name": "system-prompt",
+      "prompt_version": "2.0.0",
+      "model_name": "deepseek-chat"
+    }
+  ],
+  "traffic_split": {"control": 0.5, "treatment": 0.5},
+  "metrics": ["accuracy", "latency_ms", "cost_per_request"],
+  "target_metric": "accuracy"
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="doc-card">
+                <h3 class="doc-title">POST /v1/llmops/evaluate</h3>
+                <p>Run a continuous evaluation pipeline against a golden dataset.</p>
+                <div class="code-block">
+                    <pre><code class="language-json">{
+  "name": "weekly-quality-check",
+  "dataset": "golden-qa-v3",
+  "prompt_name": "system-prompt",
+  "prompt_version": "2.0.0",
+  "model_name": "helixagent-ensemble",
+  "metrics": ["accuracy", "coherence", "relevance"]
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="doc-card">
+                <h3 class="doc-title">POST /v1/llmops/prompts</h3>
+                <p>Create a versioned prompt template with variable substitution.</p>
+                <div class="code-block">
+                    <pre><code class="language-json">{
+  "name": "system-prompt",
+  "version": "2.0.0",
+  "content": "You are a helpful assistant for {{domain}}. Answer in {{language}}.",
+  "variables": [
+    {"name": "domain", "type": "string", "required": true},
+    {"name": "language", "type": "string", "required": false, "default": "English"}
+  ],
+  "author": "team-lead"
+}</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benchmarking Section -->
+    <section class="features">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">LLM Benchmarking</h2>
+                <p class="section-description">
+                    Standardized benchmarking against SWE-bench, HumanEval, and MMLU
+                </p>
+            </div>
+
+            <div class="doc-card">
+                <h3 class="doc-title">POST /v1/benchmark/run</h3>
+                <p>Start a benchmark suite for a specific provider and model.</p>
+                <div class="code-block">
+                    <pre><code class="language-json">{
+  "name": "deepseek-swe-bench-eval",
+  "benchmark_type": "swe_bench",
+  "provider_name": "deepseek",
+  "model_name": "deepseek-chat",
+  "config": {
+    "max_samples": 100,
+    "timeout_seconds": 600,
+    "parallel_workers": 4
+  }
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="doc-card">
+                <h3 class="doc-title">GET /v1/benchmark/results</h3>
+                <p>List all benchmark results with scores and status.</p>
+                <div class="code-block">
+                    <pre><code class="language-json">{
+  "runs": [
+    {
+      "id": "bench-xyz789",
+      "name": "deepseek-swe-bench-eval",
+      "benchmark_type": "swe_bench",
+      "provider_name": "deepseek",
+      "status": "completed",
+      "summary": {
+        "total_problems": 100,
+        "solved": 67,
+        "accuracy": 0.67,
+        "average_latency_ms": 2340
+      },
+      "created_at": "2026-03-23T10:00:00Z"
+    }
+  ],
+  "total": 1
+}</code></pre>
+                </div>
+
+                <h4>Benchmark Types</h4>
+                <div class="table-responsive">
+                    <table class="api-table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>swe_bench</code></td>
+                                <td>Software engineering tasks on real GitHub issues</td>
+                            </tr>
+                            <tr>
+                                <td><code>human_eval</code></td>
+                                <td>Code generation correctness (164 problems)</td>
+                            </tr>
+                            <tr>
+                                <td><code>mmlu</code></td>
+                                <td>Multitask language understanding (57 subjects)</td>
                             </tr>
                         </tbody>
                     </table>

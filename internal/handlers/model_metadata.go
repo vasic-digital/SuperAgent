@@ -231,14 +231,15 @@ func (h *ModelMetadataHandler) RefreshModels(c *gin.Context) {
 		return
 	}
 
-	go func() {
+	// Pass service as parameter (defensive: prevents future regressions if field becomes mutable)
+	go func(svc *services.ModelMetadataService) {
 		defer h.finishRefresh()
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 		defer cancel()
-		if err := h.service.RefreshModels(ctx); err != nil {
+		if err := svc.RefreshModels(ctx); err != nil {
 			logrus.WithError(err).Error("Background model refresh failed")
 		}
-	}()
+	}(h.service)
 
 	c.JSON(http.StatusAccepted, RefreshResponse{
 		Status:  "accepted",

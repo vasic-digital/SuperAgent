@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -24,10 +25,12 @@ type SSEManager struct {
 	heartbeatInterval time.Duration
 	bufferSize        int
 
-	logger *logrus.Logger
-	ctx    context.Context
-	cancel context.CancelFunc
-	wg     sync.WaitGroup
+	logger   *logrus.Logger
+	ctx      context.Context
+	cancel   context.CancelFunc
+	wg       sync.WaitGroup
+	closed   atomic.Bool
+	stopOnce sync.Once
 }
 
 // SSEConfig holds SSE configuration
@@ -77,30 +80,34 @@ func (m *SSEManager) Start() error {
 	return nil
 }
 
-// Stop stops the SSE manager
+// Stop stops the SSE manager. It is safe to call multiple times;
+// only the first call performs the shutdown.
 func (m *SSEManager) Stop() error {
-	m.logger.Info("Stopping SSE manager")
-	m.cancel()
-	m.wg.Wait()
+	var stopErr error
+	m.stopOnce.Do(func() {
+		m.logger.Info("Stopping SSE manager")
+		m.closed.Store(true)
+		m.cancel()
+		m.wg.Wait()
 
-	// Close all client channels
-	m.clientsMu.Lock()
-	for taskID, clients := range m.clients {
-		for client := range clients {
+		// Close all client channels
+		m.clientsMu.Lock()
+		for taskID, clients := range m.clients {
+			for client := range clients {
+				close(client)
+			}
+			delete(m.clients, taskID)
+		}
+		m.clientsMu.Unlock()
+
+		m.globalClientsMu.Lock()
+		for client := range m.globalClients {
 			close(client)
 		}
-		delete(m.clients, taskID)
-	}
-	m.clientsMu.Unlock()
-
-	m.globalClientsMu.Lock()
-	for client := range m.globalClients {
-		close(client)
-	}
-	m.globalClients = make(map[chan<- []byte]struct{})
-	m.globalClientsMu.Unlock()
-
-	return nil
+		m.globalClients = make(map[chan<- []byte]struct{})
+		m.globalClientsMu.Unlock()
+	})
+	return stopErr
 }
 
 // RegisterClient registers a client for a specific task
@@ -159,22 +166,27 @@ func (m *SSEManager) UnregisterGlobalClient(client chan<- []byte) error {
 
 // Broadcast sends a message to all clients watching a task
 func (m *SSEManager) Broadcast(taskID string, data []byte) {
-	m.clientsMu.RLock()
-	clients := m.clients[taskID]
-	m.clientsMu.RUnlock()
+	if m.closed.Load() {
+		return
+	}
 
 	// Format as SSE event
 	sseData := formatSSEEvent("message", data)
 
-	// Send to task-specific clients
-	for client := range clients {
-		select {
-		case client <- sseData:
-		default:
-			// Client channel full, skip
-			m.logger.WithField("task_id", taskID).Debug("SSE client channel full, skipping")
+	// Hold RLock during sends so Stop() cannot close channels
+	// while we are iterating
+	m.clientsMu.RLock()
+	if !m.closed.Load() {
+		for client := range m.clients[taskID] {
+			select {
+			case client <- sseData:
+			default:
+				// Client channel full, skip
+				m.logger.WithField("task_id", taskID).Debug("SSE client channel full, skipping")
+			}
 		}
 	}
+	m.clientsMu.RUnlock()
 
 	// Also send to global clients
 	m.broadcastGlobal(sseData)
@@ -182,6 +194,10 @@ func (m *SSEManager) Broadcast(taskID string, data []byte) {
 
 // BroadcastEvent sends a named event to all clients watching a task
 func (m *SSEManager) BroadcastEvent(taskID string, eventName string, data interface{}) error {
+	if m.closed.Load() {
+		return nil
+	}
+
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return fmt.Errorf("failed to marshal event data: %w", err)
@@ -190,16 +206,16 @@ func (m *SSEManager) BroadcastEvent(taskID string, eventName string, data interf
 	sseData := formatSSEEvent(eventName, jsonData)
 
 	m.clientsMu.RLock()
-	clients := m.clients[taskID]
-	m.clientsMu.RUnlock()
-
-	for client := range clients {
-		select {
-		case client <- sseData:
-		default:
-			m.logger.WithField("task_id", taskID).Debug("SSE client channel full")
+	if !m.closed.Load() {
+		for client := range m.clients[taskID] {
+			select {
+			case client <- sseData:
+			default:
+				m.logger.WithField("task_id", taskID).Debug("SSE client channel full")
+			}
 		}
 	}
+	m.clientsMu.RUnlock()
 
 	m.broadcastGlobal(sseData)
 	return nil
@@ -207,14 +223,20 @@ func (m *SSEManager) BroadcastEvent(taskID string, eventName string, data interf
 
 // BroadcastAll sends a message to all connected clients
 func (m *SSEManager) BroadcastAll(data []byte) {
+	if m.closed.Load() {
+		return
+	}
+
 	sseData := formatSSEEvent("message", data)
 
 	m.clientsMu.RLock()
-	for _, clients := range m.clients {
-		for client := range clients {
-			select {
-			case client <- sseData:
-			default:
+	if !m.closed.Load() {
+		for _, clients := range m.clients {
+			for client := range clients {
+				select {
+				case client <- sseData:
+				default:
+				}
 			}
 		}
 	}
@@ -225,16 +247,21 @@ func (m *SSEManager) BroadcastAll(data []byte) {
 
 // broadcastGlobal sends data to all global clients
 func (m *SSEManager) broadcastGlobal(data []byte) {
-	m.globalClientsMu.RLock()
-	defer m.globalClientsMu.RUnlock()
+	if m.closed.Load() {
+		return
+	}
 
-	for client := range m.globalClients {
-		select {
-		case client <- data:
-		default:
-			m.logger.Debug("Global SSE client channel full")
+	m.globalClientsMu.RLock()
+	if !m.closed.Load() {
+		for client := range m.globalClients {
+			select {
+			case client <- data:
+			default:
+				m.logger.Debug("Global SSE client channel full")
+			}
 		}
 	}
+	m.globalClientsMu.RUnlock()
 }
 
 // heartbeatLoop sends periodic heartbeats to keep connections alive
@@ -258,22 +285,30 @@ func (m *SSEManager) heartbeatLoop() {
 
 // sendHeartbeats sends heartbeat to all clients
 func (m *SSEManager) sendHeartbeats(heartbeat []byte) {
+	if m.closed.Load() {
+		return
+	}
+
 	m.clientsMu.RLock()
-	for _, clients := range m.clients {
-		for client := range clients {
-			select {
-			case client <- heartbeat:
-			default:
+	if !m.closed.Load() {
+		for _, clients := range m.clients {
+			for client := range clients {
+				select {
+				case client <- heartbeat:
+				default:
+				}
 			}
 		}
 	}
 	m.clientsMu.RUnlock()
 
 	m.globalClientsMu.RLock()
-	for client := range m.globalClients {
-		select {
-		case client <- heartbeat:
-		default:
+	if !m.closed.Load() {
+		for client := range m.globalClients {
+			select {
+			case client <- heartbeat:
+			default:
+			}
 		}
 	}
 	m.globalClientsMu.RUnlock()

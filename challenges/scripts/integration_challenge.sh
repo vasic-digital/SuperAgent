@@ -129,8 +129,8 @@ run_test "LSP package compiles" "go build ./internal/lsp/..."
 
 section "Embedding Models Integration"
 
-# Test embedding package compiles
-run_test "Embedding package compiles" "go build ./internal/embedding/..."
+# Test embedding package compiles (Embeddings submodule)
+run_test "Embedding package compiles" "cd '$PROJECT_ROOT/Embeddings' && go build ./pkg/..."
 
 section "Debate System Integration"
 

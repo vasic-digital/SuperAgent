@@ -26,7 +26,7 @@ type IntegrationOrchestrator struct {
 	contextManager   *ContextManager
 	providerRegistry *ProviderRegistry
 	workflows        map[string]*Workflow
-	mu               sync.RWMutex //nolint:unused
+	mu               sync.RWMutex
 }
 
 // Workflow represents a sequence of integrated operations
@@ -108,6 +108,11 @@ func (io *IntegrationOrchestrator) ExecuteCodeAnalysis(ctx context.Context, file
 		CreatedAt: time.Now(),
 	}
 
+	// Register workflow in the map before execution
+	io.mu.Lock()
+	io.workflows[workflow.ID] = workflow
+	io.mu.Unlock()
+
 	if err := io.executeWorkflow(ctx, workflow); err != nil {
 		return nil, err
 	}
@@ -145,6 +150,11 @@ func (io *IntegrationOrchestrator) ExecuteToolChain(ctx context.Context, toolCha
 		}
 		workflow.Steps = append(workflow.Steps, step)
 	}
+
+	// Register workflow in the map before execution
+	io.mu.Lock()
+	io.workflows[workflow.ID] = workflow
+	io.mu.Unlock()
 
 	if err := io.executeWorkflow(ctx, workflow); err != nil {
 		return nil, err
@@ -634,6 +644,35 @@ func (io *IntegrationOrchestrator) findExecutableSteps(steps []WorkflowStep, gra
 	}
 
 	return executable
+}
+
+// GetWorkflow returns a workflow by ID, or nil if not found.
+func (io *IntegrationOrchestrator) GetWorkflow(id string) *Workflow {
+	io.mu.RLock()
+	defer io.mu.RUnlock()
+	return io.workflows[id]
+}
+
+// ListWorkflows returns the IDs of all registered workflows.
+func (io *IntegrationOrchestrator) ListWorkflows() []string {
+	io.mu.RLock()
+	defer io.mu.RUnlock()
+	ids := make([]string, 0, len(io.workflows))
+	for id := range io.workflows {
+		ids = append(ids, id)
+	}
+	return ids
+}
+
+// DeleteWorkflow removes a workflow by ID and returns true if it existed.
+func (io *IntegrationOrchestrator) DeleteWorkflow(id string) bool {
+	io.mu.Lock()
+	defer io.mu.Unlock()
+	if _, ok := io.workflows[id]; !ok {
+		return false
+	}
+	delete(io.workflows, id)
+	return true
 }
 
 // Data structures

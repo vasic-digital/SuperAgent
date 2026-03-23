@@ -15,6 +15,7 @@ import (
 	"dev.helix.agent/internal/features"
 	"dev.helix.agent/internal/formatters"
 	formattersproviders "dev.helix.agent/internal/formatters/providers"
+	helixgraphql "dev.helix.agent/internal/graphql"
 	"dev.helix.agent/internal/handlers"
 	"dev.helix.agent/internal/middleware"
 	"dev.helix.agent/internal/models"
@@ -1168,6 +1169,47 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 			healthGroup.GET("/status", healthHandler.GetHealthServiceStatus)
 		}
 		logger.Info("Health monitoring endpoints registered at /v1/health/*")
+
+		// Agentic workflow endpoints (graph-based workflow orchestration)
+		agenticHandler := handlers.NewAgenticHandler(logger)
+		handlers.RegisterAgenticRoutes(protected, agenticHandler)
+		logger.Info("Agentic workflow endpoints registered at /v1/agentic/*")
+
+		// Planning algorithm endpoints (HiPlan, MCTS, Tree of Thoughts)
+		planningHandler := handlers.NewPlanningHandler(logger)
+		handlers.RegisterPlanningRoutes(protected, planningHandler)
+		logger.Info("Planning algorithm endpoints registered at /v1/planning/*")
+
+		// LLMOps endpoints (experiments, evaluations, prompt versioning)
+		llmopsHandler := handlers.NewLLMOpsHandler(nil)
+		handlers.RegisterLLMOpsRoutes(protected, llmopsHandler)
+		logger.Info("LLMOps endpoints registered at /v1/llmops/*")
+
+		// Benchmark endpoints (SWE-bench, HumanEval, MMLU benchmarking)
+		benchmarkHandler := handlers.NewBenchmarkHandler(nil)
+		handlers.RegisterBenchmarkRoutes(protected, benchmarkHandler)
+		logger.Info("Benchmark endpoints registered at /v1/benchmark/*")
+
+		// GraphQL endpoint (feature-flagged, disabled by default for backward compatibility)
+		if os.Getenv("GRAPHQL_ENABLED") == "true" {
+			if err := helixgraphql.InitSchema(); err != nil {
+				logger.WithError(err).Error("Failed to initialize GraphQL schema")
+			} else {
+				protected.POST("/graphql", func(c *gin.Context) {
+					var reqBody struct {
+						Query     string                 `json:"query"`
+						Variables map[string]interface{} `json:"variables"`
+					}
+					if err := c.ShouldBindJSON(&reqBody); err != nil {
+						c.JSON(http.StatusBadRequest, gin.H{"error": "invalid GraphQL request: " + err.Error()})
+						return
+					}
+					result := helixgraphql.ExecuteQuery(reqBody.Query, reqBody.Variables)
+					c.JSON(http.StatusOK, result)
+				})
+				logger.Info("GraphQL endpoint enabled at /v1/graphql")
+			}
+		}
 
 		// Admin endpoints
 		admin := protected.Group("/admin")

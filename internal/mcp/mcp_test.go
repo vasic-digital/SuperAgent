@@ -925,7 +925,7 @@ func TestNewConnectionPool(t *testing.T) {
 		assert.NotNil(t, pool.config)
 		assert.NotNil(t, pool.logger)
 		assert.NotNil(t, pool.metrics)
-		assert.False(t, pool.closed)
+		assert.False(t, pool.closed.Load())
 	})
 
 	t.Run("Creates pool with custom config", func(t *testing.T) {
@@ -1137,7 +1137,7 @@ func TestConnectionPool_Close(t *testing.T) {
 		err := pool.Close()
 		require.NoError(t, err)
 
-		assert.True(t, pool.closed)
+		assert.True(t, pool.closed.Load())
 	})
 
 	t.Run("Can be called multiple times", func(t *testing.T) {

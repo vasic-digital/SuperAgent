@@ -1,3 +1,7 @@
+// DEPRECATED: This package is superseded by the extracted Auth/ submodule
+// (module digital.vasic.auth). It has zero production imports and is retained
+// only for reference. New code should use the submodule via adapters.
+//
 // Package oauth_credentials provides OAuth2 token refresh functionality
 // for Claude Code and Qwen Code CLI agents.
 package oauth_credentials

@@ -1,5 +1,9 @@
+// DEPRECATED: This package is superseded by the extracted Concurrency/ submodule
+// (module digital.vasic.concurrency). It has zero production imports and is
+// retained only for reference. New code should use the submodule via adapters.
+//
 // Package deadlock provides deadlock detection and prevention mechanisms
-// for the HelixAgent concurrent systems
+// for the HelixAgent concurrent systems.
 package deadlock
 
 import (

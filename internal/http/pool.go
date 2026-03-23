@@ -1,3 +1,17 @@
+// NOTE: Overlap evaluation (2026-03-23)
+//
+// This package (internal/http) provides CLIENT-SIDE HTTP functionality:
+//   - pool.go: HTTP/1.1 connection pooling, per-host client management, retry
+//     with exponential backoff, request metrics, global singleton pool.
+//   - quic_client.go: HTTP/3 QUIC client via quic-go, HTTP/2 fallback,
+//     HTTP3ProviderTransport (http.RoundTripper), QUIC-specific metrics.
+//
+// Related SERVER-SIDE packages exist but serve a different role:
+//   - internal/transport/http3.go: HTTP/3 server with self-signed cert gen.
+//   - internal/router/quic_server.go: Dual-stack HTTP/3 + HTTP/1.1/2 server.
+//
+// Conclusion: NOT duplicated. Client vs server. Both are needed.
+// Bridged via internal/adapters/http/adapter.go.
 package http
 
 import (

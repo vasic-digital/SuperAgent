@@ -1,3 +1,8 @@
+// DEPRECATED: This package is superseded by the extracted DebateOrchestrator/
+// submodule (module digital.vasic.debate). It has zero external production
+// imports (only internal cross-references) and is retained only for reference.
+// New code should use the submodule via adapters.
+//
 // Package debate provides the AI Debate Orchestrator Framework for HelixAgent.
 //
 // This package implements a sophisticated multi-agent debate system with learning
