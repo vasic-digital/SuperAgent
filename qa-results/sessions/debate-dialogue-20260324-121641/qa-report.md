@@ -1,0 +1,221 @@
+# HelixQA Test Report
+
+**Generated:** 2026-03-24T12:18:45+03:00
+
+## Overview
+
+| Metric | Value |
+|--------|-------|
+| Total Challenges | 0 |
+| Passed | 0 |
+| Failed | 0 |
+| Total Crashes | 0 |
+| Total ANRs | 0 |
+| Total Duration | 2m3.22729178s |
+| Platforms Tested | 1 |
+
+## Platform: WEB
+
+- **Duration:** 2m3.22729178s
+- **Crashes:** 0
+- **ANRs:** 0
+- **Challenges:** 0
+
+### Step Validation
+
+| Step | Status | Duration | Error |
+|------|--------|----------|-------|
+| OBS-006 | PASSED | 153.840337ms | - |
+| BUILD-008 | PASSED | 146.459133ms | - |
+| PROV-004 | PASSED | 126.609379ms | - |
+| CONC-009 | PASSED | 277.28577ms | - |
+| DD-015 | PASSED | 122.14538ms | - |
+| OBS-001 | PASSED | 275.370787ms | - |
+| ROUTE-007 | PASSED | 265.008863ms | - |
+| SEC-007 | PASSED | 152.693639ms | - |
+| SUB-002 | PASSED | 142.08156ms | - |
+| BUILD-001 | PASSED | 178.907838ms | - |
+| CHAL-002 | PASSED | 243.127727ms | - |
+| CONC-002 | PASSED | 174.94153ms | - |
+| CONC-008 | PASSED | 203.485321ms | - |
+| PROV-V-015 | PASSED | 167.219772ms | - |
+| STRESS-004 | PASSED | 139.39901ms | - |
+| BUILD-009 | PASSED | 131.365099ms | - |
+| HEALTH-002 | PASSED | 222.673967ms | - |
+| DD-009 | PASSED | 153.395185ms | - |
+| SEC-003 | PASSED | 121.965089ms | - |
+| API-PLAN-001 | PASSED | 224.086612ms | - |
+| DEB-004 | PASSED | 156.288426ms | - |
+| SEC-010 | PASSED | 135.512585ms | - |
+| STRESS-005 | PASSED | 160.545959ms | - |
+| BUILD-007 | PASSED | 138.603836ms | - |
+| DEAD-002 | PASSED | 156.178486ms | - |
+| SEC-008 | PASSED | 110.103086ms | - |
+| PROV-001 | PASSED | 114.489649ms | - |
+| ERR-001 | PASSED | 136.815018ms | - |
+| DD-006 | PASSED | 190.973391ms | - |
+| DD-012 | PASSED | 293.376649ms | - |
+| DEB-009 | PASSED | 152.303137ms | - |
+| DOC-012 | PASSED | 175.486447ms | - |
+| OBS-003 | PASSED | 192.788123ms | - |
+| STRESS-002 | PASSED | 196.0517ms | - |
+| API-LLMOPS-001 | PASSED | 168.610658ms | - |
+| PROTO-001 | PASSED | 159.576252ms | - |
+| DEAD-008 | PASSED | 231.771741ms | - |
+| DD-007 | PASSED | 126.63609ms | - |
+| ROUTE-003 | PASSED | 142.023493ms | - |
+| SEC-012 | PASSED | 184.358055ms | - |
+| STRESS-003 | PASSED | 117.270819ms | - |
+| OPS-001 | PASSED | 96.752007ms | - |
+| CONC-010 | PASSED | 107.247516ms | - |
+| DD-003 | PASSED | 107.351181ms | - |
+| ROUTE-004 | PASSED | 133.137224ms | - |
+| SUB-001 | PASSED | 184.981008ms | - |
+| API-ERR-001 | PASSED | 124.973348ms | - |
+| BENCH-001 | PASSED | 133.303564ms | - |
+| DEAD-007 | PASSED | 143.080678ms | - |
+| CHAL-006 | PASSED | 229.332037ms | - |
+| DD-005 | PASSED | 169.386896ms | - |
+| DD-011 | PASSED | 136.43449ms | - |
+| INFRA-005 | PASSED | 203.43083ms | - |
+| PROV-V-002 | PASSED | 175.482681ms | - |
+| ROUTE-009 | PASSED | 265.110179ms | - |
+| SEC-009 | PASSED | 244.367963ms | - |
+| PROV-003 | PASSED | 139.426988ms | - |
+| CONC-004 | PASSED | 193.530797ms | - |
+| CONC-012 | PASSED | 105.250539ms | - |
+| DEAD-006 | PASSED | 116.890777ms | - |
+| API-GRAPHQL-001 | PASSED | 178.766524ms | - |
+| BUILD-004 | PASSED | 149.715944ms | - |
+| PERF-002 | PASSED | 101.052156ms | - |
+| DEB-008 | PASSED | 135.13197ms | - |
+| INFRA-008 | PASSED | 140.897529ms | - |
+| ROUTE-006 | PASSED | 197.572588ms | - |
+| SEC-006 | PASSED | 116.66698ms | - |
+| DOC-002 | PASSED | 214.216518ms | - |
+| API-AGENTIC-001 | PASSED | 149.440422ms | - |
+| CHAL-005 | PASSED | 179.262327ms | - |
+| PROV-002 | PASSED | 116.773405ms | - |
+| PLAN-001 | PASSED | 117.37629ms | - |
+| DEAD-003 | PASSED | 117.103081ms | - |
+| DEAD-010 | PASSED | 164.905615ms | - |
+| DD-013 | PASSED | 125.706172ms | - |
+| CHAL-004 | PASSED | 106.331097ms | - |
+| AUTH-002 | PASSED | 95.83337ms | - |
+| DD-001 | PASSED | 141.453927ms | - |
+| DEB-010 | PASSED | 107.671549ms | - |
+| DOC-001 | PASSED | 178.445902ms | - |
+| DOC-007 | PASSED | 125.324837ms | - |
+| INFRA-002 | PASSED | 130.806516ms | - |
+| INFRA-007 | PASSED | 115.449221ms | - |
+| AUTH-003 | PASSED | 157.658544ms | - |
+| PLAN-003 | PASSED | 129.562284ms | - |
+| INFRA-001 | PASSED | 173.63479ms | - |
+| OBS-005 | PASSED | 283.237505ms | - |
+| PROV-V-009 | PASSED | 146.292759ms | - |
+| PROV-V-010 | PASSED | 113.07635ms | - |
+| ROUTE-002 | PASSED | 179.955431ms | - |
+| ROUTE-005 | PASSED | 147.730475ms | - |
+| API-AUTH-001 | PASSED | 129.813052ms | - |
+| BUILD-005 | PASSED | 163.365098ms | - |
+| CONC-003 | PASSED | 106.059423ms | - |
+| DEAD-005 | PASSED | 202.8451ms | - |
+| DD-008 | PASSED | 219.489101ms | - |
+| DEB-006 | PASSED | 125.396231ms | - |
+| DOC-009 | PASSED | 148.818695ms | - |
+| PROV-V-003 | PASSED | 111.309406ms | - |
+| PROTO-002 | PASSED | 170.997931ms | - |
+| PROTO-003 | PASSED | 354.990289ms | - |
+| PROTO-004 | PASSED | 160.99957ms | - |
+| CONC-005 | PASSED | 115.053852ms | - |
+| DEAD-001 | PASSED | 142.502183ms | - |
+| DD-010 | PASSED | 148.913323ms | - |
+| INFRA-006 | PASSED | 151.72655ms | - |
+| PROV-V-012 | PASSED | 116.372412ms | - |
+| BUILD-002 | PASSED | 114.663016ms | - |
+| DEAD-009 | PASSED | 108.602315ms | - |
+| DD-014 | PASSED | 98.04912ms | - |
+| PROV-V-004 | PASSED | 105.639003ms | - |
+| SUB-003 | PASSED | 160.517489ms | - |
+| SUB-005 | PASSED | 168.764634ms | - |
+| API-BENCH-001 | PASSED | 143.238192ms | - |
+| BUILD-010 | PASSED | 132.841646ms | - |
+| CHAL-008 | PASSED | 163.721729ms | - |
+| HEALTH-003 | PASSED | 127.966375ms | - |
+| BENCH-002 | PASSED | 123.915609ms | - |
+| DOC-003 | PASSED | 112.017539ms | - |
+| PROV-V-001 | PASSED | 125.275779ms | - |
+| SEC-004 | PASSED | 161.450895ms | - |
+| DISC-001 | PASSED | 135.124188ms | - |
+| ERR-002 | PASSED | 131.440772ms | - |
+| INFRA-009 | PASSED | 161.80498ms | - |
+| SEC-011 | PASSED | 118.221904ms | - |
+| CHAL-001 | PASSED | 139.559177ms | - |
+| DEB-005 | PASSED | 156.172696ms | - |
+| DOC-004 | PASSED | 118.95914ms | - |
+| DOC-005 | PASSED | 116.44517ms | - |
+| INFRA-003 | PASSED | 125.733091ms | - |
+| ROUTE-008 | PASSED | 165.550818ms | - |
+| API-HEALTH-001 | PASSED | 136.504298ms | - |
+| BUILD-003 | PASSED | 171.733086ms | - |
+| CHAL-003 | PASSED | 115.168715ms | - |
+| CONC-006 | PASSED | 124.669548ms | - |
+| DOC-011 | PASSED | 166.7304ms | - |
+| SUB-006 | PASSED | 122.899357ms | - |
+| API-DISC-001 | PASSED | 121.475172ms | - |
+| BUILD-006 | PASSED | 114.324252ms | - |
+| DISC-002 | PASSED | 100.758936ms | - |
+| CONC-007 | PASSED | 151.101466ms | - |
+| OBS-008 | PASSED | 148.401014ms | - |
+| ROUTE-014 | PASSED | 126.961066ms | - |
+| SUB-008 | PASSED | 129.198702ms | - |
+| CONC-001 | PASSED | 120.036598ms | - |
+| CONC-011 | PASSED | 228.976903ms | - |
+| DOC-010 | PASSED | 118.092307ms | - |
+| SUB-004 | PASSED | 158.530679ms | - |
+| DOC-006 | PASSED | 138.234811ms | - |
+| PROV-V-007 | PASSED | 149.298853ms | - |
+| PROV-V-013 | PASSED | 246.615503ms | - |
+| ROUTE-010 | PASSED | 173.751445ms | - |
+| AGENTIC-002 | PASSED | 172.464961ms | - |
+| PERF-001 | PASSED | 148.044966ms | - |
+| DEB-002 | PASSED | 128.396995ms | - |
+| DEB-007 | PASSED | 114.720642ms | - |
+| INFRA-010 | PASSED | 111.314291ms | - |
+| OBS-007 | PASSED | 116.373125ms | - |
+| PROV-V-006 | PASSED | 103.909111ms | - |
+| PROV-V-014 | PASSED | 131.603796ms | - |
+| AUTH-001 | PASSED | 133.664409ms | - |
+| OPS-002 | PASSED | 137.227342ms | - |
+| DEAD-004 | PASSED | 75.110208ms | - |
+| DEB-003 | PASSED | 112.166891ms | - |
+| PROV-V-011 | PASSED | 112.431738ms | - |
+| ROUTE-012 | PASSED | 71.118342ms | - |
+| ROUTE-013 | PASSED | 69.75172ms | - |
+| ROUTE-015 | PASSED | 68.251993ms | - |
+| CHAL-007 | PASSED | 84.685913ms | - |
+| DEB-001 | PASSED | 87.302456ms | - |
+| OBS-002 | PASSED | 70.698254ms | - |
+| OBS-004 | PASSED | 81.104467ms | - |
+| ROUTE-001 | PASSED | 91.763596ms | - |
+| SEC-002 | PASSED | 60.20929ms | - |
+| DD-002 | PASSED | 60.776562ms | - |
+| PROV-V-005 | PASSED | 82.487223ms | - |
+| ROUTE-011 | PASSED | 132.379389ms | - |
+| SEC-001 | PASSED | 267.378981ms | - |
+| SEC-005 | PASSED | 138.544453ms | - |
+| STRESS-001 | PASSED | 113.003322ms | - |
+| API-PROV-001 | PASSED | 134.819405ms | - |
+| INFRA-004 | PASSED | 148.120315ms | - |
+| PROV-V-008 | PASSED | 162.349205ms | - |
+| SUB-007 | PASSED | 181.31285ms | - |
+| HEALTH-001 | PASSED | 114.848656ms | - |
+| AGENTIC-001 | PASSED | 111.412392ms | - |
+| PLAN-002 | PASSED | 159.971168ms | - |
+| OPS-003 | PASSED | 198.113828ms | - |
+| DD-004 | PASSED | 135.736282ms | - |
+| DOC-008 | PASSED | 156.920855ms | - |
+
+---
+
+*Generated by HelixQA*

@@ -274,17 +274,9 @@ func (e *DefaultActionExecutor) Execute(
 	case ActionSecurityScan:
 		result = e.checkSecurity(code, language)
 	case ActionRunBenchmarks:
-		result = &ActionResult{
-			Action: ActionRunBenchmarks,
-			Passed: true,
-			Output: "benchmarks placeholder: passed",
-		}
+		result = e.checkBenchmarks(code, language)
 	case ActionCustomScript:
-		result = &ActionResult{
-			Action: ActionCustomScript,
-			Passed: true,
-			Output: "custom script placeholder: passed",
-		}
+		result = e.checkCustomScript(code, language)
 	default:
 		result = &ActionResult{
 			Action: action,
@@ -541,5 +533,172 @@ func (e *DefaultActionExecutor) checkSecurity(
 
 	result.Details["issue_count"] = len(issues)
 	result.Details["issues"] = issues
+	return result
+}
+
+// checkBenchmarks checks for benchmark patterns and potential performance issues in code.
+func (e *DefaultActionExecutor) checkBenchmarks(
+	code, language string,
+) *ActionResult {
+	result := &ActionResult{
+		Action:  ActionRunBenchmarks,
+		Details: make(map[string]interface{}),
+	}
+
+	issues := make([]string, 0)
+	lower := strings.ToLower(code)
+	hasBenchmarks := false
+
+	switch language {
+	case "go", "golang":
+		if strings.Contains(code, "func Benchmark") ||
+			strings.Contains(code, "testing.B") {
+			hasBenchmarks = true
+		}
+		// Check for performance anti-patterns
+		if strings.Contains(code, "append(") && strings.Contains(code, "for ") &&
+			!strings.Contains(code, "make([]") {
+			issues = append(issues,
+				"potential inefficient slice growth: consider pre-allocating with make()")
+		}
+		if strings.Contains(code, "string(") && strings.Contains(code, "[]byte(") {
+			issues = append(issues,
+				"repeated string/byte conversions detected (performance cost)")
+		}
+	case "python":
+		if strings.Contains(lower, "timeit") ||
+			strings.Contains(lower, "benchmark") ||
+			strings.Contains(lower, "perf_counter") {
+			hasBenchmarks = true
+		}
+	case "javascript", "typescript":
+		if strings.Contains(lower, "performance.now") ||
+			strings.Contains(lower, "console.time") ||
+			strings.Contains(lower, "benchmark") {
+			hasBenchmarks = true
+		}
+	default:
+		if strings.Contains(lower, "benchmark") ||
+			strings.Contains(lower, "perf") {
+			hasBenchmarks = true
+		}
+	}
+
+	// Check for common performance concerns regardless of language
+	lines := strings.Split(code, "\n")
+	nestedLoopDepth := 0
+	maxNestedLoops := 0
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "for ") || strings.HasPrefix(trimmed, "while ") {
+			nestedLoopDepth++
+			if nestedLoopDepth > maxNestedLoops {
+				maxNestedLoops = nestedLoopDepth
+			}
+		}
+		if trimmed == "}" {
+			if nestedLoopDepth > 0 {
+				nestedLoopDepth--
+			}
+		}
+	}
+
+	if maxNestedLoops >= 3 {
+		issues = append(issues,
+			fmt.Sprintf("deeply nested loops detected (depth %d): O(n^%d) complexity risk",
+				maxNestedLoops, maxNestedLoops))
+	}
+
+	result.Passed = len(issues) == 0
+	if result.Passed {
+		result.Output = "no performance issues found"
+	} else {
+		result.Output = fmt.Sprintf("benchmark issues: %s",
+			strings.Join(issues, "; "))
+	}
+
+	result.Details["has_benchmarks"] = hasBenchmarks
+	result.Details["max_nested_loops"] = maxNestedLoops
+	result.Details["issue_count"] = len(issues)
+	result.Details["language"] = language
+	return result
+}
+
+// checkCustomScript performs a comprehensive code quality check combining
+// multiple heuristics as a catch-all validation step.
+func (e *DefaultActionExecutor) checkCustomScript(
+	code, language string,
+) *ActionResult {
+	result := &ActionResult{
+		Action:  ActionCustomScript,
+		Details: make(map[string]interface{}),
+	}
+
+	issues := make([]string, 0)
+	lower := strings.ToLower(code)
+	lines := strings.Split(code, "\n")
+
+	// Check for TODO/FIXME/HACK markers in code
+	todoCount := 0
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		upper := strings.ToUpper(trimmed)
+		if strings.Contains(upper, "TODO") ||
+			strings.Contains(upper, "FIXME") ||
+			strings.Contains(upper, "HACK") ||
+			strings.Contains(upper, "XXX") {
+			todoCount++
+			if todoCount <= 3 {
+				issues = append(issues,
+					fmt.Sprintf("line %d: unresolved marker in code", i+1))
+			}
+		}
+	}
+	if todoCount > 3 {
+		issues = append(issues,
+			fmt.Sprintf("... and %d more unresolved markers", todoCount-3))
+	}
+
+	// Check for error suppression patterns
+	if language == "go" || language == "golang" {
+		if strings.Contains(code, "_ = err") {
+			issues = append(issues, "potential ignored error detected")
+		}
+		if strings.Contains(code, "panic(") &&
+			!strings.Contains(lower, "_test") &&
+			!strings.Contains(lower, "// expected") {
+			issues = append(issues, "panic() in non-test code (use error returns)")
+		}
+	}
+
+	// Check for debug/temporary code
+	if strings.Contains(lower, "print(") &&
+		(language == "go" || language == "golang") {
+		issues = append(issues, "print() found (use structured logging)")
+	}
+
+	// Check for empty catch/error blocks
+	for i, line := range lines {
+		if strings.Contains(line, "catch") && i+1 < len(lines) {
+			nextTrimmed := strings.TrimSpace(lines[i+1])
+			if nextTrimmed == "}" || nextTrimmed == "" {
+				issues = append(issues,
+					fmt.Sprintf("line %d: empty catch block (errors silently swallowed)", i+1))
+			}
+		}
+	}
+
+	result.Passed = len(issues) == 0
+	if result.Passed {
+		result.Output = "custom validation checks passed"
+	} else {
+		result.Output = fmt.Sprintf("custom validation issues: %s",
+			strings.Join(issues, "; "))
+	}
+
+	result.Details["issue_count"] = len(issues)
+	result.Details["todo_count"] = todoCount
+	result.Details["line_count"] = len(lines)
+	result.Details["language"] = language
 	return result
 }

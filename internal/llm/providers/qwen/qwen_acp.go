@@ -46,6 +46,10 @@ type QwenACPProvider struct {
 	// Response channels for async handling
 	responses map[int64]chan *acpResponse
 	respMu    sync.RWMutex
+
+	// Streaming channel for session/update notifications
+	streamCh chan string
+	streamMu sync.RWMutex
 }
 
 // ACP Protocol Version
@@ -296,15 +300,49 @@ func (p *QwenACPProvider) readResponses() {
 	p.mu.Unlock()
 }
 
+// sessionUpdateParams represents the params of a session/update notification.
+type sessionUpdateParams struct {
+	Content []contentBlock `json:"content,omitempty"`
+	Text    string         `json:"text,omitempty"`
+}
+
 // handleNotification handles ACP notifications
 func (p *QwenACPProvider) handleNotification(resp *acpResponse) {
-	// Handle session/update notifications for streaming
 	if resp.Method == "session/update" {
-		// Parse notification and handle streaming updates
-		// This could be used for real-time streaming in the future
-		// For now, just log the notification
-		log.Printf("[QwenACP] session/update notification: %v", resp)
-		_ = resp // placeholder for future implementation
+		p.streamMu.RLock()
+		ch := p.streamCh
+		p.streamMu.RUnlock()
+
+		if ch == nil {
+			return
+		}
+
+		// Parse the notification params to extract streaming text
+		var params sessionUpdateParams
+		if resp.Params != nil {
+			if err := json.Unmarshal(resp.Params, &params); err != nil {
+				log.Printf("[QwenACP] failed to parse session/update params: %v", err)
+				return
+			}
+		}
+
+		// Extract text from content blocks or direct text field
+		text := params.Text
+		if text == "" {
+			for _, block := range params.Content {
+				if block.Type == "text" && block.Text != "" {
+					text += block.Text
+				}
+			}
+		}
+
+		if text != "" {
+			select {
+			case ch <- text:
+			default:
+				// Channel full, drop token to avoid blocking the reader goroutine
+			}
+		}
 	}
 }
 
@@ -531,30 +569,173 @@ func (p *QwenACPProvider) Complete(ctx context.Context, req *models.LLMRequest) 
 	}, nil
 }
 
-// CompleteStream implements streaming completion using ACP
+// CompleteStream implements streaming completion using ACP session/update notifications.
 func (p *QwenACPProvider) CompleteStream(ctx context.Context, req *models.LLMRequest) (<-chan *models.LLMResponse, error) {
-	// For now, use non-streaming and send as single chunk
-	// Full streaming would require handling session/update notifications
-	ch := make(chan *models.LLMResponse, 1)
+	if err := p.Start(); err != nil {
+		return nil, fmt.Errorf("failed to start ACP: %w", err)
+	}
+
+	// Set up the streaming channel to receive session/update notifications
+	streamCh := make(chan string, 64)
+	p.streamMu.Lock()
+	p.streamCh = streamCh
+	p.streamMu.Unlock()
+
+	outCh := make(chan *models.LLMResponse, 64)
 
 	go func() {
-		defer close(ch)
+		defer close(outCh)
+		defer func() {
+			p.streamMu.Lock()
+			p.streamCh = nil
+			p.streamMu.Unlock()
+		}()
 
-		resp, err := p.Complete(ctx, req)
-		if err != nil {
-			ch <- &models.LLMResponse{
+		// Build prompt (same logic as Complete)
+		var promptBuilder strings.Builder
+		for _, msg := range req.Messages {
+			switch msg.Role {
+			case "system":
+				promptBuilder.WriteString("System: ")
+				promptBuilder.WriteString(msg.Content)
+				promptBuilder.WriteString("\n\n")
+			case "user":
+				promptBuilder.WriteString(msg.Content)
+				promptBuilder.WriteString("\n")
+			case "assistant":
+				promptBuilder.WriteString("Assistant: ")
+				promptBuilder.WriteString(msg.Content)
+				promptBuilder.WriteString("\n\n")
+			}
+		}
+		prompt := promptBuilder.String()
+		if prompt == "" && req.Prompt != "" {
+			prompt = req.Prompt
+		}
+		if prompt == "" {
+			outCh <- &models.LLMResponse{
 				ProviderID:   "qwen-acp",
 				ProviderName: "qwen-acp",
-				Metadata: map[string]interface{}{
-					"error": err.Error(),
-				},
+				Metadata:     map[string]interface{}{"error": "no prompt provided"},
 			}
 			return
 		}
-		ch <- resp
+
+		startTime := time.Now()
+
+		// Send prompt request (the final response comes back via sendRequest,
+		// but streaming tokens arrive as session/update notifications)
+		params := promptRequest{
+			SessionID: p.sessionID,
+			Prompt:    []contentBlock{{Type: "text", Text: prompt}},
+		}
+
+		// Launch the request in a goroutine so we can simultaneously
+		// consume streaming tokens from streamCh
+		type completeResult struct {
+			resp *acpResponse
+			err  error
+		}
+		doneCh := make(chan completeResult, 1)
+		go func() {
+			timeoutCtx, cancel := context.WithTimeout(ctx, p.timeout)
+			defer cancel()
+			resp, err := p.sendRequest(timeoutCtx, "session/prompt", params)
+			doneCh <- completeResult{resp, err}
+		}()
+
+		// Forward streaming tokens until the final response arrives
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case token, ok := <-streamCh:
+				if !ok {
+					return
+				}
+				outCh <- &models.LLMResponse{
+					ID:           fmt.Sprintf("qwen-acp-stream-%d", time.Now().UnixNano()),
+					ProviderID:   "qwen-acp",
+					ProviderName: "qwen-acp",
+					Content:      token,
+					Metadata: map[string]interface{}{
+						"source":     "qwen-acp",
+						"session_id": p.sessionID,
+						"model":      p.model,
+						"streaming":  true,
+					},
+				}
+			case result := <-doneCh:
+				// Drain any remaining tokens
+				for {
+					select {
+					case token, ok := <-streamCh:
+						if !ok {
+							goto done
+						}
+						outCh <- &models.LLMResponse{
+							ID:           fmt.Sprintf("qwen-acp-stream-%d", time.Now().UnixNano()),
+							ProviderID:   "qwen-acp",
+							ProviderName: "qwen-acp",
+							Content:      token,
+							Metadata:     map[string]interface{}{"streaming": true},
+						}
+					default:
+						goto done
+					}
+				}
+			done:
+				duration := time.Since(startTime)
+				if result.err != nil {
+					outCh <- &models.LLMResponse{
+						ProviderID:   "qwen-acp",
+						ProviderName: "qwen-acp",
+						Metadata:     map[string]interface{}{"error": result.err.Error()},
+					}
+					return
+				}
+
+				// Parse the final response for metadata
+				var promptResp promptResponse
+				if result.resp != nil && result.resp.Result != nil {
+					if err := json.Unmarshal(result.resp.Result, &promptResp); err == nil {
+						var content strings.Builder
+						for _, block := range promptResp.Result {
+							if block.Type == "text" {
+								content.WriteString(block.Text)
+							}
+						}
+						promptTokens := len(prompt) / 4
+						completionTokens := content.Len() / 4
+						// Send final chunk with complete metadata
+						outCh <- &models.LLMResponse{
+							ID:           fmt.Sprintf("qwen-acp-%d", time.Now().UnixNano()),
+							ProviderID:   "qwen-acp",
+							ProviderName: "qwen-acp",
+							Content:      content.String(),
+							FinishReason: promptResp.StopReason,
+							TokensUsed:   promptTokens + completionTokens,
+							ResponseTime: duration.Milliseconds(),
+							CreatedAt:    time.Now(),
+							Metadata: map[string]interface{}{
+								"source":            "qwen-acp",
+								"session_id":        p.sessionID,
+								"model":             p.model,
+								"stop_reason":       promptResp.StopReason,
+								"prompt_tokens":     promptTokens,
+								"completion_tokens": completionTokens,
+								"latency":           duration.String(),
+								"streaming":         false,
+							},
+						}
+					}
+				}
+				return
+			}
+		}
 	}()
 
-	return ch, nil
+	return outCh, nil
 }
 
 // HealthCheck checks if the ACP process is healthy

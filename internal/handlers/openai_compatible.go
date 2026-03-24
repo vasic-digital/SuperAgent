@@ -57,7 +57,7 @@ func NewUnifiedHandler(registry *services.ProviderRegistry, cfg *config.Config) 
 		config:             cfg,
 		dialogueFormatter:  dialogueFormatter,
 		debateTeamConfig:   debateTeamConfig,
-		showDebateDialogue: false, // Disabled: use intent-based routing instead
+		showDebateDialogue: true, // Enable debate dialogue: show team members, positions, phases, voting
 	}
 }
 
@@ -584,8 +584,127 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 	}
 
 	// For SIMPLE messages: use strongest single provider for fast, direct response
+	// CRITICAL: For greetings only, trim oversized system prompts from CLI agents
+	// (OpenCode sends 16K+ token system context) to prevent code generation for "hello!"
+	// For other simple queries (e.g. "do you see my codebase?"), keep the original system
+	// context so the LLM knows about tool access and capabilities.
 	if !useDebate && h.debateTeamConfig != nil {
 		logrus.Info("[STREAMING] Simple message — using strongest single provider")
+
+		// Detect if this is a pure greeting (hello, hi, hey, etc.)
+		isGreeting := false
+		msgLower := strings.ToLower(strings.TrimSpace(lastUserMsg))
+		greetings := []string{"hello", "hi", "hey", "greetings", "good morning", "good afternoon",
+			"good evening", "howdy", "yo", "sup", "thanks", "thank you", "thx", "bye", "goodbye"}
+		for _, g := range greetings {
+			if msgLower == g || msgLower == g+"!" || msgLower == g+"." {
+				isGreeting = true
+				break
+			}
+		}
+
+		simpleReq := *internalReq
+		if isGreeting && len(simpleReq.Messages) > 0 {
+			// For greetings: use minimal system prompt to prevent code generation
+			var trimmedMessages []models.Message
+			trimmedMessages = append(trimmedMessages, models.Message{
+				Role:    "system",
+				Content: "You are HelixAgent, a helpful AI assistant powered by an AI Debate Ensemble. Respond naturally and conversationally to the user. You have access to the user's codebase through tools.",
+			})
+			for _, m := range simpleReq.Messages {
+				if m.Role == "user" || m.Role == "assistant" {
+					trimmedMessages = append(trimmedMessages, m)
+				}
+			}
+			simpleReq.Messages = trimmedMessages
+			logrus.WithField("greeting", msgLower).Info("[STREAMING] Trimmed system context for greeting")
+		} else if len(simpleReq.Messages) > 0 {
+			// For non-greeting simple queries: compress oversized system context
+			// while preserving tool awareness dynamically from the original prompt.
+			// OpenCode sends 70KB+ system context; most providers cap at 6-8K context.
+			totalLen := 0
+			for _, m := range simpleReq.Messages {
+				totalLen += len(m.Content)
+			}
+			if totalLen > 6000 {
+				var compressedMessages []models.Message
+				// Extract tool names and key context from original system messages
+				var toolMentions []string
+				var clientName string
+				for _, m := range simpleReq.Messages {
+					if m.Role != "system" {
+						continue
+					}
+					lower := strings.ToLower(m.Content)
+					// Detect client name dynamically
+					for _, name := range []string{"Claude Code", "OpenCode", "Qwen Code", "Crush", "KiloCode", "Junie", "Gemini"} {
+						if strings.Contains(m.Content, name) {
+							clientName = name
+							break
+						}
+					}
+					// Extract tool names dynamically from system prompt
+					toolPatterns := []string{
+						"read_file", "write_file", "edit_file", "search_files", "list_directory",
+						"execute_command", "run_command", "grep", "glob", "bash",
+						"Read", "Write", "Edit", "Grep", "Glob", "Bash", "LS",
+					}
+					for _, tp := range toolPatterns {
+						if strings.Contains(m.Content, tp) || strings.Contains(lower, strings.ToLower(tp)) {
+							toolMentions = append(toolMentions, tp)
+						}
+					}
+				}
+				// Deduplicate tool mentions
+				seen := make(map[string]bool)
+				var uniqueTools []string
+				for _, t := range toolMentions {
+					tl := strings.ToLower(t)
+					if !seen[tl] {
+						seen[tl] = true
+						uniqueTools = append(uniqueTools, t)
+					}
+				}
+				if clientName == "" {
+					clientName = "AI coding assistant"
+				}
+				toolList := "various file and code tools"
+				if len(uniqueTools) > 0 {
+					toolList = strings.Join(uniqueTools, ", ")
+				}
+
+				compressedSystem := fmt.Sprintf(`You are HelixAgent, an AI coding assistant powered by an AI Debate Ensemble.
+
+IMPORTANT CONTEXT:
+- You are integrated with %s
+- You have FULL ACCESS to the user's codebase through tools
+- Available tools: %s
+- When the user asks about their code, you CAN see and access their files
+- NEVER say "I cannot see your codebase" — the tools handle file access
+- Provide SPECIFIC, ACTIONABLE coding advice
+
+Respond concisely and helpfully.`, clientName, toolList)
+
+				compressedMessages = append(compressedMessages, models.Message{
+					Role:    "system",
+					Content: compressedSystem,
+				})
+				// Keep all user/assistant messages
+				for _, m := range simpleReq.Messages {
+					if m.Role == "user" || m.Role == "assistant" {
+						compressedMessages = append(compressedMessages, m)
+					}
+				}
+				simpleReq.Messages = compressedMessages
+				logrus.WithFields(logrus.Fields{
+					"original_len":    totalLen,
+					"compressed_msgs": len(compressedMessages),
+					"client":          clientName,
+					"tools_found":     len(uniqueTools),
+				}).Info("[STREAMING] Compressed oversized system context")
+			}
+		}
+
 		for pos := services.PositionAnalyst; pos <= services.PositionMediator; pos++ {
 			provider, model, err := h.debateTeamConfig.GetProviderForPosition(pos)
 			if err != nil || provider == nil {
@@ -593,9 +712,9 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 			}
 			logrus.WithField("model", model).Info("[STREAMING] Direct provider response")
 			if model != "" {
-				internalReq.ModelParams.Model = model
+				simpleReq.ModelParams.Model = model
 			}
-			streamChan, streamErr := provider.CompleteStream(ctx, internalReq)
+			streamChan, streamErr := provider.CompleteStream(ctx, &simpleReq)
 			if streamErr == nil && streamChan != nil {
 				c.Header("Content-Type", "text/event-stream")
 				c.Header("Cache-Control", "no-cache")
@@ -722,7 +841,122 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 				_, _ = fmt.Fprintf(c.Writer, "data: %s\n\n", roleData)
 				flusher.Flush()
 
-				// Stream content in chunks
+				// ═══ DEBATE TEAM VISUALIZATION ═══
+				// Stream debate team info, participant responses, and footer
+				if h.showDebateDialogue {
+					// Build debate team header showing all members and fallbacks
+					var teamIntro strings.Builder
+					teamIntro.WriteString("\n\n## AI Debate Ensemble\n\n")
+					teamIntro.WriteString(fmt.Sprintf("**Topic:** %s\n\n", topic))
+					teamIntro.WriteString("### Debate Team\n\n")
+					teamIntro.WriteString("| Position | Provider | Model | Score | Fallbacks |\n")
+					teamIntro.WriteString("|----------|----------|-------|-------|-----------|\n")
+
+					for pos := services.PositionAnalyst; pos <= services.PositionMediator; pos++ {
+						member := h.debateTeamConfig.GetTeamMember(pos)
+						if member == nil {
+							continue
+						}
+						posNames := map[services.DebateTeamPosition]string{
+							services.PositionAnalyst:  "Analyst",
+							services.PositionProposer: "Proposer",
+							services.PositionCritic:   "Critic",
+							services.PositionSynthesis: "Synthesis",
+							services.PositionMediator: "Mediator",
+						}
+						posName := posNames[pos]
+						// Build fallback chain string
+						var fbChain string
+						for i, fb := range member.Fallbacks {
+							if i > 0 {
+								fbChain += ", "
+							}
+							fbChain += fmt.Sprintf("%s/%s", fb.ProviderName, fb.ModelName)
+						}
+						if fbChain == "" {
+							fbChain = "none"
+						}
+						oauthBadge := ""
+						if member.IsOAuth {
+							oauthBadge = " (OAuth)"
+						}
+						teamIntro.WriteString(fmt.Sprintf("| **%s** | %s%s | %s | %.1f | %s |\n",
+							posName, member.ProviderName, oauthBadge, member.ModelName, member.Score, fbChain))
+					}
+
+					teamIntro.WriteString(fmt.Sprintf("\n**Debate ID:** `%s`\n", debateResult.DebateID))
+					teamIntro.WriteString(fmt.Sprintf("**Duration:** %s\n", debateResult.Duration.Round(time.Millisecond)))
+					teamIntro.WriteString(fmt.Sprintf("**Participants:** %d\n\n", len(debateResult.Participants)))
+
+					// Show each participant's response
+					if len(debateResult.AllResponses) > 0 || len(debateResult.Participants) > 0 {
+						responses := debateResult.AllResponses
+						if len(responses) == 0 {
+							responses = debateResult.Participants
+						}
+						teamIntro.WriteString("### Participant Responses\n\n")
+						for _, pr := range responses {
+							role := pr.Role
+							if role == "" {
+								role = pr.ParticipantName
+							}
+							provider := pr.LLMProvider
+							if provider == "" {
+								provider = pr.LLMName
+							}
+							model := pr.LLMModel
+							content := pr.Content
+							if content == "" {
+								content = pr.Response
+							}
+							teamIntro.WriteString(fmt.Sprintf("#### %s (%s / %s) — Score: %.2f\n\n", role, provider, model, pr.QualityScore))
+							// Show truncated response (first 200 chars)
+							preview := content
+							if len(preview) > 200 {
+								preview = preview[:200] + "..."
+							}
+							teamIntro.WriteString(fmt.Sprintf("> %s\n\n", strings.ReplaceAll(preview, "\n", "\n> ")))
+						}
+					}
+
+					// Consensus info
+					if debateResult.Consensus != nil {
+						teamIntro.WriteString("### Consensus\n\n")
+						teamIntro.WriteString(fmt.Sprintf("- **Reached:** %v\n", debateResult.Consensus.Achieved || debateResult.Consensus.Reached))
+						teamIntro.WriteString(fmt.Sprintf("- **Confidence:** %.1f%%\n", debateResult.Consensus.Confidence*100))
+						teamIntro.WriteString(fmt.Sprintf("- **Agreement:** %.1f%%\n", debateResult.Consensus.AgreementLevel*100))
+						if len(debateResult.Consensus.KeyPoints) > 0 {
+							teamIntro.WriteString("- **Key Points:**\n")
+							for _, kp := range debateResult.Consensus.KeyPoints {
+								teamIntro.WriteString(fmt.Sprintf("  - %s\n", kp))
+							}
+						}
+						teamIntro.WriteString("\n")
+					}
+
+					// Fallback info
+					if debateResult.FallbackUsed {
+						teamIntro.WriteString("**Note:** Fallback providers were used for some positions.\n\n")
+					}
+
+					teamIntro.WriteString("---\n\n### Synthesized Response\n\n")
+
+					// Stream the team intro
+					introText := teamIntro.String()
+					for _, line := range strings.Split(introText, "\n") {
+						lineContent := line + "\n"
+						introChunk, _ := json.Marshal(map[string]any{ //nolint:errcheck
+							"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
+							"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
+							"choices": []map[string]any{{"index": 0, "delta": map[string]any{"content": lineContent}, "finish_reason": nil}},
+						})
+						_, _ = fmt.Fprintf(c.Writer, "data: %s\n\n", introChunk)
+						flusher.Flush()
+						time.Sleep(3 * time.Millisecond)
+					}
+				}
+
+				// Stream the final synthesized content in chunks
 				for i := 0; i < len(finalContent); i += 50 {
 					end := i + 50
 					if end > len(finalContent) {
@@ -734,6 +968,18 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 						"choices": []map[string]any{{"index": 0, "delta": map[string]any{"content": finalContent[i:end]}, "finish_reason": nil}},
 					})
 					_, _ = fmt.Fprintf(c.Writer, "data: %s\n\n", chunkData)
+					flusher.Flush()
+				}
+
+				// Stream footer
+				if h.showDebateDialogue {
+					footer := h.generateResponseFooter()
+					footerChunk, _ := json.Marshal(map[string]any{ //nolint:errcheck
+						"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
+						"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
+						"choices": []map[string]any{{"index": 0, "delta": map[string]any{"content": footer}, "finish_reason": nil}},
+					})
+					_, _ = fmt.Fprintf(c.Writer, "data: %s\n\n", footerChunk)
 					flusher.Flush()
 				}
 

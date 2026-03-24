@@ -42,24 +42,24 @@ func (h *BenchmarkHandler) checkSystem(c *gin.Context) bool {
 
 // StartBenchmarkRequest represents a request to start a benchmark run
 type StartBenchmarkRequest struct {
-	Name          string                   `json:"name,omitempty"`
-	BenchmarkType benchmark.BenchmarkType  `json:"benchmark_type" binding:"required"`
-	ProviderName  string                   `json:"provider_name,omitempty"`
-	ModelName     string                   `json:"model_name,omitempty"`
+	Name          string                     `json:"name,omitempty"`
+	BenchmarkType benchmark.BenchmarkType    `json:"benchmark_type" binding:"required"`
+	ProviderName  string                     `json:"provider_name,omitempty"`
+	ModelName     string                     `json:"model_name,omitempty"`
 	Config        *benchmark.BenchmarkConfig `json:"config,omitempty"`
 }
 
 // BenchmarkRunResponse represents a benchmark run in API responses
 type BenchmarkRunResponse struct {
-	ID            string                     `json:"id"`
-	Name          string                     `json:"name"`
-	Description   string                     `json:"description,omitempty"`
-	BenchmarkType benchmark.BenchmarkType    `json:"benchmark_type"`
-	ProviderName  string                     `json:"provider_name"`
-	ModelName     string                     `json:"model_name,omitempty"`
-	Status        benchmark.BenchmarkStatus  `json:"status"`
+	ID            string                      `json:"id"`
+	Name          string                      `json:"name"`
+	Description   string                      `json:"description,omitempty"`
+	BenchmarkType benchmark.BenchmarkType     `json:"benchmark_type"`
+	ProviderName  string                      `json:"provider_name"`
+	ModelName     string                      `json:"model_name,omitempty"`
+	Status        benchmark.BenchmarkStatus   `json:"status"`
 	Summary       *benchmark.BenchmarkSummary `json:"summary,omitempty"`
-	CreatedAt     string                     `json:"created_at"`
+	CreatedAt     string                      `json:"created_at"`
 }
 
 // ListBenchmarkRunsResponse represents the list benchmark runs response

@@ -9,6 +9,7 @@ GIT_PUSH_SUMMARY.txt
 # Go basics
 bin/
 vendor/
+vendor.bak/
 *.exe
 *.test
 *.out

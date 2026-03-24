@@ -22,8 +22,24 @@ func NewEmbeddingHandler(embeddingManager *services.EmbeddingManager, log *logru
 	}
 }
 
+// checkEmbeddingManager validates that the embedding manager is available
+func (h *EmbeddingHandler) checkEmbeddingManager(c *gin.Context) bool {
+	if h.embeddingManager == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error":   "Embedding service not available",
+			"details": "The embedding manager has not been initialized",
+		})
+		return false
+	}
+	return true
+}
+
 // GenerateEmbeddings handles POST /v1/embeddings/generate
 func (h *EmbeddingHandler) GenerateEmbeddings(c *gin.Context) {
+	if !h.checkEmbeddingManager(c) {
+		return
+	}
+
 	var req services.EmbeddingRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.log.WithError(err).Error("Failed to bind embedding request")
@@ -43,6 +59,10 @@ func (h *EmbeddingHandler) GenerateEmbeddings(c *gin.Context) {
 
 // VectorSearch handles POST /v1/embeddings/search
 func (h *EmbeddingHandler) VectorSearch(c *gin.Context) {
+	if !h.checkEmbeddingManager(c) {
+		return
+	}
+
 	var req services.VectorSearchRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.log.WithError(err).Error("Failed to bind vector search request")
@@ -62,6 +82,10 @@ func (h *EmbeddingHandler) VectorSearch(c *gin.Context) {
 
 // IndexDocument handles POST /v1/embeddings/index
 func (h *EmbeddingHandler) IndexDocument(c *gin.Context) {
+	if !h.checkEmbeddingManager(c) {
+		return
+	}
+
 	var req struct {
 		ID       string                 `json:"id"`
 		Title    string                 `json:"title"`
@@ -87,6 +111,10 @@ func (h *EmbeddingHandler) IndexDocument(c *gin.Context) {
 
 // BatchIndexDocuments handles POST /v1/embeddings/batch-index
 func (h *EmbeddingHandler) BatchIndexDocuments(c *gin.Context) {
+	if !h.checkEmbeddingManager(c) {
+		return
+	}
+
 	var req struct {
 		Documents []map[string]interface{} `json:"documents"`
 	}
@@ -109,6 +137,10 @@ func (h *EmbeddingHandler) BatchIndexDocuments(c *gin.Context) {
 
 // GetEmbeddingStats handles GET /v1/embeddings/stats
 func (h *EmbeddingHandler) GetEmbeddingStats(c *gin.Context) {
+	if !h.checkEmbeddingManager(c) {
+		return
+	}
+
 	stats, err := h.embeddingManager.GetEmbeddingStats(c.Request.Context())
 	if err != nil {
 		h.log.WithError(err).Error("Failed to get embedding stats")
@@ -121,6 +153,10 @@ func (h *EmbeddingHandler) GetEmbeddingStats(c *gin.Context) {
 
 // ConfigureProvider handles PUT /v1/embeddings/provider
 func (h *EmbeddingHandler) ConfigureProvider(c *gin.Context) {
+	if !h.checkEmbeddingManager(c) {
+		return
+	}
+
 	var req struct {
 		Provider string `json:"provider"`
 	}
@@ -143,6 +179,10 @@ func (h *EmbeddingHandler) ConfigureProvider(c *gin.Context) {
 
 // SimilaritySearch handles POST /v1/embeddings/similarity
 func (h *EmbeddingHandler) SimilaritySearch(c *gin.Context) {
+	if !h.checkEmbeddingManager(c) {
+		return
+	}
+
 	var req services.VectorSearchRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -163,6 +203,10 @@ func (h *EmbeddingHandler) SimilaritySearch(c *gin.Context) {
 
 // ListEmbeddingProviders handles GET /v1/embeddings/providers
 func (h *EmbeddingHandler) ListEmbeddingProviders(c *gin.Context) {
+	if !h.checkEmbeddingManager(c) {
+		return
+	}
+
 	providers, err := h.embeddingManager.ListEmbeddingProviders(c.Request.Context())
 	if err != nil {
 		h.log.WithError(err).Error("Failed to list embedding providers")

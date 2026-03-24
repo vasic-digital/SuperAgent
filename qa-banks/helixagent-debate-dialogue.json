@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "name": "HelixAgent Debate Dialogue Test Bank",
+  "challenges": [
+    {"id": "DD-001", "name": "showDebateDialogue flag is true by default", "category": "functional", "priority": "critical", "assertions": [{"type": "contains", "target": "source_code", "expected": "showDebateDialogue: true"}]},
+    {"id": "DD-002", "name": "Debate team introduction generates content", "category": "functional", "priority": "critical", "assertions": [{"type": "not_empty", "target": "generateDebateDialogueIntroduction"}]},
+    {"id": "DD-003", "name": "Debate conclusion contains CONSENSUS REACHED", "category": "functional", "priority": "critical", "assertions": [{"type": "contains", "target": "generateDebateDialogueConclusion", "expected": "CONSENSUS REACHED"}]},
+    {"id": "DD-004", "name": "Response footer contains ensemble branding", "category": "functional", "priority": "critical", "assertions": [{"type": "contains", "target": "generateResponseFooter", "expected": "HelixAgent AI Debate Ensemble"}]},
+    {"id": "DD-005", "name": "Footer contains Synthesized text", "category": "functional", "priority": "high", "assertions": [{"type": "contains", "target": "generateResponseFooter", "expected": "Synthesized"}]},
+    {"id": "DD-006", "name": "DialogueFormatter initialized in constructor", "category": "functional", "priority": "critical", "assertions": [{"type": "not_nil", "target": "dialogueFormatter"}]},
+    {"id": "DD-007", "name": "Streaming response includes debate header when enabled", "category": "functional", "priority": "critical", "assertions": [{"type": "contains", "target": "streaming_response", "expected": "debate"}]},
+    {"id": "DD-008", "name": "Streaming response includes footer when enabled", "category": "functional", "priority": "high", "assertions": [{"type": "contains", "target": "streaming_response", "expected": "Powered by HelixAgent"}]},
+    {"id": "DD-009", "name": "Debate gating requires all three conditions", "category": "functional", "priority": "high", "assertions": [{"type": "all_valid", "target": "gating_conditions"}]},
+    {"id": "DD-010", "name": "Introduction safe with nil config (no panic)", "category": "safety", "priority": "critical", "assertions": [{"type": "no_panic", "target": "generateDebateDialogueIntroduction"}]},
+    {"id": "DD-011", "name": "Chat completion response has debate content", "category": "integration", "priority": "critical", "assertions": [{"type": "not_empty", "target": "POST /v1/chat/completions response"}]},
+    {"id": "DD-012", "name": "Unit tests for debate dialogue pass", "category": "testing", "priority": "critical", "assertions": [{"type": "test_pass", "target": "TestDebateDialogueEnabledByDefault"}]},
+    {"id": "DD-013", "name": "Unit tests for footer pass", "category": "testing", "priority": "critical", "assertions": [{"type": "test_pass", "target": "TestDebateDialogueFooterContainsEnsembleInfo"}]},
+    {"id": "DD-014", "name": "Unit tests for conclusion pass", "category": "testing", "priority": "critical", "assertions": [{"type": "test_pass", "target": "TestDebateDialogueConclusionContainsConsensus"}]},
+    {"id": "DD-015", "name": "Unit tests for gating conditions pass", "category": "testing", "priority": "high", "assertions": [{"type": "test_pass", "target": "TestDebateDialogueGatingConditions"}]}
+  ]
+}

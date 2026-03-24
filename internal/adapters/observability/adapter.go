@@ -76,7 +76,7 @@ type ObservabilityAdapter struct {
 	// Debate tracer
 	debateTracer *observability.DebateTracer
 
-	initialized bool
+	initialized  bool
 	shutdownDone bool
 }
 

@@ -64,11 +64,11 @@ func DefaultKafkaTransportConfig() *KafkaTransportConfig {
 
 // KafkaTransport publishes notifications to Kafka for persistence and replay.
 type KafkaTransport struct {
-	hub     *messaging.MessagingHub
-	config  *KafkaTransportConfig
-	logger  *logrus.Logger
-	eventCh chan *KafkaNotificationEvent
-	stopCh  chan struct{}
+	hub      *messaging.MessagingHub
+	config   *KafkaTransportConfig
+	logger   *logrus.Logger
+	eventCh  chan *KafkaNotificationEvent
+	stopCh   chan struct{}
 	wg       sync.WaitGroup
 	mu       sync.Mutex
 	stopOnce sync.Once

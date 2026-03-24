@@ -25,7 +25,6 @@ func NewDiscoveryHandler(ds *verifier.ModelDiscoveryService) *DiscoveryHandler {
 	}
 }
 
-
 // checkDiscoveryService returns true if the discovery service is available.
 func (h *DiscoveryHandler) checkDiscoveryService(c *gin.Context) bool {
 	if h.discoveryService == nil {

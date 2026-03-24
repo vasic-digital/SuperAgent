@@ -22,8 +22,8 @@ func (s *stubLLMProvider) Complete(_ context.Context, _ *models.LLMRequest) (*mo
 func (s *stubLLMProvider) CompleteStream(_ context.Context, _ *models.LLMRequest) (<-chan *models.LLMResponse, error) {
 	return nil, nil
 }
-func (s *stubLLMProvider) HealthCheck() error                                      { return nil }
-func (s *stubLLMProvider) GetCapabilities() *models.ProviderCapabilities           { return nil }
+func (s *stubLLMProvider) HealthCheck() error                                       { return nil }
+func (s *stubLLMProvider) GetCapabilities() *models.ProviderCapabilities            { return nil }
 func (s *stubLLMProvider) ValidateConfig(_ map[string]interface{}) (bool, []string) { return true, nil }
 
 // Ensure stubLLMProvider implements llm.LLMProvider

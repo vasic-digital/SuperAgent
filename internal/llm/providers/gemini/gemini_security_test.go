@@ -27,8 +27,8 @@ func TestGeminiCLI_CommandInjection(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name      string
-		arg       string
+		name       string
+		arg        string
 		expectSafe bool
 	}{
 		{

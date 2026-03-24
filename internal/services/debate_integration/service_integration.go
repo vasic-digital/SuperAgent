@@ -9,9 +9,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"digital.vasic.debate/comprehensive"
 	"dev.helix.agent/internal/services"
 	"digital.vasic.debate"
+	"digital.vasic.debate/comprehensive"
 	"digital.vasic.debate/orchestrator"
 )
 
@@ -370,10 +370,10 @@ func (si *ServiceIntegration) PopulateFromDebateTeam(teamConfig *services.Debate
 
 	if si.logger != nil {
 		si.logger.WithFields(logrus.Fields{
-			"registered_agents":  registeredCount,
+			"registered_agents":   registeredCount,
 			"registered_invokers": invokerCount,
-			"total_verified":     len(verifiedLLMs),
-			"pool_size":          si.orchestrator.GetAgentPool().Size(),
+			"total_verified":      len(verifiedLLMs),
+			"pool_size":           si.orchestrator.GetAgentPool().Size(),
 		}).Info("Populated orchestrator agent pool from debate team verified providers")
 	}
 }

@@ -484,10 +484,10 @@ func TestCreateWorkflowRequest_Fields(t *testing.T) {
 		EntryPoint: "n1",
 		EndNodes:   []string{"n2"},
 		Config: &WorkflowConfigRequest{
-			MaxIterations:    100,
-			TimeoutSeconds:   60,
+			MaxIterations:     100,
+			TimeoutSeconds:    60,
 			EnableCheckpoints: &trueVal,
-			MaxRetries:       3,
+			MaxRetries:        3,
 		},
 		Input: &WorkflowInputRequest{
 			Query:   "hello",

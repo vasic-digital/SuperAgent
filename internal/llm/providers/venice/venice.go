@@ -54,21 +54,21 @@ type RetryConfig struct {
 
 // Request represents a Venice AI chat completion request (OpenAI compatible)
 type Request struct {
-	Model            string           `json:"model"`
-	Messages         []Message        `json:"messages"`
-	Temperature      float64          `json:"temperature,omitempty"`
-	MaxTokens        int              `json:"max_tokens,omitempty"`
-	TopP             float64          `json:"top_p,omitempty"`
-	Stream           bool             `json:"stream,omitempty"`
-	Stop             []string         `json:"stop,omitempty"`
-	PresencePenalty  float64          `json:"presence_penalty,omitempty"`
-	FrequencyPenalty float64          `json:"frequency_penalty,omitempty"`
-	Tools            []Tool           `json:"tools,omitempty"`
-	ToolChoice       any              `json:"tool_choice,omitempty"`
-	ResponseFormat   *ResponseFormat  `json:"response_format,omitempty"`
-	Seed             *int             `json:"seed,omitempty"`
-	Reasoning        string           `json:"reasoning,omitempty"`
-	VeniceParameters *VeniceParams    `json:"venice_parameters,omitempty"`
+	Model            string          `json:"model"`
+	Messages         []Message       `json:"messages"`
+	Temperature      float64         `json:"temperature,omitempty"`
+	MaxTokens        int             `json:"max_tokens,omitempty"`
+	TopP             float64         `json:"top_p,omitempty"`
+	Stream           bool            `json:"stream,omitempty"`
+	Stop             []string        `json:"stop,omitempty"`
+	PresencePenalty  float64         `json:"presence_penalty,omitempty"`
+	FrequencyPenalty float64         `json:"frequency_penalty,omitempty"`
+	Tools            []Tool          `json:"tools,omitempty"`
+	ToolChoice       any             `json:"tool_choice,omitempty"`
+	ResponseFormat   *ResponseFormat `json:"response_format,omitempty"`
+	Seed             *int            `json:"seed,omitempty"`
+	Reasoning        string          `json:"reasoning,omitempty"`
+	VeniceParameters *VeniceParams   `json:"venice_parameters,omitempty"`
 }
 
 // VeniceParams contains Venice-specific request parameters

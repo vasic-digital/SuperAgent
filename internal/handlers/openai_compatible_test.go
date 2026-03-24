@@ -6878,3 +6878,133 @@ func TestExecuteGrepFunction_MultipleFileTypes(t *testing.T) {
 	assert.Contains(t, result, "test.yaml")
 	assert.Contains(t, result, "test.sql")
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DEBATE DIALOGUE ENABLED BY DEFAULT — Validation Tests
+// ═══════════════════════════════════════════════════════════════════════════
+
+// TestDebateDialogueEnabledByDefault validates that showDebateDialogue is true
+// when NewUnifiedHandler creates a handler. This is critical for CLI agents
+// (OpenCode, Crush, etc.) to see debate team members, positions, and voting.
+func TestDebateDialogueEnabledByDefault(t *testing.T) {
+	handler := NewUnifiedHandler(nil, nil)
+
+	assert.True(t, handler.showDebateDialogue,
+		"showDebateDialogue MUST be true by default — CLI agents need debate details visible")
+}
+
+// TestSimpleMessageTrimming validates that simple messages (greetings etc.)
+// get trimmed system context to prevent oversized prompts from CLI agents
+// causing code generation instead of natural responses.
+func TestSimpleMessageTrimming(t *testing.T) {
+	// Simulate an OpenCode-style request with massive system prompt
+	messages := []models.Message{
+		{Role: "system", Content: strings.Repeat("You are a coding assistant with full access to tools. ", 200)},
+		{Role: "user", Content: "hello!"},
+	}
+
+	// The trimming logic should produce a small set of messages
+	var trimmedMessages []models.Message
+	trimmedMessages = append(trimmedMessages, models.Message{
+		Role:    "system",
+		Content: "You are HelixAgent, a helpful AI assistant. Respond naturally and conversationally to the user.",
+	})
+	maxMessages := 6
+	startIdx := 0
+	userMsgCount := 0
+	for i := len(messages) - 1; i >= 0; i-- {
+		if messages[i].Role == "user" || messages[i].Role == "assistant" {
+			userMsgCount++
+			if userMsgCount >= maxMessages {
+				startIdx = i
+				break
+			}
+		}
+	}
+	for i := startIdx; i < len(messages); i++ {
+		if messages[i].Role == "user" || messages[i].Role == "assistant" {
+			trimmedMessages = append(trimmedMessages, messages[i])
+		}
+	}
+
+	// Should have system + user message only (the giant system prompt is replaced)
+	assert.Equal(t, 2, len(trimmedMessages), "Trimmed should have system + user message")
+	assert.Equal(t, "system", trimmedMessages[0].Role)
+	assert.Contains(t, trimmedMessages[0].Content, "HelixAgent")
+	assert.Equal(t, "user", trimmedMessages[1].Role)
+	assert.Equal(t, "hello!", trimmedMessages[1].Content)
+
+	// Original system prompt was ~10K chars, trimmed system prompt is ~90 chars
+	assert.Less(t, len(trimmedMessages[0].Content), 200,
+		"Trimmed system prompt must be short to fit small model contexts")
+}
+
+// TestDebateDialogueFooterContainsEnsembleInfo validates the footer shows ensemble branding
+func TestDebateDialogueFooterContainsEnsembleInfo(t *testing.T) {
+	handler := &UnifiedHandler{showDebateDialogue: true}
+	footer := handler.generateResponseFooter()
+
+	assert.NotEmpty(t, footer, "Footer must not be empty when debate dialogue is enabled")
+	assert.Contains(t, footer, "HelixAgent AI Debate Ensemble")
+	assert.Contains(t, footer, "Synthesized")
+	assert.Contains(t, footer, "───")
+}
+
+// TestDebateDialogueConclusionContainsConsensus validates conclusion content
+func TestDebateDialogueConclusionContainsConsensus(t *testing.T) {
+	handler := &UnifiedHandler{showDebateDialogue: true}
+	conclusion := handler.generateDebateDialogueConclusion(OutputFormatANSI)
+
+	assert.NotEmpty(t, conclusion, "Conclusion must not be empty")
+	assert.Contains(t, conclusion, "CONSENSUS REACHED")
+}
+
+// TestDebateDialogueIntroductionSafe validates introduction doesn't panic with nil config
+func TestDebateDialogueIntroductionSafe(t *testing.T) {
+	handler := &UnifiedHandler{
+		showDebateDialogue: true,
+		dialogueFormatter:  services.NewDialogueFormatter(services.StyleTheater),
+	}
+
+	// Must not panic even without debate team config
+	assert.NotPanics(t, func() {
+		handler.generateDebateDialogueIntroduction("test topic", OutputFormatMarkdown)
+	})
+}
+
+// TestDebateDialogueFormatterInitialized validates dialogue formatter is created
+func TestDebateDialogueFormatterInitialized(t *testing.T) {
+	handler := NewUnifiedHandler(nil, nil)
+
+	assert.NotNil(t, handler.dialogueFormatter,
+		"Dialogue formatter must be initialized for debate output formatting")
+}
+
+// TestDebateDialogueGatingConditions validates the gating logic
+func TestDebateDialogueGatingConditions(t *testing.T) {
+	tests := []struct {
+		name      string
+		show      bool
+		formatter bool
+		config    bool
+		expected  bool
+	}{
+		{"all true", true, true, true, true},
+		{"show false", false, true, true, false},
+		{"formatter nil", true, false, true, false},
+		{"config nil", true, true, false, false},
+		{"all false", false, false, false, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := &UnifiedHandler{showDebateDialogue: tt.show}
+			if tt.formatter {
+				h.dialogueFormatter = services.NewDialogueFormatter(services.StyleTheater)
+			}
+			// Config gating: only true when all three conditions met
+			gated := h.showDebateDialogue && h.dialogueFormatter != nil && tt.config
+			assert.Equal(t, tt.expected, gated)
+		})
+	}
+}

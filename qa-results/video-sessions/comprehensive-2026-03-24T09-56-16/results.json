@@ -1,0 +1,2321 @@
+{
+  "session": "comprehensive-1774346303963",
+  "ts": "2026-03-24T09:58:23.963Z",
+  "duration_seconds": 127.3,
+  "total": 265,
+  "passed": 265,
+  "failed": 0,
+  "categories": {
+    "app1-health": {
+      "p": 6,
+      "f": 0
+    },
+    "app1-headers": {
+      "p": 6,
+      "f": 0
+    },
+    "app1-auth": {
+      "p": 5,
+      "f": 0
+    },
+    "app1-openai": {
+      "p": 4,
+      "f": 0
+    },
+    "app1-providers": {
+      "p": 14,
+      "f": 0
+    },
+    "app1-discovery": {
+      "p": 6,
+      "f": 0
+    },
+    "app1-scoring": {
+      "p": 6,
+      "f": 0
+    },
+    "app1-verify": {
+      "p": 7,
+      "f": 0
+    },
+    "app1-startup": {
+      "p": 3,
+      "f": 0
+    },
+    "app1-debate": {
+      "p": 4,
+      "f": 0
+    },
+    "app1-mcp": {
+      "p": 9,
+      "f": 0
+    },
+    "app1-acp": {
+      "p": 4,
+      "f": 0
+    },
+    "app1-lsp": {
+      "p": 4,
+      "f": 0
+    },
+    "app1-embed": {
+      "p": 4,
+      "f": 0
+    },
+    "app1-vision": {
+      "p": 2,
+      "f": 0
+    },
+    "app1-cognee": {
+      "p": 4,
+      "f": 0
+    },
+    "app1-rag": {
+      "p": 5,
+      "f": 0
+    },
+    "app1-fmt": {
+      "p": 3,
+      "f": 0
+    },
+    "app1-agentic": {
+      "p": 2,
+      "f": 0
+    },
+    "app1-planning": {
+      "p": 4,
+      "f": 0
+    },
+    "app1-llmops": {
+      "p": 5,
+      "f": 0
+    },
+    "app1-bench": {
+      "p": 4,
+      "f": 0
+    },
+    "app1-tasks": {
+      "p": 3,
+      "f": 0
+    },
+    "app1-sessions": {
+      "p": 2,
+      "f": 0
+    },
+    "app1-agents": {
+      "p": 3,
+      "f": 0
+    },
+    "app1-skills": {
+      "p": 2,
+      "f": 0
+    },
+    "app1-monitor": {
+      "p": 8,
+      "f": 0
+    },
+    "app1-models": {
+      "p": 1,
+      "f": 0
+    },
+    "website": {
+      "p": 23,
+      "f": 0
+    },
+    "responsive": {
+      "p": 8,
+      "f": 0
+    },
+    "interact": {
+      "p": 8,
+      "f": 0
+    },
+    "docs": {
+      "p": 6,
+      "f": 0
+    },
+    "security": {
+      "p": 9,
+      "f": 0
+    },
+    "errors": {
+      "p": 7,
+      "f": 0
+    },
+    "edge": {
+      "p": 11,
+      "f": 0
+    },
+    "app2-demo": {
+      "p": 12,
+      "f": 0
+    },
+    "app3-cognee": {
+      "p": 7,
+      "f": 0
+    },
+    "app4-sanity": {
+      "p": 2,
+      "f": 0
+    },
+    "app5-constitution": {
+      "p": 1,
+      "f": 0
+    },
+    "app6-mcpbridge": {
+      "p": 1,
+      "f": 0
+    },
+    "app7-grpc": {
+      "p": 1,
+      "f": 0
+    },
+    "opencode": {
+      "p": 7,
+      "f": 0
+    },
+    "cli-agents": {
+      "p": 2,
+      "f": 0
+    },
+    "streaming": {
+      "p": 7,
+      "f": 0
+    },
+    "stress": {
+      "p": 5,
+      "f": 0
+    },
+    "helixqa": {
+      "p": 2,
+      "f": 0
+    },
+    "helixqa-banks": {
+      "p": 16,
+      "f": 0
+    }
+  },
+  "failures": [],
+  "results": [
+    {
+      "n": 1,
+      "category": "app1-health",
+      "name": "GET /health returns 200",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:56:16.942Z"
+    },
+    {
+      "n": 2,
+      "category": "app1-health",
+      "name": "Health body has status field",
+      "passed": true,
+      "detail": "healthy",
+      "ts": "2026-03-24T09:56:16.942Z"
+    },
+    {
+      "n": 3,
+      "category": "app1-health",
+      "name": "GET /metrics (Prometheus)",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:56:16.944Z"
+    },
+    {
+      "n": 4,
+      "category": "app1-health",
+      "name": "GET /v1/features",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:56:16.945Z"
+    },
+    {
+      "n": 5,
+      "category": "app1-health",
+      "name": "GET /v1/features/available",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:56:16.945Z"
+    },
+    {
+      "n": 6,
+      "category": "app1-health",
+      "name": "GET /v1/features/agents",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:56:16.946Z"
+    },
+    {
+      "n": 7,
+      "category": "app1-headers",
+      "name": "X-Features-Enabled header",
+      "passed": true,
+      "detail": "acp,metrics,debate,gzip,http2,tool_calling,batch,mcp,lsp,http3,brotli,embeddings,jsonl,vision,caching,websocket,sse,rate_limiting",
+      "ts": "2026-03-24T09:56:16.946Z"
+    },
+    {
+      "n": 8,
+      "category": "app1-headers",
+      "name": "X-Transport-Protocol header",
+      "passed": true,
+      "detail": "h3",
+      "ts": "2026-03-24T09:56:16.946Z"
+    },
+    {
+      "n": 9,
+      "category": "app1-headers",
+      "name": "X-Compression-Available header",
+      "passed": true,
+      "detail": "br",
+      "ts": "2026-03-24T09:56:16.946Z"
+    },
+    {
+      "n": 10,
+      "category": "app1-headers",
+      "name": "X-Streaming-Method header",
+      "passed": true,
+      "detail": "websocket",
+      "ts": "2026-03-24T09:56:16.946Z"
+    },
+    {
+      "n": 11,
+      "category": "app1-headers",
+      "name": "No Server header leak",
+      "passed": true,
+      "detail": "none (good)",
+      "ts": "2026-03-24T09:56:16.946Z"
+    },
+    {
+      "n": 12,
+      "category": "app1-headers",
+      "name": "Content-Type is JSON",
+      "passed": true,
+      "detail": "application/json; charset=utf-8",
+      "ts": "2026-03-24T09:56:16.946Z"
+    },
+    {
+      "n": 13,
+      "category": "app1-auth",
+      "name": "POST /v1/auth/register",
+      "passed": true,
+      "detail": "status=400",
+      "ts": "2026-03-24T09:56:16.947Z"
+    },
+    {
+      "n": 14,
+      "category": "app1-auth",
+      "name": "POST /v1/auth/login",
+      "passed": true,
+      "detail": "status=400",
+      "ts": "2026-03-24T09:56:16.948Z"
+    },
+    {
+      "n": 15,
+      "category": "app1-auth",
+      "name": "POST /v1/auth/refresh",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:56:16.948Z"
+    },
+    {
+      "n": 16,
+      "category": "app1-auth",
+      "name": "GET /v1/auth/me",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:56:16.949Z"
+    },
+    {
+      "n": 17,
+      "category": "app1-auth",
+      "name": "POST /v1/auth/logout",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:56:16.949Z"
+    },
+    {
+      "n": 18,
+      "category": "app1-openai",
+      "name": "GET /v1/models",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:56:16.950Z"
+    },
+    {
+      "n": 19,
+      "category": "app1-openai",
+      "name": "POST /v1/chat/completions",
+      "passed": true,
+      "detail": "status=0 len=7",
+      "ts": "2026-03-24T09:57:16.951Z"
+    },
+    {
+      "n": 20,
+      "category": "app1-openai",
+      "name": "POST /v1/completions",
+      "passed": true,
+      "detail": "status=400",
+      "ts": "2026-03-24T09:57:16.954Z"
+    },
+    {
+      "n": 21,
+      "category": "app1-openai",
+      "name": "POST /v1/ensemble/completions",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.955Z"
+    },
+    {
+      "n": 22,
+      "category": "app1-providers",
+      "name": "GET /v1/providers",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:16.956Z"
+    },
+    {
+      "n": 23,
+      "category": "app1-providers",
+      "name": "Provider count >= 20",
+      "passed": true,
+      "detail": "count=26",
+      "ts": "2026-03-24T09:57:16.956Z"
+    },
+    {
+      "n": 24,
+      "category": "app1-providers",
+      "name": "All providers have name",
+      "passed": true,
+      "detail": "valid",
+      "ts": "2026-03-24T09:57:16.956Z"
+    },
+    {
+      "n": 25,
+      "category": "app1-providers",
+      "name": "All providers have models",
+      "passed": true,
+      "detail": "valid",
+      "ts": "2026-03-24T09:57:16.956Z"
+    },
+    {
+      "n": 26,
+      "category": "app1-providers",
+      "name": "No duplicate providers",
+      "passed": true,
+      "detail": "26 unique",
+      "ts": "2026-03-24T09:57:16.956Z"
+    },
+    {
+      "n": 27,
+      "category": "app1-providers",
+      "name": "Has DeepSeek",
+      "passed": true,
+      "detail": "yes",
+      "ts": "2026-03-24T09:57:16.956Z"
+    },
+    {
+      "n": 28,
+      "category": "app1-providers",
+      "name": "Has Gemini",
+      "passed": true,
+      "detail": "yes",
+      "ts": "2026-03-24T09:57:16.956Z"
+    },
+    {
+      "n": 29,
+      "category": "app1-providers",
+      "name": "Has Mistral",
+      "passed": true,
+      "detail": "yes",
+      "ts": "2026-03-24T09:57:16.956Z"
+    },
+    {
+      "n": 30,
+      "category": "app1-providers",
+      "name": "Has Claude or OAuth provider",
+      "passed": true,
+      "detail": "oauth providers checked",
+      "ts": "2026-03-24T09:57:16.956Z"
+    },
+    {
+      "n": 31,
+      "category": "app1-providers",
+      "name": "Has OpenRouter",
+      "passed": true,
+      "detail": "yes",
+      "ts": "2026-03-24T09:57:16.956Z"
+    },
+    {
+      "n": 32,
+      "category": "app1-providers",
+      "name": "GET /v1/providers/:id",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:16.957Z"
+    },
+    {
+      "n": 33,
+      "category": "app1-providers",
+      "name": "GET /v1/providers/discovery",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:16.958Z"
+    },
+    {
+      "n": 34,
+      "category": "app1-providers",
+      "name": "GET /v1/providers/best",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:16.958Z"
+    },
+    {
+      "n": 35,
+      "category": "app1-providers",
+      "name": "GET /v1/providers/verification",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:16.959Z"
+    },
+    {
+      "n": 36,
+      "category": "app1-discovery",
+      "name": "GET /v1/discovery/models",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.959Z"
+    },
+    {
+      "n": 37,
+      "category": "app1-discovery",
+      "name": "GET /v1/discovery/models/selected",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.960Z"
+    },
+    {
+      "n": 38,
+      "category": "app1-discovery",
+      "name": "GET /v1/discovery/stats",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.960Z"
+    },
+    {
+      "n": 39,
+      "category": "app1-discovery",
+      "name": "GET /v1/discovery/ensemble",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.960Z"
+    },
+    {
+      "n": 40,
+      "category": "app1-discovery",
+      "name": "GET /v1/discovery/debate-model",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.961Z"
+    },
+    {
+      "n": 41,
+      "category": "app1-discovery",
+      "name": "POST /v1/discovery/trigger",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.961Z"
+    },
+    {
+      "n": 42,
+      "category": "app1-scoring",
+      "name": "GET /v1/scoring/top",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.962Z"
+    },
+    {
+      "n": 43,
+      "category": "app1-scoring",
+      "name": "GET /v1/scoring/range",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.963Z"
+    },
+    {
+      "n": 44,
+      "category": "app1-scoring",
+      "name": "GET /v1/scoring/weights",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.963Z"
+    },
+    {
+      "n": 45,
+      "category": "app1-scoring",
+      "name": "POST /v1/scoring/batch",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.964Z"
+    },
+    {
+      "n": 46,
+      "category": "app1-scoring",
+      "name": "POST /v1/scoring/compare",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.964Z"
+    },
+    {
+      "n": 47,
+      "category": "app1-scoring",
+      "name": "POST /v1/scoring/cache/invalidate",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.965Z"
+    },
+    {
+      "n": 48,
+      "category": "app1-verify",
+      "name": "GET /v1/verification/status",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.965Z"
+    },
+    {
+      "n": 49,
+      "category": "app1-verify",
+      "name": "GET /v1/verification/models",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.965Z"
+    },
+    {
+      "n": 50,
+      "category": "app1-verify",
+      "name": "GET /v1/verification/health",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.966Z"
+    },
+    {
+      "n": 51,
+      "category": "app1-verify",
+      "name": "GET /v1/verification/tests",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.966Z"
+    },
+    {
+      "n": 52,
+      "category": "app1-verify",
+      "name": "POST /v1/verification/model",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.967Z"
+    },
+    {
+      "n": 53,
+      "category": "app1-verify",
+      "name": "POST /v1/verification/batch",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.967Z"
+    },
+    {
+      "n": 54,
+      "category": "app1-verify",
+      "name": "POST /v1/verification/code-visibility",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.967Z"
+    },
+    {
+      "n": 55,
+      "category": "app1-startup",
+      "name": "GET /v1/startup/verification",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:16.968Z"
+    },
+    {
+      "n": 56,
+      "category": "app1-startup",
+      "name": "Has verified_providers",
+      "passed": true,
+      "detail": "keys=api_key_providers,completed_at,debate_team,duration_ms,errors_count,failed_count,free_credit_provider_count,free_provider_count,free_providers,oauth_providers,pay_as_you_go_provider_count,provide",
+      "ts": "2026-03-24T09:57:16.968Z"
+    },
+    {
+      "n": 57,
+      "category": "app1-startup",
+      "name": "Has debate_team",
+      "passed": true,
+      "detail": "present",
+      "ts": "2026-03-24T09:57:16.968Z"
+    },
+    {
+      "n": 58,
+      "category": "app1-debate",
+      "name": "GET /v1/debates/team",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:16.969Z"
+    },
+    {
+      "n": 59,
+      "category": "app1-debate",
+      "name": "GET /v1/debates/orchestrator/status",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.969Z"
+    },
+    {
+      "n": 60,
+      "category": "app1-debate",
+      "name": "GET /v1/debates/history",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.970Z"
+    },
+    {
+      "n": 61,
+      "category": "app1-debate",
+      "name": "POST /v1/debates/create",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-24T09:57:16.970Z"
+    },
+    {
+      "n": 62,
+      "category": "app1-mcp",
+      "name": "GET /v1/mcp/capabilities",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:16.971Z"
+    },
+    {
+      "n": 63,
+      "category": "app1-mcp",
+      "name": "GET /v1/mcp/tools",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:16.971Z"
+    },
+    {
+      "n": 64,
+      "category": "app1-mcp",
+      "name": "GET /v1/mcp/prompts",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:16.971Z"
+    },
+    {
+      "n": 65,
+      "category": "app1-mcp",
+      "name": "GET /v1/mcp/resources",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:16.972Z"
+    },
+    {
+      "n": 66,
+      "category": "app1-mcp",
+      "name": "GET /v1/mcp/categories",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:16.972Z"
+    },
+    {
+      "n": 67,
+      "category": "app1-mcp",
+      "name": "GET /v1/mcp/stats",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:16.973Z"
+    },
+    {
+      "n": 68,
+      "category": "app1-mcp",
+      "name": "POST /v1/mcp/tools/call",
+      "passed": true,
+      "detail": "status=400",
+      "ts": "2026-03-24T09:57:16.973Z"
+    },
+    {
+      "n": 69,
+      "category": "app1-mcp",
+      "name": "GET /v1/mcp/tools/search",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:16.974Z"
+    },
+    {
+      "n": 70,
+      "category": "app1-mcp",
+      "name": "GET /v1/mcp/tools/suggestions",
+      "passed": true,
+      "detail": "status=400",
+      "ts": "2026-03-24T09:57:16.974Z"
+    },
+    {
+      "n": 71,
+      "category": "app1-acp",
+      "name": "GET /v1/acp/status",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-24T09:57:16.975Z"
+    },
+    {
+      "n": 72,
+      "category": "app1-acp",
+      "name": "GET /v1/acp/agents",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:16.975Z"
+    },
+    {
+      "n": 73,
+      "category": "app1-acp",
+      "name": "POST /v1/acp/execute",
+      "passed": true,
+      "detail": "status=400",
+      "ts": "2026-03-24T09:57:16.976Z"
+    },
+    {
+      "n": 74,
+      "category": "app1-acp",
+      "name": "POST /v1/acp/broadcast",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-24T09:57:16.976Z"
+    },
+    {
+      "n": 75,
+      "category": "app1-lsp",
+      "name": "GET /v1/lsp/servers",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:16.977Z"
+    },
+    {
+      "n": 76,
+      "category": "app1-lsp",
+      "name": "GET /v1/lsp/stats",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:16.977Z"
+    },
+    {
+      "n": 77,
+      "category": "app1-lsp",
+      "name": "POST /v1/lsp/execute",
+      "passed": true,
+      "detail": "status=400",
+      "ts": "2026-03-24T09:57:16.977Z"
+    },
+    {
+      "n": 78,
+      "category": "app1-lsp",
+      "name": "POST /v1/lsp/sync",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:16.978Z"
+    },
+    {
+      "n": 79,
+      "category": "app1-embed",
+      "name": "GET /v1/embeddings/stats",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:16.978Z"
+    },
+    {
+      "n": 80,
+      "category": "app1-embed",
+      "name": "GET /v1/embeddings/providers",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:16.979Z"
+    },
+    {
+      "n": 81,
+      "category": "app1-embed",
+      "name": "POST /v1/embeddings/generate",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:16.979Z"
+    },
+    {
+      "n": 82,
+      "category": "app1-embed",
+      "name": "POST /v1/embeddings/search",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:16.980Z"
+    },
+    {
+      "n": 83,
+      "category": "app1-vision",
+      "name": "GET /v1/vision/providers",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-24T09:57:16.980Z"
+    },
+    {
+      "n": 84,
+      "category": "app1-vision",
+      "name": "POST /v1/vision/analyze",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:16.981Z"
+    },
+    {
+      "n": 85,
+      "category": "app1-cognee",
+      "name": "GET /v1/cognee/health",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:16.982Z"
+    },
+    {
+      "n": 86,
+      "category": "app1-cognee",
+      "name": "GET /v1/cognee/datasets",
+      "passed": true,
+      "detail": "status=500",
+      "ts": "2026-03-24T09:57:16.984Z"
+    },
+    {
+      "n": 87,
+      "category": "app1-cognee",
+      "name": "POST /v1/cognee/add",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-24T09:57:16.985Z"
+    },
+    {
+      "n": 88,
+      "category": "app1-cognee",
+      "name": "POST /v1/cognee/search",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:16.985Z"
+    },
+    {
+      "n": 89,
+      "category": "app1-rag",
+      "name": "GET /v1/rag/health",
+      "passed": true,
+      "detail": "status=503",
+      "ts": "2026-03-24T09:57:16.986Z"
+    },
+    {
+      "n": 90,
+      "category": "app1-rag",
+      "name": "GET /v1/rag/stats",
+      "passed": true,
+      "detail": "status=503",
+      "ts": "2026-03-24T09:57:16.986Z"
+    },
+    {
+      "n": 91,
+      "category": "app1-rag",
+      "name": "POST /v1/rag/search",
+      "passed": true,
+      "detail": "status=503",
+      "ts": "2026-03-24T09:57:16.987Z"
+    },
+    {
+      "n": 92,
+      "category": "app1-rag",
+      "name": "POST /v1/rag/search/hybrid",
+      "passed": true,
+      "detail": "status=503",
+      "ts": "2026-03-24T09:57:16.987Z"
+    },
+    {
+      "n": 93,
+      "category": "app1-rag",
+      "name": "POST /v1/rag/chunk",
+      "passed": true,
+      "detail": "status=503",
+      "ts": "2026-03-24T09:57:16.988Z"
+    },
+    {
+      "n": 94,
+      "category": "app1-fmt",
+      "name": "GET /v1/formatters (public)",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:16.988Z"
+    },
+    {
+      "n": 95,
+      "category": "app1-fmt",
+      "name": "POST /v1/format",
+      "passed": true,
+      "detail": "status=400",
+      "ts": "2026-03-24T09:57:16.989Z"
+    },
+    {
+      "n": 96,
+      "category": "app1-fmt",
+      "name": "POST /v1/format/check",
+      "passed": true,
+      "detail": "status=400",
+      "ts": "2026-03-24T09:57:16.989Z"
+    },
+    {
+      "n": 97,
+      "category": "app1-agentic",
+      "name": "POST /v1/agentic/workflows (create)",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.990Z"
+    },
+    {
+      "n": 98,
+      "category": "app1-agentic",
+      "name": "GET /v1/agentic/workflows (list)",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-24T09:57:16.990Z"
+    },
+    {
+      "n": 99,
+      "category": "app1-planning",
+      "name": "POST /v1/planning/hiplan",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.991Z"
+    },
+    {
+      "n": 100,
+      "category": "app1-planning",
+      "name": "POST /v1/planning/mcts",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.991Z"
+    },
+    {
+      "n": 101,
+      "category": "app1-planning",
+      "name": "POST /v1/planning/tot",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.991Z"
+    },
+    {
+      "n": 102,
+      "category": "app1-planning",
+      "name": "GET /v1/planning/stats",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-24T09:57:16.992Z"
+    },
+    {
+      "n": 103,
+      "category": "app1-llmops",
+      "name": "GET /v1/llmops/experiments",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.992Z"
+    },
+    {
+      "n": 104,
+      "category": "app1-llmops",
+      "name": "POST /v1/llmops/experiments",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.992Z"
+    },
+    {
+      "n": 105,
+      "category": "app1-llmops",
+      "name": "GET /v1/llmops/prompts",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.993Z"
+    },
+    {
+      "n": 106,
+      "category": "app1-llmops",
+      "name": "POST /v1/llmops/prompts",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.993Z"
+    },
+    {
+      "n": 107,
+      "category": "app1-llmops",
+      "name": "POST /v1/llmops/evaluate",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.993Z"
+    },
+    {
+      "n": 108,
+      "category": "app1-bench",
+      "name": "GET /v1/benchmark/results",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.994Z"
+    },
+    {
+      "n": 109,
+      "category": "app1-bench",
+      "name": "GET /v1/benchmark/leaderboard",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-24T09:57:16.994Z"
+    },
+    {
+      "n": 110,
+      "category": "app1-bench",
+      "name": "GET /v1/benchmark/categories",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-24T09:57:16.994Z"
+    },
+    {
+      "n": 111,
+      "category": "app1-bench",
+      "name": "POST /v1/benchmark/run",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.994Z"
+    },
+    {
+      "n": 112,
+      "category": "app1-tasks",
+      "name": "GET /v1/tasks",
+      "passed": true,
+      "detail": "status=503",
+      "ts": "2026-03-24T09:57:16.995Z"
+    },
+    {
+      "n": 113,
+      "category": "app1-tasks",
+      "name": "POST /v1/tasks (create)",
+      "passed": true,
+      "detail": "status=503",
+      "ts": "2026-03-24T09:57:16.995Z"
+    },
+    {
+      "n": 114,
+      "category": "app1-tasks",
+      "name": "GET /v1/tasks/queue",
+      "passed": true,
+      "detail": "status=503",
+      "ts": "2026-03-24T09:57:16.995Z"
+    },
+    {
+      "n": 115,
+      "category": "app1-sessions",
+      "name": "GET /v1/sessions",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.996Z"
+    },
+    {
+      "n": 116,
+      "category": "app1-sessions",
+      "name": "POST /v1/sessions",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.996Z"
+    },
+    {
+      "n": 117,
+      "category": "app1-agents",
+      "name": "GET /v1/agents",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.997Z"
+    },
+    {
+      "n": 118,
+      "category": "app1-agents",
+      "name": "Agents endpoint requires auth",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.997Z"
+    },
+    {
+      "n": 119,
+      "category": "app1-agents",
+      "name": "GET /v1/agents/opencode",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:16.997Z"
+    },
+    {
+      "n": 120,
+      "category": "app1-skills",
+      "name": "GET /v1/skills",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-24T09:57:16.997Z"
+    },
+    {
+      "n": 121,
+      "category": "app1-skills",
+      "name": "GET /v1/skills/categories",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-24T09:57:16.997Z"
+    },
+    {
+      "n": 122,
+      "category": "app1-monitor",
+      "name": "GET /v1/monitoring/providers",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-24T09:57:16.998Z"
+    },
+    {
+      "n": 123,
+      "category": "app1-monitor",
+      "name": "GET /v1/monitoring/circuit-breakers",
+      "passed": true,
+      "detail": "status=503",
+      "ts": "2026-03-24T09:57:16.998Z"
+    },
+    {
+      "n": 124,
+      "category": "app1-monitor",
+      "name": "GET /v1/monitoring/latency",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-24T09:57:16.998Z"
+    },
+    {
+      "n": 125,
+      "category": "app1-monitor",
+      "name": "GET /v1/monitoring/oauth",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-24T09:57:16.999Z"
+    },
+    {
+      "n": 126,
+      "category": "app1-monitor",
+      "name": "GET /v1/monitoring/concurrency",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:16.999Z"
+    },
+    {
+      "n": 127,
+      "category": "app1-monitor",
+      "name": "GET /v1/health/providers",
+      "passed": true,
+      "detail": "status=503",
+      "ts": "2026-03-24T09:57:16.999Z"
+    },
+    {
+      "n": 128,
+      "category": "app1-monitor",
+      "name": "GET /v1/health/circuit-breakers",
+      "passed": true,
+      "detail": "status=503",
+      "ts": "2026-03-24T09:57:17.000Z"
+    },
+    {
+      "n": 129,
+      "category": "app1-monitor",
+      "name": "GET /v1/health/status",
+      "passed": true,
+      "detail": "status=503",
+      "ts": "2026-03-24T09:57:17.000Z"
+    },
+    {
+      "n": 130,
+      "category": "app1-models",
+      "name": "GET /v1/models/metadata",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-24T09:57:17.000Z"
+    },
+    {
+      "n": 131,
+      "category": "website",
+      "name": "index.html",
+      "passed": true,
+      "detail": "len=23596",
+      "ts": "2026-03-24T09:57:18.658Z"
+    },
+    {
+      "n": 132,
+      "category": "website",
+      "name": "features.html",
+      "passed": true,
+      "detail": "len=8939",
+      "ts": "2026-03-24T09:57:18.966Z"
+    },
+    {
+      "n": 133,
+      "category": "website",
+      "name": "pricing.html",
+      "passed": true,
+      "detail": "len=8141",
+      "ts": "2026-03-24T09:57:19.343Z"
+    },
+    {
+      "n": 134,
+      "category": "website",
+      "name": "changelog.html",
+      "passed": true,
+      "detail": "len=9178",
+      "ts": "2026-03-24T09:57:19.589Z"
+    },
+    {
+      "n": 135,
+      "category": "website",
+      "name": "contact.html",
+      "passed": true,
+      "detail": "len=8089",
+      "ts": "2026-03-24T09:57:19.867Z"
+    },
+    {
+      "n": 136,
+      "category": "website",
+      "name": "privacy.html",
+      "passed": true,
+      "detail": "len=10378",
+      "ts": "2026-03-24T09:57:20.133Z"
+    },
+    {
+      "n": 137,
+      "category": "website",
+      "name": "terms.html",
+      "passed": true,
+      "detail": "len=12616",
+      "ts": "2026-03-24T09:57:20.392Z"
+    },
+    {
+      "n": 138,
+      "category": "website",
+      "name": "docs/index.html",
+      "passed": true,
+      "detail": "len=10372",
+      "ts": "2026-03-24T09:57:20.647Z"
+    },
+    {
+      "n": 139,
+      "category": "website",
+      "name": "docs/api.html",
+      "passed": true,
+      "detail": "len=28712",
+      "ts": "2026-03-24T09:57:21.156Z"
+    },
+    {
+      "n": 140,
+      "category": "website",
+      "name": "docs/architecture.html",
+      "passed": true,
+      "detail": "len=8401",
+      "ts": "2026-03-24T09:57:21.425Z"
+    },
+    {
+      "n": 141,
+      "category": "website",
+      "name": "docs/ai-debate.html",
+      "passed": true,
+      "detail": "len=16063",
+      "ts": "2026-03-24T09:57:21.812Z"
+    },
+    {
+      "n": 142,
+      "category": "website",
+      "name": "docs/bigdata.html",
+      "passed": true,
+      "detail": "len=7063",
+      "ts": "2026-03-24T09:57:22.063Z"
+    },
+    {
+      "n": 143,
+      "category": "website",
+      "name": "docs/deployment.html",
+      "passed": true,
+      "detail": "len=15466",
+      "ts": "2026-03-24T09:57:22.402Z"
+    },
+    {
+      "n": 144,
+      "category": "website",
+      "name": "docs/faq.html",
+      "passed": true,
+      "detail": "len=17268",
+      "ts": "2026-03-24T09:57:22.658Z"
+    },
+    {
+      "n": 145,
+      "category": "website",
+      "name": "docs/grpc.html",
+      "passed": true,
+      "detail": "len=8478",
+      "ts": "2026-03-24T09:57:22.887Z"
+    },
+    {
+      "n": 146,
+      "category": "website",
+      "name": "docs/memory.html",
+      "passed": true,
+      "detail": "len=9704",
+      "ts": "2026-03-24T09:57:23.124Z"
+    },
+    {
+      "n": 147,
+      "category": "website",
+      "name": "docs/optimization.html",
+      "passed": true,
+      "detail": "len=18354",
+      "ts": "2026-03-24T09:57:23.398Z"
+    },
+    {
+      "n": 148,
+      "category": "website",
+      "name": "docs/protocols.html",
+      "passed": true,
+      "detail": "len=11728",
+      "ts": "2026-03-24T09:57:23.736Z"
+    },
+    {
+      "n": 149,
+      "category": "website",
+      "name": "docs/quickstart.html",
+      "passed": true,
+      "detail": "len=3964",
+      "ts": "2026-03-24T09:57:23.976Z"
+    },
+    {
+      "n": 150,
+      "category": "website",
+      "name": "docs/security.html",
+      "passed": true,
+      "detail": "len=9980",
+      "ts": "2026-03-24T09:57:24.211Z"
+    },
+    {
+      "n": 151,
+      "category": "website",
+      "name": "docs/support.html",
+      "passed": true,
+      "detail": "len=5425",
+      "ts": "2026-03-24T09:57:24.456Z"
+    },
+    {
+      "n": 152,
+      "category": "website",
+      "name": "docs/troubleshooting.html",
+      "passed": true,
+      "detail": "len=9855",
+      "ts": "2026-03-24T09:57:24.698Z"
+    },
+    {
+      "n": 153,
+      "category": "website",
+      "name": "docs/tutorial.html",
+      "passed": true,
+      "detail": "len=5505",
+      "ts": "2026-03-24T09:57:24.939Z"
+    },
+    {
+      "n": 154,
+      "category": "responsive",
+      "name": "mobile-small 320x568",
+      "passed": true,
+      "detail": "rendered",
+      "ts": "2026-03-24T09:57:25.466Z"
+    },
+    {
+      "n": 155,
+      "category": "responsive",
+      "name": "mobile 375x812",
+      "passed": true,
+      "detail": "rendered",
+      "ts": "2026-03-24T09:57:25.798Z"
+    },
+    {
+      "n": 156,
+      "category": "responsive",
+      "name": "mobile-large 428x926",
+      "passed": true,
+      "detail": "rendered",
+      "ts": "2026-03-24T09:57:26.131Z"
+    },
+    {
+      "n": 157,
+      "category": "responsive",
+      "name": "tablet 768x1024",
+      "passed": true,
+      "detail": "rendered",
+      "ts": "2026-03-24T09:57:26.451Z"
+    },
+    {
+      "n": 158,
+      "category": "responsive",
+      "name": "tablet-landscape 1024x768",
+      "passed": true,
+      "detail": "rendered",
+      "ts": "2026-03-24T09:57:26.835Z"
+    },
+    {
+      "n": 159,
+      "category": "responsive",
+      "name": "desktop 1280x720",
+      "passed": true,
+      "detail": "rendered",
+      "ts": "2026-03-24T09:57:27.244Z"
+    },
+    {
+      "n": 160,
+      "category": "responsive",
+      "name": "desktop-hd 1920x1080",
+      "passed": true,
+      "detail": "rendered",
+      "ts": "2026-03-24T09:57:27.626Z"
+    },
+    {
+      "n": 161,
+      "category": "responsive",
+      "name": "desktop-4k 2560x1440",
+      "passed": true,
+      "detail": "rendered",
+      "ts": "2026-03-24T09:57:28.117Z"
+    },
+    {
+      "n": 162,
+      "category": "interact",
+      "name": "Homepage has links",
+      "passed": true,
+      "detail": "38 links",
+      "ts": "2026-03-24T09:57:28.631Z"
+    },
+    {
+      "n": 163,
+      "category": "interact",
+      "name": "CSS loaded",
+      "passed": true,
+      "detail": "checked",
+      "ts": "2026-03-24T09:57:28.660Z"
+    },
+    {
+      "n": 164,
+      "category": "interact",
+      "name": "Images present",
+      "passed": true,
+      "detail": "checked",
+      "ts": "2026-03-24T09:57:28.667Z"
+    },
+    {
+      "n": 165,
+      "category": "interact",
+      "name": "Meta viewport tag",
+      "passed": true,
+      "detail": "checked",
+      "ts": "2026-03-24T09:57:28.671Z"
+    },
+    {
+      "n": 166,
+      "category": "interact",
+      "name": "Browser back",
+      "passed": true,
+      "detail": "executed",
+      "ts": "2026-03-24T09:57:29.086Z"
+    },
+    {
+      "n": 167,
+      "category": "interact",
+      "name": "Browser forward",
+      "passed": true,
+      "detail": "executed",
+      "ts": "2026-03-24T09:57:29.111Z"
+    },
+    {
+      "n": 168,
+      "category": "interact",
+      "name": "Page reload",
+      "passed": true,
+      "detail": "executed",
+      "ts": "2026-03-24T09:57:29.149Z"
+    },
+    {
+      "n": 169,
+      "category": "interact",
+      "name": "Page scroll",
+      "passed": true,
+      "detail": "scrolled",
+      "ts": "2026-03-24T09:57:29.475Z"
+    },
+    {
+      "n": 170,
+      "category": "docs",
+      "name": "API docs has /v1/ refs",
+      "passed": true,
+      "detail": "present",
+      "ts": "2026-03-24T09:57:29.668Z"
+    },
+    {
+      "n": 171,
+      "category": "docs",
+      "name": "API docs mentions agentic",
+      "passed": true,
+      "detail": "present",
+      "ts": "2026-03-24T09:57:29.668Z"
+    },
+    {
+      "n": 172,
+      "category": "docs",
+      "name": "API docs mentions providers",
+      "passed": true,
+      "detail": "present",
+      "ts": "2026-03-24T09:57:29.668Z"
+    },
+    {
+      "n": 173,
+      "category": "docs",
+      "name": "Architecture page content",
+      "passed": true,
+      "detail": "len=8413",
+      "ts": "2026-03-24T09:57:29.735Z"
+    },
+    {
+      "n": 174,
+      "category": "docs",
+      "name": "Debate doc has debate content",
+      "passed": true,
+      "detail": "present",
+      "ts": "2026-03-24T09:57:29.865Z"
+    },
+    {
+      "n": 175,
+      "category": "docs",
+      "name": "Features mentions LLM/provider",
+      "passed": true,
+      "detail": "present",
+      "ts": "2026-03-24T09:57:29.916Z"
+    },
+    {
+      "n": 176,
+      "category": "security",
+      "name": "Invalid token rejected",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:30.016Z"
+    },
+    {
+      "n": 177,
+      "category": "security",
+      "name": "No auth = blocked (llmops)",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:30.017Z"
+    },
+    {
+      "n": 178,
+      "category": "security",
+      "name": "Health is public",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:30.017Z"
+    },
+    {
+      "n": 179,
+      "category": "security",
+      "name": "XSS in query blocked",
+      "passed": true,
+      "detail": "no reflection",
+      "ts": "2026-03-24T09:57:30.020Z"
+    },
+    {
+      "n": 180,
+      "category": "security",
+      "name": "SQL injection blocked",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:30.021Z"
+    },
+    {
+      "n": 181,
+      "category": "security",
+      "name": "Path traversal blocked",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-24T09:57:30.022Z"
+    },
+    {
+      "n": 182,
+      "category": "security",
+      "name": "No Server header leak",
+      "passed": true,
+      "detail": "none",
+      "ts": "2026-03-24T09:57:30.022Z"
+    },
+    {
+      "n": 183,
+      "category": "security",
+      "name": "No X-Powered-By leak",
+      "passed": true,
+      "detail": "none",
+      "ts": "2026-03-24T09:57:30.022Z"
+    },
+    {
+      "n": 184,
+      "category": "security",
+      "name": "TRACE method blocked",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-24T09:57:30.022Z"
+    },
+    {
+      "n": 185,
+      "category": "errors",
+      "name": "404 on unknown path",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-24T09:57:30.022Z"
+    },
+    {
+      "n": 186,
+      "category": "errors",
+      "name": "404 on unknown v1 path",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-24T09:57:30.023Z"
+    },
+    {
+      "n": 187,
+      "category": "errors",
+      "name": "Bad JSON returns 400",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:30.023Z"
+    },
+    {
+      "n": 188,
+      "category": "errors",
+      "name": "Empty body returns error",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:30.024Z"
+    },
+    {
+      "n": 189,
+      "category": "errors",
+      "name": "Empty model returns error",
+      "passed": true,
+      "detail": "status=0",
+      "ts": "2026-03-24T09:57:45.024Z"
+    },
+    {
+      "n": 190,
+      "category": "errors",
+      "name": "Nil service returns 503 or auth",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:45.025Z"
+    },
+    {
+      "n": 191,
+      "category": "errors",
+      "name": "Discovery available",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:45.025Z"
+    },
+    {
+      "n": 192,
+      "category": "edge",
+      "name": "Very long URL (4K)",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:45.026Z"
+    },
+    {
+      "n": 193,
+      "category": "edge",
+      "name": "Double slash",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-24T09:57:45.026Z"
+    },
+    {
+      "n": 194,
+      "category": "edge",
+      "name": "Trailing slash",
+      "passed": true,
+      "detail": "status=301",
+      "ts": "2026-03-24T09:57:45.026Z"
+    },
+    {
+      "n": 195,
+      "category": "edge",
+      "name": "Unicode body",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:45.027Z"
+    },
+    {
+      "n": 196,
+      "category": "edge",
+      "name": "Large body (100K)",
+      "passed": true,
+      "detail": "status=401",
+      "ts": "2026-03-24T09:57:45.027Z"
+    },
+    {
+      "n": 197,
+      "category": "edge",
+      "name": "XML Accept header",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:45.028Z"
+    },
+    {
+      "n": 198,
+      "category": "edge",
+      "name": "HEAD request",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-24T09:57:45.028Z"
+    },
+    {
+      "n": 199,
+      "category": "edge",
+      "name": "OPTIONS/CORS",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-24T09:57:45.028Z"
+    },
+    {
+      "n": 200,
+      "category": "edge",
+      "name": "10 concurrent /health",
+      "passed": true,
+      "detail": "all 200",
+      "ts": "2026-03-24T09:57:45.030Z"
+    },
+    {
+      "n": 201,
+      "category": "edge",
+      "name": "50 concurrent /v1/providers",
+      "passed": true,
+      "detail": "50/50",
+      "ts": "2026-03-24T09:57:45.050Z"
+    },
+    {
+      "n": 202,
+      "category": "edge",
+      "name": "20 rapid sequential",
+      "passed": true,
+      "detail": "all OK",
+      "ts": "2026-03-24T09:57:45.055Z"
+    },
+    {
+      "n": 203,
+      "category": "app2-demo",
+      "name": "GET /api/v1/health",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:45.056Z"
+    },
+    {
+      "n": 204,
+      "category": "app2-demo",
+      "name": "GET /api/v1/status",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:45.056Z"
+    },
+    {
+      "n": 205,
+      "category": "app2-demo",
+      "name": "GET /api/v1/metrics",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:45.056Z"
+    },
+    {
+      "n": 206,
+      "category": "app2-demo",
+      "name": "GET /api/v1/mcp/tools/list",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:45.056Z"
+    },
+    {
+      "n": 207,
+      "category": "app2-demo",
+      "name": "GET /api/v1/mcp/servers",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:45.057Z"
+    },
+    {
+      "n": 208,
+      "category": "app2-demo",
+      "name": "GET /api/v1/acp/status",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:45.057Z"
+    },
+    {
+      "n": 209,
+      "category": "app2-demo",
+      "name": "GET /api/v1/plugins/",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:45.057Z"
+    },
+    {
+      "n": 210,
+      "category": "app2-demo",
+      "name": "GET /api/v1/templates/",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:45.057Z"
+    },
+    {
+      "n": 211,
+      "category": "app2-demo",
+      "name": "GET /api/v1/analytics/health",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:45.058Z"
+    },
+    {
+      "n": 212,
+      "category": "app2-demo",
+      "name": "POST /api/v1/mcp/tools/call",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:45.082Z"
+    },
+    {
+      "n": 213,
+      "category": "app2-demo",
+      "name": "POST /api/v1/lsp/completion",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:45.083Z"
+    },
+    {
+      "n": 214,
+      "category": "app2-demo",
+      "name": "POST /api/v1/acp/execute",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:45.083Z"
+    },
+    {
+      "n": 215,
+      "category": "app3-cognee",
+      "name": "GET /health",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:45.084Z"
+    },
+    {
+      "n": 216,
+      "category": "app3-cognee",
+      "name": "GET /api/v1/health",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:45.084Z"
+    },
+    {
+      "n": 217,
+      "category": "app3-cognee",
+      "name": "POST /api/v1/add",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:45.084Z"
+    },
+    {
+      "n": 218,
+      "category": "app3-cognee",
+      "name": "POST /api/v1/search",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:45.084Z"
+    },
+    {
+      "n": 219,
+      "category": "app3-cognee",
+      "name": "POST /api/v1/cognify",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:45.085Z"
+    },
+    {
+      "n": 220,
+      "category": "app3-cognee",
+      "name": "GET /api/v1/graph",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:45.085Z"
+    },
+    {
+      "n": 221,
+      "category": "app3-cognee",
+      "name": "GET /api/v1/datasets",
+      "passed": true,
+      "detail": "status=200",
+      "ts": "2026-03-24T09:57:45.085Z"
+    },
+    {
+      "n": 222,
+      "category": "app4-sanity",
+      "name": "sanity-check --help",
+      "passed": true,
+      "detail": "",
+      "ts": "2026-03-24T09:57:45.103Z"
+    },
+    {
+      "n": 223,
+      "category": "app4-sanity",
+      "name": "sanity-check --json",
+      "passed": true,
+      "detail": "======================================================================\n                   HELIXAGENT",
+      "ts": "2026-03-24T09:57:46.066Z"
+    },
+    {
+      "n": 224,
+      "category": "app5-constitution",
+      "name": "generate-constitution --help",
+      "passed": true,
+      "detail": "Generating Constitution for project: /run/media/milosvasic/DATA4TB\n✅ Constitution saved to: /run/med",
+      "ts": "2026-03-24T09:57:46.098Z"
+    },
+    {
+      "n": 225,
+      "category": "app6-mcpbridge",
+      "name": "mcp-bridge --help",
+      "passed": true,
+      "detail": "Error: MCP_COMMAND environment variable is required\nExample: MCP_COMMAND=\"npx @modelcontextprotocol/",
+      "ts": "2026-03-24T09:57:46.108Z"
+    },
+    {
+      "n": 226,
+      "category": "app7-grpc",
+      "name": "grpc-server --help",
+      "passed": true,
+      "detail": "time=\"2026-03-24T12:57:46+03:00\" level=info msg=\"Stored provider configurations for lazy loading\"\nti",
+      "ts": "2026-03-24T09:58:16.122Z"
+    },
+    {
+      "n": 227,
+      "category": "opencode",
+      "name": "Config generation runs",
+      "passed": true,
+      "detail": "output_len=3640",
+      "ts": "2026-03-24T09:58:16.138Z"
+    },
+    {
+      "n": 228,
+      "category": "opencode",
+      "name": "Config includes MCP servers",
+      "passed": true,
+      "detail": "present",
+      "ts": "2026-03-24T09:58:16.138Z"
+    },
+    {
+      "n": 229,
+      "category": "opencode",
+      "name": "Config includes HelixAgent provider",
+      "passed": true,
+      "detail": "present",
+      "ts": "2026-03-24T09:58:16.138Z"
+    },
+    {
+      "n": 230,
+      "category": "opencode",
+      "name": "Config includes model reference",
+      "passed": true,
+      "detail": "present",
+      "ts": "2026-03-24T09:58:16.138Z"
+    },
+    {
+      "n": 231,
+      "category": "opencode",
+      "name": "Config is valid JSON",
+      "passed": true,
+      "detail": "parsed",
+      "ts": "2026-03-24T09:58:16.138Z"
+    },
+    {
+      "n": 232,
+      "category": "opencode",
+      "name": "Config has provider section",
+      "passed": true,
+      "detail": "present",
+      "ts": "2026-03-24T09:58:16.138Z"
+    },
+    {
+      "n": 233,
+      "category": "opencode",
+      "name": "Config has 15+ MCP servers",
+      "passed": true,
+      "detail": "count=21",
+      "ts": "2026-03-24T09:58:16.138Z"
+    },
+    {
+      "n": 234,
+      "category": "cli-agents",
+      "name": "crush config generation",
+      "passed": true,
+      "detail": "output_len=9847",
+      "ts": "2026-03-24T09:58:16.153Z"
+    },
+    {
+      "n": 235,
+      "category": "cli-agents",
+      "name": "kilocode config generation",
+      "passed": true,
+      "detail": "output_len=7885",
+      "ts": "2026-03-24T09:58:16.168Z"
+    },
+    {
+      "n": 236,
+      "category": "streaming",
+      "name": "SSE /v1/protocols/sse/mcp",
+      "passed": true,
+      "detail": "status=timeout(expected for SSE)",
+      "ts": "2026-03-24T09:58:16.171Z"
+    },
+    {
+      "n": 237,
+      "category": "streaming",
+      "name": "SSE /v1/protocols/sse/acp",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-24T09:58:16.172Z"
+    },
+    {
+      "n": 238,
+      "category": "streaming",
+      "name": "SSE /v1/protocols/sse/lsp",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-24T09:58:16.172Z"
+    },
+    {
+      "n": 239,
+      "category": "streaming",
+      "name": "SSE /v1/protocols/sse/embeddings",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-24T09:58:16.172Z"
+    },
+    {
+      "n": 240,
+      "category": "streaming",
+      "name": "SSE /v1/protocols/sse/vision",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-24T09:58:16.172Z"
+    },
+    {
+      "n": 241,
+      "category": "streaming",
+      "name": "SSE /v1/protocols/sse/cognee",
+      "passed": true,
+      "detail": "status=404",
+      "ts": "2026-03-24T09:58:16.173Z"
+    },
+    {
+      "n": 242,
+      "category": "streaming",
+      "name": "Streaming chat completion",
+      "passed": true,
+      "detail": "status=200 len=1682",
+      "ts": "2026-03-24T09:58:16.666Z"
+    },
+    {
+      "n": 243,
+      "category": "stress",
+      "name": "Mixed concurrent (5)",
+      "passed": true,
+      "detail": "all 200",
+      "ts": "2026-03-24T09:58:16.667Z"
+    },
+    {
+      "n": 244,
+      "category": "stress",
+      "name": "20-burst providers",
+      "passed": true,
+      "detail": "20/20",
+      "ts": "2026-03-24T09:58:16.673Z"
+    },
+    {
+      "n": 245,
+      "category": "stress",
+      "name": "Latency /health",
+      "passed": true,
+      "detail": "1ms avg",
+      "ts": "2026-03-24T09:58:16.675Z"
+    },
+    {
+      "n": 246,
+      "category": "stress",
+      "name": "Latency /v1/providers",
+      "passed": true,
+      "detail": "0ms avg",
+      "ts": "2026-03-24T09:58:16.676Z"
+    },
+    {
+      "n": 247,
+      "category": "stress",
+      "name": "Latency /v1/features",
+      "passed": true,
+      "detail": "0ms avg",
+      "ts": "2026-03-24T09:58:16.677Z"
+    },
+    {
+      "n": 248,
+      "category": "helixqa",
+      "name": "helixqa version",
+      "passed": true,
+      "detail": "helixqa v0.2.0",
+      "ts": "2026-03-24T09:58:16.722Z"
+    },
+    {
+      "n": 249,
+      "category": "helixqa",
+      "name": "helixqa list --json",
+      "passed": true,
+      "detail": "output_len=6752",
+      "ts": "2026-03-24T09:58:16.729Z"
+    },
+    {
+      "n": 250,
+      "category": "helixqa-banks",
+      "name": "helixagent-api.json valid",
+      "passed": true,
+      "detail": "10 challenges",
+      "ts": "2026-03-24T09:58:16.730Z"
+    },
+    {
+      "n": 251,
+      "category": "helixqa-banks",
+      "name": "helixagent-builds.json valid",
+      "passed": true,
+      "detail": "10 challenges",
+      "ts": "2026-03-24T09:58:16.730Z"
+    },
+    {
+      "n": 252,
+      "category": "helixqa-banks",
+      "name": "helixagent-challenges.json valid",
+      "passed": true,
+      "detail": "8 challenges",
+      "ts": "2026-03-24T09:58:16.730Z"
+    },
+    {
+      "n": 253,
+      "category": "helixqa-banks",
+      "name": "helixagent-comprehensive.json valid",
+      "passed": true,
+      "detail": "30 challenges",
+      "ts": "2026-03-24T09:58:16.731Z"
+    },
+    {
+      "n": 254,
+      "category": "helixqa-banks",
+      "name": "helixagent-concurrency.json valid",
+      "passed": true,
+      "detail": "12 challenges",
+      "ts": "2026-03-24T09:58:16.731Z"
+    },
+    {
+      "n": 255,
+      "category": "helixqa-banks",
+      "name": "helixagent-deadcode.json valid",
+      "passed": true,
+      "detail": "10 challenges",
+      "ts": "2026-03-24T09:58:16.732Z"
+    },
+    {
+      "n": 256,
+      "category": "helixqa-banks",
+      "name": "helixagent-debate-dialogue.json valid",
+      "passed": true,
+      "detail": "15 challenges",
+      "ts": "2026-03-24T09:58:16.733Z"
+    },
+    {
+      "n": 257,
+      "category": "helixqa-banks",
+      "name": "helixagent-debate.json valid",
+      "passed": true,
+      "detail": "10 challenges",
+      "ts": "2026-03-24T09:58:16.733Z"
+    },
+    {
+      "n": 258,
+      "category": "helixqa-banks",
+      "name": "helixagent-documentation.json valid",
+      "passed": true,
+      "detail": "12 challenges",
+      "ts": "2026-03-24T09:58:16.734Z"
+    },
+    {
+      "n": 259,
+      "category": "helixqa-banks",
+      "name": "helixagent-infra.json valid",
+      "passed": true,
+      "detail": "10 challenges",
+      "ts": "2026-03-24T09:58:16.734Z"
+    },
+    {
+      "n": 260,
+      "category": "helixqa-banks",
+      "name": "helixagent-observability.json valid",
+      "passed": true,
+      "detail": "8 challenges",
+      "ts": "2026-03-24T09:58:16.734Z"
+    },
+    {
+      "n": 261,
+      "category": "helixqa-banks",
+      "name": "helixagent-providers.json valid",
+      "passed": true,
+      "detail": "15 challenges",
+      "ts": "2026-03-24T09:58:16.735Z"
+    },
+    {
+      "n": 262,
+      "category": "helixqa-banks",
+      "name": "helixagent-routing.json valid",
+      "passed": true,
+      "detail": "15 challenges",
+      "ts": "2026-03-24T09:58:16.735Z"
+    },
+    {
+      "n": 263,
+      "category": "helixqa-banks",
+      "name": "helixagent-security.json valid",
+      "passed": true,
+      "detail": "12 challenges",
+      "ts": "2026-03-24T09:58:16.736Z"
+    },
+    {
+      "n": 264,
+      "category": "helixqa-banks",
+      "name": "helixagent-stress.json valid",
+      "passed": true,
+      "detail": "5 challenges",
+      "ts": "2026-03-24T09:58:16.736Z"
+    },
+    {
+      "n": 265,
+      "category": "helixqa-banks",
+      "name": "helixagent-submodules.json valid",
+      "passed": true,
+      "detail": "8 challenges",
+      "ts": "2026-03-24T09:58:16.736Z"
+    }
+  ]
+}

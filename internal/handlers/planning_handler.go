@@ -36,32 +36,32 @@ func NewPlanningHandler(logger *logrus.Logger) *PlanningHandler {
 
 // HiPlanRequest represents a request for hierarchical planning.
 type HiPlanRequest struct {
-	Goal   string              `json:"goal" binding:"required"`
+	Goal   string               `json:"goal" binding:"required"`
 	Config *HiPlanConfigRequest `json:"config,omitempty"`
 }
 
 // HiPlanConfigRequest represents optional HiPlan configuration.
 type HiPlanConfigRequest struct {
-	MaxMilestones            int  `json:"max_milestones,omitempty"`
-	MaxStepsPerMilestone     int  `json:"max_steps_per_milestone,omitempty"`
+	MaxMilestones            int   `json:"max_milestones,omitempty"`
+	MaxStepsPerMilestone     int   `json:"max_steps_per_milestone,omitempty"`
 	EnableParallelMilestones *bool `json:"enable_parallel_milestones,omitempty"`
-	MaxParallelMilestones    int  `json:"max_parallel_milestones,omitempty"`
+	MaxParallelMilestones    int   `json:"max_parallel_milestones,omitempty"`
 	EnableAdaptivePlanning   *bool `json:"enable_adaptive_planning,omitempty"`
 	RetryFailedSteps         *bool `json:"retry_failed_steps,omitempty"`
-	MaxRetries               int  `json:"max_retries,omitempty"`
-	TimeoutSeconds           int  `json:"timeout_seconds,omitempty"`
+	MaxRetries               int   `json:"max_retries,omitempty"`
+	TimeoutSeconds           int   `json:"timeout_seconds,omitempty"`
 }
 
 // HiPlanResponse represents the response from hierarchical planning.
 type HiPlanResponse struct {
-	PlanID     string                     `json:"plan_id"`
-	Goal       string                     `json:"goal"`
-	State      string                     `json:"state"`
-	Progress   float64                    `json:"progress"`
-	Milestones []HiPlanMilestoneResponse  `json:"milestones"`
-	DurationMs int64                      `json:"duration_ms"`
-	CreatedAt  string                     `json:"created_at"`
-	Error      string                     `json:"error,omitempty"`
+	PlanID     string                    `json:"plan_id"`
+	Goal       string                    `json:"goal"`
+	State      string                    `json:"state"`
+	Progress   float64                   `json:"progress"`
+	Milestones []HiPlanMilestoneResponse `json:"milestones"`
+	DurationMs int64                     `json:"duration_ms"`
+	CreatedAt  string                    `json:"created_at"`
+	Error      string                    `json:"error,omitempty"`
 }
 
 // HiPlanMilestoneResponse represents a milestone in the response.
@@ -280,7 +280,7 @@ func (h *PlanningHandler) RunMCTS(c *gin.Context) {
 
 // ToTRequest represents a request for Tree of Thoughts.
 type ToTRequest struct {
-	Problem string           `json:"problem" binding:"required"`
+	Problem string            `json:"problem" binding:"required"`
 	Config  *ToTConfigRequest `json:"config,omitempty"`
 }
 
@@ -300,15 +300,15 @@ type ToTConfigRequest struct {
 
 // ToTResponse represents the response from Tree of Thoughts.
 type ToTResponse struct {
-	Problem       string        `json:"problem"`
-	Solution      []ToTThought  `json:"solution"`
-	BestScore     float64       `json:"best_score"`
-	Iterations    int           `json:"iterations"`
-	Strategy      string        `json:"strategy"`
-	TreeDepth     int           `json:"tree_depth"`
-	NodesExplored int           `json:"nodes_explored"`
-	DurationMs    int64         `json:"duration_ms"`
-	Error         string        `json:"error,omitempty"`
+	Problem       string       `json:"problem"`
+	Solution      []ToTThought `json:"solution"`
+	BestScore     float64      `json:"best_score"`
+	Iterations    int          `json:"iterations"`
+	Strategy      string       `json:"strategy"`
+	TreeDepth     int          `json:"tree_depth"`
+	NodesExplored int          `json:"nodes_explored"`
+	DurationMs    int64        `json:"duration_ms"`
+	Error         string       `json:"error,omitempty"`
 }
 
 // ToTThought represents a thought in the solution path.

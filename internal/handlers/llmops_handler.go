@@ -56,18 +56,18 @@ type CreateExperimentRequest struct {
 
 // ExperimentResponse represents an experiment in API responses
 type ExperimentResponse struct {
-	ID           string                 `json:"id"`
-	Name         string                 `json:"name"`
-	Description  string                 `json:"description,omitempty"`
-	Variants     []*llmops.Variant      `json:"variants"`
-	TrafficSplit map[string]float64     `json:"traffic_split"`
+	ID           string                  `json:"id"`
+	Name         string                  `json:"name"`
+	Description  string                  `json:"description,omitempty"`
+	Variants     []*llmops.Variant       `json:"variants"`
+	TrafficSplit map[string]float64      `json:"traffic_split"`
 	Status       llmops.ExperimentStatus `json:"status"`
-	Metrics      []string               `json:"metrics"`
-	TargetMetric string                 `json:"target_metric"`
-	Winner       string                 `json:"winner,omitempty"`
-	Metadata     map[string]interface{} `json:"metadata,omitempty"`
-	CreatedAt    string                 `json:"created_at"`
-	UpdatedAt    string                 `json:"updated_at"`
+	Metrics      []string                `json:"metrics"`
+	TargetMetric string                  `json:"target_metric"`
+	Winner       string                  `json:"winner,omitempty"`
+	Metadata     map[string]interface{}  `json:"metadata,omitempty"`
+	CreatedAt    string                  `json:"created_at"`
+	UpdatedAt    string                  `json:"updated_at"`
 }
 
 // ListExperimentsResponse represents the list experiments response
@@ -90,30 +90,30 @@ type CreateEvaluationRequest struct {
 
 // EvaluationRunResponse represents an evaluation run in API responses
 type EvaluationRunResponse struct {
-	ID            string                  `json:"id"`
-	Name          string                  `json:"name"`
-	Description   string                  `json:"description,omitempty"`
-	Dataset       string                  `json:"dataset"`
-	PromptName    string                  `json:"prompt_name,omitempty"`
-	PromptVersion string                  `json:"prompt_version,omitempty"`
-	ModelName     string                  `json:"model_name,omitempty"`
-	Metrics       []string                `json:"metrics,omitempty"`
-	Status        llmops.EvaluationStatus `json:"status"`
+	ID            string                    `json:"id"`
+	Name          string                    `json:"name"`
+	Description   string                    `json:"description,omitempty"`
+	Dataset       string                    `json:"dataset"`
+	PromptName    string                    `json:"prompt_name,omitempty"`
+	PromptVersion string                    `json:"prompt_version,omitempty"`
+	ModelName     string                    `json:"model_name,omitempty"`
+	Metrics       []string                  `json:"metrics,omitempty"`
+	Status        llmops.EvaluationStatus   `json:"status"`
 	Results       *llmops.EvaluationResults `json:"results,omitempty"`
-	CreatedAt     string                  `json:"created_at"`
+	CreatedAt     string                    `json:"created_at"`
 }
 
 // CreatePromptVersionRequest represents a request to create a prompt version
 type CreatePromptVersionRequest struct {
-	Name        string                 `json:"name" binding:"required"`
-	Version     string                 `json:"version" binding:"required"`
-	Content     string                 `json:"content" binding:"required"`
+	Name        string                  `json:"name" binding:"required"`
+	Version     string                  `json:"version" binding:"required"`
+	Content     string                  `json:"content" binding:"required"`
 	Variables   []llmops.PromptVariable `json:"variables,omitempty"`
-	Tags        []string               `json:"tags,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
-	Author      string                 `json:"author,omitempty"`
-	Description string                 `json:"description,omitempty"`
-	IsActive    bool                   `json:"is_active,omitempty"`
+	Tags        []string                `json:"tags,omitempty"`
+	Metadata    map[string]interface{}  `json:"metadata,omitempty"`
+	Author      string                  `json:"author,omitempty"`
+	Description string                  `json:"description,omitempty"`
+	IsActive    bool                    `json:"is_active,omitempty"`
 }
 
 // PromptVersionResponse represents a prompt version in API responses

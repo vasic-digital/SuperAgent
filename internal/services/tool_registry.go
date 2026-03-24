@@ -153,14 +153,13 @@ func (tr *ToolRegistry) RefreshTools(ctx context.Context) error {
 
 	// Add LSP-based tools (code actions)
 	if tr.lspClient != nil { //nolint:staticcheck
-		// Placeholder LSP tool until full implementation
 		wrapper := &LSPToolWrapper{
 			name:        "lsp_diagnostic",
-			description: "Get diagnostics from LSP server (placeholder)",
+			description: "Get diagnostics from LSP server for a given file",
 			client:      tr.lspClient,
 		}
 		tr.tools[wrapper.Name()] = wrapper
-		log.Printf("Added placeholder LSP tool: %s", wrapper.Name())
+		log.Printf("Added LSP tool: %s", wrapper.Name())
 	}
 
 	tr.lastRefresh = time.Now()
@@ -266,21 +265,34 @@ func (w *LSPToolWrapper) Description() string {
 }
 
 func (w *LSPToolWrapper) Parameters() map[string]interface{} {
-	// Return minimal schema for LSP tool
 	return map[string]interface{}{
-		"type": "object",
-		"properties": map[string]interface{}{
-			"file": map[string]interface{}{
-				"type":        "string",
-				"description": "File path",
-			},
+		"file": map[string]interface{}{
+			"type":        "string",
+			"description": "File path to get diagnostics for",
 		},
 	}
 }
 
 func (w *LSPToolWrapper) Execute(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	// Placeholder implementation
-	return nil, fmt.Errorf("LSP tools not yet implemented")
+	if w.client == nil {
+		return nil, fmt.Errorf("LSP client not available")
+	}
+
+	filePath, ok := params["file"].(string)
+	if !ok || filePath == "" {
+		return nil, fmt.Errorf("missing required parameter: file")
+	}
+
+	diagnostics, err := w.client.GetDiagnostics(ctx, filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get LSP diagnostics: %w", err)
+	}
+
+	return map[string]interface{}{
+		"file":        filePath,
+		"diagnostics": diagnostics,
+		"count":       len(diagnostics),
+	}, nil
 }
 
 func (w *LSPToolWrapper) Source() string {

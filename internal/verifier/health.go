@@ -292,16 +292,16 @@ func (s *HealthService) checkProviderHealth(providerID string) {
 // performHealthCheck performs actual health check
 func (s *HealthService) performHealthCheck(providerName string) bool {
 	endpoints := map[string]string{
-		"openai":     "https://api.openai.com/v1/models",
-		"anthropic":  "https://api.anthropic.com/v1/messages",
-		"gemini":     "https://generativelanguage.googleapis.com/v1/models",
-		"google":     "https://generativelanguage.googleapis.com/v1/models", // Alias for gemini
-		"groq":       "https://api.groq.com/openai/v1/models",
-		"together":   "https://api.together.xyz/v1/models",
-		"mistral":    "https://api.mistral.ai/v1/models",
-		"deepseek":   "https://api.deepseek.com/v1/models",
-		"ollama":     "http://localhost:11434/api/tags",
-		"openrouter": "https://openrouter.ai/api/v1/models",
+		"openai":        "https://api.openai.com/v1/models",
+		"anthropic":     "https://api.anthropic.com/v1/messages",
+		"gemini":        "https://generativelanguage.googleapis.com/v1/models",
+		"google":        "https://generativelanguage.googleapis.com/v1/models", // Alias for gemini
+		"groq":          "https://api.groq.com/openai/v1/models",
+		"together":      "https://api.together.xyz/v1/models",
+		"mistral":       "https://api.mistral.ai/v1/models",
+		"deepseek":      "https://api.deepseek.com/v1/models",
+		"ollama":        "http://localhost:11434/api/tags",
+		"openrouter":    "https://openrouter.ai/api/v1/models",
 		"xai":           "https://api.x.ai/v1/models",
 		"cerebras":      "https://api.cerebras.ai/v1/models",
 		"github-models": "https://models.github.ai/inference/models",

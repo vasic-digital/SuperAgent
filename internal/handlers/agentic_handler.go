@@ -25,14 +25,14 @@ type AgenticHandler struct {
 
 // workflowRecord tracks a workflow execution and its result.
 type workflowRecord struct {
-	ID          string                  `json:"id"`
-	Name        string                  `json:"name"`
-	Description string                  `json:"description"`
-	Status      agentic.WorkflowStatus  `json:"status"`
-	State       *agentic.WorkflowState  `json:"state,omitempty"`
-	Error       string                  `json:"error,omitempty"`
-	CreatedAt   time.Time               `json:"created_at"`
-	CompletedAt *time.Time              `json:"completed_at,omitempty"`
+	ID          string                 `json:"id"`
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
+	Status      agentic.WorkflowStatus `json:"status"`
+	State       *agentic.WorkflowState `json:"state,omitempty"`
+	Error       string                 `json:"error,omitempty"`
+	CreatedAt   time.Time              `json:"created_at"`
+	CompletedAt *time.Time             `json:"completed_at,omitempty"`
 }
 
 // NewAgenticHandler creates a new agentic handler.
@@ -48,14 +48,14 @@ func NewAgenticHandler(logger *logrus.Logger) *AgenticHandler {
 
 // CreateWorkflowRequest represents a request to create and execute a workflow.
 type CreateWorkflowRequest struct {
-	Name        string                    `json:"name" binding:"required"`
-	Description string                    `json:"description"`
-	Nodes       []WorkflowNodeRequest     `json:"nodes" binding:"required"`
-	Edges       []WorkflowEdgeRequest     `json:"edges"`
-	EntryPoint  string                    `json:"entry_point" binding:"required"`
-	EndNodes    []string                  `json:"end_nodes"`
-	Config      *WorkflowConfigRequest    `json:"config,omitempty"`
-	Input       *WorkflowInputRequest     `json:"input,omitempty"`
+	Name        string                 `json:"name" binding:"required"`
+	Description string                 `json:"description"`
+	Nodes       []WorkflowNodeRequest  `json:"nodes" binding:"required"`
+	Edges       []WorkflowEdgeRequest  `json:"edges"`
+	EntryPoint  string                 `json:"entry_point" binding:"required"`
+	EndNodes    []string               `json:"end_nodes"`
+	Config      *WorkflowConfigRequest `json:"config,omitempty"`
+	Input       *WorkflowInputRequest  `json:"input,omitempty"`
 }
 
 // WorkflowNodeRequest represents a node in the workflow request.
