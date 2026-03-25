@@ -19,7 +19,7 @@ HelixAgent is an AI-powered ensemble LLM service in Go (1.24+) that aggregates r
 
 **Module**: `dev.helix.agent`
 
-**Subprojects**: Toolkit (`Toolkit/`) — Go library for AI apps. LLMsVerifier (`LLMsVerifier/`) — provider accuracy verification. 27 extracted modules.
+**Subprojects**: Toolkit (`Toolkit/`) — Go library for AI apps. LLMsVerifier (`LLMsVerifier/`) — provider accuracy verification. 41 extracted modules.
 
 ## Mandatory Development Standards (NON-NEGOTIABLE)
 

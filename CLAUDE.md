@@ -18,7 +18,7 @@ HelixAgent is an AI-powered ensemble LLM service written in Go that combines res
 
 **Module**: `dev.helix.agent` (Go 1.25.3)
 
-Subprojects: **Toolkit** (`Toolkit/`) — Go library for AI apps. **LLMsVerifier** (`LLMsVerifier/`) — provider accuracy verification. Plus **35 extracted modules** (see [Extracted Modules](#extracted-modules-submodules) below) covering containers, challenges, concurrency, observability, auth, storage, streaming, security, vector databases, embeddings, database, cache, messaging, formatters, MCP, RAG, memory, optimization, plugins, event bus, agentic workflows, LLM operations, self-improvement, planning algorithms, benchmarking, background tasks, build checks, conversation context, debate orchestration, LLM provider interface, data models, skill registry, tool schemas, **HelixMemory** (unified cognitive memory engine), and **HelixSpecifier** (spec-driven development fusion engine).
+Subprojects: **Toolkit** (`Toolkit/`) — Go library for AI apps. **LLMsVerifier** (`LLMsVerifier/`) — provider accuracy verification. Plus **41 extracted modules** (see [Extracted Modules](#extracted-modules-submodules) below) covering containers, challenges, concurrency, observability, auth, storage, streaming, security, vector databases, embeddings, database, cache, messaging, formatters, MCP, RAG, memory, optimization, plugins, event bus, agentic workflows, LLM operations, self-improvement, planning algorithms, benchmarking, background tasks, build checks, conversation context, debate orchestration, LLM provider interface, data models, skill registry, tool schemas, **HelixMemory** (unified cognitive memory engine), **HelixSpecifier** (spec-driven development fusion engine), documentation processing, QA orchestration, CLI agent management, computer vision, provider verification, and containerized MCP servers.
 
 ## Mandatory Development Standards
 
@@ -242,6 +242,12 @@ Each module is an independent Go module with its own go.mod, tests, CLAUDE.md, A
 **Pre-existing:**
 - **Containers** (`Containers/`, `digital.vasic.containers`) — Generic container orchestration: runtime abstraction (Docker/Podman/K8s), health checking, compose orchestration, lifecycle management. 12 packages.
 - **Challenges** (`Challenges/`, `digital.vasic.challenges`) — Generic challenge framework: assertion engine (19 evaluators), registry, runner, reporting, monitoring, metrics, plugin system v2.0.0, userflow testing (21 adapters across 8 interfaces: browser/mobile/desktop/API/gRPC/WebSocket/build), Panoptic vision/recorder/testgen/error-analyzer adapters, AI test generation challenges. 16 packages.
+- **DocProcessor** (`DocProcessor/`, `digital.vasic.docprocessor`) — Documentation processing, feature map extraction, and coverage tracking: parser, feature map indexing, coverage reports, diff detection. 6 packages.
+- **HelixQA** (`HelixQA/`, `digital.vasic.helixqa`) — QA orchestration framework: crash detection, evidence collection, ticket generation, quality monitoring, crash replay, baseline management, policy enforcement. 11 packages.
+- **LLMOrchestrator** (`LLMOrchestrator/`, `digital.vasic.llmorchestrator`) — CLI agent management with hybrid pipe+file protocol: lifecycle management, circuit breakers, agent registry, request routing. 6 packages.
+- **VisionEngine** (`VisionEngine/`, `digital.vasic.visionengine`) — Computer vision and UI analysis: NavigationGraph, LLM vision providers (GPT-4V, Gemini Vision, Claude), UI element detection. 5 packages.
+- **LLMsVerifier** (`LLMsVerifier/`, `digital.vasic.llmsverifier`) — Provider accuracy verification, 5-component scoring pipeline, 3-tier subscription detection, unified CLI agent config generator (48 agents). 10+ packages.
+- **MCP-Servers** (`MCP-Servers/`, collection) — 60+ containerized MCP server implementations: filesystem, memory, sequential-thinking, database, vision, embeddings, RAG, formatters, monitoring.
 
 ### Key Interfaces
 - `LLMProvider` — Provider contract (Complete, CompleteStream, HealthCheck, GetCapabilities, ValidateConfig)
