@@ -187,3 +187,12 @@ Simulate a Kafka consumer lag scenario by pausing a consumer group. Observe the 
 - `internal/observability/` -- OpenTelemetry and tracing configuration
 - `configs/production.yaml` -- Production configuration reference
 - HelixAgent BigData API reference documentation
+
+---
+
+## Related Courses
+
+- **Course 53: HelixMemory Deep Dive** — HelixMemory (`digital.vasic.helixmemory`) is the unified cognitive memory engine that sits above the BigData layer: its 3-stage fusion pipeline orchestrates Mem0, Cognee, Letta, and Graphiti, feeding structured facts and temporal graphs into the knowledge graph streams introduced in this course.
+- **Course 73: VisionEngine Module** — VisionEngine's NavigationGraph and screenshot analysis produce structured visual observations that can be stored as entities in the knowledge graph streaming pipeline and queried via ClickHouse analytics covered here.
+- **Course 16: Memory Management** — Builds directly on this course; covers how Mem0-style entity graphs, CRDT conflict resolution, and distributed memory clusters consume the BigData infrastructure configured here.
+- **Course 59: Monitoring and Observability** — The Prometheus and OpenTelemetry pipelines used to monitor BigData components are detailed in this companion course, including ClickHouse-to-Grafana dashboards.

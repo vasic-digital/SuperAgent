@@ -249,11 +249,43 @@ Create routing rules that optimize for cost:
 
 ---
 
+## Security Scanning
+
+HelixAgent's security pipeline covers all 7 containerized scanners applicable to cloud provider integrations:
+
+| Scanner | Purpose |
+|---------|---------|
+| **Snyk** | Dependency and container image vulnerability scanning |
+| **SonarQube** | Static code analysis and quality gates |
+| **Trivy** | Container image and filesystem vulnerability scanning |
+| **Gosec** | Go-specific security issue detection |
+| **Semgrep** | Semantic code pattern analysis |
+| **KICS** | Infrastructure-as-code security scanning (Terraform, K8s manifests) |
+| **Grype** | SBOM-based vulnerability scanner |
+
+Run the full scanner suite against your cloud provider configuration with:
+```bash
+./challenges/scripts/snyk_automated_scanning_challenge.sh
+./challenges/scripts/sonarqube_automated_scanning_challenge.sh
+./challenges/scripts/security_scanning_challenge.sh
+```
+
+---
+
 ## Resources
 
 - [Cloud Provider Documentation](../CLOUD_PROVIDERS.md)
 - [Configuration Guide](../guides/configuration-guide.md)
 - [Security Best Practices](../deployment/PRODUCTION_DEPLOYMENT_CHECKLIST.md)
+
+---
+
+## Related Courses
+
+- **Course 74: Security Scanning Pipeline Deep Dive** — Comprehensive walkthrough of all 7 containerized security scanners (Snyk, SonarQube, Trivy, Gosec, Semgrep, KICS, Grype), automated scanning infrastructure, finding triage, and CI integration — the definitive companion to the scanning overview above.
+- **Course 10: Security Best Practices** — Covers authentication, rate limiting, secret management, and vulnerability management patterns that apply to all three cloud provider integrations in this course.
+- **Course 55: Security Scanning Pipeline** — Practical guide to running containerized Snyk and SonarQube scans, analyzing findings, and resolving HIGH/CRITICAL issues specific to HelixAgent's Go codebase.
+- **Course 63: Automated Security Scanning** — Automates the full 7-scanner pipeline with challenge scripts, threshold enforcement, and reporting integration for CI/CD workflows.
 
 ---
 

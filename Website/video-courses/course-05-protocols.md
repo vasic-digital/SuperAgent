@@ -370,6 +370,13 @@ Create a debate that uses all three protocols for code review.
 
 ---
 
+## Related Courses
+
+- **Course 70: DocProcessor Module** — DocProcessor exposes an MCP-compatible interface; apply the MCP adapter patterns from this course to integrate documentation analysis tools.
+- **Course 71: HelixQA Module** — HelixQA communicates via ACP for cross-agent coordination; use the ACP skills from this course to orchestrate QA workflows.
+- **Course 72: LLMOrchestrator Module** — LLMOrchestrator uses the same CLI agent communication protocols covered here; see how all three protocols converge in headless orchestration.
+- **Course 73: VisionEngine Module** — VisionEngine publishes results via MCP tool calls; the tool execution and resource management patterns here apply directly.
+
 ## Next Course
 
 [Course 06: Testing Strategies](course-06-testing.md) - Learn comprehensive testing approaches for HelixAgent applications.

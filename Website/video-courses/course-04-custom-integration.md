@@ -430,5 +430,14 @@ Create a custom endpoint that combines multiple LLM responses.
 
 ---
 
+## Related Courses
+
+- **Course 70: DocProcessor Module** — Build custom integrations that consume DocProcessor's documentation analysis output for automated spec and feature extraction pipelines.
+- **Course 71: HelixQA Module** — Extend custom integrations with HelixQA's autonomous cross-platform QA engine to validate plugin and provider behavior.
+- **Course 72: LLMOrchestrator Module** — Use LLMOrchestrator's headless CLI agent management as a foundation pattern when building custom orchestration plugins.
+- **Course 73: VisionEngine Module** — Integrate VisionEngine's NavigationGraph and screenshot analysis into custom workflows built on the plugin system from this course.
+
+---
+
 *Course Version: 1.0.0*
 *Last Updated: January 2026*

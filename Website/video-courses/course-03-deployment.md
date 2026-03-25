@@ -1626,3 +1626,12 @@ Pre-built dashboards ready to import.
 
 ### Alert Rules Library
 Comprehensive alert rules for common scenarios.
+
+---
+
+## Related Courses
+
+- **Course 70: DocProcessor Module** — Automate deployment documentation analysis and extraction; DocProcessor integrates with the production pipeline covered here.
+- **Course 71: HelixQA Module** — Validate production deployments automatically with HelixQA's cross-platform crash detection and autonomous QA capabilities.
+- **Course 72: LLMOrchestrator Module** — Learn headless CLI agent orchestration with circuit breakers, extending the production orchestration patterns in this course.
+- **Course 73: VisionEngine Module** — Add visual regression monitoring to production deployments using VisionEngine's NavigationGraph and UI analysis.

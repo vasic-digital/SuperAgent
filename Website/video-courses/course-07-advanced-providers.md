@@ -512,3 +512,12 @@ Congratulations! You've completed the Advanced Provider Configuration course. Yo
 - Manage dynamic provider selection
 - Implement multi-provider orchestration
 - Monitor provider health effectively
+
+---
+
+## Related Courses
+
+- **Course 72: LLMOrchestrator Module** — Extends the headless CLI agent orchestration patterns from this course with circuit breakers, health monitoring, and programmatic provider lifecycle management.
+- **Course 56: Performance Optimization** — Covers the Debate Performance Optimizer added in SP4: parallel LLM execution with semaphore limiting, response caching with TTL, smart fallback chain traversal, and early termination on consensus detection (key file: `internal/services/debate_performance_optimizer.go`).
+- **Course 67: LLMOps and A/B Experimentation** — Combine the scoring and provider selection techniques here with continuous A/B experiments and prompt versioning for data-driven provider tuning.
+- **Course 69: Concurrency Safety Patterns** — The Reflexion framework and performance optimizer introduced improvements to goroutine safety; this course covers the underlying `sync.Once`, `atomic.Bool`, and WaitGroup patterns used throughout.

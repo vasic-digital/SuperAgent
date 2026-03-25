@@ -1162,6 +1162,15 @@ Enable Cognee and analyze the knowledge graph output from a debate.
 ### Exercise 3: Strategy Comparison
 Run the same topic with different voting strategies and compare results.
 
+---
+
+## Related Courses
+
+- **Course 70: DocProcessor Module** — Combine AI debate with automated documentation analysis to generate and validate technical specs from debate outputs.
+- **Course 71: HelixQA Module** — Use HelixQA's cross-platform QA engine to validate debate-generated code or recommendations in real environments.
+- **Course 72: LLMOrchestrator Module** — Learn how LLMOrchestrator headless CLI agent orchestration can drive debate participants programmatically.
+- **Course 73: VisionEngine Module** — Extend AI debates with visual context: VisionEngine can supply screenshot-based UI analysis as debate input.
+
 ### Quick Reference
 
 ```yaml

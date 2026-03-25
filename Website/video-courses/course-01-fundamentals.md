@@ -1071,6 +1071,15 @@ Create a simple Python script that makes completion requests and handles errors.
 ### Hands-on Exercise 3: Ensemble Testing
 Configure ensemble mode and compare responses from multiple providers.
 
+---
+
+## Related Courses
+
+- **Course 70: DocProcessor Module** — Learn how HelixAgent automates documentation analysis and feature extraction, a key capability introduced alongside the fundamentals covered here.
+- **Course 71: HelixQA Module** — Explore cross-platform autonomous QA with crash detection, built on the provider and ensemble concepts from this course.
+- **Course 72: LLMOrchestrator Module** — Deep dive into headless CLI agent orchestration with circuit breakers, extending the provider management techniques introduced in Module 3.
+- **Course 73: VisionEngine Module** — Discover computer vision UI analysis with NavigationGraph, adding visual capabilities to the HelixAgent platform you learned here.
+
 ### Quick Reference Card
 ```
 ESSENTIAL COMMANDS

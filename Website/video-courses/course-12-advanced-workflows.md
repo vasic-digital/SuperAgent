@@ -5,6 +5,7 @@
 **Duration**: 4 hours
 **Level**: Advanced
 **Prerequisites**: Courses 01-05, MCP knowledge recommended
+**MCP Adapters**: HelixAgent ships with 45+ containerized MCP adapters (ports 9101-9999) covering productivity, communication, development, data, and custom integrations — all available as tool nodes within agentic workflows.
 
 ## Course Objectives
 
@@ -285,6 +286,15 @@ Build a comprehensive research assistant workflow that:
 - Discord community
 - Office hours (Fridays 11am PT)
 - GitHub discussions
+
+---
+
+## Related Courses
+
+- **Course 72: LLMOrchestrator Module** — LLMOrchestrator provides headless CLI agent orchestration with circuit breakers; use it to drive agentic workflow nodes that invoke CLI agents programmatically without a UI.
+- **Course 66: Agentic Workflows Deep Dive** — Deeper coverage of the `Agentic/` module (`digital.vasic.agentic`), REST API endpoints (`POST /v1/agentic/workflows`), and the 6 node types used throughout this course.
+- **Course 68: AI Planning Algorithms** — Complement agentic workflows with HiPlan hierarchical planning, MCTS, and Tree of Thoughts to make dynamic routing decisions within workflow nodes.
+- **Course 05: Protocol Integration** — All 45+ MCP adapters available as tool nodes are built on the MCP protocol patterns covered in Course 05; revisit it for custom adapter development.
 
 ---
 
