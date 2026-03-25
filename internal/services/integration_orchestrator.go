@@ -128,7 +128,7 @@ func (io *IntegrationOrchestrator) ExecuteCodeAnalysis(ctx context.Context, file
 }
 
 // ExecuteToolChain executes a chain of tools with dependencies
-func (io *IntegrationOrchestrator) ExecuteToolChain(ctx context.Context, toolChain []ToolExecution) (map[string]interface{}, error) {
+func (io *IntegrationOrchestrator) ExecuteToolChain(ctx context.Context, toolChain []IntegrationToolExecution) (map[string]interface{}, error) {
 	workflow := &Workflow{
 		ID:          fmt.Sprintf("toolchain-%d", time.Now().Unix()),
 		Name:        "Tool Chain Execution",
@@ -677,8 +677,9 @@ func (io *IntegrationOrchestrator) DeleteWorkflow(id string) bool {
 
 // Data structures
 
-// ToolExecution represents a tool execution request
-type ToolExecution struct {
+// IntegrationToolExecution represents a tool execution request for the
+// IntegrationOrchestrator workflow engine.
+type IntegrationToolExecution struct {
 	ToolName   string
 	Parameters map[string]any
 	DependsOn  []string

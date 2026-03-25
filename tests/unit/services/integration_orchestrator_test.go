@@ -174,7 +174,7 @@ func TestIntegrationOrchestrator_ExecuteToolChain(t *testing.T) {
 
 	ctx := context.Background()
 	// Test without dependencies to avoid deadlock
-	toolChain := []services.ToolExecution{
+	toolChain := []services.IntegrationToolExecution{
 		{
 			ToolName:   "test-tool-1",
 			Parameters: map[string]interface{}{"param1": "value1"},
@@ -258,9 +258,9 @@ func TestIntegrationOrchestrator_WorkflowTypes(t *testing.T) {
 	assert.Equal(t, "tool", workflow.Steps[0].Type)
 }
 
-func TestIntegrationOrchestrator_ToolExecutionType(t *testing.T) {
-	// Test ToolExecution type
-	toolExec := services.ToolExecution{
+func TestIntegrationOrchestrator_IntegrationToolExecutionType(t *testing.T) {
+	// Test IntegrationToolExecution type
+	toolExec := services.IntegrationToolExecution{
 		ToolName:   "test-tool",
 		Parameters: map[string]interface{}{"key": "value"},
 		DependsOn:  []string{"dep-1", "dep-2"},

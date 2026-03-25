@@ -334,8 +334,8 @@ func TestWorkflow_Fields(t *testing.T) {
 	assert.Empty(t, workflow.Errors)
 }
 
-func TestToolExecution_Fields(t *testing.T) {
-	te := ToolExecution{
+func TestIntegrationToolExecution_Fields(t *testing.T) {
+	te := IntegrationToolExecution{
 		ToolName:   "test-tool",
 		Parameters: map[string]any{"param1": "value1"},
 		DependsOn:  []string{"dep1"},
@@ -844,7 +844,7 @@ func TestIntegrationOrchestrator_ExecuteToolChain_Empty(t *testing.T) {
 	ctx := context.Background()
 	io := NewIntegrationOrchestrator(nil, nil, &ToolRegistry{}, nil)
 
-	results, err := io.ExecuteToolChain(ctx, []ToolExecution{})
+	results, err := io.ExecuteToolChain(ctx, []IntegrationToolExecution{})
 	assert.NoError(t, err)
 	assert.NotNil(t, results)
 }
@@ -1138,7 +1138,7 @@ func TestIntegrationOrchestrator_ExecuteToolChain(t *testing.T) {
 	t.Run("empty tool chain", func(t *testing.T) {
 		io := NewIntegrationOrchestrator(nil, nil, nil, nil)
 
-		result, err := io.ExecuteToolChain(ctx, []ToolExecution{})
+		result, err := io.ExecuteToolChain(ctx, []IntegrationToolExecution{})
 		require.NoError(t, err)
 		assert.NotNil(t, result)
 	})
@@ -1146,7 +1146,7 @@ func TestIntegrationOrchestrator_ExecuteToolChain(t *testing.T) {
 	t.Run("single tool execution", func(t *testing.T) {
 		io := NewIntegrationOrchestrator(nil, nil, nil, nil)
 
-		toolChain := []ToolExecution{
+		toolChain := []IntegrationToolExecution{
 			{
 				ToolName:   "test-tool",
 				Parameters: map[string]any{"key": "value"},
@@ -1162,7 +1162,7 @@ func TestIntegrationOrchestrator_ExecuteToolChain(t *testing.T) {
 		io := NewIntegrationOrchestrator(nil, nil, nil, nil)
 
 		// Note: ExecuteToolChain assigns IDs as "tool_0", "tool_1", etc.
-		toolChain := []ToolExecution{
+		toolChain := []IntegrationToolExecution{
 			{
 				ToolName:   "analyze",
 				Parameters: map[string]any{"action": "analyze"},
