@@ -656,15 +656,21 @@ func testGeminiACPAvailability() bool {
 	go func() {
 		_, err := fmt.Fprintf(stdin, "%s\n", testReq)
 		if err != nil {
-			done <- false
+			select {
+			case done <- false:
+			case <-ctx.Done():
+			}
 			return
 		}
 
 		scanner := bufio.NewScanner(stdout)
+		var result bool
 		if scanner.Scan() {
-			done <- true
-		} else {
-			done <- false
+			result = true
+		}
+		select {
+		case done <- result:
+		case <-ctx.Done():
 		}
 	}()
 
