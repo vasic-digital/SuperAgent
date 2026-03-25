@@ -1,6 +1,6 @@
 # Extracted Modules Catalog
 
-HelixAgent's functionality is decomposed into **33 independent Go modules**, each with its own repository, tests, and documentation. All modules are integrated as git submodules with `replace` directives in the root `go.mod` for local development.
+HelixAgent's functionality is decomposed into **41 independent Go modules**, each with its own repository, tests, and documentation. All modules are integrated as git submodules with `replace` directives in the root `go.mod` for local development.
 
 ## Module Index
 
@@ -41,8 +41,14 @@ HelixAgent's functionality is decomposed into **33 independent Go modules**, eac
 | 33 | HelixMemory | `digital.vasic.helixmemory` | `HelixMemory/` | 12+ | Cognitive |
 | 34 | HelixSpecifier | `digital.vasic.helixspecifier` | `HelixSpecifier/` | 27 | Specification |
 | 35 | BuildCheck | `digital.vasic.buildcheck` | `BuildCheck/` | 1 | Pre-existing |
+| 36 | DocProcessor | `digital.vasic.docprocessor` | `DocProcessor/` | 6 | Pre-existing |
+| 37 | HelixQA | `digital.vasic.helixqa` | `HelixQA/` | 11 | Pre-existing |
+| 38 | LLMOrchestrator | `digital.vasic.llmorchestrator` | `LLMOrchestrator/` | 6 | Pre-existing |
+| 39 | VisionEngine | `digital.vasic.visionengine` | `VisionEngine/` | 5 | Pre-existing |
+| 40 | LLMsVerifier | `digital.vasic.llmsverifier` | `LLMsVerifier/` | 10+ | Pre-existing |
+| 41 | MCP-Servers | N/A (collection) | `MCP-Servers/` | N/A | Pre-existing |
 
-**Total: 35 modules, 168+ packages**
+**Total: 41 modules, 168+ packages**
 
 ---
 
@@ -476,6 +482,97 @@ Content-based change detection library for container image builds. 1 package pro
 
 **Key types**: `ChangeDetector`, `HashComputer`, `ManifestStore`, `ImageConfig`, `ChangeReport`
 
+### DocProcessor (`digital.vasic.docprocessor`)
+
+Documentation processing, feature map extraction, and coverage tracking. Parses documentation artifacts to build structured feature maps, tracks coverage gaps, and generates actionable reports.
+
+| Package | Purpose |
+|---------|---------|
+| `pkg/parser` | Documentation parser for multiple formats |
+| `pkg/featuremap` | Feature map extraction and indexing |
+| `pkg/coverage` | Documentation coverage tracking |
+| `pkg/reporter` | Coverage report generation |
+| `pkg/diff` | Documentation diff and change detection |
+| `pkg/types` | Core types and interfaces |
+
+**Patterns**: Strategy, Template Method, Reporter
+
+### HelixQA (`digital.vasic.helixqa`)
+
+QA orchestration framework with crash detection, evidence collection, and ticket generation. Integrates with CI/CD and monitoring to surface quality issues as structured tickets.
+
+| Package | Purpose |
+|---------|---------|
+| `pkg/orchestrator` | QA workflow orchestration |
+| `pkg/crash` | Crash detection and classification |
+| `pkg/evidence` | Evidence collection and aggregation |
+| `pkg/ticket` | Ticket generation and routing |
+| `pkg/reporter` | QA report generation |
+| `pkg/monitor` | Real-time quality monitoring |
+| `pkg/replay` | Crash replay and reproduction |
+| `pkg/baseline` | Quality baseline management |
+| `pkg/policy` | QA policy enforcement |
+| `pkg/metrics` | QA metrics and Prometheus integration |
+| `pkg/types` | Core types and interfaces |
+
+**Patterns**: Observer, Strategy, Factory, Chain of Responsibility
+
+### LLMOrchestrator (`digital.vasic.llmorchestrator`)
+
+CLI agent management with hybrid pipe+file protocol and circuit breakers. Manages lifecycle and communication with CLI-based LLM agents using robust fault-tolerant patterns.
+
+| Package | Purpose |
+|---------|---------|
+| `pkg/manager` | CLI agent lifecycle management |
+| `pkg/protocol` | Hybrid pipe+file communication protocol |
+| `pkg/breaker` | Circuit breakers for agent fault tolerance |
+| `pkg/registry` | Agent registry and discovery |
+| `pkg/router` | Request routing across agents |
+| `pkg/types` | Core types and interfaces |
+
+**Patterns**: Circuit Breaker, Strategy, Registry, Facade
+
+### VisionEngine (`digital.vasic.visionengine`)
+
+Computer vision and UI analysis with NavigationGraph and LLM vision providers. Enables screenshot-based UI understanding, navigation planning, and visual element detection.
+
+| Package | Purpose |
+|---------|---------|
+| `pkg/vision` | Core vision analysis interface |
+| `pkg/ui` | UI element detection and classification |
+| `pkg/navigation` | NavigationGraph for UI traversal |
+| `pkg/providers` | LLM vision provider adapters (GPT-4V, Gemini Vision, Claude) |
+| `pkg/types` | Core types and interfaces |
+
+**Patterns**: Strategy, Adapter, Graph traversal
+
+### LLMsVerifier (`digital.vasic.llmsverifier`)
+
+Provider accuracy verification, scoring pipeline, and CLI agent config generation. Single source of truth for provider health on startup; drives dynamic debate team selection.
+
+| Package | Purpose |
+|---------|---------|
+| `pkg/verifier` | Core verification pipeline (8-test suite per provider) |
+| `pkg/scoring` | 5-component weighted scoring engine |
+| `pkg/providers` | Per-provider verification adapters |
+| `pkg/subscription` | 3-tier subscription detection |
+| `pkg/cliagents` | Unified CLI agent config generator (48 agents) |
+| `pkg/oauth` | OAuth/free provider adapters |
+| `pkg/ranking` | Provider ranking and selection |
+| `pkg/report` | Verification report generation |
+| `pkg/discovery` | Dynamic model discovery integration |
+| `pkg/types` | Core types and interfaces |
+
+**Scoring weights**: ResponseSpeed 25%, CostEffectiveness 25%, ModelEfficiency 20%, Capability 20%, Recency 10%
+
+**Patterns**: Strategy, Factory, Adapter, Scoring Pipeline
+
+### MCP-Servers (collection)
+
+60+ containerized MCP server implementations covering filesystem, memory, sequential-thinking, database, vision, embeddings, RAG, formatters, monitoring, and more. Each server is a standalone container exposing the Model Context Protocol over HTTP.
+
+**Key directories**: `MCP-Servers/` — individual server implementations, Dockerfiles, and compose configurations for each of the 60+ MCP servers.
+
 ---
 
 ## Development
@@ -561,7 +658,13 @@ HelixAgent (dev.helix.agent)
 └── Pre-existing
     ├── Containers ─── Container orchestration
     ├── Challenges ─── Challenge framework
-    └── BuildCheck ─── Container rebuild detection
+    ├── BuildCheck ─── Container rebuild detection
+    ├── DocProcessor ─── Documentation processing, feature maps
+    ├── HelixQA ─── QA orchestration, crash detection, tickets
+    ├── LLMOrchestrator ─── CLI agent management, hybrid protocol
+    ├── VisionEngine ─── Computer vision, UI analysis, NavigationGraph
+    ├── LLMsVerifier ─── Provider verification, scoring, CLI agent configs
+    └── MCP-Servers ─── 60+ containerized MCP server implementations
 ```
 
 ---
