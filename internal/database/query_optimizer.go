@@ -68,6 +68,8 @@ type QueryCache struct {
 	mu      sync.RWMutex
 	ttl     time.Duration
 	maxSize int
+	ctx     context.Context
+	cancel  context.CancelFunc
 }
 
 type cacheEntry struct {
@@ -78,14 +80,22 @@ type cacheEntry struct {
 
 // NewQueryCache creates a new query cache
 func NewQueryCache(ttl time.Duration, maxSize int) *QueryCache {
+	ctx, cancel := context.WithCancel(context.Background())
 	qc := &QueryCache{
 		cache:   make(map[string]*list.Element),
 		lruList: list.New(),
 		ttl:     ttl,
 		maxSize: maxSize,
+		ctx:     ctx,
+		cancel:  cancel,
 	}
 	go qc.cleanupLoop()
 	return qc
+}
+
+// Shutdown stops the cleanup goroutine
+func (c *QueryCache) Shutdown() {
+	c.cancel()
 }
 
 func (c *QueryCache) Get(key string) (interface{}, bool) {
@@ -187,25 +197,30 @@ func (c *QueryCache) cleanupLoop() {
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 
-	for range ticker.C {
-		c.mu.Lock()
-		now := time.Now()
-		// Walk from back (LRU) and remove expired entries
-		for elem := c.lruList.Back(); elem != nil; {
-			entry, ok := elem.Value.(*cacheEntry)
-			if !ok {
+	for {
+		select {
+		case <-c.ctx.Done():
+			return
+		case <-ticker.C:
+			c.mu.Lock()
+			now := time.Now()
+			// Walk from back (LRU) and remove expired entries
+			for elem := c.lruList.Back(); elem != nil; {
+				entry, ok := elem.Value.(*cacheEntry)
+				if !ok {
+					prev := elem.Prev()
+					c.lruList.Remove(elem)
+					elem = prev
+					continue
+				}
 				prev := elem.Prev()
-				c.lruList.Remove(elem)
+				if now.After(entry.expiresAt) {
+					c.removeLocked(elem)
+				}
 				elem = prev
-				continue
 			}
-			prev := elem.Prev()
-			if now.After(entry.expiresAt) {
-				c.removeLocked(elem)
-			}
-			elem = prev
+			c.mu.Unlock()
 		}
-		c.mu.Unlock()
 	}
 }
 
