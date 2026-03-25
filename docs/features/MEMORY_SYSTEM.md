@@ -365,5 +365,5 @@ go test -v -tags=integration ./internal/memory/...
 ## See Also
 
 - [RAG System](./RAG_SYSTEM.md)
-- [Entity Extraction](./ENTITY_EXTRACTION.md)
-- [Vector Database](./VECTOR_DATABASE.md)
+- [Entity Extraction](../guides/memory-management.md)
+- [Vector Database](../integrations/README.md)

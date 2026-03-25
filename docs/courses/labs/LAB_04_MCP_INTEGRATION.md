@@ -453,5 +453,5 @@ In this lab, you learned:
 ## Resources
 
 - [MCP Specification](https://spec.modelcontextprotocol.io/)
-- [HelixAgent MCP Documentation](../../api/mcp.md)
+- [HelixAgent MCP Documentation](../../mcp/README.md)
 - [MCP Server Examples](../../examples/mcp/)

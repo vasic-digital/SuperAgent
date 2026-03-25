@@ -1073,4 +1073,4 @@ curl http://localhost:7061/metrics | grep -E "(cpu|memory|goroutine)"
 
 ---
 
-**Next Steps**: Continue to the [Operational Guide](OPERATIONAL_GUIDE.md) for ongoing maintenance and operations procedures.
+**Next Steps**: Continue to the [Operational Guide](../guides/OPERATIONAL_GUIDE.md) for ongoing maintenance and operations procedures.

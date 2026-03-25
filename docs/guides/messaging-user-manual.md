@@ -646,8 +646,8 @@ metrics := hub.GetMetrics()
 
 ## Additional Resources
 
-- [Messaging Architecture Guide](./messaging-architecture.md)
-- [RabbitMQ Best Practices](./rabbitmq-integration.md)
-- [Kafka Configuration Guide](./kafka-integration.md)
+- [Messaging Architecture Guide](../architecture/messaging-architecture.md)
+- [RabbitMQ Best Practices](../architecture/rabbitmq-integration.md)
+- [Kafka Configuration Guide](../architecture/kafka-integration.md)
 - [Migration Guide](./migration-guide.md)
-- [Performance Tuning](./performance-tuning.md)
+- [Performance Tuning](./messaging-operations-guide.md)

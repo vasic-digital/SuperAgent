@@ -336,8 +336,8 @@ If you encounter issues during migration:
 ## Additional Resources
 
 - [CLAUDE.md](../../CLAUDE.md) - Updated architecture documentation
-- [Development Guide](../development/DEVELOPMENT.md) - Development setup
-- [Configuration Guide](../configuration/CONFIGURATION.md) - Detailed config options
+- [Development Guide](../development/README.md) - Development setup
+- [Configuration Guide](../deployment/configuration.md) - Detailed config options
 - [Mem0 Documentation](https://mem0.ai/docs) - Official Mem0 docs
 
 ---

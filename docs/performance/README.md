@@ -251,5 +251,5 @@ Run the performance baseline challenge to validate optimization:
 ## Related Documentation
 
 - [Architecture Overview](../architecture/README.md)
-- [Configuration Guide](../configuration/README.md)
-- [Monitoring Guide](../operations/MONITORING.md)
+- [Configuration Guide](../guides/configuration-guide.md)
+- [Monitoring Guide](../monitoring/README.md)

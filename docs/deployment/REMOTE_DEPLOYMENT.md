@@ -613,7 +613,7 @@ HelixAgent's remote deployment and service discovery system enables flexible, di
 4. Run the challenge script: `./challenges/scripts/remote_deployment_challenge.sh`
 
 ### Additional Resources
-- [BootManager Documentation](SERVICE_MANAGEMENT.md)
-- [Docker Compose Configuration](../docker/README.md)
+- [BootManager Documentation](../SERVICE_MANAGEMENT.md)
+- [Docker Compose Configuration](../deployment/README.md)
 - [Security Best Practices](../security/SANDBOXING.md)
 - [Monitoring and Observability](../monitoring/MONITORING_SYSTEM.md)

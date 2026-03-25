@@ -426,9 +426,9 @@ make run-dev
 ## 📚 Documentation
 
 - **[API Documentation](./PROTOCOL_SUPPORT_DOCUMENTATION.md)** - Complete API reference
-- **[Deployment Guide](./PROTOCOL_DEPLOYMENT_GUIDE.md)** - Production deployment
-- **[Configuration Guide](./docs/configuration.md)** - Advanced configuration
-- **[Troubleshooting](./docs/troubleshooting.md)** - Common issues and solutions
+- **[Deployment Guide](../deployment/PROTOCOL_DEPLOYMENT_GUIDE.md)** - Production deployment
+- **[Configuration Guide](../deployment/configuration.md)** - Advanced configuration
+- **[Troubleshooting](../deployment/troubleshooting.md)** - Common issues and solutions
 
 ## 🏢 Enterprise Support
 
@@ -436,7 +436,7 @@ For enterprise deployments, custom integrations, or priority support:
 
 - 📧 **Email**: enterprise@helixagent.ai
 - 💬 **Slack**: [Join our community](https://helixagent.slack.com)
-- 📖 **Documentation**: [Enterprise Guide](./docs/enterprise.md)
+- 📖 **Documentation**: [Enterprise Guide](../deployment/DEPLOYMENT_GUIDE.md)
 
 ## 📄 License
 

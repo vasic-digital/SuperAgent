@@ -534,4 +534,4 @@ curl http://localhost:3000/api/health
 - [Deployment Guide](./deployment/DEPLOYMENT_GUIDE.md)
 - [Service Boot Configuration](./architecture/SERVICE_ARCHITECTURE.md)
 - [Docker Compose Reference](../docker-compose.yml)
-- [Troubleshooting Guide](./troubleshooting/TROUBLESHOOTING.md)
+- [Troubleshooting Guide](./user/TROUBLESHOOTING.md)

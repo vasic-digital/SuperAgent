@@ -1588,4 +1588,4 @@ documentation_review:
 
 ---
 
-**Next Steps**: The system is now fully operational with comprehensive monitoring, maintenance, and incident response procedures in place. Continue to the [Final Summary](FINAL_SUMMARY.md) for a complete overview of the implemented system.
+**Next Steps**: The system is now fully operational with comprehensive monitoring, maintenance, and incident response procedures in place. Continue to the [Final Summary](../archive/FINAL_SUMMARY.md) for a complete overview of the implemented system.

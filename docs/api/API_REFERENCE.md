@@ -1903,8 +1903,8 @@ fmt.Println(response.Choices[0].Message.Content)
 
 ## Related Documentation
 
-- [Capability Detection](../LLMsVerifier/docs/CAPABILITY_DETECTION.md) - Full capability detection documentation
-- [CLI Agent Registry](./CLAUDE.md#cli-agent-registry) - Detailed CLI agent information
-- [AI Debate Team](./CLAUDE.md#ai-debate-team-composition) - Debate team configuration
-- [Background Execution](./docs/background-execution/README.md) - Background task system
+- [Capability Detection](../../LLMsVerifier/docs/CAPABILITY_DETECTION.md) - Full capability detection documentation
+- [CLI Agent Registry](../../CLAUDE.md#cli-agent-registry) - Detailed CLI agent information
+- [AI Debate Team](../../CLAUDE.md#ai-debate-team-composition) - Debate team configuration
+- [Background Execution](../architecture/README.md) - Background task system
 - [Challenge Scripts](./challenges/scripts/) - Validation challenges

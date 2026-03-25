@@ -348,6 +348,6 @@ go test -v -tags=integration ./internal/rag/...
 
 ## See Also
 
-- [Vector Database Integration](./VECTOR_DATABASE.md)
+- [Vector Database Integration](../integrations/README.md)
 - [Memory System](./MEMORY_SYSTEM.md)
 - [LLM Testing Framework](./LLM_TESTING.md)

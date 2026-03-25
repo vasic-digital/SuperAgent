@@ -302,5 +302,5 @@ go test -cover ./...
 ## Related Documentation
 
 - [Main HelixAgent Documentation](../README.md)
-- [Provider Development Guide](../development/PROVIDERS.md)
+- [Provider Development Guide](../providers/README.md)
 - [API Reference](../api/README.md)

@@ -2,7 +2,7 @@
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2025-12-08
-**Feature**: [specs/001-helix-agent/spec.md](specs/001-helix-agent/spec.md)
+**Feature**: HelixAgent specification (see project root for spec details)
 
 ## Content Quality
 

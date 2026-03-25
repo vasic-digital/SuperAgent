@@ -245,6 +245,6 @@ A: Yes, with Redis for distributed caching and PostgreSQL for shared state.
 ## Related Documentation
 
 - [API Reference](../api/README.md)
-- [Configuration Guide](../configuration/README.md)
+- [Configuration Guide](../guides/configuration-guide.md)
 - [Deployment Guide](../deployment/README.md)
 - [SDK Documentation](../sdk/README.md)

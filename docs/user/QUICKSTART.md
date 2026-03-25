@@ -231,7 +231,7 @@ curl -X POST http://localhost:7061/api/v1/verifier/code-visibility \
 ## Next Steps
 
 - [API Documentation](../api/api-documentation.md)
-- [Deployment Guide](../deployment/QUICK_DEPLOYMENT_GUIDE.md)
+- [Deployment Guide](../guides/QUICK_DEPLOYMENT_GUIDE.md)
 - [LLMsVerifier Guide](../verifier/USER_GUIDE.md)
 - [Advanced Features](../features/ADVANCED_FEATURES_SUMMARY.md)
 

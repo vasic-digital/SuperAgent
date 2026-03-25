@@ -174,5 +174,5 @@ providers:
 ## Related Documentation
 
 - [Provider Configuration](../guides/configuration-guide.md)
-- [API Reference](./api-documentation.md)
+- [API Reference](../api/api-documentation.md)
 - [Security Hardening](../deployment/PRODUCTION_DEPLOYMENT_CHECKLIST.md)

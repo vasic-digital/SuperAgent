@@ -323,6 +323,6 @@ OAuth tokens are product-restricted. Use standard API keys:
 
 ## Related Documentation
 
-- [Provider Configuration](/docs/guides/configuration-guide.md)
-- [AI Debate System](/docs/ai-debate.html)
-- [Startup Verification](/docs/architecture/startup-verification.md)
+- [Provider Configuration](./configuration-guide.md)
+- [AI Debate System](../features/ai-debate-configuration.md)
+- [Startup Verification](../architecture/README.md)

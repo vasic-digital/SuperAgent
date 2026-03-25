@@ -169,7 +169,7 @@ docker-compose -f docker-compose.bigdata.yml up -d
 ## Next Steps
 
 1. Read the full [Big Data Integration Guide](README.md)
-2. Explore the [Flink Documentation](flink.md)
-3. Learn about [MinIO Storage Patterns](minio.md)
-4. Understand [Qdrant Vector Search](qdrant.md)
-5. Master [Iceberg Analytics](iceberg.md)
+2. Explore the [Big Data Deployment Guide](../deployment/BIG_DATA_DEPLOYMENT_GUIDE.md)
+3. Learn about [Big Data Optimization](../optimization/BIG_DATA_OPTIMIZATION_GUIDE.md)
+4. Understand [Big Data User Guide](../user/BIG_DATA_USER_GUIDE.md)
+5. Review the [Big Data API Reference](../api/BIG_DATA_API_REFERENCE.md)

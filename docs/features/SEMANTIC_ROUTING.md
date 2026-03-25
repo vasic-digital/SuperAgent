@@ -360,6 +360,6 @@ func TestRouter_RouteMatching(t *testing.T) {
 
 ## See Also
 
-- [Intent Classification](./INTENT_CLASSIFICATION.md)
-- [Provider Registry](../api/providers.md)
-- [Handler Architecture](../architecture/handlers.md)
+- [Intent Classification](../guides/semantic-intent.md)
+- [Provider Registry](../providers/README.md)
+- [Handler Architecture](../architecture/README.md)

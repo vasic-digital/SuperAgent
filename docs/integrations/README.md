@@ -121,6 +121,6 @@ Key environment variables for integrations:
 
 ## Related Documentation
 
-- [Provider Setup Guide](../deployment/PROVIDER_SETUP.md)
+- [Provider Setup Guide](../providers/README.md)
 - [Configuration Reference](../configuration/README.md)
 - [API Documentation](../api/README.md)

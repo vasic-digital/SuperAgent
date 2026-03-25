@@ -650,7 +650,7 @@ docker-compose up -d
 - [Quick Start Guide](./quick-start-guide.md)
 - [Configuration Guide](./configuration-guide.md)
 - [Troubleshooting Guide](./troubleshooting-guide.md)
-- [API Documentation](../api-documentation.md)
+- [API Documentation](../api/api-documentation.md)
 
 ### Support Channels
 - **GitHub Issues**: Bug reports and feature requests

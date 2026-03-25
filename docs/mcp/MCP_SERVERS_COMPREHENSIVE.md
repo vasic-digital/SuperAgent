@@ -318,6 +318,6 @@ BRAVE_API_KEY=BSAxxxxxxxxxxxx
 ## See Also
 
 - [MCP Protocol Specification](https://modelcontextprotocol.io/specification)
-- [MCP TypeScript SDK](../MCP/submodules/typescript-sdk/CLAUDE.md)
+- [MCP TypeScript SDK](../../MCP/submodules/typescript-sdk/CLAUDE.md)
 - [Docker Compose Files](../docker/mcp/)
 - [Challenge Scripts](../challenges/scripts/)

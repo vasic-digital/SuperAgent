@@ -878,9 +878,9 @@ make config-report
 ## 📚 Next Steps
 
 - [Quick Start Guide](./quick-start-guide.md)
-- [API Documentation](../api-documentation.md)
+- [API Documentation](../api/api-documentation.md)
 - [Troubleshooting Guide](./troubleshooting-guide.md)
-- [Production Deployment](../production-deployment.md)
+- [Production Deployment](../deployment/production-deployment.md)
 
 ---
 

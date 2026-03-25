@@ -753,5 +753,5 @@ VERBOSE=true ./challenges/scripts/run_all_challenges.sh
 - [Effective Go](https://golang.org/doc/effective_go.html)
 - [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
 - [HelixAgent API Reference](./api/)
-- [Comprehensive Completion Report](./COMPREHENSIVE_COMPLETION_REPORT.md)
+- [Comprehensive Completion Report](./reports/COMPREHENSIVE_AUDIT_REPORT.md)
 - [Challenge Scripts](../challenges/scripts/)

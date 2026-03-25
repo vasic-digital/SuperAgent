@@ -357,5 +357,5 @@ Failed Tests:
 ## See Also
 
 - [RAG System](./RAG_SYSTEM.md)
-- [Quality Assurance](../guides/qa-testing.md)
-- [CI/CD Integration](../guides/cicd.md)
+- [Quality Assurance](../development/DETAILED_TESTING_STRATEGY.md)
+- [CI/CD Integration](../development/README.md)

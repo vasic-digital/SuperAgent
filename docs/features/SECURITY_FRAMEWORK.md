@@ -389,5 +389,5 @@ go test -v -tags=security ./tests/security/...
 ## See Also
 
 - [OWASP LLM Top 10](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
-- [MCP Security](./MCP_SECURITY.md)
-- [Audit Logging](../guides/audit-logging.md)
+- [MCP Security](../mcp/README.md)
+- [Audit Logging](../monitoring/README.md)

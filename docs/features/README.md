@@ -245,5 +245,5 @@ Validate features with challenge scripts:
 
 - [Architecture Overview](../architecture/README.md)
 - [API Reference](../api/README.md)
-- [Configuration Guide](../configuration/README.md)
+- [Configuration Guide](../guides/configuration-guide.md)
 - [Integration Guide](../integrations/README.md)

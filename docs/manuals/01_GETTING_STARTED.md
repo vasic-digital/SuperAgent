@@ -254,6 +254,6 @@ curl "http://localhost:7061/v1/mcp/tools/search?q=file"
 
 ## Getting Help
 
-- Check the [FAQ](../FAQ.md)
-- Review [Troubleshooting](../TROUBLESHOOTING.md)
+- Check the [FAQ](../user/FAQ.md)
+- Review [Troubleshooting](../user/TROUBLESHOOTING.md)
 - Open an issue on GitHub

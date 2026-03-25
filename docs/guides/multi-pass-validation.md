@@ -167,5 +167,5 @@ If phases are being skipped unexpectedly:
 ## Related Documentation
 
 - [AI Debate System](/docs/ai-debate.html)
-- [Debate API Reference](/docs/api/debate-api.md)
-- [Provider Configuration](/docs/guides/configuration-guide.md)
+- [Debate API Reference](../api/api-documentation.md)
+- [Provider Configuration](./configuration-guide.md)

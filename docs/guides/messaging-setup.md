@@ -277,6 +277,6 @@ kafka-consumer-groups.sh --bootstrap-server localhost:9092 \
 
 ## Related Documentation
 
-- [Architecture](/docs/architecture/messaging-architecture.md)
-- [Kafka Integration](/docs/architecture/kafka-integration.md)
-- [RabbitMQ Integration](/docs/architecture/rabbitmq-integration.md)
+- [Architecture](../architecture/messaging-architecture.md)
+- [Kafka Integration](../architecture/kafka-integration.md)
+- [RabbitMQ Integration](../architecture/rabbitmq-integration.md)

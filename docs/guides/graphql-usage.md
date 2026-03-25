@@ -484,5 +484,5 @@ result = client.execute(query)
 ## Related Documentation
 
 - [REST API Reference](/docs/api)
-- [Architecture - GraphQL](/docs/architecture/graphql-api.md)
-- [Authentication Guide](/docs/guides/authentication.md)
+- [Architecture - GraphQL](../architecture/graphql-api.md)
+- [Authentication Guide](../security/AUTHENTICATION.md)

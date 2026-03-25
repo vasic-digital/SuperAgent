@@ -120,6 +120,6 @@ if err != nil {
 
 ## Related Documentation
 
-- [Multi-Provider Configuration](../guides/multi-provider-setup.md)
-- [Ensemble Strategies](../guides/ensemble-strategies.md)
+- [Multi-Provider Configuration](../integrations/MULTI_PROVIDER_SETUP.md)
+- [Ensemble Strategies](../features/ADVANCED_FEATURES_SUMMARY.md)
 - [LLM Optimization](../guides/LLM_OPTIMIZATION_USER_GUIDE.md)

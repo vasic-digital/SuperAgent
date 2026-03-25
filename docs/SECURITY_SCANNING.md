@@ -394,4 +394,4 @@ Output in `reports/sbom/`.
 
 ## Contact
 
-For security concerns, see [SECURITY.md](../SECURITY.md).
+For security concerns, see [SECURITY.md](./security/README.md).

@@ -43,9 +43,9 @@ Comprehensive user documentation for HelixAgent.
 - [Main Documentation](../README.md)
 - [Testing Guide](../testing/README.md)
 - [API Specification](../../api/openapi.yaml)
-- [Troubleshooting](../TROUBLESHOOTING.md)
+- [Troubleshooting](../user/TROUBLESHOOTING.md)
 - [Developer Guide](../DEVELOPER_GUIDE.md)
-- [Comprehensive Report](../COMPREHENSIVE_COMPLETION_REPORT.md)
+- [Comprehensive Report](../reports/COMPREHENSIVE_AUDIT_REPORT.md)
 
 ## Latest Updates (January 2026)
 

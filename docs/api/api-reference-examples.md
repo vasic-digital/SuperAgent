@@ -670,4 +670,4 @@ func main() {
    - Set up load balancing
    - Implement high availability
 
-For more information, refer to the [main API documentation](api-documentation.md) and [deployment guide](deployment.md).
+For more information, refer to the [main API documentation](api-documentation.md) and [deployment guide](../deployment/DEPLOYMENT_GUIDE.md).

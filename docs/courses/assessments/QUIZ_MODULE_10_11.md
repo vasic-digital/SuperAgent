@@ -351,4 +351,4 @@ After passing this quiz:
 - [Kubernetes Security Best Practices](https://kubernetes.io/docs/concepts/security/)
 - [OWASP LLM Top 10](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
 - [HelixAgent Security Documentation](../../security/)
-- [Production Deployment Checklist](../../guides/production-checklist.md)
+- [Production Deployment Checklist](../../deployment/PRODUCTION_DEPLOYMENT_CHECKLIST.md)

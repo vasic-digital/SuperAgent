@@ -463,8 +463,8 @@ After passing this assessment:
 ## Additional Resources
 
 - [Challenge Scripts Documentation](../../../challenges/README.md)
-- [MCP Tool Search Guide](../../guides/mcp-tool-search.md)
-- [AI Debate Configuration](../../guides/ai-debate.md)
+- [MCP Tool Search Guide](../../mcp/README.md)
+- [AI Debate Configuration](../../features/ai-debate-configuration.md)
 - [LLMsVerifier Documentation](../../../LLMsVerifier/README.md)
 
 ---

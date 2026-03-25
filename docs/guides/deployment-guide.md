@@ -134,5 +134,5 @@ make container-logs
 
 ## See Also
 
-- [CONTRIBUTING.md](../CONTRIBUTING.md) - Development guide
-- [API_REFERENCE.md](api/API_REFERENCE.md) - API documentation
+- [CONTRIBUTING.md](../../CONTRIBUTING.md) - Development guide
+- [API_REFERENCE.md](../api/API_REFERENCE.md) - API documentation

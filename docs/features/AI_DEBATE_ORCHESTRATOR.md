@@ -280,6 +280,6 @@ go test -cover ./internal/debate/...
 
 ## See Also
 
-- [Debate API Reference](../api/debates.md)
-- [Multi-Pass Validation](./MULTI_PASS_VALIDATION.md)
-- [Provider Configuration](../guides/providers.md)
+- [Debate API Reference](../api/api-documentation.md)
+- [Multi-Pass Validation](../guides/multi-pass-validation.md)
+- [Provider Configuration](../providers/README.md)
