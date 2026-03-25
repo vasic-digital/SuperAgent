@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Changelog - HelixAgent</title>
-    <meta name="description" content="HelixAgent release history and changelog. Stay up to date with the latest features and improvements.">
+    <meta name="description" content="HelixAgent release history and changelog. 43 providers, 41 modules, 60+ challenges. Stay up to date with the latest features and improvements. Updated 2026-03-25.">
     <link rel="stylesheet" href="/styles/main.css">
     <link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
     <style>
@@ -38,6 +38,66 @@
     <main class="container" style="max-width: 800px; margin: 0 auto; padding: 2rem;">
         <h1>Changelog</h1>
         <p class="lead">All notable changes to HelixAgent are documented here.</p>
+
+        <div class="changelog-entry">
+            <h2><span class="version-badge">v1.4.0</span> <span class="date-badge">March 25, 2026</span></h2>
+            <p>Major platform expansion: 41 extracted modules, 43 LLM providers, 6 new modules (DocProcessor, HelixQA, LLMOrchestrator, VisionEngine, HelixMemory, HelixSpecifier), comprehensive safety and security hardening across SP1-SP5 milestones.</p>
+
+            <div class="change-type fixed">Critical Fixes</div>
+            <ul class="changes-list">
+                <li>Fixed goroutine lifecycle safety issues across all handlers with WaitGroup patterns</li>
+                <li>Eliminated race conditions detected by <code>go test -race</code> across the full codebase</li>
+                <li>Fixed deadlocks in provider health monitor, debate orchestrator, and cache systems</li>
+                <li>Resolved memory leaks in streaming responses and background task workers</li>
+                <li>Fixed O(n) cache eviction with O(1) LRU replacement in query optimizer</li>
+                <li>Removed 981+ lines of dead code across 19+ files</li>
+                <li>Constitution synchronized to v1.2.0 with 26 mandatory rules</li>
+            </ul>
+
+            <div class="change-type added">Test Coverage</div>
+            <ul class="changes-list">
+                <li>Expanded from 35 to 41 extracted modules, each with independent test suites</li>
+                <li>60+ challenge scripts validating real-life use cases with zero false positives</li>
+                <li>835+ tests in HelixSpecifier across 27 packages (unit, integration, E2E, security, stress, benchmark)</li>
+                <li>80+ tests in HelixMemory covering fusion pipeline, circuit breakers, and infra bridge</li>
+                <li>Comprehensive stress and chaos engineering tests (10x load, cascade failure, memory pressure)</li>
+                <li>BigData, formatters, memory, observability packages elevated to 80%+ coverage</li>
+                <li>gRPC integration tests (21 tests), debate full-flow tests (7 lifecycle tests)</li>
+                <li>22 Go-native userflow challenges with dependency graph execution</li>
+            </ul>
+
+            <div class="change-type security">Safety &amp; Security</div>
+            <ul class="changes-list">
+                <li>7 integrated security scanners: Snyk, SonarQube, Gosec, Semgrep, Trivy, staticcheck, go vet</li>
+                <li>Containerized Snyk scanning (38 tests) and SonarQube scanning (45 tests)</li>
+                <li>Gosec scan: 568 findings analyzed, 22 actionable fixes applied</li>
+                <li>File permissions hardened to 0o600/0o750 across 19 files</li>
+                <li>PII detection and redaction via Security module guardrails engine</li>
+                <li>Red team framework for adversarial testing of AI responses</li>
+                <li>SBOM generation (CycloneDX/SPDX) for supply chain security</li>
+            </ul>
+
+            <div class="change-type improved">Performance</div>
+            <ul class="changes-list">
+                <li>HTTP/3 (QUIC) as primary transport with Brotli compression across all HTTP communication</li>
+                <li>Lazy loading and sync.Once initialization for all optional services</li>
+                <li>Semaphore-based concurrency limits for parallel health checks and component initialization</li>
+                <li>Debate performance optimizer: parallel LLM execution, response caching with TTL, early termination on consensus</li>
+                <li>Resource limits enforcement: GOMAXPROCS=2, nice -n 19, ionice -c 3 for all tests</li>
+                <li>pprof memory profiling integration for leak detection</li>
+                <li>Benchmark baseline capture for performance regression detection</li>
+            </ul>
+
+            <div class="change-type added">Documentation</div>
+            <ul class="changes-list">
+                <li>Complete documentation for all 41 modules: CLAUDE.md, AGENTS.md, README.md, docs/</li>
+                <li>61+ video courses covering all major features and subsystems</li>
+                <li>20+ user manuals with step-by-step guides</li>
+                <li>Architecture diagrams (PlantUML, Mermaid) for all major subsystems</li>
+                <li>Website updated with current feature set, provider list, and changelog</li>
+                <li>Constitution auto-update system with background filesystem watcher</li>
+            </ul>
+        </div>
 
         <div class="changelog-entry">
             <h2><span class="version-badge">v1.3.1</span> <span class="date-badge">March 2026</span></h2>
@@ -253,7 +313,7 @@
                 </ul>
             </div>
         </div>
-        <p class="footer-copyright">&copy; 2024 HelixAgent. All rights reserved.</p>
+        <p class="footer-copyright">&copy; 2026 HelixAgent. All rights reserved.</p>
     </footer>
 
     <script src="/scripts/main.js"></script>
