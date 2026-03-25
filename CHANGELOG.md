@@ -5,7 +5,42 @@ All notable changes to HelixAgent are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [Unreleased] - 2026-03-25
+
+### Fixed
+- Duplicate GetAgentPool() method in debate/comprehensive/integration.go
+- Skills routes registered inside per-request handler closure (moved to startup)
+- Channel leaks in Gemini and Qwen ACP providers
+- Context cancellation missing in query_optimizer cleanup loop
+- 32 broken documentation links across docs/
+
+### Added
+- Dead code verification challenge
+- Test coverage completeness challenge
+- 15+ new test files for under-covered packages
+- 6 fuzz test targets (JSON, schema, protocol, template, config)
+- 3 precondition tests (database, redis, API health)
+- goleak goroutine leak detection in 5 critical packages
+- 6 stress tests (rate limiter, ensemble, debate, streaming, cache, db pool)
+- sync.Once lazy service initialization for router handlers
+- Exponential backoff for debate optimizer, HTTP concurrency limiter
+- SSE connection caps per client IP, queue depth metrics
+- 10 monitoring validation tests, 10 benchmark baselines
+- 6 modules added to MODULES.md (41 total)
+- 7 new user manuals, 6 new video courses
+- SQL schema index and guide
+- 11 new challenge scripts across all categories
+
+### Removed
+- internal/background/backup/ (stale package duplication, 364KB)
+- 5 dead adapter packages (background, observability, events, http, helixqa)
+
+### Changed
+- Challenge orchestrator expanded from 64 to 493 scripts
+- MODULES.md updated from 33 to 41 modules
+- Website updated with new module features and changelog
+
+## [1.2.0] - 2026-03-20
 
 ### Added
 - Benchmark test coverage for 40/40 LLM providers, 7 debate packages, and 17 core packages (556+ benchmarks)
