@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"sync"
 	"time"
 
@@ -130,14 +131,44 @@ func (d *inMemoryEventLog) GetEventsFromNode(nodeID string) ([]*memory.MemoryEve
 	return result, nil
 }
 
+// lazyComponent provides sync.Once-based deferred initialization for a big data component.
+// The factory is called at most once, on the first call to get().
+type lazyComponent[T any] struct {
+	once    sync.Once
+	value   T
+	initErr error
+	factory func(ctx context.Context) (T, error)
+}
+
+// get returns the lazily initialized component. On first call the factory
+// is invoked; the result (including any error) is cached for subsequent calls.
+func (lc *lazyComponent[T]) get(ctx context.Context) (T, error) {
+	lc.once.Do(func() {
+		lc.value, lc.initErr = lc.factory(ctx)
+	})
+	return lc.value, lc.initErr
+}
+
+// initialized reports whether the factory has already run.
+func (lc *lazyComponent[T]) initialized() bool {
+	return lc.initErr != nil || isNonNil(lc.value)
+}
+
 // BigDataIntegration manages all big data components
 type BigDataIntegration struct {
-	// Core components
+	// Core components (eagerly initialized — set by Initialize)
 	infiniteContext     *conversation.InfiniteContextEngine
 	distributedMemory   *memory.DistributedMemoryManager
 	graphStreaming      *knowledge.StreamingKnowledgeGraph
 	clickhouseAnalytics *analytics.ClickHouseAnalytics
 	crossSessionLearner *learning.CrossSessionLearner
+
+	// Lazy components (initialized on first access via getter)
+	lazyInfiniteContext *lazyComponent[*conversation.InfiniteContextEngine]
+	lazyDistributedMem  *lazyComponent[*memory.DistributedMemoryManager]
+	lazyGraphStreaming  *lazyComponent[*knowledge.StreamingKnowledgeGraph]
+	lazyAnalytics       *lazyComponent[*analytics.ClickHouseAnalytics]
+	lazyCrossLearner    *lazyComponent[*learning.CrossSessionLearner]
 
 	// Messaging
 	kafkaBroker messaging.MessageBroker
@@ -227,7 +258,11 @@ func DefaultIntegrationConfig() *IntegrationConfig {
 	}
 }
 
-// NewBigDataIntegration creates a new big data integration
+// NewBigDataIntegration creates a new big data integration.
+// Component initialization is deferred: each component is created on first
+// access through its getter (GetInfiniteContext, GetDistributedMemory, etc.)
+// using sync.Once to guarantee thread safety and at-most-once semantics.
+// The Initialize method still works for eager startup when preferred.
 func NewBigDataIntegration(
 	config *IntegrationConfig,
 	kafkaBroker messaging.MessageBroker,
@@ -242,6 +277,108 @@ func NewBigDataIntegration(
 		kafkaBroker: kafkaBroker,
 		logger:      logger,
 		isRunning:   false,
+	}
+
+	// Wire up lazy initializers for each enabled component
+	integration.lazyInfiniteContext = &lazyComponent[*conversation.InfiniteContextEngine]{
+		factory: func(ctx context.Context) (*conversation.InfiniteContextEngine, error) {
+			if !config.EnableInfiniteContext {
+				return nil, fmt.Errorf("infinite context is disabled")
+			}
+			llmClient := &providerRegistryLLMClient{
+				registry: config.ProviderRegistry,
+				logger:   logger,
+			}
+			compressor := conversation.NewContextCompressor(llmClient, logger)
+			engine := conversation.NewInfiniteContextEngine(kafkaBroker, compressor, logger)
+			logger.Info("Infinite context engine initialized (lazy)")
+			return engine, nil
+		},
+	}
+
+	integration.lazyDistributedMem = &lazyComponent[*memory.DistributedMemoryManager]{
+		factory: func(ctx context.Context) (*memory.DistributedMemoryManager, error) {
+			if !config.EnableDistributedMemory {
+				return nil, fmt.Errorf("distributed memory is disabled")
+			}
+			store := memory.NewInMemoryStore()
+			localManager := memory.NewManager(store, nil, nil, nil, nil, logger)
+			eventLog := &inMemoryEventLog{}
+			conflictResolver := memory.NewCRDTResolver("merge_all")
+			nodeID := fmt.Sprintf("node-%d", time.Now().Unix())
+			manager := memory.NewDistributedMemoryManager(
+				localManager, nodeID, eventLog, conflictResolver, kafkaBroker, logger,
+			)
+			logger.Info("Distributed memory initialized (lazy)")
+			return manager, nil
+		},
+	}
+
+	integration.lazyGraphStreaming = &lazyComponent[*knowledge.StreamingKnowledgeGraph]{
+		factory: func(ctx context.Context) (*knowledge.StreamingKnowledgeGraph, error) {
+			if !config.EnableKnowledgeGraph {
+				return nil, fmt.Errorf("knowledge graph is disabled")
+			}
+			graphConfig := knowledge.GraphStreamingConfig{
+				Neo4jURI:      config.Neo4jURI,
+				Neo4jUser:     config.Neo4jUsername,
+				Neo4jPassword: config.Neo4jPassword,
+				Neo4jDatabase: config.Neo4jDatabase,
+				EntityTopic:   "helixagent.entities.updates",
+				MemoryTopic:   "helixagent.memory.updates",
+				DebateTopic:   "helixagent.debate.updates",
+			}
+			graph, err := knowledge.NewStreamingKnowledgeGraph(graphConfig, kafkaBroker, logger)
+			if err != nil {
+				return nil, err
+			}
+			if err := graph.StartStreaming(ctx); err != nil {
+				return nil, err
+			}
+			logger.Info("Knowledge graph streaming initialized (lazy)")
+			return graph, nil
+		},
+	}
+
+	integration.lazyAnalytics = &lazyComponent[*analytics.ClickHouseAnalytics]{
+		factory: func(ctx context.Context) (*analytics.ClickHouseAnalytics, error) {
+			if !config.EnableAnalytics {
+				return nil, fmt.Errorf("analytics is disabled")
+			}
+			chConfig := analytics.ClickHouseConfig{
+				Host:     config.ClickHouseHost,
+				Port:     config.ClickHousePort,
+				Database: config.ClickHouseDatabase,
+				Username: config.ClickHouseUser,
+				Password: config.ClickHousePassword,
+			}
+			client, err := analytics.NewClickHouseAnalytics(chConfig, logger)
+			if err != nil {
+				return nil, err
+			}
+			logger.Info("ClickHouse analytics initialized (lazy)")
+			return client, nil
+		},
+	}
+
+	integration.lazyCrossLearner = &lazyComponent[*learning.CrossSessionLearner]{
+		factory: func(ctx context.Context) (*learning.CrossSessionLearner, error) {
+			if !config.EnableCrossLearning {
+				return nil, fmt.Errorf("cross-session learning is disabled")
+			}
+			learnConfig := learning.CrossSessionConfig{
+				CompletedTopic: "helixagent.conversations.completed",
+				InsightsTopic:  "helixagent.learning.insights",
+				MinConfidence:  config.LearningMinConfidence,
+				MinFrequency:   config.LearningMinFrequency,
+			}
+			learner := learning.NewCrossSessionLearner(learnConfig, kafkaBroker, logger)
+			if err := learner.StartLearning(ctx); err != nil {
+				return nil, err
+			}
+			logger.Info("Cross-session learning initialized (lazy)")
+			return learner, nil
+		},
 	}
 
 	return integration, nil
@@ -446,7 +583,8 @@ func (bdi *BigDataIntegration) Start(ctx context.Context) error {
 // stopComponentTimeout is the maximum time to wait for each component to stop
 const stopComponentTimeout = 10 * time.Second
 
-// Stop stops all big data components with per-component timeouts
+// Stop stops all big data components with per-component timeouts.
+// Handles both eagerly and lazily initialized components.
 func (bdi *BigDataIntegration) Stop(ctx context.Context) error {
 	if !bdi.isRunning {
 		return nil
@@ -454,26 +592,33 @@ func (bdi *BigDataIntegration) Stop(ctx context.Context) error {
 
 	bdi.logger.Info("Stopping big data integration...")
 
-	// Stop distributed memory
+	// Stop distributed memory (eager)
 	if bdi.distributedMemory != nil {
-		// Stop method not available in current version
 		bdi.logger.Debug("Distributed memory disabled")
 	}
 
-	// Stop knowledge graph streaming with timeout
-	if bdi.graphStreaming != nil {
+	// Resolve knowledge graph from eager or lazy
+	graphToStop := bdi.graphStreaming
+	if graphToStop == nil && bdi.lazyGraphStreaming != nil && bdi.lazyGraphStreaming.initialized() {
+		graphToStop = bdi.lazyGraphStreaming.value
+	}
+	if graphToStop != nil {
 		stopCtx, cancel := context.WithTimeout(ctx, stopComponentTimeout)
-		if err := bdi.graphStreaming.Stop(stopCtx); err != nil {
+		if err := graphToStop.Stop(stopCtx); err != nil {
 			bdi.logger.WithError(err).Warn("Error stopping knowledge graph streaming")
 		}
 		cancel()
 	}
 
-	// Close ClickHouse connection with timeout
-	if bdi.clickhouseAnalytics != nil {
+	// Resolve ClickHouse from eager or lazy
+	analyticsToClose := bdi.clickhouseAnalytics
+	if analyticsToClose == nil && bdi.lazyAnalytics != nil && bdi.lazyAnalytics.initialized() {
+		analyticsToClose = bdi.lazyAnalytics.value
+	}
+	if analyticsToClose != nil {
 		done := make(chan error, 1)
 		go func() {
-			done <- bdi.clickhouseAnalytics.Close()
+			done <- analyticsToClose.Close()
 		}()
 		select {
 		case err := <-done:
@@ -490,29 +635,89 @@ func (bdi *BigDataIntegration) Stop(ctx context.Context) error {
 	return nil
 }
 
-// GetInfiniteContext returns the infinite context engine
+// GetInfiniteContext returns the infinite context engine.
+// If not eagerly initialized, triggers lazy initialization on first call.
 func (bdi *BigDataIntegration) GetInfiniteContext() *conversation.InfiniteContextEngine {
-	return bdi.infiniteContext
+	if bdi.infiniteContext != nil {
+		return bdi.infiniteContext
+	}
+	if bdi.lazyInfiniteContext != nil {
+		engine, err := bdi.lazyInfiniteContext.get(context.Background())
+		if err != nil {
+			bdi.logger.WithError(err).Debug("Lazy infinite context init failed")
+			return nil
+		}
+		return engine
+	}
+	return nil
 }
 
-// GetDistributedMemory returns the distributed memory manager
+// GetDistributedMemory returns the distributed memory manager.
+// If not eagerly initialized, triggers lazy initialization on first call.
 func (bdi *BigDataIntegration) GetDistributedMemory() *memory.DistributedMemoryManager {
-	return bdi.distributedMemory
+	if bdi.distributedMemory != nil {
+		return bdi.distributedMemory
+	}
+	if bdi.lazyDistributedMem != nil {
+		mgr, err := bdi.lazyDistributedMem.get(context.Background())
+		if err != nil {
+			bdi.logger.WithError(err).Debug("Lazy distributed memory init failed")
+			return nil
+		}
+		return mgr
+	}
+	return nil
 }
 
-// GetKnowledgeGraph returns the knowledge graph streaming
+// GetKnowledgeGraph returns the knowledge graph streaming.
+// If not eagerly initialized, triggers lazy initialization on first call.
 func (bdi *BigDataIntegration) GetKnowledgeGraph() *knowledge.StreamingKnowledgeGraph {
-	return bdi.graphStreaming
+	if bdi.graphStreaming != nil {
+		return bdi.graphStreaming
+	}
+	if bdi.lazyGraphStreaming != nil {
+		graph, err := bdi.lazyGraphStreaming.get(context.Background())
+		if err != nil {
+			bdi.logger.WithError(err).Debug("Lazy knowledge graph init failed")
+			return nil
+		}
+		return graph
+	}
+	return nil
 }
 
-// GetAnalytics returns the ClickHouse analytics client
+// GetAnalytics returns the ClickHouse analytics client.
+// If not eagerly initialized, triggers lazy initialization on first call.
 func (bdi *BigDataIntegration) GetAnalytics() *analytics.ClickHouseAnalytics {
-	return bdi.clickhouseAnalytics
+	if bdi.clickhouseAnalytics != nil {
+		return bdi.clickhouseAnalytics
+	}
+	if bdi.lazyAnalytics != nil {
+		client, err := bdi.lazyAnalytics.get(context.Background())
+		if err != nil {
+			bdi.logger.WithError(err).Debug("Lazy analytics init failed")
+			return nil
+		}
+		return client
+	}
+	return nil
 }
 
-// GetCrossLearner returns the cross-session learner
+// GetCrossLearner returns the cross-session learner.
+// If not eagerly initialized, triggers lazy initialization on first call.
 func (bdi *BigDataIntegration) GetCrossLearner() *learning.CrossSessionLearner {
-	return bdi.crossSessionLearner
+	if bdi.crossSessionLearner != nil {
+		return bdi.crossSessionLearner
+	}
+	if bdi.lazyCrossLearner != nil {
+		learner, err := bdi.lazyCrossLearner.get(context.Background())
+		if err != nil {
+			bdi.logger.WithError(err).Debug("Lazy cross-session learner init failed")
+			return nil
+		}
+		return learner
+	}
+	return nil
 }
 
 // IsRunning returns whether the integration is running
@@ -520,55 +725,51 @@ func (bdi *BigDataIntegration) IsRunning() bool {
 	return bdi.isRunning
 }
 
+// isNonNil returns true if val is a non-nil value. It correctly handles
+// typed nil pointers by using reflect, avoiding the Go nil-interface trap
+// where any((*T)(nil)) != nil evaluates to true.
+func isNonNil[T any](val T) bool {
+	v := reflect.ValueOf(&val).Elem()
+	switch v.Kind() {
+	case reflect.Ptr, reflect.Interface, reflect.Map, reflect.Slice, reflect.Chan, reflect.Func:
+		return !v.IsNil()
+	default:
+		return true
+	}
+}
+
+// componentHealth returns a health status string for a component.
+// It checks the enabled flag first, then eager instance, then lazy instance.
+func componentHealth[T any](eager T, lazy *lazyComponent[T], enabled bool) string {
+	if !enabled {
+		return "disabled"
+	}
+	if isNonNil(eager) {
+		return "healthy"
+	}
+	if lazy != nil && lazy.initialized() {
+		if lazy.initErr != nil {
+			return "init_failed"
+		}
+		return "healthy"
+	}
+	return "not_initialized"
+}
+
 // HealthCheck checks the health of all components
 func (bdi *BigDataIntegration) HealthCheck(ctx context.Context) map[string]string {
 	health := make(map[string]string)
 
-	// Check infinite context
-	if bdi.infiniteContext != nil {
-		health["infinite_context"] = "healthy"
-	} else if bdi.config.EnableInfiniteContext {
-		health["infinite_context"] = "not_initialized"
-	} else {
-		health["infinite_context"] = "disabled"
-	}
-
-	// Check distributed memory
-	if bdi.distributedMemory != nil {
-		health["distributed_memory"] = "healthy"
-	} else if bdi.config.EnableDistributedMemory {
-		health["distributed_memory"] = "not_initialized"
-	} else {
-		health["distributed_memory"] = "disabled"
-	}
-
-	// Check knowledge graph
-	if bdi.graphStreaming != nil {
-		health["knowledge_graph"] = "healthy"
-	} else if bdi.config.EnableKnowledgeGraph {
-		health["knowledge_graph"] = "not_initialized"
-	} else {
-		health["knowledge_graph"] = "disabled"
-	}
-
-	// Check analytics
-	if bdi.clickhouseAnalytics != nil {
-		// Health check not available, assume healthy
-		health["analytics"] = "healthy"
-	} else if bdi.config.EnableAnalytics {
-		health["analytics"] = "not_initialized"
-	} else {
-		health["analytics"] = "disabled"
-	}
-
-	// Check cross-session learning
-	if bdi.crossSessionLearner != nil {
-		health["cross_learning"] = "healthy"
-	} else if bdi.config.EnableCrossLearning {
-		health["cross_learning"] = "not_initialized"
-	} else {
-		health["cross_learning"] = "disabled"
-	}
+	health["infinite_context"] = componentHealth(
+		bdi.infiniteContext, bdi.lazyInfiniteContext, bdi.config.EnableInfiniteContext)
+	health["distributed_memory"] = componentHealth(
+		bdi.distributedMemory, bdi.lazyDistributedMem, bdi.config.EnableDistributedMemory)
+	health["knowledge_graph"] = componentHealth(
+		bdi.graphStreaming, bdi.lazyGraphStreaming, bdi.config.EnableKnowledgeGraph)
+	health["analytics"] = componentHealth(
+		bdi.clickhouseAnalytics, bdi.lazyAnalytics, bdi.config.EnableAnalytics)
+	health["cross_learning"] = componentHealth(
+		bdi.crossSessionLearner, bdi.lazyCrossLearner, bdi.config.EnableCrossLearning)
 
 	return health
 }
