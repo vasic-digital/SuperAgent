@@ -777,18 +777,6 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 								"failure_count": cb.GetFailureCount(),
 								"last_failure":  cb.GetLastFailure(),
 							}
-
-							// Skills endpoints
-							skillsHandler := handlers.NewSkillsHandler(skillsIntegration)
-							skillsHandler.SetLogger(logger)
-							skillsGroup := protected.Group("/skills")
-							{
-								skillsGroup.GET("", skillsHandler.ListSkills)
-								skillsGroup.GET("/categories", skillsHandler.ListCategories)
-								skillsGroup.GET("/:category", skillsHandler.GetSkillsByCategory)
-								skillsGroup.POST("/match", skillsHandler.MatchSkills)
-							}
-							logger.Info("Skills endpoints registered at /v1/skills/*")
 						}
 
 						c.JSON(200, response)
@@ -1112,6 +1100,20 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 		// Register Protocol SSE endpoints for MCP/ACP/LSP/Embeddings/Vision/Cognee
 		// These endpoints handle SSE connections for CLI agent protocols (OpenCode, Crush, HelixCode)
 		protocolSSEHandler.RegisterSSERoutes(protected)
+
+		// Skills endpoints (skill registry integration)
+		if skillsIntegration != nil {
+			skillsHandler := handlers.NewSkillsHandler(skillsIntegration)
+			skillsHandler.SetLogger(logger)
+			skillsGroup := protected.Group("/skills")
+			{
+				skillsGroup.GET("", skillsHandler.ListSkills)
+				skillsGroup.GET("/categories", skillsHandler.ListCategories)
+				skillsGroup.GET("/:category", skillsHandler.GetSkillsByCategory)
+				skillsGroup.POST("/match", skillsHandler.MatchSkills)
+			}
+			logger.Info("Skills endpoints registered at /v1/skills/*")
+		}
 
 		// Background Task endpoints (full handler with task queue, webhooks, WebSocket, SSE)
 		backgroundTaskHandler := handlers.NewBackgroundTaskHandler(
