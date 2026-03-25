@@ -96,10 +96,10 @@ HelixAgent is an advanced AI-powered multi-provider LLM orchestration platform w
 
 ## Key Features
 
-- **Multi-Provider Support**: 21 LLM providers including Claude, DeepSeek, Gemini, Mistral, OpenRouter, Qwen, xAI/Grok, Cohere, Perplexity, Groq, and more
-- **Embedding Providers**: 13 embedding providers with 40+ models (OpenAI, Cohere, Voyage, Jina, Google, Bedrock, etc.)
-- **Protocol Support**: 35 MCP implementations (19 adapters + 16 servers), 10 LSP servers, ACP integration
-- **Modular Architecture**: 20 extracted modules (EventBus, Concurrency, Observability, Auth, Storage, Streaming, Security, VectorDB, Embeddings, Database, Cache, Messaging, Formatters, MCP, RAG, Memory, Optimization, Plugins, Containers, Challenges)
+- **Multi-Provider Support**: 43 LLM providers including Claude, DeepSeek, Gemini, Mistral, OpenRouter, Qwen, xAI/Grok, Cohere, Perplexity, Groq, and more
+- **Embedding Providers**: 6 embedding providers (OpenAI, Cohere, Voyage, Jina, Google, Bedrock)
+- **Protocol Support**: 45+ MCP adapters, 10 LSP servers, ACP integration
+- **Modular Architecture**: 35 extracted modules covering containers, concurrency, observability, auth, storage, streaming, security, vector databases, embeddings, database, cache, messaging, formatters, MCP, RAG, memory, optimization, plugins, event bus, agentic workflows, LLM operations, self-improvement, planning, benchmarking, background tasks, build checks, conversation context, debate orchestration, LLM provider interface, data models, skill registry, tool schemas, HelixMemory, and HelixSpecifier
 - **Dynamic Provider Selection**: Real-time LLMsVerifier scores for optimal provider routing
 - **SpecKit Auto-Activation**: Intelligent 7-phase development flow triggered automatically for large changes
 - **Constitution Watcher**: Auto-update Constitution on project changes with background monitoring
@@ -121,4 +121,4 @@ HelixAgent is an advanced AI-powered multi-provider LLM orchestration platform w
 
 ---
 
-*Last updated: February 10, 2026*
+*Last updated: 2026-03-25*
