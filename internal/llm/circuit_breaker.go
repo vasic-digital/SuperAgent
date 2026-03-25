@@ -110,6 +110,10 @@ func (cb *CircuitBreaker) AddListener(listener CircuitBreakerListener) int {
 	id := cb.nextListenerID
 	cb.nextListenerID++
 	cb.listeners[id] = listener
+	if len(cb.listeners) > MaxCircuitBreakerListeners*80/100 {
+		logrus.Warnf("circuit breaker %s: listener count %d approaching max %d",
+			cb.providerID, len(cb.listeners), MaxCircuitBreakerListeners)
+	}
 	return id
 }
 
