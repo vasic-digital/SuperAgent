@@ -1115,14 +1115,14 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 			logger.Info("Skills endpoints registered at /v1/skills/*")
 		}
 
-		// Background Task endpoints (full handler with task queue, webhooks, WebSocket, SSE)
+		// Background Task endpoints — services wired lazily via SP4 LazyServiceProvider; handler returns 503 if services unavailable
 		backgroundTaskHandler := handlers.NewBackgroundTaskHandler(
 			nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, logger,
 		)
 		backgroundTaskHandler.RegisterRoutes(protected)
-		logger.Info("Background task endpoints registered at /v1/tasks/*")
+		logger.Info("Background task endpoints registered at /v1/tasks/* (services pending)")
 
-		// Discovery endpoints (model discovery from configured providers)
+		// Discovery endpoints — services wired lazily via SP4 LazyServiceProvider; handler returns 503 if services unavailable
 		discoveryHandler := handlers.NewDiscoveryHandler(nil)
 		discoveryGroup := protected.Group("/discovery")
 		{
@@ -1133,9 +1133,9 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 			discoveryGroup.GET("/ensemble", discoveryHandler.GetEnsembleModels)
 			discoveryGroup.GET("/debate-model", discoveryHandler.GetModelForDebate)
 		}
-		logger.Info("Discovery endpoints registered at /v1/discovery/*")
+		logger.Info("Discovery endpoints registered at /v1/discovery/* (services pending)")
 
-		// Scoring endpoints (model scoring and ranking)
+		// Scoring endpoints — services wired lazily via SP4 LazyServiceProvider; handler returns 503 if services unavailable
 		scoringHandler := handlers.NewScoringHandler(nil)
 		scoringGroup := protected.Group("/scoring")
 		{
@@ -1149,9 +1149,9 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 			scoringGroup.POST("/cache/invalidate", scoringHandler.InvalidateCache)
 			scoringGroup.POST("/compare", scoringHandler.CompareModels)
 		}
-		logger.Info("Scoring endpoints registered at /v1/scoring/*")
+		logger.Info("Scoring endpoints registered at /v1/scoring/* (services pending)")
 
-		// Verification endpoints (model verification via LLMsVerifier)
+		// Verification endpoints — services wired lazily via SP4 LazyServiceProvider; handler returns 503 if services unavailable
 		verificationHandler := handlers.NewVerificationHandler(nil, nil, nil, nil)
 		verificationGroup := protected.Group("/verification")
 		{
@@ -1164,9 +1164,9 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 			verificationGroup.GET("/health", verificationHandler.GetVerificationHealth)
 			verificationGroup.POST("/code-visibility", verificationHandler.TestCodeVisibility)
 		}
-		logger.Info("Verification endpoints registered at /v1/verification/*")
+		logger.Info("Verification endpoints registered at /v1/verification/* (services pending)")
 
-		// Health monitoring endpoints (provider health, circuit breakers, latency)
+		// Health monitoring endpoints — services wired lazily via SP4 LazyServiceProvider; handler returns 503 if services unavailable
 		healthHandler := handlers.NewHealthHandler(nil)
 		healthGroup := protected.Group("/health")
 		{
@@ -1183,7 +1183,7 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 			healthGroup.DELETE("/provider/:provider_id", healthHandler.RemoveProvider)
 			healthGroup.GET("/status", healthHandler.GetHealthServiceStatus)
 		}
-		logger.Info("Health monitoring endpoints registered at /v1/health/*")
+		logger.Info("Health monitoring endpoints registered at /v1/health/* (services pending)")
 
 		// Agentic workflow endpoints (graph-based workflow orchestration)
 		agenticHandler := handlers.NewAgenticHandler(logger)
@@ -1195,15 +1195,15 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 		handlers.RegisterPlanningRoutes(protected, planningHandler)
 		logger.Info("Planning algorithm endpoints registered at /v1/planning/*")
 
-		// LLMOps endpoints (experiments, evaluations, prompt versioning)
+		// LLMOps endpoints — services wired lazily via SP4 LazyServiceProvider; handler returns 503 if services unavailable
 		llmopsHandler := handlers.NewLLMOpsHandler(nil)
 		handlers.RegisterLLMOpsRoutes(protected, llmopsHandler)
-		logger.Info("LLMOps endpoints registered at /v1/llmops/*")
+		logger.Info("LLMOps endpoints registered at /v1/llmops/* (services pending)")
 
-		// Benchmark endpoints (SWE-bench, HumanEval, MMLU benchmarking)
+		// Benchmark endpoints — services wired lazily via SP4 LazyServiceProvider; handler returns 503 if services unavailable
 		benchmarkHandler := handlers.NewBenchmarkHandler(nil)
 		handlers.RegisterBenchmarkRoutes(protected, benchmarkHandler)
-		logger.Info("Benchmark endpoints registered at /v1/benchmark/*")
+		logger.Info("Benchmark endpoints registered at /v1/benchmark/* (services pending)")
 
 		// GraphQL endpoint (feature-flagged, disabled by default for backward compatibility)
 		if os.Getenv("GRAPHQL_ENABLED") == "true" {
