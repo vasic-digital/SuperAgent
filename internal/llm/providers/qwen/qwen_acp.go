@@ -641,13 +641,23 @@ func (p *QwenACPProvider) CompleteStream(ctx context.Context, req *models.LLMReq
 			timeoutCtx, cancel := context.WithTimeout(ctx, p.timeout)
 			defer cancel()
 			resp, err := p.sendRequest(timeoutCtx, "session/prompt", params)
-			doneCh <- completeResult{resp, err}
+			select {
+			case doneCh <- completeResult{resp, err}:
+			case <-ctx.Done():
+				// Outer goroutine already exited due to context cancellation;
+				// drain the buffered channel to avoid a phantom write and return.
+			}
 		}()
 
 		// Forward streaming tokens until the final response arrives
 		for {
 			select {
 			case <-ctx.Done():
+				// Drain doneCh so the inner goroutine is not blocked on a send.
+				select {
+				case <-doneCh:
+				default:
+				}
 				return
 			case token, ok := <-streamCh:
 				if !ok {
