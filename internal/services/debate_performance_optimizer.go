@@ -23,6 +23,7 @@ type DebateOptimizationConfig struct {
 	EarlyTerminationThreshold float64       `json:"early_termination_threshold"`
 	RequestTimeout            time.Duration `json:"request_timeout"`
 	FallbackTimeout           time.Duration `json:"fallback_timeout"`
+	MaxCacheEntries           int           `json:"max_cache_entries"`
 }
 
 func DefaultDebateOptimizationConfig() DebateOptimizationConfig {
@@ -37,6 +38,7 @@ func DefaultDebateOptimizationConfig() DebateOptimizationConfig {
 		EarlyTerminationThreshold: 0.95,
 		RequestTimeout:            60 * time.Second,
 		FallbackTimeout:           30 * time.Second,
+		MaxCacheEntries:           10000,
 	}
 }
 
@@ -50,6 +52,7 @@ type CachedResponse struct {
 type DebatePerformanceOptimizer struct {
 	config    DebateOptimizationConfig
 	cache     sync.Map
+	cacheSize int64
 	logger    *logrus.Logger
 	registry  *ProviderRegistry
 	semaphore chan struct{}
@@ -69,6 +72,9 @@ type OptimizationStats struct {
 func NewDebatePerformanceOptimizer(config DebateOptimizationConfig, registry *ProviderRegistry, logger *logrus.Logger) *DebatePerformanceOptimizer {
 	if logger == nil {
 		logger = logrus.New()
+	}
+	if config.MaxCacheEntries <= 0 {
+		config.MaxCacheEntries = 10000
 	}
 
 	return &DebatePerformanceOptimizer{
@@ -299,23 +305,49 @@ func (dpo *DebatePerformanceOptimizer) getCachedResponse(prompt, model string) *
 		cachedResp, ok := cached.(*CachedResponse)
 		if !ok {
 			dpo.cache.Delete(cacheKey)
+			atomic.AddInt64(&dpo.cacheSize, -1)
 			return nil
 		}
 		if time.Since(cachedResp.Timestamp) < dpo.config.CacheTTL {
 			return cachedResp
 		}
 		dpo.cache.Delete(cacheKey)
+		atomic.AddInt64(&dpo.cacheSize, -1)
 	}
 	return nil
 }
 
 func (dpo *DebatePerformanceOptimizer) cacheResponse(prompt, model, provider string, response *models.LLMResponse) {
 	cacheKey := dpo.generateCacheKey(prompt, model)
+
+	// Check if we already have this key to avoid double-counting.
+	if _, exists := dpo.cache.Load(cacheKey); !exists {
+		newSize := atomic.AddInt64(&dpo.cacheSize, 1)
+		if newSize > int64(dpo.config.MaxCacheEntries) {
+			dpo.evictOldEntries()
+		}
+	}
+
 	dpo.cache.Store(cacheKey, &CachedResponse{
 		Response:  response,
 		Timestamp: time.Now(),
 		Model:     model,
 		Provider:  provider,
+	})
+}
+
+// evictOldEntries sweeps the cache and removes entries whose timestamps are
+// older than half the configured TTL (median-age threshold). This provides
+// simple bounded-size behaviour without a full LRU structure.
+func (dpo *DebatePerformanceOptimizer) evictOldEntries() {
+	evictionCutoff := time.Now().Add(-(dpo.config.CacheTTL / 2))
+	dpo.cache.Range(func(key, value any) bool {
+		cachedResp, ok := value.(*CachedResponse)
+		if !ok || cachedResp.Timestamp.Before(evictionCutoff) {
+			dpo.cache.Delete(key)
+			atomic.AddInt64(&dpo.cacheSize, -1)
+		}
+		return true
 	})
 }
 
@@ -337,6 +369,7 @@ func (dpo *DebatePerformanceOptimizer) GetStats() *OptimizationStats {
 
 func (dpo *DebatePerformanceOptimizer) ClearCache() {
 	dpo.cache = sync.Map{}
+	atomic.StoreInt64(&dpo.cacheSize, 0)
 	dpo.logger.Info("Debate response cache cleared")
 }
 

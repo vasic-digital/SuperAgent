@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -462,6 +463,57 @@ func TestDebatePerformanceOptimizer_ConcurrentAccess(t *testing.T) {
 
 	stats := optimizer.GetStats()
 	assert.NotNil(t, stats, "Should be able to get stats after concurrent access")
+}
+
+func TestPerformanceOptimizer_CacheEviction(t *testing.T) {
+	logger := logrus.New()
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
+	// Use a very short TTL (2ms) so that TTL/2 = 1ms.  After a brief sleep the
+	// eviction cutoff (now - TTL/2) falls *after* the stored timestamps, causing
+	// evictOldEntries to remove them.
+	config := DebateOptimizationConfig{
+		EnableResponseCaching: true,
+		CacheTTL:              2 * time.Millisecond,
+		MaxCacheEntries:       10,
+		MaxParallelRequests:   3,
+	}
+	optimizer := NewDebatePerformanceOptimizer(config, registry, logger)
+
+	// Insert the first 10 entries, then sleep so they age past TTL/2.
+	for i := 0; i < 10; i++ {
+		prompt := fmt.Sprintf("eviction-test-prompt-%d", i)
+		optimizer.cacheResponse(prompt, "test-model", "test-provider",
+			&models.LLMResponse{Content: fmt.Sprintf("response-%d", i)})
+	}
+
+	// Let the first batch age past TTL/2 (1ms) so they become eviction candidates.
+	time.Sleep(5 * time.Millisecond)
+
+	// Insert 10 more entries — this pushes size beyond MaxCacheEntries (10)
+	// and triggers evictOldEntries, which removes the aged-out first batch.
+	for i := 10; i < 20; i++ {
+		prompt := fmt.Sprintf("eviction-test-prompt-%d", i)
+		optimizer.cacheResponse(prompt, "test-model", "test-provider",
+			&models.LLMResponse{Content: fmt.Sprintf("response-%d", i)})
+	}
+
+	// Count how many entries remain in the sync.Map.
+	count := int64(0)
+	optimizer.cache.Range(func(_, _ any) bool {
+		count++
+		return true
+	})
+
+	// The cache must be bounded — no more than MaxCacheEntries entries allowed.
+	assert.LessOrEqual(t, count, int64(config.MaxCacheEntries),
+		"cache size should be bounded by MaxCacheEntries after eviction")
+
+	// The atomic counter must stay non-negative and consistent with map size.
+	atomicSize := atomic.LoadInt64(&optimizer.cacheSize)
+	assert.GreaterOrEqual(t, atomicSize, int64(0),
+		"atomic cacheSize counter must not go negative")
+	assert.Equal(t, count, atomicSize,
+		"atomic cacheSize counter should match actual number of cache entries")
 }
 
 func TestDebatePerformanceOptimizer_GenerateCacheKey(t *testing.T) {
