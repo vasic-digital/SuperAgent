@@ -35,6 +35,7 @@ type UnifiedHandler struct {
 	skillsIntegration       *skills.Integration
 	intentRouter            *services.IntentBasedRouter
 	orchestratorIntegration *debate_integration.ServiceIntegration
+	agenticEnsemble        *services.AgenticEnsemble
 	debateService           *services.DebateService
 	showDebateDialogue      bool
 	reportGenerator         *services.VerificationReportGenerator
@@ -112,6 +113,15 @@ func (h *UnifiedHandler) SetOrchestratorIntegration(integration *debate_integrat
 			"agent_count":      integration.GetOrchestrator().GetAgentPool().Size(),
 		}).Info("NEW Debate Orchestrator integration set - will use 8-phase protocol instead of old ensemble")
 	}
+}
+
+// SetAgenticEnsemble sets the AgenticEnsemble as the primary request processing
+// path. When set, processWithEnsemble routes through the dual-mode orchestrator
+// (Reason + Execute) before falling back to the debate orchestrator or legacy
+// ensemble.
+func (h *UnifiedHandler) SetAgenticEnsemble(ae *services.AgenticEnsemble) {
+	h.agenticEnsemble = ae
+	logrus.WithField("agentic_ensemble_set", ae != nil).Info("AgenticEnsemble set")
 }
 
 // SetReportGenerator sets the verification report generator for generating provider reports
@@ -2460,18 +2470,24 @@ func (h *UnifiedHandler) convertOpenAIChatRequest(req *OpenAIChatRequest, c *gin
 func (h *UnifiedHandler) processWithEnsemble(ctx context.Context, req *models.LLMRequest, openaiReq *OpenAIChatRequest) (*services.EnsembleResult, error) {
 	// DEBUG: Log entry point
 	logrus.WithFields(logrus.Fields{
-		"orchestrator_set":   h.orchestratorIntegration != nil,
-		"debate_service_set": h.debateService != nil,
+		"agentic_ensemble_set": h.agenticEnsemble != nil,
+		"orchestrator_set":     h.orchestratorIntegration != nil,
+		"debate_service_set":   h.debateService != nil,
 	}).Debug("[DEBUG] processWithEnsemble called")
 
-	// CRITICAL: Use NEW debate orchestrator if available (8-phase protocol)
-	// This implements the full debate system from docs/requests/debate
+	// PRIMARY: AgenticEnsemble (dual-mode: reason + execute with full tool integration)
+	if h.agenticEnsemble != nil {
+		logrus.Info("[CODE PATH] Using AgenticEnsemble (unified dual-mode)")
+		return h.agenticEnsemble.Process(ctx, req)
+	}
+
+	// FALLBACK 1: Debate orchestrator (8-phase debate only)
 	if h.orchestratorIntegration != nil {
-		logrus.Info("[CODE PATH] Using NEW debate orchestrator path (processWithOrchestrator)")
+		logrus.Info("[CODE PATH] Using debate orchestrator fallback (processWithOrchestrator)")
 		return h.processWithOrchestrator(ctx, req, openaiReq)
 	}
 
-	// Fallback to OLD ensemble service if orchestrator not available
+	// FALLBACK 2: Legacy ensemble service
 	logrus.Error("[CODE PATH] orchestratorIntegration is NIL - using OLD ensemble service (NOT using new debate system!)")
 
 	// Check if provider registry is available
