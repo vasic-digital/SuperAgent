@@ -102,3 +102,6 @@ qa-results/**/*.avi
 qa-results/**/*.mov
 **/*.screenrecord
 node_modules/
+
+# Userflow test result output directory
+internal/challenges/userflow/results/
