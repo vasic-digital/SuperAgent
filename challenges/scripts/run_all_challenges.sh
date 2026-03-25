@@ -5,7 +5,7 @@
 # This script automatically:
 # 1. Builds HelixAgent binary if needed
 # 2. Starts all required infrastructure (HelixAgent server)
-# 3. Runs all 50 challenges
+# 3. Runs all challenges
 # 4. Reports final results
 
 set -e
@@ -194,7 +194,7 @@ start_infrastructure() {
     echo ""
 }
 
-# All 42 challenges in dependency order
+# All 64 challenges in dependency order
 CHALLENGES=(
     # Infrastructure (no dependencies)
     "health_monitoring"
