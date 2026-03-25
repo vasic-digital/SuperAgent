@@ -302,27 +302,11 @@ main() {
     print_info "HelixAgent Challenges Runner"
     print_info "Challenge: $CHALLENGE_NAME"
 
-    # Validate challenge name using static list (no jq dependency)
-    case "$CHALLENGE_NAME" in
-        main|provider_verification|ai_debate_formation|api_quality_test|\
-        ensemble_voting|ai_debate_workflow|embeddings_service|streaming_responses|\
-        model_metadata|provider_claude|provider_deepseek|provider_gemini|\
-        provider_ollama|provider_openrouter|provider_qwen|provider_zai|provider_zen|\
-        startup_scoring|\
-        mcp_protocol|lsp_protocol|acp_protocol|cloud_aws_bedrock|cloud_gcp_vertex|\
-        cloud_azure_openai|authentication|rate_limiting|input_validation|\
-        circuit_breaker|error_handling|concurrent_access|graceful_shutdown|\
-        health_monitoring|caching_layer|database_operations|plugin_system|\
-        session_management|configuration_loading|optimization_semantic_cache|\
-        optimization_structured_output|cognee_integration|bigdata_integration|openai_compatibility|grpc_api|\
-        opencode|oauth_credentials|cli_schema_validation|\
-        protocol_challenge|curl_api_challenge|cli_agents_challenge|content_generation_challenge)
-            ;;
-        *)
-            print_error "Unknown challenge: $CHALLENGE_NAME"
-            usage
-            ;;
-    esac
+    # Validate challenge name is non-empty (generic runner handles all challenges)
+    if [ -z "$CHALLENGE_NAME" ]; then
+        print_error "Challenge name is required"
+        usage
+    fi
 
     load_env
     check_dependencies "$CHALLENGE_NAME"
