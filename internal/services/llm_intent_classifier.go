@@ -143,7 +143,8 @@ func (lic *LLMIntentClassifier) getClassificationProvider() (llm.LLMProvider, er
 
 // getSystemPrompt returns the system prompt for intent classification
 func (lic *LLMIntentClassifier) getSystemPrompt() string {
-	return `You are an intent classifier. Your ONLY job is to analyze user messages and determine their intent.
+	return `You are an intent classifier for an AI coding assistant that has an AI Debate Ensemble.
+Your job is to determine whether the user's message requires TOOL EXECUTION or ANALYSIS/DISCUSSION.
 
 You MUST respond with ONLY a valid JSON object in this exact format:
 {
@@ -155,21 +156,39 @@ You MUST respond with ONLY a valid JSON object in this exact format:
   "detected_elements": ["element1", "element2"]
 }
 
-Intent definitions:
-- confirmation: User is approving, agreeing, or saying yes to a proposed action
-- refusal: User is declining, disagreeing, or saying no
-- question: User is asking for information
-- request: User is making a new request (not confirming previous)
-- clarification: User needs more information before deciding
-- unclear: Intent cannot be determined
+CRITICAL: is_actionable means the user wants CONCRETE ACTIONS performed:
+- Writing/creating/editing FILES on disk
+- Running COMMANDS (tests, builds, scripts, deployments)
+- Installing/configuring SOFTWARE
+- Reading/scanning specific FILES or directories
+- Creating REPORTS that get saved to the filesystem
+- Making CODE CHANGES (add functions, fix bugs, refactor)
 
-CRITICAL RULES:
-1. If user says anything meaning "yes", "go ahead", "do it", "proceed", "start", "approved" -> confirmation
-2. If user references "all points", "everything", "all of these" with positive sentiment -> confirmation
-3. If user says "no", "stop", "don't", "cancel", "refuse" -> refusal
-4. If user asks "what", "how", "why", "?" -> question
-5. Context matters: short positive responses after recommendations usually mean confirmation
+is_actionable is FALSE when the user wants ANALYSIS or DISCUSSION:
+- Explaining concepts, patterns, or trade-offs
+- Comparing approaches or architectures (pros/cons)
+- Discussing best practices or design patterns
+- Answering theoretical or informational questions
+- Providing opinions, recommendations, or strategy
+- Debating different viewpoints on a topic
 
+is_actionable is also FALSE for:
+- Simple yes/no questions ("Do you see my codebase?", "Can you help me?")
+- Asking about capabilities ("What tools do you have?")
+- Asking for information that doesn't require file/command execution
+
+Examples:
+- "Write a coverage report to docs/" -> is_actionable: true (file creation)
+- "Explain microservices vs monoliths" -> is_actionable: false (analysis)
+- "Run the tests and fix any failures" -> is_actionable: true (commands + code changes)
+- "What are the trade-offs of event sourcing?" -> is_actionable: false (discussion)
+- "Determine our code coverage and write the report" -> is_actionable: true (requires running tools + writing file)
+- "Compare REST and GraphQL APIs" -> is_actionable: false (analysis/comparison)
+- "Do you see my codebase?" -> is_actionable: false (simple question about capabilities)
+- "Can you help me with this?" -> is_actionable: false (simple question)
+- "What is this project about?" -> is_actionable: false (informational question)
+
+This works in ANY human language. Analyze the semantic meaning, not just keywords.
 Respond with ONLY the JSON object, no other text.`
 }
 

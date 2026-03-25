@@ -1,8 +1,10 @@
 package services
 
 import (
+	ctxpkg "context"
 	"regexp"
 	"strings"
+	"time"
 
 	"dev.helix.agent/internal/verifier"
 	"github.com/sirupsen/logrus"
@@ -27,12 +29,29 @@ type RoutingResult struct {
 }
 
 type IntentBasedRouter struct {
-	startupVerifier *verifier.StartupVerifier
-	logger          *logrus.Logger
+	startupVerifier    *verifier.StartupVerifier
+	llmClassifier      *LLMIntentClassifier // LLM-based intent recognition (multilingual, no hardcoding)
+	logger             *logrus.Logger
 
-	simplePatterns   []*regexp.Regexp
-	complexPatterns  []*regexp.Regexp
-	greetingPatterns []*regexp.Regexp
+	simplePatterns     []*regexp.Regexp
+	complexPatterns    []*regexp.Regexp
+	greetingPatterns   []*regexp.Regexp
+	actionablePatterns []*regexp.Regexp // Fallback only — LLM classifier is primary
+}
+
+// GetLLMClassifier returns the LLM classifier (nil if not set).
+func (r *IntentBasedRouter) GetLLMClassifier() *LLMIntentClassifier {
+	return r.llmClassifier
+}
+
+// SetLLMClassifier sets the LLM-based intent classifier for real semantic understanding.
+// When set, the router uses LLM intelligence for actionable vs analysis routing decisions,
+// supporting any human language and avoiding hardcoded patterns.
+func (r *IntentBasedRouter) SetLLMClassifier(classifier *LLMIntentClassifier) {
+	r.llmClassifier = classifier
+	if r.logger != nil {
+		r.logger.Info("IntentBasedRouter: LLM-based intent classifier enabled for multilingual semantic routing")
+	}
 }
 
 func NewIntentBasedRouter(startupVerifier *verifier.StartupVerifier, logger *logrus.Logger) *IntentBasedRouter {
@@ -75,13 +94,45 @@ func (r *IntentBasedRouter) initPatterns() {
 		regexp.MustCompile(`(?i)\b(solve|solution|resolve)\s+(this|the|problem|issue)\b`),
 		regexp.MustCompile(`(?i)\b(compare|contrast|evaluate|assess)\s+(.*\bvs\b|options|alternatives)\b`),
 		regexp.MustCompile(`(?i)\b(write|generate|produce)\s+.*\b(code|tests?|documentation|implementation)\b`),
-		regexp.MustCompile(`(?i)\b(explain|describe)\s+(how|why|what|in\s*detail|thoroughly)\b`),
+		regexp.MustCompile(`(?i)\b(explain|describe)\s+(how|why|what|the|in\s*detail|thoroughly|key|main|major|critical)\b`),
 		regexp.MustCompile(`(?i)\b(find|search|locate|identify)\s+(the|all|any)\s*(bug|issue|error|problem)\b`),
 		regexp.MustCompile(`(?i)\b(add|remove|update|modify|change)\s+(feature|functionality|module|component)\b`),
 		regexp.MustCompile(`(?i)\b(discuss|debate|argue|deliberate)\b`),
 		regexp.MustCompile(`(?i)\b(complex|complicated|intricate|sophisticated)\b`),
 		regexp.MustCompile(`(?i)\b(multi|multiple|several|various)\s*(file|module|component|system)\b`),
 		regexp.MustCompile(`(?i)\bcomprehensive\s+\w+\s+(tests?|code|review|analysis)\b`),
+	}
+
+	// Actionable patterns: requests that require tool execution (file I/O, commands,
+	// report generation). These bypass the debate ensemble so the CLI agent retains
+	// tool access for actual execution. Patterns are built dynamically from verb+target
+	// combinations to avoid hardcoding specific commands or file extensions.
+	actionVerbs := []string{
+		"write", "create", "generate", "save", "output", "produce", "build",
+		"run", "execute", "perform", "do", "carry out", "start", "launch",
+		"edit", "modify", "change", "update", "fix", "patch", "refactor",
+		"add", "remove", "delete", "rename", "move", "copy",
+		"determine", "find out", "check", "scan", "inspect", "measure",
+		"read", "show", "display", "print", "open", "list", "cat",
+		"install", "deploy", "configure", "setup", "migrate",
+	}
+	actionTargets := []string{
+		"file", "report", "document", "log", "output",
+		"dir", "directory", "folder", "path",
+		"code", "function", "method", "class", "module", "package",
+		"test", "script", "command", "plan", "task",
+		"coverage", "metric", "result", "error", "warning",
+		"import", "dependency", "config", "setting",
+	}
+	// Build verb+target patterns dynamically
+	verbGroup := strings.Join(actionVerbs, "|")
+	targetGroup := strings.Join(actionTargets, "|")
+	r.actionablePatterns = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)\b(` + verbGroup + `)\b.{0,30}\b(` + targetGroup + `)\b`),
+		// Path-like references (dynamic: any slash-separated path or dotted extension)
+		regexp.MustCompile(`(?i)\b\w+/\w+/`),               // e.g., docs/reports/, internal/handlers/
+		regexp.MustCompile(`(?i)\.\w{1,5}\b`),               // e.g., .md, .txt, .json, .go, .yaml (any extension)
+		regexp.MustCompile(`(?i)\b(into|to|in)\s+(the\s+)?\w+/`), // "write to docs/", "save in reports/"
 	}
 }
 
@@ -114,6 +165,57 @@ func (r *IntentBasedRouter) AnalyzeRequest(message string, context map[string]in
 		return result
 	}
 
+	// For all non-trivial messages: use LLM-based semantic intent classification.
+	// The LLM determines if the request is ACTIONABLE (needs tool execution → single provider)
+	// or ANALYTICAL (needs multi-perspective discussion → debate ensemble).
+	// This supports any human language without hardcoded patterns.
+	if r.llmClassifier != nil {
+		classifyCtx, classifyCancel := ctxpkg.WithTimeout(ctxpkg.Background(), 8*time.Second)
+		llmResult, llmErr := r.llmClassifier.ClassifyIntentWithLLM(classifyCtx, trimmedMsg, "")
+		classifyCancel()
+		if llmErr == nil && llmResult != nil {
+			r.logger.WithFields(logrus.Fields{
+				"is_actionable": llmResult.IsActionable,
+				"intent":        llmResult.Intent,
+				"confidence":    llmResult.Confidence,
+				"message":       trimmedMsg[:min(60, len(trimmedMsg))],
+			}).Info("[IntentRouter] LLM semantic classification")
+
+			if llmResult.IsActionable {
+				// Actionable: needs tool execution → single provider (preserves CLI agent tool access)
+				result.Decision = RoutingSingle
+				result.ShouldUseEnsemble = false
+				result.Reason = "llm_classified_actionable"
+				result.Confidence = llmResult.Confidence
+				result.Signals = append(result.Signals, "llm_actionable", string(llmResult.Intent))
+				result.StrongestProvider = r.getStrongestProvider()
+				result.FallbackProviders = r.getFallbackProviders()
+				return result
+			}
+			// Not actionable: check if it's a substantive analysis question
+			// Short questions/simple queries → single provider (fast response)
+			// Substantive analysis/comparison → debate ensemble (multi-perspective)
+			if len(trimmedMsg) > 50 && (llmResult.Intent == "question" || llmResult.Confidence >= 0.85) {
+				result.Decision = RoutingEnsemble
+				result.ShouldUseEnsemble = true
+				result.Reason = "llm_classified_analysis"
+				result.Confidence = llmResult.Confidence
+				result.Signals = append(result.Signals, "llm_analysis", string(llmResult.Intent))
+				return result
+			}
+			// Short non-actionable message → single provider for speed
+			result.Decision = RoutingSingle
+			result.ShouldUseEnsemble = false
+			result.Reason = "llm_classified_simple_question"
+			result.Confidence = llmResult.Confidence
+			result.Signals = append(result.Signals, "llm_simple", string(llmResult.Intent))
+			result.StrongestProvider = r.getStrongestProvider()
+			return result
+		}
+		r.logger.WithError(llmErr).Warn("[IntentRouter] LLM classification failed, falling back to patterns")
+	}
+
+	// FALLBACK: Pattern-based routing when LLM classifier is unavailable
 	if r.isSimpleQuery(lowerMsg, trimmedMsg) {
 		result.Decision = RoutingSingle
 		result.ShouldUseEnsemble = false
@@ -124,12 +226,23 @@ func (r *IntentBasedRouter) AnalyzeRequest(message string, context map[string]in
 		return result
 	}
 
+	if r.isActionableRequest(lowerMsg) {
+		result.Decision = RoutingSingle
+		result.ShouldUseEnsemble = false
+		result.Reason = "actionable_request_pattern_fallback"
+		result.Confidence = 0.8
+		result.Signals = append(result.Signals, "actionable_pattern")
+		result.StrongestProvider = r.getStrongestProvider()
+		result.FallbackProviders = r.getFallbackProviders()
+		return result
+	}
+
 	if r.isComplexRequest(lowerMsg) {
 		result.Decision = RoutingEnsemble
 		result.ShouldUseEnsemble = true
-		result.Reason = "complex_request_requiring_ensemble"
+		result.Reason = "complex_request_pattern_fallback"
 		result.Confidence = 0.9
-		result.Signals = append(result.Signals, "complex_request_detected")
+		result.Signals = append(result.Signals, "complex_pattern")
 		return result
 	}
 
@@ -142,7 +255,7 @@ func (r *IntentBasedRouter) AnalyzeRequest(message string, context map[string]in
 		return result
 	}
 
-	if len(trimmedMsg) > 200 {
+	if len(trimmedMsg) > 80 {
 		result.Decision = RoutingEnsemble
 		result.ShouldUseEnsemble = true
 		result.Reason = "long_message_suggests_complex_request"
@@ -152,7 +265,7 @@ func (r *IntentBasedRouter) AnalyzeRequest(message string, context map[string]in
 	}
 
 	complexityScore := r.calculateComplexityScore(lowerMsg)
-	if complexityScore > 0.6 {
+	if complexityScore > 0.4 {
 		result.Decision = RoutingEnsemble
 		result.ShouldUseEnsemble = true
 		result.Reason = "high_complexity_score"
@@ -214,6 +327,17 @@ func (r *IntentBasedRouter) isSimpleQuery(msg, originalMsg string) bool {
 		}
 	}
 
+	return false
+}
+
+// isActionableRequest detects requests that require tool execution (file I/O, commands,
+// report generation). Uses dynamically built patterns from initPatterns().
+func (r *IntentBasedRouter) isActionableRequest(msg string) bool {
+	for _, p := range r.actionablePatterns {
+		if p.MatchString(msg) {
+			return true
+		}
+	}
 	return false
 }
 

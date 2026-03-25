@@ -100,11 +100,15 @@ func (rc *RouterContext) ReinitializeDebateTeam(ctx context.Context) error {
 	if rc.unifiedHandler != nil {
 		rc.unifiedHandler.SetDebateTeamConfig(rc.DebateTeamConfig)
 
-		// Also initialize IntentBasedRouter with StartupVerifier
+		// Also initialize IntentBasedRouter with StartupVerifier and LLM classifier
 		if rc.intentBasedRouter == nil && rc.logger != nil {
 			rc.intentBasedRouter = services.NewIntentBasedRouter(sv, rc.logger)
+			if rc.ProviderRegistry != nil {
+				llmClassifier := services.NewLLMIntentClassifier(rc.ProviderRegistry, rc.logger)
+				rc.intentBasedRouter.SetLLMClassifier(llmClassifier)
+			}
 			rc.unifiedHandler.SetIntentBasedRouter(rc.intentBasedRouter)
-			rc.logger.Info("IntentBasedRouter configured with StartupVerifier - simple requests will use single provider, complex requests will use ensemble")
+			rc.logger.Info("IntentBasedRouter configured with LLM classifier for semantic intent routing")
 		}
 	}
 	if rc.debateService != nil {
@@ -851,8 +855,12 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 		var intentRouter *services.IntentBasedRouter
 		if sv := providerRegistry.GetStartupVerifier(); sv != nil {
 			intentRouter = services.NewIntentBasedRouter(sv, logger)
+			// Wire LLM-based intent classifier for real semantic understanding
+			// Uses the strongest scored model for multilingual intent recognition
+			llmClassifier := services.NewLLMIntentClassifier(providerRegistry, logger)
+			intentRouter.SetLLMClassifier(llmClassifier)
 			unifiedHandler.SetIntentBasedRouter(intentRouter)
-			logger.Info("IntentBasedRouter configured - simple requests will use single provider, complex requests will use ensemble")
+			logger.Info("IntentBasedRouter configured with LLM classifier - semantic intent routing for all languages")
 		} else {
 			logger.Warn("StartupVerifier not available - IntentBasedRouter not initialized, all requests will use ensemble")
 		}
@@ -880,6 +888,11 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 
 		// CRITICAL: Set debate service on UnifiedHandler so it can use the configured debate team
 		unifiedHandler.SetDebateService(debateService)
+
+		// Wire the comprehensive IntegrationManager so its agent pool gets populated
+		if ci := debateService.GetComprehensiveIntegration(); ci != nil {
+			orchestratorIntegration.SetComprehensiveIntegration(ci)
+		}
 
 		// Populate the orchestrator agent pool from the debate team's verified providers.
 		// This ensures the orchestrator uses the same verified, scored, and filtered providers

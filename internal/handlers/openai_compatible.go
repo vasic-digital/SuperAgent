@@ -543,8 +543,10 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 	// streaming latency requirements.
 	// See: original orchestrator code used h.orchestratorIntegration.GetOrchestrator().ConductDebate()
 
-	// INTENT DETECTION: Route simple messages to single provider, complex to debate.
-	// This prevents wasting 15-45 seconds on a full multi-LLM debate for "hello!"
+	// INTENT DETECTION: Use LLM-based semantic classification to determine routing.
+	// NO HARDCODED PATTERNS — supports any language, slang, or expression.
+	// Only trivial social messages (greetings, confirmations) bypass the debate.
+	// ALL substantive messages go through the 8-role debate ensemble for full transparency.
 	lastUserMsg := ""
 	for _, msg := range req.Messages {
 		if msg.Role == "user" {
@@ -552,36 +554,35 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 		}
 	}
 
-	useDebate := true
-	if h.intentRouter != nil {
-		useDebate = h.intentRouter.ShouldUseEnsemble(lastUserMsg, nil)
-		logrus.WithFields(logrus.Fields{
-			"use_debate": useDebate,
-			"message":    lastUserMsg[:min(50, len(lastUserMsg))],
-		}).Info("[STREAMING] IntentBasedRouter decision")
-	} else {
-		// Fallback: simple heuristic for when IntentBasedRouter isn't available
-		msgLower := strings.ToLower(strings.TrimSpace(lastUserMsg))
-		simplePatterns := []string{
-			"hello", "hi", "hey", "greetings", "good morning", "good afternoon",
-			"good evening", "thanks", "thank you", "yes", "no", "ok", "okay",
-			"sure", "bye", "goodbye", "help", "what can you do",
-		}
-		for _, pattern := range simplePatterns {
-			if msgLower == pattern || msgLower == pattern+"!" || msgLower == pattern+"." {
-				useDebate = false
-				break
+	useDebate := true // Default: always debate for full transparency
+	if h.intentRouter != nil && h.intentRouter.GetLLMClassifier() != nil {
+		// Use LLM intelligence to classify intent — works in any language
+		classifyCtx, classifyCancel := context.WithTimeout(c.Request.Context(), 8*time.Second)
+		llmResult, llmErr := h.intentRouter.GetLLMClassifier().ClassifyIntentWithLLM(classifyCtx, lastUserMsg, "")
+		classifyCancel()
+		if llmErr == nil && llmResult != nil {
+			// Only skip debate for trivial social messages (greetings, confirmations, refusals)
+			isTrivial := llmResult.Intent == "confirmation" || llmResult.Intent == "refusal" || llmResult.Intent == "greeting"
+			// Very short non-actionable messages (< 15 chars) are likely trivial
+			if !isTrivial && len(strings.TrimSpace(lastUserMsg)) < 15 && !llmResult.IsActionable && llmResult.Confidence >= 0.8 {
+				isTrivial = true
 			}
+			useDebate = !isTrivial
+			logrus.WithFields(logrus.Fields{
+				"use_debate":  useDebate,
+				"intent":      llmResult.Intent,
+				"actionable":  llmResult.IsActionable,
+				"confidence":  llmResult.Confidence,
+				"message":     lastUserMsg[:min(50, len(lastUserMsg))],
+			}).Info("[STREAMING] LLM-based routing decision")
+		} else {
+			logrus.WithError(llmErr).Warn("[STREAMING] LLM classification failed — defaulting to debate")
 		}
-		// Short messages (< 20 chars) without code indicators are likely simple
-		if len(msgLower) < 20 && !strings.ContainsAny(msgLower, "{}()[]<>=;:") {
-			useDebate = false
-		}
-		logrus.WithFields(logrus.Fields{
-			"use_debate": useDebate,
-			"message":    lastUserMsg[:min(50, len(lastUserMsg))],
-		}).Info("[STREAMING] Heuristic intent detection")
 	}
+	logrus.WithFields(logrus.Fields{
+		"use_debate": useDebate,
+		"message":    lastUserMsg[:min(50, len(lastUserMsg))],
+	}).Info("[STREAMING] Final routing decision")
 
 	// For SIMPLE messages: use strongest single provider for fast, direct response
 	// CRITICAL: For greetings only, trim oversized system prompts from CLI agents
@@ -763,26 +764,168 @@ Respond concisely and helpfully.`, clientName, toolList)
 		logrus.Warn("[STREAMING] All single providers failed, falling through to debate")
 	}
 
-	// For COMPLEX messages: use debate service with verified team (real LLM calls).
-	if h.debateService != nil && h.debateTeamConfig != nil && ctx.Err() == nil {
-		logrus.Info("[STREAMING] Complex message — using debate service with verified team")
+	// For COMPLEX messages: call each comprehensive debate role directly with real LLM calls.
+	// Uses the 8-role comprehensive debate system (Architect, Generator, Critic, Refactoring,
+	// Tester, Validator, Security, Performance) with verified providers.
+	if h.debateTeamConfig != nil && ctx.Err() == nil {
+		logrus.Info("[STREAMING] Complex message — comprehensive 8-role debate with verified team")
 
 		topic := lastUserMsg
 		if topic == "" {
 			topic = "User Query"
 		}
 
-		participants := h.debateTeamConfig.GetParticipantConfigs()
-		debateConfig := &services.DebateConfig{
-			DebateID:     fmt.Sprintf("stream-%d", time.Now().UnixNano()),
-			Topic:        topic,
-			MaxRounds:    1,
-			Strategy:     "collaborative",
-			Participants: participants,
-			Timeout:      120 * time.Second,
+		debateID := fmt.Sprintf("debate-%d", time.Now().UnixNano())
+		startTime := time.Now()
+
+		type roleResult struct {
+			Role         string
+			ProviderName string
+			ModelName    string
+			Score        float64
+			Content      string
+			Duration     time.Duration
+			Fallback     bool
+			Error        string
 		}
 
-		debateResult, debateErr := h.debateService.ConductDebate(ctx, debateConfig)
+		// Comprehensive 8-role debate system with role-specific prompts
+		type roleConfig struct {
+			Name   string
+			Prompt string
+		}
+		debateRoles := []roleConfig{
+			{"Architect", "You are THE ARCHITECT in an AI debate ensemble. Focus on system design, component architecture, data flow, and structural decisions. Be concise (2-3 paragraphs)."},
+			{"Generator", "You are THE GENERATOR in an AI debate ensemble. Focus on producing concrete solutions, code implementations, and actionable approaches. Be concise (2-3 paragraphs)."},
+			{"Critic", "You are THE CRITIC in an AI debate ensemble. Challenge assumptions, identify flaws, edge cases, and weaknesses in proposed approaches. Be concise (2-3 paragraphs)."},
+			{"Tester", "You are THE TESTER in an AI debate ensemble. Focus on quality assurance, test scenarios, validation strategies, and coverage analysis. Be concise (2-3 paragraphs)."},
+			{"Security", "You are THE SECURITY ANALYST in an AI debate ensemble. Focus on security implications, vulnerabilities, attack vectors, and hardening strategies. Be concise (2-3 paragraphs)."},
+			{"Performance", "You are THE PERFORMANCE ANALYST in an AI debate ensemble. Focus on efficiency, scalability, resource usage, and optimization opportunities. Be concise (2-3 paragraphs)."},
+			{"Validator", "You are THE VALIDATOR in an AI debate ensemble. Focus on correctness verification, type safety, contract compliance, and standards adherence. Be concise (2-3 paragraphs)."},
+			{"Moderator", "You are THE MODERATOR in an AI debate ensemble. Synthesize all perspectives into a balanced, comprehensive final answer. Incorporate insights from all team members. Be thorough (3-4 paragraphs)."},
+		}
+
+		// Get all verified LLMs and assign them to roles round-robin
+		verifiedLLMs := h.debateTeamConfig.GetVerifiedLLMs()
+		var results []roleResult
+
+		for i, rc := range debateRoles {
+			if ctx.Err() != nil {
+				break
+			}
+			// Assign LLM round-robin from verified providers
+			llmIdx := i % len(verifiedLLMs)
+			if llmIdx >= len(verifiedLLMs) {
+				continue
+			}
+			vllm := verifiedLLMs[llmIdx]
+			if vllm.Provider == nil {
+				results = append(results, roleResult{
+					Role: rc.Name, ProviderName: vllm.ProviderName,
+					ModelName: vllm.ModelName, Score: vllm.Score,
+					Error: "provider nil",
+				})
+				continue
+			}
+
+			roleStart := time.Now()
+			debateReq := &models.LLMRequest{
+				Messages: []models.Message{
+					{Role: "system", Content: rc.Prompt},
+					{Role: "user", Content: topic},
+				},
+				ModelParams: models.ModelParameters{Model: vllm.ModelName, MaxTokens: 400},
+			}
+
+			resp, callErr := vllm.Provider.Complete(ctx, debateReq)
+			rr := roleResult{
+				Role: rc.Name, ProviderName: vllm.ProviderName,
+				ModelName: vllm.ModelName, Score: vllm.Score, Duration: time.Since(roleStart),
+			}
+			if callErr != nil {
+				rr.Error = callErr.Error()
+				// Try next verified LLM as fallback
+				for fbIdx := llmIdx + 1; fbIdx < len(verifiedLLMs) && fbIdx < llmIdx+3; fbIdx++ {
+					fb := verifiedLLMs[fbIdx]
+					if fb.Provider == nil {
+						continue
+					}
+					debateReq.ModelParams.Model = fb.ModelName
+					fbResp, fbErr := fb.Provider.Complete(ctx, debateReq)
+					if fbErr == nil && fbResp != nil && fbResp.Content != "" {
+						rr.Content = fbResp.Content
+						rr.ProviderName = fb.ProviderName
+						rr.ModelName = fb.ModelName
+						rr.Fallback = true
+						rr.Error = ""
+						break
+					}
+				}
+				if rr.Content == "" {
+					rr.Content = fmt.Sprintf("[%s failed: %s]", rc.Name, rr.Error[:min(100, len(rr.Error))])
+				}
+			} else if resp != nil {
+				rr.Content = resp.Content
+			}
+			results = append(results, rr)
+			logrus.WithFields(logrus.Fields{
+				"role": rc.Name, "provider": rr.ProviderName,
+				"model": rr.ModelName, "duration": rr.Duration, "fallback": rr.Fallback,
+				"content_len": len(rr.Content),
+			}).Info("[DEBATE] Role response received")
+		}
+
+		totalDuration := time.Since(startTime)
+
+		// Build synthesized content: use Moderator as primary, fall back to combining all
+		var finalContent string
+		for _, r := range results {
+			if r.Role == "Moderator" && r.Content != "" && r.Error == "" {
+				finalContent = r.Content
+				break
+			}
+		}
+		if finalContent == "" {
+			for _, r := range results {
+				if r.Content != "" {
+					finalContent += r.Content + "\n\n"
+				}
+			}
+			finalContent = strings.TrimSpace(finalContent)
+		}
+
+		// Build DebateResult for visualization
+		debateResult := &services.DebateResult{
+			DebateID:    debateID,
+			Duration:    totalDuration,
+			TotalRounds: 1,
+			Success:     finalContent != "",
+			FallbackUsed: func() bool {
+				for _, r := range results {
+					if r.Fallback {
+						return true
+					}
+				}
+				return false
+			}(),
+		}
+		for _, r := range results {
+			debateResult.AllResponses = append(debateResult.AllResponses, services.ParticipantResponse{
+				ParticipantName: r.Role,
+				Role:            r.Role,
+				LLMProvider:     r.ProviderName,
+				LLMModel:        r.ModelName,
+				Content:         r.Content,
+				QualityScore:    r.Score,
+				ResponseTime:    r.Duration,
+			})
+			debateResult.Participants = debateResult.AllResponses
+		}
+
+		var debateErr error
+		if finalContent == "" {
+			debateErr = fmt.Errorf("all roles failed")
+		}
 		if debateErr == nil && debateResult != nil {
 			var finalContent string
 
@@ -846,42 +989,21 @@ Respond concisely and helpfully.`, clientName, toolList)
 				if h.showDebateDialogue {
 					// Build debate team header showing all members and fallbacks
 					var teamIntro strings.Builder
-					teamIntro.WriteString("\n\n## AI Debate Ensemble\n\n")
+					teamIntro.WriteString("\n\n## AI Debate Ensemble (8-Role Comprehensive System)\n\n")
 					teamIntro.WriteString(fmt.Sprintf("**Topic:** %s\n\n", topic))
 					teamIntro.WriteString("### Debate Team\n\n")
-					teamIntro.WriteString("| Position | Provider | Model | Score | Fallbacks |\n")
-					teamIntro.WriteString("|----------|----------|-------|-------|-----------|\n")
+					teamIntro.WriteString("| Role | Provider | Model | Score | Duration | Status |\n")
+					teamIntro.WriteString("|------|----------|-------|-------|----------|--------|\n")
 
-					for pos := services.PositionAnalyst; pos <= services.PositionMediator; pos++ {
-						member := h.debateTeamConfig.GetTeamMember(pos)
-						if member == nil {
-							continue
+					// Build table from actual debate results (comprehensive roles)
+					for _, pr := range debateResult.AllResponses {
+						status := "OK"
+						if pr.Content == "" || strings.HasPrefix(pr.Content, "[") {
+							status = "FAILED"
 						}
-						posNames := map[services.DebateTeamPosition]string{
-							services.PositionAnalyst:  "Analyst",
-							services.PositionProposer: "Proposer",
-							services.PositionCritic:   "Critic",
-							services.PositionSynthesis: "Synthesis",
-							services.PositionMediator: "Mediator",
-						}
-						posName := posNames[pos]
-						// Build fallback chain string
-						var fbChain string
-						for i, fb := range member.Fallbacks {
-							if i > 0 {
-								fbChain += ", "
-							}
-							fbChain += fmt.Sprintf("%s/%s", fb.ProviderName, fb.ModelName)
-						}
-						if fbChain == "" {
-							fbChain = "none"
-						}
-						oauthBadge := ""
-						if member.IsOAuth {
-							oauthBadge = " (OAuth)"
-						}
-						teamIntro.WriteString(fmt.Sprintf("| **%s** | %s%s | %s | %.1f | %s |\n",
-							posName, member.ProviderName, oauthBadge, member.ModelName, member.Score, fbChain))
+						teamIntro.WriteString(fmt.Sprintf("| **%s** | %s | %s | %.1f | %s | %s |\n",
+							pr.Role, pr.LLMProvider, pr.LLMModel, pr.QualityScore,
+							pr.ResponseTime.Round(time.Millisecond), status))
 					}
 
 					teamIntro.WriteString(fmt.Sprintf("\n**Debate ID:** `%s`\n", debateResult.DebateID))

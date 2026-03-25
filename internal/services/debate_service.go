@@ -92,6 +92,11 @@ func (ds *DebateService) IsComprehensiveSystemEnabled() bool {
 	return ds.useComprehensiveSystem && ds.comprehensiveIntegration != nil
 }
 
+// GetComprehensiveIntegration returns the comprehensive IntegrationManager
+func (ds *DebateService) GetComprehensiveIntegration() *comprehensive.IntegrationManager {
+	return ds.comprehensiveIntegration
+}
+
 // StreamDebate conducts a streaming debate with the given configuration and handler
 func (ds *DebateService) StreamDebate(ctx context.Context, config *DebateConfig, streamHandler comprehensive.StreamHandler) (*DebateResult, error) {
 	startTime := time.Now()

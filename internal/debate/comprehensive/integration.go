@@ -15,6 +15,7 @@ type IntegrationManager struct {
 	registry     *ToolRegistry
 	orchestrator *PhaseOrchestrator
 	engine       *DebateEngine
+	system       *System // Full debate system with actual LLM invocation
 	logger       *logrus.Logger
 }
 
@@ -37,8 +38,17 @@ func NewIntegrationManager(config *Config, logger *logrus.Logger) (*IntegrationM
 	// Create phase orchestrator
 	orchestrator := NewPhaseOrchestrator(pool, logger)
 
-	// Create debate engine (using default config for now)
+	// Create debate engine (legacy stub — kept for backward compatibility)
 	engine := NewDebateEngine(DefaultConfig(), logger)
+
+	// Create the full debate system that shares the pool and orchestrator
+	// so registered agents from PopulateFromDebateTeam are available
+	system := &System{
+		config:       config,
+		logger:       logger,
+		pool:         pool,         // Share pool with IntegrationManager
+		orchestrator: orchestrator, // Share orchestrator
+	}
 
 	return &IntegrationManager{
 		config:       config,
@@ -46,6 +56,7 @@ func NewIntegrationManager(config *Config, logger *logrus.Logger) (*IntegrationM
 		registry:     registry,
 		orchestrator: orchestrator,
 		engine:       engine,
+		system:       system,
 		logger:       logger,
 	}, nil
 }
@@ -151,12 +162,10 @@ func (m *IntegrationManager) createAgentTeam() error {
 	return nil
 }
 
-// ExecuteDebate executes a complete debate
+// ExecuteDebate executes a complete debate using the full System implementation
+// which actually invokes LLM agents through the PhaseOrchestrator.
 func (m *IntegrationManager) ExecuteDebate(ctx context.Context, req *DebateRequest) (*DebateResponse, error) {
-	m.logger.WithField("topic", req.Topic).Info("Executing debate")
-
-	// Create debate context
-	debateContext := NewContext(req.Topic, req.Codebase, req.Language)
+	m.logger.WithField("topic", req.Topic).Info("Executing debate via System.ConductDebate")
 
 	// Validate request
 	validator := DebateRequestValidator{}
@@ -164,8 +173,8 @@ func (m *IntegrationManager) ExecuteDebate(ctx context.Context, req *DebateReque
 		return nil, fmt.Errorf("validation failed: %v", errors)
 	}
 
-	// Execute debate through engine
-	response, err := m.engine.RunDebate(ctx, req, debateContext)
+	// Delegate to the full System implementation which has actual LLM invocation
+	response, err := m.system.ConductDebate(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("debate execution failed: %w", err)
 	}
@@ -182,6 +191,11 @@ func (m *IntegrationManager) ExecuteDebate(ctx context.Context, req *DebateReque
 	}).Info("Debate execution complete")
 
 	return response, nil
+}
+
+// GetAgentPool returns the agent pool for external population (e.g., from ServiceIntegration)
+func (m *IntegrationManager) GetAgentPool() *AgentPool {
+	return m.pool
 }
 
 // StreamDebate executes a debate with real-time streaming

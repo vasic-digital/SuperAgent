@@ -22,11 +22,18 @@ import (
 // ServiceIntegration provides integration between the new debate framework
 // and the existing DebateService. It allows gradual migration to the new system.
 type ServiceIntegration struct {
-	orchestrator     *orchestrator.Orchestrator
-	providerRegistry *services.ProviderRegistry
-	providerBridge   *ProviderRegistryBridge
-	logger           *logrus.Logger
-	config           ServiceIntegrationConfig
+	orchestrator               *orchestrator.Orchestrator
+	providerRegistry           *services.ProviderRegistry
+	providerBridge             *ProviderRegistryBridge
+	comprehensiveIntegration   *comprehensive.IntegrationManager // Shared pool target
+	logger                     *logrus.Logger
+	config                     ServiceIntegrationConfig
+}
+
+// SetComprehensiveIntegration sets the comprehensive IntegrationManager so its
+// agent pool gets populated alongside the orchestrator pool.
+func (si *ServiceIntegration) SetComprehensiveIntegration(ci *comprehensive.IntegrationManager) {
+	si.comprehensiveIntegration = ci
 }
 
 // ServiceIntegrationConfig configures the service integration.
@@ -368,12 +375,38 @@ func (si *ServiceIntegration) PopulateFromDebateTeam(teamConfig *services.Debate
 		)
 	}
 
+	// Also populate the comprehensive IntegrationManager's agent pool
+	// so System.ConductDebate() has agents to invoke via PhaseOrchestrator
+	compPoolSize := 0
+	if si.comprehensiveIntegration != nil {
+		compPool := si.comprehensiveIntegration.GetAgentPool()
+		if compPool != nil {
+			// Map verified LLMs to comprehensive debate roles
+			roles := []comprehensive.Role{
+				comprehensive.RoleArchitect, comprehensive.RoleGenerator,
+				comprehensive.RoleCritic, comprehensive.RoleRefactoring,
+				comprehensive.RoleTester, comprehensive.RoleValidator,
+				comprehensive.RoleSecurity, comprehensive.RolePerformance,
+			}
+			for i, vllm := range verifiedLLMs {
+				if vllm.Provider == nil {
+					continue
+				}
+				role := roles[i%len(roles)]
+				agent := comprehensive.NewAgent(role, vllm.ProviderName, vllm.ModelName, vllm.Score)
+				compPool.Add(agent)
+			}
+			compPoolSize = compPool.Size()
+		}
+	}
+
 	if si.logger != nil {
 		si.logger.WithFields(logrus.Fields{
 			"registered_agents":   registeredCount,
 			"registered_invokers": invokerCount,
 			"total_verified":      len(verifiedLLMs),
 			"pool_size":           si.orchestrator.GetAgentPool().Size(),
+			"comp_pool_size":      compPoolSize,
 		}).Info("Populated orchestrator agent pool from debate team verified providers")
 	}
 }
