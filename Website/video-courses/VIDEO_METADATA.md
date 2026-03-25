@@ -43,10 +43,16 @@ Centralized metadata for all HelixAgent video courses. Use this file to track co
 | 67 | LLMOps & A/B Experimentation | 2.5h | Intermediate-Advanced | Published |
 | 68 | AI Planning Algorithms | 3h | Advanced | Published |
 | 69 | Concurrency Safety Patterns | 3h | Advanced | Published |
+| 70 | DocProcessor Deep Dive | 2.5h | Intermediate-Advanced | Published |
+| 71 | HelixQA Orchestration Framework | 3h | Advanced | Published |
+| 72 | LLMOrchestrator Mastery | 2.5h | Advanced | Published |
+| 73 | VisionEngine for UI Analysis | 2.5h | Advanced | Published |
+| 74 | Security Scanning Pipeline | 3h | Advanced | Published |
+| 75 | Performance Tuning and Profiling | 3h | Advanced | Published |
 
 ---
 
-## New Courses (66-69)
+## New Courses (66-75)
 
 ### Course 66: Agentic Workflows Deep Dive
 
@@ -92,19 +98,98 @@ Centralized metadata for all HelixAgent video courses. Use this file to track co
 - **Source Modules:** Go standard library (`sync`, `sync/atomic`, `runtime`), HelixAgent internal patterns
 - **Assessment:** Quiz (10 questions) + practical concurrent service refactoring
 
+### Course 70: DocProcessor Deep Dive
+
+- **File:** `course-70-docprocessor.md`
+- **Duration:** 2.5 hours
+- **Level:** Intermediate to Advanced
+- **Prerequisites:** Course 01, Course 06
+- **Modules:** 6 (Architecture Overview, Feature Map Extraction, Coverage Tracking, DocGraph Visualization, LLM Agent Integration, Hands-On Lab)
+- **Key Topics:** Documentation loading pipeline, FeatureMap building (heuristic + LLM), CoverageTracker (thread-safe per-platform), DocGraph with JSON/Mermaid export, LLMAgent interface injection
+- **Source Modules:** `DocProcessor/` (`digital.vasic.docprocessor`)
+- **Assessment:** Quiz (10 questions) + practical pipeline build
+
+### Course 71: HelixQA Orchestration Framework
+
+- **File:** `course-71-helixqa.md`
+- **Duration:** 3 hours
+- **Level:** Advanced
+- **Prerequisites:** Course 01, Course 06, Course 70
+- **Modules:** 6 (QA Orchestrator Setup, Test Bank YAML Format, Crash/ANR Detection, Evidence Collection Pipeline, Ticket Generation, Session Management)
+- **Key Topics:** SessionCoordinator lifecycle, YAML test banks with platform/priority filtering, real-time crash/ANR detection (Android/Web/Desktop), evidence artifacts (screenshots/video/logs), Markdown ticket generation, curiosity-driven exploration
+- **Source Modules:** `HelixQA/` (`digital.vasic.helixqa`)
+- **Assessment:** Quiz (10 questions) + practical QA session build
+
+### Course 72: LLMOrchestrator Mastery
+
+- **File:** `course-72-llmorchestrator.md`
+- **Duration:** 2.5 hours
+- **Level:** Advanced
+- **Prerequisites:** Course 01, Course 07, Course 69
+- **Modules:** 6 (Agent Pool Architecture, Hybrid Protocol, CLI Adapters, Circuit Breaker Integration, Health Monitoring, Security Hardening)
+- **Key Topics:** AgentPool (sync.Mutex + sync.Cond blocking acquire), PipeTransport (JSON-lines) + FileTransport (inbox/outbox/shared), BaseAdapter pattern with 5 CLI adapters, circuit breaker (3 failures = 60s open), health monitoring, path traversal protection
+- **Source Modules:** `LLMOrchestrator/` (`digital.vasic.llmorchestrator`)
+- **Assessment:** Quiz (10 questions) + practical agent pool deployment
+
+### Course 73: VisionEngine for UI Analysis
+
+- **File:** `course-73-visionengine.md`
+- **Duration:** 2.5 hours
+- **Level:** Advanced
+- **Prerequisites:** Course 01, Course 70, Course 72
+- **Modules:** 6 (Analyzer Interface, NavigationGraph + BFS, LLM Vision Providers, OpenCV Integration, FallbackProvider Pattern, Hands-On Lab)
+- **Key Topics:** Analyzer interface (6 methods: AnalyzeScreen, CompareScreens, DetectElements, DetectText, IdentifyScreen, DetectIssues), NavigationGraph with BFS pathfinding, LLM vision providers, OpenCV build tags, FallbackProvider multi-provider resilience
+- **Source Modules:** `VisionEngine/` (`digital.vasic.visionengine`)
+- **Assessment:** Quiz (10 questions) + practical graph + fallback build
+
+### Course 74: Security Scanning Pipeline
+
+- **File:** `course-74-security-scanning.md`
+- **Duration:** 3 hours
+- **Level:** Advanced
+- **Prerequisites:** Course 01, Course 10
+- **Modules:** 6 (Scanner Overview (7 tools), Docker Compose Setup, Running Scans, Interpreting Reports, Fixing Findings, Continuous Scanning Workflow)
+- **Key Topics:** 7 tools (gosec, Trivy, Semgrep, Snyk, SonarQube, staticcheck, go vet), Docker Compose infrastructure for Snyk and SonarQube, Makefile scan targets, severity classification, fix patterns, continuous workflow integration
+- **Source Modules:** `docker/security/snyk/`, `docker/security/sonarqube/`, Makefile targets
+- **Assessment:** Quiz (10 questions) + practical scanning pipeline operation
+
+### Course 75: Performance Tuning and Profiling
+
+- **File:** `course-75-performance-tuning.md`
+- **Duration:** 3 hours
+- **Level:** Advanced
+- **Prerequisites:** Course 01, Course 65, Course 69
+- **Modules:** 6 (Lazy Loading Patterns, Benchmark Methodology, Monitoring-Driven Optimization, Semaphore & Backpressure, HTTP Pool Tuning, pprof Profiling)
+- **Key Topics:** sync.Once lazy initialization, Go benchmarks with benchstat, Prometheus metrics for bottleneck identification, semaphore concurrency limiting, HTTP/3 connection pool configuration, CPU and heap profiling with pprof
+- **Source Modules:** `internal/services/debate_performance_optimizer.go`, `internal/adapters/http/`, pprof endpoints
+- **Assessment:** Quiz (10 questions) + practical optimization exercise with benchstat comparison
+
 ---
 
-## Prerequisite Graph (Courses 61-69)
+## Prerequisite Graph (Courses 61-75)
 
 ```
 Course 01 (Fundamentals)
   |
+  +-- Course 06 (Testing Strategies)
+  |     +-- Course 70 (DocProcessor Deep Dive)
+  |           +-- Course 71 (HelixQA Orchestration)
+  |
+  +-- Course 10 (Security Best Practices)
+  |     +-- Course 74 (Security Scanning Pipeline)
+  |
   +-- Course 61 (Goroutine Safety)
   |     +-- Course 65 (Lazy Loading Patterns)
   |           +-- Course 69 (Concurrency Safety Patterns)
+  |                 +-- Course 75 (Performance Tuning and Profiling)
   |
   +-- Course 07 (Advanced Providers)
   |     +-- Course 67 (LLMOps & A/B Experimentation)
+  |     +-- Course 69 + Course 07
+  |           +-- Course 72 (LLMOrchestrator Mastery)
+  |
+  +-- Course 70 + Course 72
+  |     +-- Course 73 (VisionEngine for UI Analysis)
   |
   +-- Course 12 (Advanced Workflows)
         +-- Course 15 (Advanced Agentic Workflows)
@@ -122,6 +207,8 @@ Course 01 (Fundamentals)
 3. Course 66: Agentic Workflows Deep Dive
 4. Course 67: LLMOps & A/B Experimentation
 5. Course 68: AI Planning Algorithms
+6. Course 72: LLMOrchestrator Mastery
+7. Course 73: VisionEngine for UI Analysis
 
 ### Go Developer Path
 1. Course 01: Fundamentals
@@ -129,6 +216,21 @@ Course 01 (Fundamentals)
 3. Course 65: Lazy Loading Patterns
 4. Course 69: Concurrency Safety Patterns
 5. Course 06: Testing Strategies
+6. Course 75: Performance Tuning and Profiling
+
+### QA Automation Path
+1. Course 01: Fundamentals
+2. Course 06: Testing Strategies
+3. Course 70: DocProcessor Deep Dive
+4. Course 71: HelixQA Orchestration Framework
+5. Course 72: LLMOrchestrator Mastery
+6. Course 73: VisionEngine for UI Analysis
+
+### Security Engineer Path
+1. Course 01: Fundamentals
+2. Course 10: Security Best Practices
+3. Course 74: Security Scanning Pipeline
+4. Course 75: Performance Tuning and Profiling
 
 ### Full Stack AI Path
 1. Course 01: Fundamentals
@@ -139,6 +241,12 @@ Course 01 (Fundamentals)
 6. Course 67: LLMOps & A/B Experimentation
 7. Course 68: AI Planning Algorithms
 8. Course 69: Concurrency Safety Patterns
+9. Course 70: DocProcessor Deep Dive
+10. Course 71: HelixQA Orchestration Framework
+11. Course 72: LLMOrchestrator Mastery
+12. Course 73: VisionEngine for UI Analysis
+13. Course 74: Security Scanning Pipeline
+14. Course 75: Performance Tuning and Profiling
 
 ---
 
@@ -146,5 +254,6 @@ Course 01 (Fundamentals)
 
 | Date | Change |
 |------|--------|
+| 2026-03-25 | Added courses 70-75: DocProcessor, HelixQA, LLMOrchestrator, VisionEngine, Security Scanning, Performance Tuning |
 | 2026-03-23 | Added courses 66-69: Agentic Workflows, LLMOps, Planning Algorithms, Concurrency Safety |
 | 2026-03-23 | Created VIDEO_METADATA.md with full course registry |
