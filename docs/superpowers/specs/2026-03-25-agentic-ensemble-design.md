@@ -1,8 +1,8 @@
 # AgenticEnsemble: Unified LLM with Autonomous Execution — Design Spec
 
 **Date:** 2026-03-25
-**Version:** 1.0.0
-**Status:** Approved
+**Version:** 1.1.0
+**Status:** Approved (v1.1 — corrected per spec review)
 **Scope:** Make the AI ensemble behave as a single consistent LLM with full tool access and autonomous execution capability
 
 ---
@@ -55,22 +55,71 @@ User Request → ChatCompletions Handler
 
 ```go
 type AgenticEnsemble struct {
-    debateService       *DebateService
-    specKit             *SpecKitOrchestrator
-    toolBridge          *ToolIntegration
-    intentClassifier    *LLMIntentClassifier
-    workerPool          *AgentWorkerPool
-    memory              *HelixMemoryAdapter
-    visionAdapter       *VisionToolAdapter
-    providerRegistry    *ProviderRegistry
-    eventBus            EventPublisher
-    provenanceTracker   *ProvenanceTracker
-    reflexionManager    *ReflexionManager
-    securityGuardrails  *SecurityGuardrails
-    formatterRegistry   *FormatterRegistry
-    pluginRegistry      *PluginRegistry
-    bigDataIntegration  *BigDataIntegration
+    debateService       *DebateService                          // Existing: internal/services/debate_service.go
+    specKit             *SpecKitOrchestrator                    // Existing: internal/services/speckit_orchestrator.go
+    toolBridge          *tools.ToolIntegration                  // Existing: internal/debate/tools/tool_integration.go (extended)
+    intentClassifier    *LLMIntentClassifier                    // Existing: internal/services/llm_intent_classifier.go
+    workerPool          *AgentWorkerPool                        // NEW: internal/services/agent_worker_pool.go
+    memory              *memoryadapter.StoreAdapter             // Existing: internal/adapters/memory/adapter.go
+    helixMemory         helixmemory.UnifiedMemoryProvider       // Existing: HelixMemory module (Mem0+Cognee+Letta+Graphiti)
+    visionAdapter       *VisionToolAdapter                      // NEW: wraps existing internal/handlers/vision_handler.go
+    providerRegistry    *ProviderRegistry                       // Existing: internal/services/provider_registry.go
+    eventBus            *eventbusadapter.Adapter                // Existing: internal/adapters/eventbus.go
+    provenanceTracker   *ProvenanceTracker                      // Existing: internal/debate/audit/provenance_tracker.go
+    reflexionLoop       *reflexion.ReflexionLoop                // Existing: internal/debate/reflexion/reflexion_loop.go
+    guardrails          *security.StandardGuardrailPipeline     // Existing: internal/security/guardrails.go
+    formatterRegistry   *formatters.Registry                    // Existing: internal/formatters/registry.go
+    pluginSystem        *ProtocolPluginSystem                   // Existing: internal/services/protocol_plugin_system.go
+    bigDataIntegration  *BigDataIntegration                     // Existing: internal/bigdata/integration.go
     config              AgenticEnsembleConfig
+}
+```
+
+### Key Type Definitions (NEW)
+
+```go
+// AgenticTask is the structured task output from SpecKit decomposition.
+// The SpecKit Tasks phase produces debate output which is parsed into these.
+type AgenticTask struct {
+    ID              string            // Unique task identifier
+    Description     string            // What needs to be done
+    Dependencies    []string          // IDs of tasks that must complete first
+    ToolRequirements []string         // Required protocols: "mcp", "lsp", "rag", etc.
+    Priority        int               // Higher = execute first among peers
+    EstimatedSteps  int               // Hint for iteration budget
+    Status          AgenticTaskStatus // pending/running/completed/failed
+}
+
+// AgenticTaskStatus tracks task lifecycle.
+type AgenticTaskStatus int
+
+const (
+    TaskPending AgenticTaskStatus = iota
+    TaskRunning
+    TaskCompleted
+    TaskFailed
+)
+
+// VisionClient interface for tool integration.
+type VisionClient interface {
+    AnalyzeImage(ctx context.Context, imageData []byte, prompt string) (*VisionAnalysis, error)
+    AnalyzeURL(ctx context.Context, imageURL string, prompt string) (*VisionAnalysis, error)
+}
+
+// HelixMemoryClient interface for full 4-engine access during debate/execution.
+type HelixMemoryClient interface {
+    // Mem0 — fact storage
+    StoreFact(ctx context.Context, fact string, metadata map[string]string) error
+    RecallFacts(ctx context.Context, query string, limit int) ([]string, error)
+    // Cognee — knowledge graphs
+    BuildGraph(ctx context.Context, content string) error
+    QueryGraph(ctx context.Context, query string) ([]GraphNode, error)
+    // Letta — stateful agent runtime
+    CreateAgentSession(ctx context.Context, agentID string) (string, error) // returns sessionID
+    SendAgentMessage(ctx context.Context, sessionID string, message string) (string, error)
+    // Graphiti — temporal graphs
+    AddTemporalEdge(ctx context.Context, from, to, relation string, timestamp time.Time) error
+    QueryTimeline(ctx context.Context, entity string, timeRange TimeRange) ([]TemporalEdge, error)
 }
 ```
 
@@ -127,7 +176,7 @@ func (e *IterativeToolExecutor) ExecuteWithTools(
 ) (*LLMResponse, []ToolExecution, error)
 ```
 
-Only providers with `SupportsTools: true` participate in tool-augmented phases. The 8 tool-capable providers: Claude API, DeepSeek, Gemini, OpenRouter, Qwen API, ZAI, Mistral, Zen.
+Only providers with `SupportsTools: true` (queried dynamically via `provider.GetCapabilities().SupportsTools` at runtime) participate in tool-augmented phases. Currently 23+ providers support tools including Claude, DeepSeek, Gemini, OpenRouter, Qwen, ZAI, Mistral, Zen, Venice, GitHub Models, Together, Junie, Cohere, Groq, xAI, OpenAI, Chutes, Anthropic, AI21, Fireworks, SambaNova, and others. The list is **never hardcoded** — capability detection is dynamic.
 
 ---
 
@@ -208,15 +257,17 @@ type AgentWorkerPool struct {
 
 ```go
 type AgentWorker struct {
-    ID             string
-    Task           SpecKitTask
-    Provider       LLMProvider
-    ToolExecutor   *IterativeToolExecutor
-    AgentState     *LettaAgentState
-    MaxIterations  int  // Default: 20
-    Results        chan AgentResult
+    ID              string
+    Task            AgenticTask               // Structured task from execution planner
+    Provider        LLMProvider
+    ToolExecutor    *IterativeToolExecutor
+    LettaSessionID  string                    // Letta agent session ID for stateful context
+    MaxIterations   int                       // Default: 20 (total across all internal tool loops)
+    Results         chan AgentResult
 }
 ```
+
+**Iteration budget clarification:** The agent's `MaxIterations` (20) is the **total** number of LLM reasoning steps across the entire task. Each reasoning step may invoke tools (up to `MaxToolIterations=5` per step is NOT a separate limit — the 5 is per debate phase in Reason mode only). In Execute mode, an agent step is: LLM reasons → optionally calls tools → produces output or next step. 20 such steps per task.
 
 ### Lifecycle
 
@@ -260,7 +311,7 @@ DispatchTasks(tasks []SpecKitTask)
 | MCP (45+ adapters) | Query context | - | Call tools | - | `toolBridge.mcpClient` |
 | LSP (Go/Rust/Python/TS) | Definitions, refs | - | Navigate code | Diagnostics | `toolBridge.lspClient` |
 | ACP (Agent Communication) | - | Delegate | Agent coordination | - | `toolBridge.acpClient` |
-| RAG (Chroma/Qdrant/Weaviate) | Knowledge search | Patterns | Retrieve docs | - | `toolBridge.ragClient` |
+| RAG (Qdrant/Pinecone/Milvus/pgvector) | Knowledge search | Patterns | Retrieve docs | - | `toolBridge.ragClient` |
 | Embeddings (6 providers) | Semantic search | Similarity | Relevance | Compare | `toolBridge.embeddingClient` |
 | Vision (4 providers) | Analyze images | Diagrams | UI analysis | Visual verify | `toolBridge.visionClient` |
 | HelixMemory Mem0 | Recall facts | Prior decisions | Context | Store facts | `memory.StoreFact/RecallFacts` |
@@ -290,7 +341,7 @@ DispatchTasks(tasks []SpecKitTask)
 | `internal/services/agent_worker.go` | Individual agent execution loop with tool access |
 | `internal/services/execution_planner.go` | SpecKit integration — decompose decisions into executable tasks |
 | `internal/services/verification_debate.go` | Post-execution verification debate |
-| `internal/services/vision_tool_adapter.go` | Vision integration into ToolIntegration (OpenAI/Anthropic/Gemini/Qwen) |
+| `internal/services/vision_tool_adapter.go` | Vision integration wrapping existing `internal/handlers/vision_handler.go` into VisionClient interface for ToolIntegration |
 
 ---
 
@@ -317,6 +368,7 @@ DispatchTasks(tasks []SpecKitTask)
 | Benchmark | `tests/performance/agentic_ensemble_benchmark_test.go` | Mode selection, agent spawn, tool iteration throughput |
 | Fuzz | `tests/fuzz/agentic_tool_call_fuzz_test.go` | Tool call params, malformed tool responses |
 | Chaos | `tests/chaos/agentic_ensemble_chaos_test.go` | Provider failures mid-execution, tool timeouts, agent crashes |
+| Automation | `tests/automation/agentic_ensemble_automation_test.go` | End-to-end automated workflow: request → mode detection → execution → verification → response |
 
 ---
 
@@ -342,6 +394,45 @@ DispatchTasks(tasks []SpecKitTask)
 | `CHANGELOG.md` | Add agentic ensemble entry |
 | `docs/api/API_REFERENCE.md` | Document new response metadata fields |
 | `docs/MODULES.md` | Reference AgenticEnsemble integration |
+
+---
+
+## Streaming Protocol (Execute Mode)
+
+Execute mode streams progress via the existing SSE infrastructure (`internal/notifications/sse_manager.go`):
+
+```
+SSE Event Types:
+  agentic.stage     → {stage: "UNDERSTAND"|"PLAN"|"ASSIGN"|"EXECUTE"|"VERIFY"|"SYNTHESIZE", status: "started"|"completed"}
+  agentic.agent     → {agent_id: "...", task_id: "...", status: "started"|"reasoning"|"tool_call"|"completed"|"failed"}
+  agentic.tool      → {agent_id: "...", protocol: "mcp"|"lsp"|"rag"|..., operation: "...", status: "started"|"completed"}
+  agentic.progress  → {completed_tasks: N, total_tasks: M, percentage: P}
+  content.delta     → {content: "..."} (standard OpenAI SSE format for final response)
+```
+
+Clients receive these via the existing `text/event-stream` response on `/v1/chat/completions` when `stream: true`. No new SSE endpoints needed.
+
+## API Endpoints
+
+All agentic execution is accessed through the **existing** `/v1/chat/completions` endpoint. No new REST endpoints are created. However, the response metadata is extended:
+
+```json
+{
+  "choices": [{"message": {"content": "...", "role": "assistant"}}],
+  "usage": {"prompt_tokens": N, "completion_tokens": M},
+  "agentic_metadata": {
+    "mode": "execute",
+    "stages_completed": ["UNDERSTAND", "PLAN", "ASSIGN", "EXECUTE", "VERIFY", "SYNTHESIZE"],
+    "agents_spawned": 5,
+    "tasks_completed": 8,
+    "tools_invoked": [{"protocol": "lsp", "count": 12}, {"protocol": "mcp", "count": 3}],
+    "total_duration_ms": 45000,
+    "provenance_id": "prov-abc123"
+  }
+}
+```
+
+**Cancellation:** Clients cancel by closing the HTTP connection. The context propagation via `ctx.Done()` through AgenticEnsemble → WorkerPool → individual agents ensures graceful shutdown.
 
 ---
 
