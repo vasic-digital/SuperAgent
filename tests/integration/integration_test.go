@@ -259,7 +259,7 @@ func TestIntegrationOrchestrator_Workflow(t *testing.T) {
 	}
 
 	// Create tool chain
-	toolChain := []services.ToolExecution{
+	toolChain := []services.IntegrationToolExecution{
 		{
 			ToolName:   "workflow-test-tool",
 			Parameters: map[string]interface{}{"toolName": "workflow-test-tool", "input": "test data"},

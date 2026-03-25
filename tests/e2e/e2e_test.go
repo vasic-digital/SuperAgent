@@ -358,7 +358,7 @@ func TestE2ENewServicesWorkflow(t *testing.T) {
 		}
 
 		// Test tool chain execution
-		toolChain := []services.ToolExecution{
+		toolChain := []services.IntegrationToolExecution{
 			{
 				ToolName:   "code-analysis",
 				Parameters: map[string]interface{}{"toolName": "code-analysis", "code": "func test() {}"},

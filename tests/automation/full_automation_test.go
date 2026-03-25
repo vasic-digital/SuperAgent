@@ -454,7 +454,7 @@ func TestPhase3_IntegrationTests(t *testing.T) {
 		require.NoError(t, err)
 
 		// Create and execute tool chain
-		toolChain := []services.ToolExecution{
+		toolChain := []services.IntegrationToolExecution{
 			{
 				ToolName:   "workflow-tool",
 				Parameters: map[string]interface{}{"toolName": "workflow-tool", "input": "test data"},
