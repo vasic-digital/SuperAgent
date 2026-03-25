@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 32 broken documentation links across docs/
 
 ### Added
+- AgenticEnsemble: dual-mode unified LLM (reason + execute) with full tool integration
+- IterativeToolExecutor: per-phase iterative tool loops with all 6 protocols
+- ExecutionPlanner: SpecKit-based task decomposition with dependency graph
+- AgentWorkerPool: background agent spawning with semaphore limiting
+- VerificationDebate: post-execution verification with LLM-based quality checks
+- VisionClient and HelixMemoryClient interfaces in ToolIntegration
+- 3 new challenge scripts for agentic ensemble validation
 - Dead code verification challenge
 - Test coverage completeness challenge
 - 15+ new test files for under-covered packages
