@@ -60,9 +60,27 @@ type EmbeddingModelConfig struct {
 	APIKey       string        `json:"api_key,omitempty"`
 }
 
+// lazyModel holds a sync.Once-based deferred initializer for an embedding model.
+// The factory is called at most once on first access via get().
+type lazyModel struct {
+	once    sync.Once
+	model   EmbeddingModel
+	initErr error
+	factory func() (EmbeddingModel, error)
+}
+
+// get returns the lazily initialized model, invoking the factory on first call.
+func (lm *lazyModel) get() (EmbeddingModel, error) {
+	lm.once.Do(func() {
+		lm.model, lm.initErr = lm.factory()
+	})
+	return lm.model, lm.initErr
+}
+
 // EmbeddingModelRegistry manages multiple embedding models.
 type EmbeddingModelRegistry struct {
 	models        map[string]EmbeddingModel
+	lazyModels    map[string]*lazyModel
 	configs       map[string]EmbeddingModelConfig
 	defaultModel  string
 	fallbackChain []string
@@ -95,6 +113,7 @@ func NewEmbeddingModelRegistry(config RegistryConfig) *EmbeddingModelRegistry {
 
 	registry := &EmbeddingModelRegistry{
 		models:        make(map[string]EmbeddingModel),
+		lazyModels:    make(map[string]*lazyModel),
 		configs:       make(map[string]EmbeddingModelConfig),
 		defaultModel:  config.DefaultModel,
 		fallbackChain: config.FallbackChain,
@@ -232,36 +251,70 @@ func (r *EmbeddingModelRegistry) loadDefaultConfigs() {
 	}
 }
 
-// Register registers a new embedding model.
+// Register registers a new embedding model (eagerly, immediately available).
 func (r *EmbeddingModelRegistry) Register(name string, model EmbeddingModel) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	r.models[name] = model
+	delete(r.lazyModels, name) // remove any lazy registration for the same name
 	r.logger.WithField("model", name).Info("Embedding model registered")
 	return nil
 }
 
-// Get returns an embedding model by name, creating it if necessary.
+// RegisterLazy registers a factory for deferred model initialization.
+// The factory is called at most once, when the model is first accessed
+// via Get or GetOrCreate. This avoids initialization overhead for models
+// that may never be used during a session.
+func (r *EmbeddingModelRegistry) RegisterLazy(name string, factory func() (EmbeddingModel, error)) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	r.lazyModels[name] = &lazyModel{factory: factory}
+	delete(r.models, name) // remove any eager registration for the same name
+	r.logger.WithField("model", name).Info("Embedding model registered (lazy)")
+}
+
+// Get returns an embedding model by name. It checks eagerly registered
+// models first, then lazy models (triggering initialization), and finally
+// falls back to config-based creation.
 func (r *EmbeddingModelRegistry) Get(name string) (EmbeddingModel, error) {
 	r.mu.RLock()
-	model, exists := r.models[name]
-	r.mu.RUnlock()
-
-	if exists {
+	// Check eagerly registered models
+	if model, exists := r.models[name]; exists {
+		r.mu.RUnlock()
 		return model, nil
 	}
+	// Check lazily registered models
+	if lm, exists := r.lazyModels[name]; exists {
+		r.mu.RUnlock()
+		model, err := lm.get()
+		if err != nil {
+			return nil, fmt.Errorf("lazy model init failed for %s: %w", name, err)
+		}
+		return model, nil
+	}
+	r.mu.RUnlock()
 
 	return r.GetOrCreate(name)
 }
 
-// GetOrCreate gets or creates an embedding model.
+// GetOrCreate gets or creates an embedding model from config.
 func (r *EmbeddingModelRegistry) GetOrCreate(name string) (EmbeddingModel, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	// Double-check after acquiring write lock
 	if model, exists := r.models[name]; exists {
+		return model, nil
+	}
+
+	// Check lazy models under write lock
+	if lm, exists := r.lazyModels[name]; exists {
+		model, err := lm.get()
+		if err != nil {
+			return nil, fmt.Errorf("lazy model init failed for %s: %w", name, err)
+		}
 		return model, nil
 	}
 
@@ -331,14 +384,21 @@ func (r *EmbeddingModelRegistry) EncodeSingleWithFallback(ctx context.Context, t
 	return embeddings[0], modelName, nil
 }
 
-// List returns all configured model names.
+// List returns all configured model names (config-based, eager, and lazy).
 func (r *EmbeddingModelRegistry) List() []string {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	names := make([]string, 0, len(r.configs))
+	seen := make(map[string]struct{})
+	names := make([]string, 0, len(r.configs)+len(r.lazyModels))
 	for name := range r.configs {
 		names = append(names, name)
+		seen[name] = struct{}{}
+	}
+	for name := range r.lazyModels {
+		if _, ok := seen[name]; !ok {
+			names = append(names, name)
+		}
 	}
 	return names
 }
@@ -355,7 +415,7 @@ func (r *EmbeddingModelRegistry) Health(ctx context.Context) map[string]error {
 	return results
 }
 
-// Close closes all models.
+// Close closes all models (both eagerly and lazily initialized).
 func (r *EmbeddingModelRegistry) Close() error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -367,7 +427,17 @@ func (r *EmbeddingModelRegistry) Close() error {
 			lastErr = err
 		}
 	}
+	// Close any lazily initialized models
+	for name, lm := range r.lazyModels {
+		if lm.model != nil {
+			if err := lm.model.Close(); err != nil {
+				r.logger.WithError(err).WithField("model", name).Warn("Error closing lazy model")
+				lastErr = err
+			}
+		}
+	}
 	r.models = make(map[string]EmbeddingModel)
+	r.lazyModels = make(map[string]*lazyModel)
 	return lastErr
 }
 
