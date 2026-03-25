@@ -400,11 +400,6 @@ func (m *IntegrationManager) applyQualityGates(response *DebateResponse) error {
 	return nil
 }
 
-// GetAgentPool returns the agent pool
-func (m *IntegrationManager) GetAgentPool() *AgentPool {
-	return m.pool
-}
-
 // GetToolRegistry returns the tool registry
 func (m *IntegrationManager) GetToolRegistry() *ToolRegistry {
 	return m.registry
