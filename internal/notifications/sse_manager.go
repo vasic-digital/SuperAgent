@@ -21,9 +21,14 @@ type SSEManager struct {
 	globalClients   map[chan<- []byte]struct{}
 	globalClientsMu sync.RWMutex
 
+	// Per-IP connection tracking for backpressure
+	ipConns   map[string]int
+	ipConnsMu sync.Mutex
+
 	// Configuration
-	heartbeatInterval time.Duration
-	bufferSize        int
+	heartbeatInterval  time.Duration
+	bufferSize         int
+	maxConnsPerIP      int
 
 	logger   *logrus.Logger
 	ctx      context.Context
@@ -38,6 +43,7 @@ type SSEConfig struct {
 	HeartbeatInterval time.Duration `yaml:"heartbeat_interval"`
 	BufferSize        int           `yaml:"buffer_size"`
 	MaxClients        int           `yaml:"max_clients"`
+	MaxConnsPerIP     int           `yaml:"max_conns_per_ip"`
 }
 
 // DefaultSSEConfig returns default SSE configuration
@@ -46,6 +52,7 @@ func DefaultSSEConfig() *SSEConfig {
 		HeartbeatInterval: 30 * time.Second,
 		BufferSize:        100,
 		MaxClients:        1000,
+		MaxConnsPerIP:     10,
 	}
 }
 
@@ -57,11 +64,18 @@ func NewSSEManager(config *SSEConfig, logger *logrus.Logger) *SSEManager {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
+	maxConnsPerIP := config.MaxConnsPerIP
+	if maxConnsPerIP <= 0 {
+		maxConnsPerIP = 10
+	}
+
 	manager := &SSEManager{
 		clients:           make(map[string]map[chan<- []byte]struct{}),
 		globalClients:     make(map[chan<- []byte]struct{}),
+		ipConns:           make(map[string]int),
 		heartbeatInterval: config.HeartbeatInterval,
 		bufferSize:        config.BufferSize,
+		maxConnsPerIP:     maxConnsPerIP,
 		logger:            logger,
 		ctx:               ctx,
 		cancel:            cancel,
@@ -162,6 +176,47 @@ func (m *SSEManager) UnregisterGlobalClient(client chan<- []byte) error {
 
 	delete(m.globalClients, client)
 	return nil
+}
+
+// RegisterClientWithIP registers a task-scoped client and enforces a per-IP
+// connection cap. Returns an error when the caller's IP has reached maxConnsPerIP.
+func (m *SSEManager) RegisterClientWithIP(taskID string, clientIP string, client chan<- []byte) error {
+	m.ipConnsMu.Lock()
+	current := m.ipConns[clientIP]
+	if current >= m.maxConnsPerIP {
+		m.ipConnsMu.Unlock()
+		m.logger.WithFields(logrus.Fields{
+			"client_ip":       clientIP,
+			"current_conns":   current,
+			"max_conns_per_ip": m.maxConnsPerIP,
+		}).Warn("SSE connection rejected: per-IP cap reached")
+		return fmt.Errorf("connection limit reached for IP %s (%d/%d)", clientIP, current, m.maxConnsPerIP)
+	}
+	m.ipConns[clientIP]++
+	m.ipConnsMu.Unlock()
+
+	return m.RegisterClient(taskID, client)
+}
+
+// UnregisterClientWithIP removes a task-scoped client and decrements the per-IP counter.
+func (m *SSEManager) UnregisterClientWithIP(taskID string, clientIP string, client chan<- []byte) error {
+	m.ipConnsMu.Lock()
+	if m.ipConns[clientIP] > 0 {
+		m.ipConns[clientIP]--
+		if m.ipConns[clientIP] == 0 {
+			delete(m.ipConns, clientIP)
+		}
+	}
+	m.ipConnsMu.Unlock()
+
+	return m.UnregisterClient(taskID, client)
+}
+
+// GetIPConnCount returns the current number of connections for a given client IP.
+func (m *SSEManager) GetIPConnCount(clientIP string) int {
+	m.ipConnsMu.Lock()
+	defer m.ipConnsMu.Unlock()
+	return m.ipConns[clientIP]
 }
 
 // Broadcast sends a message to all clients watching a task

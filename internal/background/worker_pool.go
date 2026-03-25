@@ -65,6 +65,12 @@ type AdaptiveWorkerPool struct {
 	workersMu       sync.RWMutex
 	activeCount     int32
 
+	// queueDepth tracks the current number of pending tasks for backpressure monitoring.
+	queueDepth int64
+	// queueCapacity is the soft capacity used to compute the 80% warning threshold.
+	// Defaults to MaxWorkers * 10 when not explicitly set.
+	queueCapacity int64
+
 	ctx    context.Context
 	cancel context.CancelFunc
 	wg     sync.WaitGroup
@@ -221,6 +227,11 @@ func NewAdaptiveWorkerPool(
 		logger,
 	)
 
+	queueCapacity := int64(config.MaxWorkers * 10)
+	if queueCapacity <= 0 {
+		queueCapacity = 100
+	}
+
 	return &AdaptiveWorkerPool{
 		config:          config,
 		queue:           queue,
@@ -235,6 +246,7 @@ func NewAdaptiveWorkerPool(
 		ctx:             ctx,
 		cancel:          cancel,
 		extractedPool:   extractedPool,
+		queueCapacity:   queueCapacity,
 	}
 }
 
@@ -391,6 +403,12 @@ func (wp *AdaptiveWorkerPool) GetWorkerStatus() []WorkerStatus {
 		})
 	}
 	return statuses
+}
+
+// GetQueueDepth returns the last-observed pending task count (updated every ScaleInterval).
+// It is safe to call from any goroutine.
+func (wp *AdaptiveWorkerPool) GetQueueDepth() int64 {
+	return atomic.LoadInt64(&wp.queueDepth)
 }
 
 // Scale manually adjusts the worker count
@@ -747,6 +765,20 @@ func (wp *AdaptiveWorkerPool) checkAndScale() {
 
 	currentWorkers := wp.GetWorkerCount()
 	pendingCount, _ := wp.queue.GetPendingCount(wp.ctx) //nolint:errcheck
+
+	// Track queue depth and warn when above 80% of soft capacity.
+	atomic.StoreInt64(&wp.queueDepth, pendingCount)
+	capacity := atomic.LoadInt64(&wp.queueCapacity)
+	if capacity > 0 && pendingCount > 0 {
+		usagePct := float64(pendingCount) / float64(capacity) * 100.0
+		if usagePct >= 80.0 {
+			wp.logger.WithFields(logrus.Fields{
+				"queue_depth":    pendingCount,
+				"queue_capacity": capacity,
+				"usage_pct":      fmt.Sprintf("%.1f%%", usagePct),
+			}).Warn("Background task queue depth above 80% capacity — backpressure recommended")
+		}
+	}
 
 	// Calculate load factor
 	cpuLoad := resources.CPULoadPercent / 100.0

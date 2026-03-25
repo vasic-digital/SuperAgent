@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -148,9 +149,7 @@ func (dpo *DebatePerformanceOptimizer) ExecuteParallel(
 		go func(m *DebateTeamMember) {
 			defer wg.Done()
 
-			select {
-			case dpo.semaphore <- struct{}{}:
-			case <-ctx.Done():
+			if err := dpo.acquireWithBackoff(ctx); err != nil {
 				return
 			}
 			defer func() { <-dpo.semaphore }()
@@ -245,6 +244,31 @@ func (dpo *DebatePerformanceOptimizer) executeWithSmartFallback(
 	}
 
 	return nil, err
+}
+
+// acquireWithBackoff attempts to acquire the semaphore with exponential backoff and jitter
+// instead of blocking, preventing goroutine pile-ups under high load.
+func (o *DebatePerformanceOptimizer) acquireWithBackoff(ctx context.Context) error {
+	backoff := 10 * time.Millisecond
+	maxBackoff := 5 * time.Second
+	for {
+		select {
+		case o.semaphore <- struct{}{}:
+			return nil
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			jitter := time.Duration(rand.Int63n(int64(backoff / 2))) //nolint:gosec
+			select {
+			case <-time.After(backoff + jitter):
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+			if backoff < maxBackoff {
+				backoff *= 2
+			}
+		}
+	}
 }
 
 func (dpo *DebatePerformanceOptimizer) ShouldTerminateEarly(responses map[DebateTeamPosition]string) bool {
