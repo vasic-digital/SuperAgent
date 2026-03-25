@@ -829,11 +829,27 @@ Respond concisely and helpfully.`, clientName, toolList)
 			}
 
 			roleStart := time.Now()
+			// Build messages: include original system context (tool schemas, codebase access)
+			// PLUS the role-specific prompt, so each debater has full tool awareness
+			var debateMessages []models.Message
+			for _, m := range internalReq.Messages {
+				if m.Role == "system" {
+					debateMessages = append(debateMessages, m)
+				}
+			}
+			// Append the role-specific debate instruction
+			debateMessages = append(debateMessages, models.Message{
+				Role:    "system",
+				Content: rc.Prompt + "\n\nIMPORTANT: You have FULL ACCESS to the user's codebase through tools. Use them to provide concrete, specific answers. Do NOT say you cannot see the codebase.",
+			})
+			// Include conversation history (user/assistant messages)
+			for _, m := range internalReq.Messages {
+				if m.Role == "user" || m.Role == "assistant" {
+					debateMessages = append(debateMessages, m)
+				}
+			}
 			debateReq := &models.LLMRequest{
-				Messages: []models.Message{
-					{Role: "system", Content: rc.Prompt},
-					{Role: "user", Content: topic},
-				},
+				Messages:    debateMessages,
 				ModelParams: models.ModelParameters{Model: vllm.ModelName, MaxTokens: 400},
 			}
 
