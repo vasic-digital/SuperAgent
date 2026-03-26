@@ -35,13 +35,12 @@ import (
 
 // APIServer represents the REST API server
 type APIServer struct {
-	port              string
-	logger            *logrus.Logger
-	unifiedManager    *services.UnifiedProtocolManager
-	protocolAnalytics *services.ProtocolAnalyticsService
-	pluginSystem      *services.ProtocolPluginSystem
-	pluginRegistry    *services.ProtocolPluginRegistry
-	templateManager   *services.ProtocolTemplateManager
+	port            string
+	logger          *logrus.Logger
+	unifiedManager  *services.UnifiedProtocolManager
+	pluginSystem    *services.ProtocolPluginSystem
+	pluginRegistry  *services.ProtocolPluginRegistry
+	templateManager *services.ProtocolTemplateManager
 }
 
 // NewAPIServer creates a new API server instance
@@ -51,13 +50,6 @@ func NewAPIServer(port string) *APIServer {
 
 	// Initialize core services
 	unifiedManager := services.NewUnifiedProtocolManager(nil, nil, logger)
-	protocolAnalytics := services.NewProtocolAnalyticsService(
-		&services.AnalyticsConfig{
-			CollectionWindow: 1 * time.Hour,
-			RetentionPeriod:  30 * 24 * time.Hour,
-		},
-		logger,
-	)
 	pluginSystem := services.NewProtocolPluginSystem("/opt/helixagent/plugins", logger)
 	pluginRegistry := services.NewProtocolPluginRegistry(logger)
 	templateManager := services.NewProtocolTemplateManager(logger)
@@ -66,13 +58,12 @@ func NewAPIServer(port string) *APIServer {
 	_ = templateManager.InitializeDefaultTemplates()
 
 	return &APIServer{
-		port:              port,
-		logger:            logger,
-		unifiedManager:    unifiedManager,
-		protocolAnalytics: protocolAnalytics,
-		pluginSystem:      pluginSystem,
-		pluginRegistry:    pluginRegistry,
-		templateManager:   templateManager,
+		port:            port,
+		logger:          logger,
+		unifiedManager:  unifiedManager,
+		pluginSystem:    pluginSystem,
+		pluginRegistry:  pluginRegistry,
+		templateManager: templateManager,
 	}
 }
 
@@ -122,15 +113,6 @@ func (s *APIServer) Start() error {
 			acp.GET("/status", s.handleACPStatus)
 		}
 
-		// Analytics endpoints
-		analytics := api.Group("/analytics")
-		{
-			analytics.GET("/metrics", s.handleGetAnalytics)
-			analytics.GET("/metrics/:protocol", s.handleGetProtocolMetrics)
-			analytics.GET("/health", s.handleGetHealthStatus)
-			analytics.POST("/record", s.handleRecordRequest)
-		}
-
 		// Plugin endpoints
 		plugins := api.Group("/plugins")
 		{
@@ -174,9 +156,6 @@ func (s *APIServer) handleMCPCallTool(c *gin.Context) {
 		return
 	}
 
-	// Record analytics
-	_ = s.protocolAnalytics.RecordRequest(context.Background(), "mcp", "call_tool", 150*time.Millisecond, true, "")
-
 	c.JSON(200, gin.H{
 		"result": "MCP tool called successfully",
 		"tool":   req.ToolName,
@@ -186,9 +165,6 @@ func (s *APIServer) handleMCPCallTool(c *gin.Context) {
 
 func (s *APIServer) handleMCPListTools(c *gin.Context) {
 	serverID := c.Query("server_id")
-
-	// Record analytics
-	_ = s.protocolAnalytics.RecordRequest(context.Background(), "mcp", "list_tools", 50*time.Millisecond, true, "")
 
 	c.JSON(200, gin.H{
 		"tools": []map[string]interface{}{
@@ -219,8 +195,6 @@ func (s *APIServer) handleLSPCompletion(c *gin.Context) {
 		return
 	}
 
-	_ = s.protocolAnalytics.RecordRequest(context.Background(), "lsp", "completion", 75*time.Millisecond, true, "")
-
 	c.JSON(200, gin.H{
 		"completions": []map[string]interface{}{
 			{"label": "fmt.Println", "kind": 3, "detail": "Print to stdout"},
@@ -240,8 +214,6 @@ func (s *APIServer) handleLSPHover(c *gin.Context) {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
-
-	_ = s.protocolAnalytics.RecordRequest(context.Background(), "lsp", "hover", 45*time.Millisecond, true, "")
 
 	c.JSON(200, gin.H{
 		"contents": map[string]interface{}{
@@ -263,8 +235,6 @@ func (s *APIServer) handleLSPDefinition(c *gin.Context) {
 		return
 	}
 
-	_ = s.protocolAnalytics.RecordRequest(context.Background(), "lsp", "definition", 60*time.Millisecond, true, "")
-
 	c.JSON(200, gin.H{
 		"definition": map[string]interface{}{
 			"uri":   fmt.Sprintf("file://%s", req.FilePath),
@@ -274,8 +244,6 @@ func (s *APIServer) handleLSPDefinition(c *gin.Context) {
 }
 
 func (s *APIServer) handleLSPDiagnostics(c *gin.Context) {
-	_ = s.protocolAnalytics.RecordRequest(context.Background(), "lsp", "diagnostics", 30*time.Millisecond, true, "")
-
 	c.JSON(200, gin.H{
 		"diagnostics": []map[string]interface{}{
 			{
@@ -300,8 +268,6 @@ func (s *APIServer) handleACPExecute(c *gin.Context) {
 		return
 	}
 
-	_ = s.protocolAnalytics.RecordRequest(context.Background(), "acp", "execute", 200*time.Millisecond, true, "")
-
 	c.JSON(200, gin.H{
 		"result":    "Action executed successfully",
 		"action":    req.Action,
@@ -321,8 +287,6 @@ func (s *APIServer) handleACPBroadcast(c *gin.Context) {
 		return
 	}
 
-	_ = s.protocolAnalytics.RecordRequest(context.Background(), "acp", "broadcast", 100*time.Millisecond, true, "")
-
 	c.JSON(200, gin.H{
 		"broadcast_id": fmt.Sprintf("broadcast-%d", time.Now().Unix()),
 		"delivered_to": len(req.Targets),
@@ -340,53 +304,6 @@ func (s *APIServer) handleACPStatus(c *gin.Context) {
 		"version":      version.Version,
 		"capabilities": []string{"execute_action", "broadcast", "status"},
 	})
-}
-
-// Analytics Handlers
-
-func (s *APIServer) handleGetAnalytics(c *gin.Context) {
-	report := s.protocolAnalytics.GenerateUsageReport()
-	c.JSON(200, report)
-}
-
-func (s *APIServer) handleGetProtocolMetrics(c *gin.Context) {
-	protocol := c.Param("protocol")
-
-	metrics, err := s.protocolAnalytics.GetProtocolMetrics(protocol)
-	if err != nil {
-		c.JSON(404, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(200, metrics)
-}
-
-func (s *APIServer) handleGetHealthStatus(c *gin.Context) {
-	status := s.protocolAnalytics.GetHealthStatus()
-	c.JSON(200, status)
-}
-
-func (s *APIServer) handleRecordRequest(c *gin.Context) {
-	var req struct {
-		Protocol  string        `json:"protocol"`
-		Method    string        `json:"method"`
-		Duration  time.Duration `json:"duration"`
-		Success   bool          `json:"success"`
-		ErrorType string        `json:"error_type"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
-		return
-	}
-
-	err := s.protocolAnalytics.RecordRequest(context.Background(), req.Protocol, req.Method, req.Duration, req.Success, req.ErrorType)
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(200, gin.H{"status": "recorded"})
 }
 
 // Plugin Handlers
@@ -532,11 +449,8 @@ func (s *APIServer) handleHealth(c *gin.Context) {
 }
 
 func (s *APIServer) handleStatus(c *gin.Context) {
-	metrics := s.protocolAnalytics.GetAllProtocolMetrics()
-
 	c.JSON(200, gin.H{
 		"status":              "operational",
-		"protocols_active":    len(metrics),
 		"plugins_loaded":      len(s.pluginSystem.ListPlugins()),
 		"templates_available": len(s.templateManager.ListTemplates()),
 		"timestamp":           time.Now().Unix(),
@@ -546,30 +460,14 @@ func (s *APIServer) handleStatus(c *gin.Context) {
 func (s *APIServer) handlePrometheusMetrics(c *gin.Context) {
 	// Simple Prometheus metrics format
 	metrics := `
-# HELP helixagent_protocols_active Number of active protocols
-# TYPE helixagent_protocols_active gauge
-helixagent_protocols_active %d
-
 # HELP helixagent_plugins_loaded Number of loaded plugins
 # TYPE helixagent_plugins_loaded gauge
 helixagent_plugins_loaded %d
-
-# HELP helixagent_requests_total Total number of requests processed
-# TYPE helixagent_requests_total counter
-helixagent_requests_total %d
 `
-
-	allMetrics := s.protocolAnalytics.GetAllProtocolMetrics()
-	totalRequests := int64(0)
-	for _, m := range allMetrics {
-		totalRequests += m.TotalRequests
-	}
 
 	c.Header("Content-Type", "text/plain")
 	c.String(200, fmt.Sprintf(metrics,
-		len(allMetrics),
 		len(s.pluginSystem.ListPlugins()),
-		totalRequests,
 	))
 }
 
