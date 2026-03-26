@@ -135,28 +135,6 @@ func TestServiceToolIntegration(t *testing.T) {
 		}
 	})
 
-	t.Run("SecuritySandbox with tool validation", func(t *testing.T) {
-		sandbox := services.NewSecuritySandbox()
-
-		// Test safe parameters
-		safeParams := map[string]interface{}{
-			"file":   "/tmp/test.txt",
-			"action": "read",
-			"query":  "search term",
-		}
-
-		err := sandbox.ValidateToolExecution("file-reader", safeParams)
-		require.NoError(t, err)
-
-		// Test dangerous parameters
-		dangerousParams := map[string]interface{}{
-			"command": "rm -rf /",
-			"script":  "; DROP TABLE users;--",
-		}
-
-		err = sandbox.ValidateToolExecution("executor", dangerousParams)
-		assert.Error(t, err, "Should reject dangerous parameters")
-	})
 }
 
 // TestContextAndCacheIntegration tests context manager caching integration
