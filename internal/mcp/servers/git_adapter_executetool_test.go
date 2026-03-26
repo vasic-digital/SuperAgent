@@ -269,7 +269,7 @@ func TestGitAdapter_ExecuteTool_AllTools(t *testing.T) {
 		// Go back to main branch
 		_, _ = adapter.ExecuteTool(context.Background(), "git_checkout", map[string]interface{}{
 			"repo_path": tempDir,
-			"ref":       "master",
+			"ref":       "main",
 		})
 	})
 
@@ -285,7 +285,7 @@ func TestGitAdapter_ExecuteTool_AllTools(t *testing.T) {
 		// Go back to original branch
 		_, _ = adapter.ExecuteTool(context.Background(), "git_checkout", map[string]interface{}{
 			"repo_path": tempDir,
-			"ref":       "master",
+			"ref":       "main",
 		})
 	})
 
@@ -410,7 +410,7 @@ func TestGitAdapter_PushPullFetch(t *testing.T) {
 		result, err := adapter.ExecuteTool(context.Background(), "git_push", map[string]interface{}{
 			"repo_path":    workDir,
 			"remote":       "origin",
-			"branch":       "master",
+			"branch":       "main",
 			"set_upstream": true,
 		})
 		require.NoError(t, err)
@@ -449,7 +449,7 @@ func TestGitAdapter_PushPullFetch(t *testing.T) {
 		result, err := adapter.ExecuteTool(context.Background(), "git_pull", map[string]interface{}{
 			"repo_path": workDir,
 			"remote":    "origin",
-			"branch":    "master",
+			"branch":    "main",
 		})
 		require.NoError(t, err)
 		assert.NotNil(t, result) // Returns map[string]interface{}
@@ -459,7 +459,7 @@ func TestGitAdapter_PushPullFetch(t *testing.T) {
 		result, err := adapter.ExecuteTool(context.Background(), "git_pull", map[string]interface{}{
 			"repo_path": workDir,
 			"remote":    "origin",
-			"branch":    "master",
+			"branch":    "main",
 			"rebase":    true,
 		})
 		require.NoError(t, err)
@@ -470,7 +470,7 @@ func TestGitAdapter_PushPullFetch(t *testing.T) {
 		result, err := adapter.ExecuteTool(context.Background(), "git_push", map[string]interface{}{
 			"repo_path": workDir,
 			"remote":    "origin",
-			"branch":    "master",
+			"branch":    "main",
 			"force":     true,
 		})
 		require.NoError(t, err)
@@ -505,7 +505,7 @@ func TestGitAdapter_Clone(t *testing.T) {
 	cmd.Dir = srcDir
 	require.NoError(t, cmd.Run())
 
-	cmd = exec.Command("git", "push", "-u", "origin", "master")
+	cmd = exec.Command("git", "push", "-u", "origin", "main")
 	cmd.Dir = srcDir
 	require.NoError(t, cmd.Run())
 
@@ -621,7 +621,7 @@ func TestGitAdapter_ExecuteTool_Errors(t *testing.T) {
 		_, err := adapter.ExecuteTool(context.Background(), "git_push", map[string]interface{}{
 			"repo_path": tempDir,
 			"remote":    "origin",
-			"branch":    "master",
+			"branch":    "main",
 		})
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "push not allowed")
@@ -635,7 +635,7 @@ func TestGitAdapter_ExecuteTool_Errors(t *testing.T) {
 		_, err := adapter2.ExecuteTool(context.Background(), "git_push", map[string]interface{}{
 			"repo_path": tempDir,
 			"remote":    "origin",
-			"branch":    "master",
+			"branch":    "main",
 			"force":     true,
 		})
 		assert.Error(t, err)

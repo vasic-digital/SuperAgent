@@ -7,7 +7,15 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+
+	"dev.helix.agent/internal/models"
 )
+
+// noopCompleteFunc is a no-op LLM completion function for tests that need
+// DispatchTasks to execute without an actual LLM provider.
+func noopCompleteFunc(_ context.Context, _ []models.Message) (*models.LLMResponse, error) {
+	return &models.LLMResponse{Content: "test"}, nil
+}
 
 func TestAgentWorkerPool_DoubleCancel_NoPanic(t *testing.T) {
 	pool := NewAgentWorkerPool(2, logrus.New())
@@ -29,7 +37,7 @@ func TestAgentWorkerPool_Shutdown_NoPanic(t *testing.T) {
 	ctx := context.Background()
 	ch, err := pool.DispatchTasks(ctx, [][]AgenticTask{
 		{{ID: "t1", Description: "test task"}},
-	}, nil, nil, 1)
+	}, noopCompleteFunc, nil, 1)
 	assert.NoError(t, err)
 	// Drain in background
 	go func() { for range ch {} }()
