@@ -24,10 +24,6 @@ func TestNewAPIServer(t *testing.T) {
 	assert.Equal(t, "8080", server.port)
 	assert.NotNil(t, server.logger)
 	assert.NotNil(t, server.unifiedManager)
-	assert.NotNil(t, server.protocolAnalytics)
-	assert.NotNil(t, server.pluginSystem)
-	assert.NotNil(t, server.pluginRegistry)
-	assert.NotNil(t, server.templateManager)
 }
 
 func TestNewAPIServer_DefaultPort(t *testing.T) {
@@ -63,31 +59,6 @@ func setupTestServer() (*APIServer, *gin.Engine) {
 			acp.POST("/execute", server.handleACPExecute)
 			acp.POST("/broadcast", server.handleACPBroadcast)
 			acp.GET("/status", server.handleACPStatus)
-		}
-
-		analytics := api.Group("/analytics")
-		{
-			analytics.GET("/metrics", server.handleGetAnalytics)
-			analytics.GET("/metrics/:protocol", server.handleGetProtocolMetrics)
-			analytics.GET("/health", server.handleGetHealthStatus)
-			analytics.POST("/record", server.handleRecordRequest)
-		}
-
-		plugins := api.Group("/plugins")
-		{
-			plugins.GET("/", server.handleListPlugins)
-			plugins.POST("/load", server.handleLoadPlugin)
-			plugins.DELETE("/:id", server.handleUnloadPlugin)
-			plugins.POST("/:id/execute", server.handleExecutePlugin)
-			plugins.GET("/marketplace", server.handleMarketplaceSearch)
-			plugins.POST("/marketplace/register", server.handleRegisterPlugin)
-		}
-
-		templates := api.Group("/templates")
-		{
-			templates.GET("/", server.handleListTemplates)
-			templates.GET("/:id", server.handleGetTemplate)
-			templates.POST("/:id/generate", server.handleGenerateFromTemplate)
 		}
 
 		api.GET("/health", server.handleHealth)
@@ -874,10 +845,6 @@ func TestAPIServer_Components(t *testing.T) {
 
 	assert.NotNil(t, server.logger)
 	assert.NotNil(t, server.unifiedManager)
-	assert.NotNil(t, server.protocolAnalytics)
-	assert.NotNil(t, server.pluginSystem)
-	assert.NotNil(t, server.pluginRegistry)
-	assert.NotNil(t, server.templateManager)
 }
 
 // =============================================================================
