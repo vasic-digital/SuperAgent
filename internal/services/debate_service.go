@@ -115,6 +115,9 @@ type DebateLogRepository interface {
 // DebateLogEntry is an alias to database.DebateLogEntry for convenience
 type DebateLogEntry = database.DebateLogEntry
 
+// maxIntentCacheSize bounds the intentCache map to prevent unbounded memory growth.
+const maxIntentCacheSize = 10000
+
 // CannedErrorPatterns defines patterns that indicate a canned/error response from LLMs
 // These patterns trigger automatic fallback to alternative providers
 var CannedErrorPatterns = []string{
@@ -1391,7 +1394,29 @@ func (ds *DebateService) classifyUserIntent(topic string, hasContext bool) *Inte
 	ds.intentCache[topic] = result
 	ds.mu.Unlock()
 
+	// Evict excess entries if the cache grew beyond bounds.
+	ds.evictIntentCacheIfNeeded()
+
 	return result
+}
+
+// evictIntentCacheIfNeeded removes entries when cache exceeds bounds.
+// Caller must NOT hold ds.mu.
+func (ds *DebateService) evictIntentCacheIfNeeded() {
+	ds.mu.Lock()
+	defer ds.mu.Unlock()
+	if len(ds.intentCache) <= maxIntentCacheSize {
+		return
+	}
+	count := 0
+	target := len(ds.intentCache) / 2
+	for key := range ds.intentCache {
+		delete(ds.intentCache, key)
+		count++
+		if count >= target {
+			break
+		}
+	}
 }
 
 // isUserConfirmation detects if the user message is confirming an action plan
