@@ -35,8 +35,7 @@ type ProviderHealth struct {
 	ErrorCount    int64
 	TotalRequests int64
 	LastError     string
-	Weight        float64      // Dynamic weight based on performance
-	mu            sync.RWMutex //nolint:unused
+	Weight        float64 // Dynamic weight based on performance
 }
 
 // Routing strategies
@@ -155,10 +154,7 @@ type WeightedStrategy struct {
 
 // HealthBasedStrategy implements health-based routing
 type HealthBasedStrategy struct {
-	circuitBreakers  *CircuitBreakerPattern
-	providerRegistry interface { //nolint:unused
-		GetCircuitBreaker(name string) *CircuitBreaker
-	}
+	circuitBreakers *CircuitBreakerPattern
 }
 
 // LatencyBasedStrategy implements latency-based routing

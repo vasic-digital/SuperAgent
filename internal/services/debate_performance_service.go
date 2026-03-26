@@ -45,8 +45,7 @@ type DebatePerformanceService struct {
 
 // SystemMetricsCollector collects system metrics
 type SystemMetricsCollector struct {
-	lastMemStats runtime.MemStats //nolint:unused
-	lastCPUTime  time.Time
+	lastCPUTime time.Time
 }
 
 // NewDebatePerformanceService creates a new performance service

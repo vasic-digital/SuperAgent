@@ -146,10 +146,9 @@ type alertTrackingInfo struct {
 
 // rateLimitTracker tracks rate limiting state for a channel
 type rateLimitTracker struct {
-	mu           sync.RWMutex //nolint:unused
-	count        int          // Number of alerts in current window
-	windowStart  time.Time    // Start of current window
-	resetPending bool         // Whether a reset is pending
+	count        int       // Number of alerts in current window
+	windowStart  time.Time // Start of current window
+	resetPending bool      // Whether a reset is pending
 }
 
 // circuitBreakerState tracks circuit breaker state for a channel
@@ -255,13 +254,6 @@ func (am *ConcurrencyAlertManager) checkRateLimit(channel string) bool {
 func (am *ConcurrencyAlertManager) recordRateLimitUsage(channel string) {
 	// Already handled in checkRateLimit by incrementing counter
 	// This method exists for symmetry with other systems
-}
-
-// getRateLimitTracker returns the current rate limit state for a channel (for debugging/monitoring)
-func (am *ConcurrencyAlertManager) getRateLimitTracker(channel string) *rateLimitTracker { //nolint:unused
-	am.mu.RLock()
-	defer am.mu.RUnlock()
-	return am.rateLimitTrackers[channel]
 }
 
 // checkCircuitBreaker checks if a channel's circuit breaker allows sending
@@ -404,13 +396,6 @@ func (am *ConcurrencyAlertManager) recordCircuitBreakerFailure(channel string) {
 	case "open":
 		// Already open, do nothing
 	}
-}
-
-// getCircuitBreakerState returns the current circuit breaker state for a channel (for debugging/monitoring)
-func (am *ConcurrencyAlertManager) getCircuitBreakerState(channel string) *circuitBreakerState { //nolint:unused
-	am.mu.RLock()
-	defer am.mu.RUnlock()
-	return am.circuitBreakerStates[channel]
 }
 
 // shouldSendToChannel checks if a channel should be used for given escalation level

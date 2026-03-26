@@ -3,7 +3,6 @@ package background
 import (
 	"context"
 	"encoding/json"
-	"sync"
 
 	"github.com/sirupsen/logrus"
 
@@ -18,7 +17,6 @@ type PostgresTaskQueue struct {
 	// repository is kept for backward compatibility but unused
 	repository TaskRepository
 	logger     *logrus.Logger
-	mu         sync.RWMutex //nolint:unused
 }
 
 // NewPostgresTaskQueue creates a new PostgreSQL-backed task queue

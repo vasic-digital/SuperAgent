@@ -3,7 +3,6 @@ package background
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -18,7 +17,6 @@ type DefaultStuckDetector struct {
 	extractedDetector *extractedbackground.DefaultStuckDetector // delegates to extracted module
 	logger            *logrus.Logger
 	thresholds        map[string]time.Duration // kept for backward compatibility
-	mu                sync.RWMutex             // kept for backward compatibility //nolint:unused
 }
 
 // StuckDetectorConfig holds configuration for stuck detection
@@ -60,7 +58,6 @@ func NewDefaultStuckDetector(logger *logrus.Logger) *DefaultStuckDetector {
 
 // IsStuck determines if a task is stuck based on various criteria
 func (d *DefaultStuckDetector) IsStuck(ctx context.Context, task *models.BackgroundTask, snapshots []*models.ResourceSnapshot) (bool, string) {
-	_ = &d.mu // keep for backward compatibility
 	extractedTask := convertToExtractedTask(task)
 	extractedSnapshots := make([]*extractedmodels.ResourceSnapshot, len(snapshots))
 	for i, snapshot := range snapshots {

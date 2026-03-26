@@ -808,26 +808,6 @@ func (dtc *DebateTeamConfig) getVerifiedProvider(names ...string) llm.LLMProvide
 	return nil
 }
 
-// getRegisteredProvider gets any registered provider by name(s), even if not verified
-// This is used for OAuth providers where CLI credentials are trusted even if API verification fails
-func (dtc *DebateTeamConfig) getRegisteredProvider(names ...string) llm.LLMProvider { //nolint:unused
-	for _, name := range names {
-		// Try registry
-		if dtc.providerRegistry != nil {
-			if p, err := dtc.providerRegistry.GetProvider(name); err == nil && p != nil {
-				return p
-			}
-		}
-		// Try discovery (without verification check)
-		if dtc.discovery != nil {
-			if discovered := dtc.discovery.GetProviderByName(name); discovered != nil && discovered.Provider != nil {
-				return discovered.Provider
-			}
-		}
-	}
-	return nil
-}
-
 // collectOpenRouterFreeModels collects OpenRouter Zen free models (:free suffix)
 // that have been VERIFIED through the FreeProviderAdapter verification pipeline.
 // IMPORTANT: Only models that passed verification (including canned error checks) are added.

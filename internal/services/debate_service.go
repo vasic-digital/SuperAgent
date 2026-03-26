@@ -72,12 +72,6 @@ type DebateService struct {
 	approvalGate       *gates.ApprovalGate             // Configurable approval gates
 	provenanceTracker  *audit.ProvenanceTracker        // Audit trail for reproducibility
 	benchmarkBridge    *evaluation.BenchmarkBridge     // Benchmark evaluation bridge
-	//nolint:unused,staticcheck
-	sessionRepo *database.DebateSessionRepository // DB: debate sessions
-	//nolint:unused,staticcheck
-	turnRepo *database.DebateTurnRepository // DB: debate turns
-	//nolint:unused,staticcheck
-	codeVersionRepo *database.CodeVersionRepository // DB: code versions
 
 	// Performance Optimizer
 	performanceOptimizer *DebatePerformanceOptimizer
