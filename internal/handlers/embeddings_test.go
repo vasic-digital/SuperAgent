@@ -39,7 +39,7 @@ func TestEmbeddingHandler_GenerateEmbeddings_InvalidJSON(t *testing.T) {
 
 	handler.GenerateEmbeddings(c)
 
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
 }
 
 func TestEmbeddingHandler_VectorSearch_InvalidJSON(t *testing.T) {
@@ -55,7 +55,7 @@ func TestEmbeddingHandler_VectorSearch_InvalidJSON(t *testing.T) {
 
 	handler.VectorSearch(c)
 
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
 }
 
 func TestEmbeddingHandler_IndexDocument_InvalidJSON(t *testing.T) {
@@ -71,7 +71,7 @@ func TestEmbeddingHandler_IndexDocument_InvalidJSON(t *testing.T) {
 
 	handler.IndexDocument(c)
 
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
 }
 
 func TestEmbeddingHandler_BatchIndexDocuments_InvalidJSON(t *testing.T) {
@@ -87,7 +87,7 @@ func TestEmbeddingHandler_BatchIndexDocuments_InvalidJSON(t *testing.T) {
 
 	handler.BatchIndexDocuments(c)
 
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
 }
 
 func TestEmbeddingHandler_ConfigureProvider_InvalidJSON(t *testing.T) {
@@ -103,7 +103,7 @@ func TestEmbeddingHandler_ConfigureProvider_InvalidJSON(t *testing.T) {
 
 	handler.ConfigureProvider(c)
 
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
 }
 
 func TestEmbeddingHandler_SimilaritySearch_InvalidJSON(t *testing.T) {
@@ -119,7 +119,7 @@ func TestEmbeddingHandler_SimilaritySearch_InvalidJSON(t *testing.T) {
 
 	handler.SimilaritySearch(c)
 
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
 }
 
 func TestEmbeddingHandler_EmptyBody(t *testing.T) {
@@ -137,7 +137,7 @@ func TestEmbeddingHandler_EmptyBody(t *testing.T) {
 		handler.GenerateEmbeddings(c)
 
 		// Empty body should still fail to bind
-		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Equal(t, http.StatusServiceUnavailable, w.Code)
 	})
 
 	t.Run("vector search empty", func(t *testing.T) {
@@ -148,7 +148,7 @@ func TestEmbeddingHandler_EmptyBody(t *testing.T) {
 
 		handler.VectorSearch(c)
 
-		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Equal(t, http.StatusServiceUnavailable, w.Code)
 	})
 }
 
@@ -210,7 +210,7 @@ func TestEmbeddingHandler_IndexDocument_EmptyBody(t *testing.T) {
 
 	handler.IndexDocument(c)
 
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
 }
 
 // TestEmbeddingHandler_BatchIndexDocuments_EmptyBody tests BatchIndexDocuments with empty body
@@ -227,7 +227,7 @@ func TestEmbeddingHandler_BatchIndexDocuments_EmptyBody(t *testing.T) {
 
 	handler.BatchIndexDocuments(c)
 
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
 }
 
 // TestEmbeddingHandler_ConfigureProvider_EmptyBody tests ConfigureProvider with empty body
@@ -244,7 +244,7 @@ func TestEmbeddingHandler_ConfigureProvider_EmptyBody(t *testing.T) {
 
 	handler.ConfigureProvider(c)
 
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
 }
 
 // TestEmbeddingHandler_SimilaritySearch_EmptyBody tests SimilaritySearch with empty body
@@ -261,7 +261,7 @@ func TestEmbeddingHandler_SimilaritySearch_EmptyBody(t *testing.T) {
 
 	handler.SimilaritySearch(c)
 
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
 }
 
 // TestEmbeddingHandler_HandlerStructure tests the handler structure

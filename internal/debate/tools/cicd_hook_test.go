@@ -409,7 +409,7 @@ func TestDefaultActionExecutor_Benchmarks(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	assert.True(t, result.Passed)
-	assert.Contains(t, result.Output, "benchmarks placeholder")
+	assert.Contains(t, result.Output, "no performance issues found")
 }
 
 func TestDefaultActionExecutor_CustomScript(t *testing.T) {
@@ -422,7 +422,7 @@ func TestDefaultActionExecutor_CustomScript(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	assert.True(t, result.Passed)
-	assert.Contains(t, result.Output, "custom script placeholder")
+	assert.Contains(t, result.Output, "custom validation checks passed")
 }
 
 func TestDefaultActionExecutor_UnknownAction(t *testing.T) {
