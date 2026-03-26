@@ -819,6 +819,37 @@ Respond concisely and helpfully.`, clientName, toolList)
 		verifiedLLMs := h.debateTeamConfig.GetVerifiedLLMs()
 		var results []roleResult
 
+		// Set up SSE streaming BEFORE the debate loop so tokens stream progressively
+		c.Header("Content-Type", "text/event-stream")
+		c.Header("Cache-Control", "no-cache")
+		c.Header("Connection", "keep-alive")
+		c.Header("X-Accel-Buffering", "no")
+		flusher, flusherOK := c.Writer.(http.Flusher)
+		if !flusherOK {
+			h.sendOpenAIError(c, http.StatusInternalServerError, "internal_error", "Streaming not supported", "")
+			return
+		}
+		sseHeadersSent := false
+		sendSSEChunk := func(content string) {
+			if !sseHeadersSent {
+				roleData, _ := json.Marshal(map[string]any{ //nolint:errcheck
+					"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
+					"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
+					"choices": []map[string]any{{"index": 0, "delta": map[string]any{"role": "assistant", "content": ""}, "finish_reason": nil}},
+				})
+				_, _ = fmt.Fprintf(c.Writer, "data: %s\n\n", roleData)
+				flusher.Flush()
+				sseHeadersSent = true
+			}
+			chunkData, _ := json.Marshal(map[string]any{ //nolint:errcheck
+				"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
+				"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
+				"choices": []map[string]any{{"index": 0, "delta": map[string]any{"content": content}, "finish_reason": nil}},
+			})
+			_, _ = fmt.Fprintf(c.Writer, "data: %s\n\n", chunkData)
+			flusher.Flush()
+		}
+
 		for i, rc := range debateRoles {
 			if ctx.Err() != nil {
 				break
@@ -860,292 +891,100 @@ Respond concisely and helpfully.`, clientName, toolList)
 			}
 			debateReq := &models.LLMRequest{
 				Messages:    debateMessages,
-				ModelParams: models.ModelParameters{Model: vllm.ModelName, MaxTokens: 400},
+				ModelParams: models.ModelParameters{Model: vllm.ModelName, MaxTokens: 2048},
 			}
 
-			resp, callErr := vllm.Provider.Complete(ctx, debateReq)
-			rr := roleResult{
-				Role: rc.Name, ProviderName: vllm.ProviderName,
-				ModelName: vllm.ModelName, Score: vllm.Score, Duration: time.Since(roleStart),
-			}
-			if callErr != nil {
-				rr.Error = callErr.Error()
-				// Try next verified LLM as fallback
-				for fbIdx := llmIdx + 1; fbIdx < len(verifiedLLMs) && fbIdx < llmIdx+3; fbIdx++ {
-					fb := verifiedLLMs[fbIdx]
-					if fb.Provider == nil {
+			// Stream role header immediately so user sees progress
+			sendSSEChunk(fmt.Sprintf("\n### %s (%s/%s)\n\n", rc.Name, vllm.ProviderName, vllm.ModelName))
+
+			// Try streaming first for real-time token delivery
+			var roleContent strings.Builder
+			streamCh, streamErr := vllm.Provider.CompleteStream(ctx, debateReq)
+			if streamErr == nil && streamCh != nil {
+				for resp := range streamCh {
+					if resp == nil || resp.Content == "" {
 						continue
 					}
-					debateReq.ModelParams.Model = fb.ModelName
-					fbResp, fbErr := fb.Provider.Complete(ctx, debateReq)
-					if fbErr == nil && fbResp != nil && fbResp.Content != "" {
-						rr.Content = fbResp.Content
-						rr.ProviderName = fb.ProviderName
-						rr.ModelName = fb.ModelName
-						rr.Fallback = true
-						rr.Error = ""
+					if resp.FinishReason == "stop" || resp.FinishReason == "STOP" {
 						break
 					}
+					sendSSEChunk(resp.Content)
+					roleContent.WriteString(resp.Content)
 				}
-				if rr.Content == "" {
-					rr.Content = fmt.Sprintf("[%s failed: %s]", rc.Name, rr.Error[:min(100, len(rr.Error))])
+			} else {
+				// Fallback to non-streaming Complete if streaming fails
+				resp, callErr := vllm.Provider.Complete(ctx, debateReq)
+				if callErr != nil {
+					// Try next verified LLM as fallback
+					for fbIdx := llmIdx + 1; fbIdx < len(verifiedLLMs) && fbIdx < llmIdx+3; fbIdx++ {
+						fb := verifiedLLMs[fbIdx]
+						if fb.Provider == nil {
+							continue
+						}
+						debateReq.ModelParams.Model = fb.ModelName
+						fbResp, fbErr := fb.Provider.Complete(ctx, debateReq)
+						if fbErr == nil && fbResp != nil && fbResp.Content != "" {
+							sendSSEChunk(fbResp.Content)
+							roleContent.WriteString(fbResp.Content)
+							break
+						}
+					}
+					if roleContent.Len() == 0 {
+						errMsg := callErr.Error()
+						if len(errMsg) > 100 {
+							errMsg = errMsg[:100]
+						}
+						sendSSEChunk(fmt.Sprintf("[%s failed: %s]", rc.Name, errMsg))
+					}
+				} else if resp != nil {
+					sendSSEChunk(resp.Content)
+					roleContent.WriteString(resp.Content)
 				}
-			} else if resp != nil {
-				rr.Content = resp.Content
+			}
+
+			rr := roleResult{
+				Role: rc.Name, ProviderName: vllm.ProviderName,
+				ModelName: vllm.ModelName, Score: vllm.Score,
+				Duration: time.Since(roleStart), Content: roleContent.String(),
 			}
 			results = append(results, rr)
 			logrus.WithFields(logrus.Fields{
 				"role": rc.Name, "provider": rr.ProviderName,
-				"model": rr.ModelName, "duration": rr.Duration, "fallback": rr.Fallback,
+				"model": rr.ModelName, "duration": rr.Duration,
 				"content_len": len(rr.Content),
 			}).Info("[DEBATE] Role response received")
 		}
 
 		totalDuration := time.Since(startTime)
 
-		// Build synthesized content: use Moderator as primary, fall back to combining all
-		var finalContent string
+		// Content was already streamed progressively above.
+		// Just log the debate result and send the finish marker.
+		totalContent := 0
 		for _, r := range results {
-			if r.Role == "Moderator" && r.Content != "" && r.Error == "" {
-				finalContent = r.Content
-				break
-			}
+			totalContent += len(r.Content)
 		}
-		if finalContent == "" {
-			for _, r := range results {
-				if r.Content != "" {
-					finalContent += r.Content + "\n\n"
-				}
-			}
-			finalContent = strings.TrimSpace(finalContent)
-		}
+		logrus.WithFields(logrus.Fields{
+			"debate_id":     debateID,
+			"duration":      totalDuration,
+			"roles":         len(results),
+			"total_content": totalContent,
+		}).Info("[STREAMING] Debate completed — all roles streamed progressively")
 
-		// Build DebateResult for visualization
-		debateResult := &services.DebateResult{
-			DebateID:    debateID,
-			Duration:    totalDuration,
-			TotalRounds: 1,
-			Success:     finalContent != "",
-			FallbackUsed: func() bool {
-				for _, r := range results {
-					if r.Fallback {
-						return true
-					}
-				}
-				return false
-			}(),
-		}
-		for _, r := range results {
-			debateResult.AllResponses = append(debateResult.AllResponses, services.ParticipantResponse{
-				ParticipantName: r.Role,
-				Role:            r.Role,
-				LLMProvider:     r.ProviderName,
-				LLMModel:        r.ModelName,
-				Content:         r.Content,
-				QualityScore:    r.Score,
-				ResponseTime:    r.Duration,
+		if sseHeadersSent {
+			// Send finish marker
+			finishData, _ := json.Marshal(map[string]any{ //nolint:errcheck
+				"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
+				"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
+				"choices": []map[string]any{{"index": 0, "delta": map[string]any{}, "finish_reason": "stop"}},
 			})
-			debateResult.Participants = debateResult.AllResponses
+			_, _ = fmt.Fprintf(c.Writer, "data: %s\n\ndata: [DONE]\n\n", finishData)
+			flusher.Flush()
+			return
 		}
 
-		var debateErr error
-		if finalContent == "" {
-			debateErr = fmt.Errorf("all roles failed")
-		}
-		if debateErr == nil && debateResult != nil {
-			var finalContent string
-
-			// Priority 1: Best response (highest-scored participant's actual LLM content)
-			if debateResult.BestResponse != nil {
-				if debateResult.BestResponse.Content != "" {
-					finalContent = debateResult.BestResponse.Content
-				} else if debateResult.BestResponse.Response != "" {
-					finalContent = debateResult.BestResponse.Response
-				}
-			}
-
-			// Priority 2: Consensus FinalPosition (synthesized position from all participants)
-			if finalContent == "" && debateResult.Consensus != nil && debateResult.Consensus.FinalPosition != "" {
-				finalContent = debateResult.Consensus.FinalPosition
-			}
-
-			// Priority 3: Consensus Summary (only if it's substantial, not just metadata)
-			if finalContent == "" && debateResult.Consensus != nil && debateResult.Consensus.Summary != "" && len(debateResult.Consensus.Summary) > 100 {
-				finalContent = debateResult.Consensus.Summary
-			}
-
-			// Try all responses - check both Content and Response fields
-			if finalContent == "" && len(debateResult.AllResponses) > 0 {
-				for _, r := range debateResult.AllResponses {
-					content := r.Content
-					if content == "" {
-						content = r.Response
-					}
-					if content != "" {
-						finalContent += content + "\n\n"
-					}
-				}
-				finalContent = strings.TrimSpace(finalContent)
-			}
-
-			if finalContent != "" {
-				logrus.WithField("content_len", len(finalContent)).Info("[STREAMING] Debate completed, streaming result")
-				c.Header("Content-Type", "text/event-stream")
-				c.Header("Cache-Control", "no-cache")
-				c.Header("Connection", "keep-alive")
-				c.Header("X-Accel-Buffering", "no")
-
-				flusher, ok := c.Writer.(http.Flusher)
-				if !ok {
-					h.sendOpenAIError(c, http.StatusInternalServerError, "internal_error", "Streaming not supported", "")
-					return
-				}
-
-				// Role chunk
-				roleData, _ := json.Marshal(map[string]any{ //nolint:errcheck
-					"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
-					"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
-					"choices": []map[string]any{{"index": 0, "delta": map[string]any{"role": "assistant", "content": ""}, "finish_reason": nil}},
-				})
-				_, _ = fmt.Fprintf(c.Writer, "data: %s\n\n", roleData)
-				flusher.Flush()
-
-				// ═══ DEBATE TEAM VISUALIZATION ═══
-				// Stream debate team info, participant responses, and footer
-				if h.showDebateDialogue {
-					// Build debate team header showing all members and fallbacks
-					var teamIntro strings.Builder
-					teamIntro.WriteString("\n\n## AI Debate Ensemble (8-Role Comprehensive System)\n\n")
-					teamIntro.WriteString(fmt.Sprintf("**Topic:** %s\n\n", topic))
-					teamIntro.WriteString("### Debate Team\n\n")
-					teamIntro.WriteString("| Role | Provider | Model | Score | Duration | Status |\n")
-					teamIntro.WriteString("|------|----------|-------|-------|----------|--------|\n")
-
-					// Build table from actual debate results (comprehensive roles)
-					for _, pr := range debateResult.AllResponses {
-						status := "OK"
-						if pr.Content == "" || strings.HasPrefix(pr.Content, "[") {
-							status = "FAILED"
-						}
-						teamIntro.WriteString(fmt.Sprintf("| **%s** | %s | %s | %.1f | %s | %s |\n",
-							pr.Role, pr.LLMProvider, pr.LLMModel, pr.QualityScore,
-							pr.ResponseTime.Round(time.Millisecond), status))
-					}
-
-					teamIntro.WriteString(fmt.Sprintf("\n**Debate ID:** `%s`\n", debateResult.DebateID))
-					teamIntro.WriteString(fmt.Sprintf("**Duration:** %s\n", debateResult.Duration.Round(time.Millisecond)))
-					teamIntro.WriteString(fmt.Sprintf("**Participants:** %d\n\n", len(debateResult.Participants)))
-
-					// Show each participant's response
-					if len(debateResult.AllResponses) > 0 || len(debateResult.Participants) > 0 {
-						responses := debateResult.AllResponses
-						if len(responses) == 0 {
-							responses = debateResult.Participants
-						}
-						teamIntro.WriteString("### Participant Responses\n\n")
-						for _, pr := range responses {
-							role := pr.Role
-							if role == "" {
-								role = pr.ParticipantName
-							}
-							provider := pr.LLMProvider
-							if provider == "" {
-								provider = pr.LLMName
-							}
-							model := pr.LLMModel
-							content := pr.Content
-							if content == "" {
-								content = pr.Response
-							}
-							teamIntro.WriteString(fmt.Sprintf("#### %s (%s / %s) — Score: %.2f\n\n", role, provider, model, pr.QualityScore))
-							// Show truncated response (first 200 chars)
-							preview := content
-							if len(preview) > 200 {
-								preview = preview[:200] + "..."
-							}
-							teamIntro.WriteString(fmt.Sprintf("> %s\n\n", strings.ReplaceAll(preview, "\n", "\n> ")))
-						}
-					}
-
-					// Consensus info
-					if debateResult.Consensus != nil {
-						teamIntro.WriteString("### Consensus\n\n")
-						teamIntro.WriteString(fmt.Sprintf("- **Reached:** %v\n", debateResult.Consensus.Achieved || debateResult.Consensus.Reached))
-						teamIntro.WriteString(fmt.Sprintf("- **Confidence:** %.1f%%\n", debateResult.Consensus.Confidence*100))
-						teamIntro.WriteString(fmt.Sprintf("- **Agreement:** %.1f%%\n", debateResult.Consensus.AgreementLevel*100))
-						if len(debateResult.Consensus.KeyPoints) > 0 {
-							teamIntro.WriteString("- **Key Points:**\n")
-							for _, kp := range debateResult.Consensus.KeyPoints {
-								teamIntro.WriteString(fmt.Sprintf("  - %s\n", kp))
-							}
-						}
-						teamIntro.WriteString("\n")
-					}
-
-					// Fallback info
-					if debateResult.FallbackUsed {
-						teamIntro.WriteString("**Note:** Fallback providers were used for some positions.\n\n")
-					}
-
-					teamIntro.WriteString("---\n\n### Synthesized Response\n\n")
-
-					// Stream the team intro
-					introText := teamIntro.String()
-					for _, line := range strings.Split(introText, "\n") {
-						lineContent := line + "\n"
-						introChunk, _ := json.Marshal(map[string]any{ //nolint:errcheck
-							"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
-							"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
-							"choices": []map[string]any{{"index": 0, "delta": map[string]any{"content": lineContent}, "finish_reason": nil}},
-						})
-						_, _ = fmt.Fprintf(c.Writer, "data: %s\n\n", introChunk)
-						flusher.Flush()
-						time.Sleep(3 * time.Millisecond)
-					}
-				}
-
-				// Stream the final synthesized content in chunks
-				for i := 0; i < len(finalContent); i += 50 {
-					end := i + 50
-					if end > len(finalContent) {
-						end = len(finalContent)
-					}
-					chunkData, _ := json.Marshal(map[string]any{ //nolint:errcheck
-						"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
-						"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
-						"choices": []map[string]any{{"index": 0, "delta": map[string]any{"content": finalContent[i:end]}, "finish_reason": nil}},
-					})
-					_, _ = fmt.Fprintf(c.Writer, "data: %s\n\n", chunkData)
-					flusher.Flush()
-				}
-
-				// Stream footer
-				if h.showDebateDialogue {
-					footer := h.generateResponseFooter()
-					footerChunk, _ := json.Marshal(map[string]any{ //nolint:errcheck
-						"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
-						"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
-						"choices": []map[string]any{{"index": 0, "delta": map[string]any{"content": footer}, "finish_reason": nil}},
-					})
-					_, _ = fmt.Fprintf(c.Writer, "data: %s\n\n", footerChunk)
-					flusher.Flush()
-				}
-
-				// Finish
-				finishData, _ := json.Marshal(map[string]any{ //nolint:errcheck
-					"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
-					"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
-					"choices": []map[string]any{{"index": 0, "delta": map[string]any{}, "finish_reason": "stop"}},
-				})
-				_, _ = fmt.Fprintf(c.Writer, "data: %s\n\ndata: [DONE]\n\n", finishData)
-				flusher.Flush()
-				return
-			}
-		}
-		if debateErr != nil {
-			logrus.WithError(debateErr).Warn("[STREAMING] Debate failed — falling back")
-		}
-		// If debate produced no content, fall through to old path
+		// Fallback: if no SSE was sent (all roles failed), send error
+		h.sendOpenAIError(c, http.StatusInternalServerError, "internal_error", "All debate roles failed", "")
+		return
 	}
 
 	// OLD CODE REMOVED — comprehensive streaming replaced by ConductDebate above
