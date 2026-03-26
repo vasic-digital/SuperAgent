@@ -601,7 +601,125 @@ Prepare for HelixAgent certification exams.
 5. Course 16: Enterprise Deployment
 
 ### Complete Certification Path
-Complete all 17 courses in order for comprehensive HelixAgent expertise. Use Course 17 (Certification Preparation) to prepare for official certification exams.
+Complete all 17 named courses in order for comprehensive HelixAgent expertise. Use Course 17 (Certification Preparation) to prepare for official certification exams.
+
+---
+
+## Full Course Catalog (76 Courses)
+
+The complete library includes 76 courses organized into several series. Named courses (1-17) are documented in detail above. The remaining courses are listed below by series.
+
+### Series A: Foundations (Courses 1-18)
+Located in the root `video-courses/` directory as `course-01-*.md` through `course-18-*.md`.
+
+| # | File | Topic |
+|---|------|-------|
+| 1 | course-01-fundamentals.md | HelixAgent Fundamentals |
+| 2 | course-02-ai-debate.md | AI Debate System Mastery |
+| 3 | course-03-deployment.md | Production Deployment |
+| 4 | course-04-custom-integration.md | Custom Integration |
+| 5 | course-05-protocols.md | Protocol Integration |
+| 6 | course-06-testing.md | Testing Strategies |
+| 7 | course-07-advanced-providers.md | Advanced Provider Configuration |
+| 8 | course-08-plugin-development.md | Plugin Development Deep Dive |
+| 9 | course-09-production-operations.md | Production Operations |
+| 10 | course-10-security-best-practices.md | Security Best Practices |
+| 11 | course-11-mcp-mastery.md | MCP Mastery |
+| 12 | course-12-advanced-workflows.md | Advanced Agentic Workflows |
+| 13 | course-13-enterprise-deployment.md | Enterprise Deployment |
+| 14 | course-14-certification-prep.md | Certification Preparation |
+| 15 | course-15-bigdata-analytics.md | BigData Analytics |
+| 16 | course-16-memory-management.md | Memory Management |
+| 17 | course-17-cloud-providers.md | Cloud Providers |
+| 18 | course-18-security-scanning.md | Security Scanning |
+
+### Series B: Concurrency and Performance (Courses 19-30)
+Located in `courses-19-24/` (19-20) and `courses-21-30/` (21-30).
+
+| # | File | Topic |
+|---|------|-------|
+| 19 | courses-19-24/course-19-concurrency-patterns.md | Concurrency Patterns |
+| 20 | courses-19-24/course-20-channel-patterns.md | Channel Patterns |
+| 21 | courses-21-30/course-21-race-detection.md | Race Detection |
+| 22 | courses-21-30/course-22-deadlock-resolution.md | Deadlock Resolution |
+| 23 | courses-21-30/course-23-memory-leaks.md | Memory Leaks |
+| 24 | courses-21-30/course-24-profiling.md | Profiling |
+| 25 | courses-21-30/course-25-lazy-loading.md | Lazy Loading |
+| 26 | courses-21-30/course-26-caching-strategies.md | Caching Strategies |
+| 27 | courses-21-30/course-27-benchmarking.md | Benchmarking |
+| 28 | courses-21-30/course-28-resource-monitoring.md | Resource Monitoring |
+| 29 | courses-21-30/course-29-optimization-techniques.md | Optimization Techniques |
+| 30 | courses-21-30/course-30-performance-tuning.md | Performance Tuning |
+
+### Series C: Security and Testing (Courses 31-40)
+Located in `courses-31-40/`.
+
+| # | File | Topic |
+|---|------|-------|
+| 31 | courses-31-40/course-31-sonarqube.md | SonarQube |
+| 32 | courses-31-40/course-32-snyk.md | Snyk |
+| 33 | courses-31-40/course-33-secure-coding.md | Secure Coding |
+| 34 | courses-31-40/course-34-penetration-testing.md | Penetration Testing |
+| 35 | courses-31-40/course-35-unit-testing.md | Unit Testing |
+| 36 | courses-31-40/course-36-integration-testing.md | Integration Testing |
+| 37 | courses-31-40/course-37-e2e-testing.md | End-to-End Testing |
+| 38 | courses-31-40/course-38-stress-testing.md | Stress Testing |
+| 39 | courses-31-40/course-39-security-testing.md | Security Testing |
+| 40 | courses-31-40/course-40-module-development.md | Module Development |
+
+### Series D: Advanced Operations (Courses 41-50)
+Located in `courses-41-50/`.
+
+| # | File | Topic |
+|---|------|-------|
+| 41 | courses-41-50/course-41-custom-provider.md | Custom Provider |
+| 42 | courses-41-50/course-42-debate-customization.md | Debate Customization |
+| 43 | courses-41-50/course-43-advanced-caching.md | Advanced Caching |
+| 44 | courses-41-50/course-44-clustering.md | Clustering |
+| 45 | courses-41-50/course-45-plugin-development.md | Plugin Development |
+| 46 | courses-41-50/course-46-workflow-orchestration.md | Workflow Orchestration |
+| 47 | courses-41-50/course-47-configuration.md | Configuration |
+| 48 | courses-41-50/course-48-backup-recovery.md | Backup and Recovery |
+| 49 | courses-41-50/course-49-monitoring-alerting.md | Monitoring and Alerting |
+| 50 | courses-41-50/course-50-troubleshooting.md | Troubleshooting |
+
+### Series E: Deep Dives (Courses 53-65)
+Located in the root `video-courses/` directory as `video-course-53-*.md` through `video-course-65-*.md`.
+
+| # | File | Topic |
+|---|------|-------|
+| 53 | video-course-53-helixmemory-deep-dive.md | HelixMemory Deep Dive |
+| 54 | video-course-54-helixspecifier-workflow.md | HelixSpecifier Workflow |
+| 55 | video-course-55-security-scanning-pipeline.md | Security Scanning Pipeline |
+| 56 | video-course-56-performance-optimization.md | Performance Optimization |
+| 57 | video-course-57-stress-testing-guide.md | Stress Testing Guide |
+| 58 | video-course-58-chaos-engineering.md | Chaos Engineering |
+| 59 | video-course-59-monitoring-observability.md | Monitoring and Observability |
+| 60 | video-course-60-enterprise-deployment.md | Enterprise Deployment |
+| 61 | video-course-61-goroutine-safety.md | Goroutine Safety |
+| 62 | video-course-62-router-completeness.md | Router Completeness |
+| 63 | video-course-63-automated-security-scanning.md | Automated Security Scanning |
+| 64 | video-course-64-fuzz-testing-mastery.md | Fuzz Testing Mastery |
+| 65 | video-course-65-lazy-loading-patterns.md | Lazy Loading Patterns |
+
+### Series F: AI and Agentic Systems (Courses 66-76)
+Located in the root `video-courses/` directory as `course-66-*.md` through `course-76-*.md`.
+
+| # | File | Topic |
+|---|------|-------|
+| 66 | course-66-agentic-workflows.md | Agentic Workflows |
+| 67 | course-67-llmops-experimentation.md | LLMOps Experimentation |
+| 68 | course-68-planning-algorithms.md | Planning Algorithms |
+| 69 | course-69-concurrency-safety.md | Concurrency Safety |
+| 70 | course-70-docprocessor.md | DocProcessor |
+| 71 | course-71-helixqa.md | HelixQA |
+| 72 | course-72-llmorchestrator.md | LLM Orchestrator |
+| 73 | course-73-visionengine.md | Vision Engine |
+| 74 | course-74-security-scanning.md | Security Scanning (Advanced) |
+| 75 | course-75-performance-tuning.md | Performance Tuning (Advanced) |
+| 76 | course-76-agentic-ensemble.md | Agentic Ensemble |
+
+**Note:** Courses 51-52 are reserved for future content.
 
 ---
 

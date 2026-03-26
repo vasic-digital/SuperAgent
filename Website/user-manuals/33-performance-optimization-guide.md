@@ -616,6 +616,136 @@ Before deploying performance-sensitive changes:
 
 ---
 
+## Operational Profiling Workflow
+
+This section covers the end-to-end operational workflow for profiling and optimizing a running HelixAgent instance.
+
+### Prerequisites
+
+- HelixAgent built and running (`make build && make run`)
+- Prometheus and Grafana running (`docker compose --profile full up -d`)
+- Go toolchain for `go tool pprof`
+- `curl` and a web browser for dashboard access
+
+### Capturing pprof Profiles from a Running Instance
+
+HelixAgent exposes pprof endpoints at its main port:
+
+```bash
+# CPU profile (30-second sample)
+curl -o cpu.prof http://localhost:7061/debug/pprof/profile?seconds=30
+
+# Heap memory profile
+curl -o heap.prof http://localhost:7061/debug/pprof/heap
+
+# Goroutine profile
+curl -o goroutine.prof http://localhost:7061/debug/pprof/goroutine
+
+# Block profile (contention)
+curl -o block.prof http://localhost:7061/debug/pprof/block
+```
+
+Analyze with the interactive pprof web UI:
+
+```bash
+go tool pprof -http=:6060 cpu.prof
+```
+
+This opens a web UI at `http://localhost:6060` with flame graphs, call graphs, and top functions by CPU/memory.
+
+### Prometheus Metrics Reference
+
+HelixAgent exports the following key metrics at `/metrics`:
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `helixagent_http_requests_total` | Counter | Total HTTP requests by method, path, status |
+| `helixagent_http_request_duration_seconds` | Histogram | Request latency distribution |
+| `helixagent_provider_latency_seconds` | Histogram | Per-provider LLM response time |
+| `helixagent_provider_errors_total` | Counter | Provider errors by type |
+| `helixagent_goroutines` | Gauge | Current goroutine count |
+| `helixagent_ensemble_voting_duration_seconds` | Histogram | Ensemble aggregation time |
+| `helixagent_circuit_breaker_state` | Gauge | Circuit breaker state per provider (0=closed, 1=open) |
+
+Useful PromQL queries (`http://localhost:9090`):
+
+```promql
+# P99 request latency over 5 minutes
+histogram_quantile(0.99, rate(helixagent_http_request_duration_seconds_bucket[5m]))
+
+# Error rate by provider
+rate(helixagent_provider_errors_total[5m])
+
+# Goroutine trend
+helixagent_goroutines
+```
+
+### HTTP Connection Pool Tuning
+
+HelixAgent's HTTP/3 client pool is configured in the HTTP adapter:
+
+```go
+transport := &http.Transport{
+    MaxIdleConns:        100,
+    MaxIdleConnsPerHost: 20,
+    MaxConnsPerHost:     50,
+    IdleConnTimeout:     90 * time.Second,
+}
+```
+
+Tuning guidelines:
+
+| Parameter | Low Traffic | High Traffic |
+|-----------|-------------|--------------|
+| `MaxIdleConns` | 50 | 200 |
+| `MaxIdleConnsPerHost` | 10 | 40 |
+| `MaxConnsPerHost` | 20 | 100 |
+| `IdleConnTimeout` | 90s | 120s |
+
+Monitor connection reuse via Prometheus: rising `helixagent_http_requests_total` without rising goroutine count indicates healthy pooling.
+
+### Grafana Dashboard Setup
+
+Access Grafana at `http://localhost:3000` (default credentials: `admin`/`admin`).
+
+Recommended dashboard panels:
+
+1. **Request Rate** -- `rate(helixagent_http_requests_total[1m])` as a time series
+2. **Latency Heatmap** -- `helixagent_http_request_duration_seconds_bucket` as a heatmap
+3. **Provider Health** -- `helixagent_circuit_breaker_state` as a stat panel per provider
+4. **Goroutine Count** -- `helixagent_goroutines` as a time series (watch for leaks)
+5. **Memory Usage** -- `process_resident_memory_bytes` as a time series
+6. **Error Budget** -- `rate(helixagent_provider_errors_total[5m]) / rate(helixagent_http_requests_total[5m])` as a gauge
+
+Set alerts for:
+- P99 latency exceeding 5 seconds
+- Goroutine count exceeding 10,000
+- Error rate exceeding 5%
+- Circuit breaker open for more than 5 minutes
+
+### End-to-End Validation
+
+After applying optimizations, run the full validation suite:
+
+```bash
+# Benchmark comparison
+make test-bench
+
+# Memory profiling challenge
+./challenges/scripts/pprof_memory_profiling_challenge.sh
+
+# Monitoring dashboard challenge
+./challenges/scripts/monitoring_dashboard_challenge.sh
+
+# Resource limits enforcement
+./challenges/scripts/resource_limits_challenge.sh
+
+# Lazy loading validation
+./challenges/scripts/lazy_loading_validation_challenge.sh
+```
+
+---
+
 ## Related Resources
 
 - [User Manual 18: Performance Monitoring](18-performance-monitoring.md) -- Prometheus and Grafana setup

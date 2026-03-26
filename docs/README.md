@@ -14,6 +14,7 @@ HelixAgent is an advanced AI-powered multi-provider LLM orchestration platform w
 - [API Documentation](api/api-documentation.md) - Complete API reference
 - [API Reference Examples](api/api-reference-examples.md) - Usage examples
 - [OpenAPI Specification](api/openapi.yaml) - Machine-readable API specification
+- [gRPC API](api/grpc.md) - gRPC service definitions and usage
 
 ### User Guides
 - [Troubleshooting](guides/troubleshooting-guide.md) - Common issues and solutions

@@ -1,4 +1,4 @@
-# User Manual 45: Agentic Ensemble Guide
+# User Manual 43: Agentic Ensemble Guide
 
 ## Overview
 

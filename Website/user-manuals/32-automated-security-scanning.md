@@ -498,6 +498,111 @@ docker run --rm -e SNYK_TOKEN=$SNYK_TOKEN snyk/snyk-cli auth
 
 ---
 
+## Additional Scanners
+
+Beyond Snyk and SonarQube, the following containerized scanners can be run as part of the security pipeline.
+
+### Trivy (Container Image Scanning)
+
+Trivy scans container images and filesystem for vulnerabilities:
+
+```bash
+# Scan the HelixAgent container image
+docker run --rm aquasec/trivy image helixagent:latest
+
+# Scan the filesystem
+docker run --rm -v "$(pwd):/project" aquasec/trivy fs /project
+
+# Output as JSON for automated processing
+docker run --rm aquasec/trivy image --format json helixagent:latest > trivy-report.json
+```
+
+### Gosec (Go Security Linter)
+
+Gosec identifies security issues specific to Go source code:
+
+```bash
+# Via make target
+make security-scan
+
+# Or directly
+docker run --rm -v "$(pwd):/app" securego/gosec -fmt json /app/...
+```
+
+Common findings: hardcoded credentials, SQL injection vectors, insecure random number generation, unhandled errors.
+
+### Semgrep (Pattern-Based Analysis)
+
+Semgrep finds bugs and security issues using semantic pattern matching:
+
+```bash
+docker run --rm -v "$(pwd):/src" returntocorp/semgrep \
+  semgrep scan --config auto /src
+```
+
+Semgrep rules cover: injection vulnerabilities, authentication bypass, insecure deserialization, and OWASP Top 10 patterns.
+
+### KICS (Infrastructure as Code Scanning)
+
+KICS scans Docker, Kubernetes, and Terraform configurations:
+
+```bash
+docker run --rm -v "$(pwd):/project" checkmarx/kics scan \
+  -p /project/docker -p /project/configs \
+  --output-path /project/kics-report
+```
+
+Focus areas: exposed ports, missing resource limits, privileged containers, missing health checks.
+
+### Grype (SBOM Vulnerability Matching)
+
+Grype matches software bill of materials against vulnerability databases:
+
+```bash
+# Scan container image
+docker run --rm anchore/grype helixagent:latest
+
+# Scan a directory
+docker run --rm -v "$(pwd):/project" anchore/grype dir:/project
+
+# Generate SBOM first, then scan
+docker run --rm anchore/syft helixagent:latest -o json > sbom.json
+docker run --rm -v "$(pwd):/data" anchore/grype sbom:/data/sbom.json
+```
+
+### All Scanners: Launch and Re-Scan
+
+Launch all 7 security scanners with the dedicated compose file:
+
+```bash
+docker compose -f docker-compose.security.yml up -d
+```
+
+After applying fixes, re-run to confirm remediation:
+
+```bash
+docker compose -f docker-compose.security.yml up
+./challenges/scripts/snyk_automated_scanning_challenge.sh
+./challenges/scripts/sonarqube_automated_scanning_challenge.sh
+```
+
+### Finding Priority Matrix
+
+| Priority | Action | Timeline |
+|----------|--------|----------|
+| Critical | Patch immediately, redeploy | Same day |
+| High | Fix and test | Within 3 days |
+| Medium | Schedule fix | Next sprint |
+| Low | Track in backlog | Maintenance window |
+
+Common fix patterns:
+- **Dependency vulnerability**: Update `go.mod`, run `go mod tidy`, rebuild
+- **Code vulnerability**: Apply the fix, add a regression test, verify with `make security-scan`
+- **Container vulnerability**: Rebuild from updated base image
+- **Configuration issue**: Update compose/Kubernetes manifests
+
+---
+
 ## Related Resources
 
 - [User Manual 17: Security Scanning Guide](17-security-scanning-guide.md) -- Overview of all 7 security tools
