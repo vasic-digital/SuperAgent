@@ -22,7 +22,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"time"
@@ -35,12 +34,9 @@ import (
 
 // APIServer represents the REST API server
 type APIServer struct {
-	port            string
-	logger          *logrus.Logger
-	unifiedManager  *services.UnifiedProtocolManager
-	pluginSystem    *services.ProtocolPluginSystem
-	pluginRegistry  *services.ProtocolPluginRegistry
-	templateManager *services.ProtocolTemplateManager
+	port           string
+	logger         *logrus.Logger
+	unifiedManager *services.UnifiedProtocolManager
 }
 
 // NewAPIServer creates a new API server instance
@@ -50,20 +46,11 @@ func NewAPIServer(port string) *APIServer {
 
 	// Initialize core services
 	unifiedManager := services.NewUnifiedProtocolManager(nil, nil, logger)
-	pluginSystem := services.NewProtocolPluginSystem("/opt/helixagent/plugins", logger)
-	pluginRegistry := services.NewProtocolPluginRegistry(logger)
-	templateManager := services.NewProtocolTemplateManager(logger)
-
-	// Initialize default templates
-	_ = templateManager.InitializeDefaultTemplates()
 
 	return &APIServer{
-		port:            port,
-		logger:          logger,
-		unifiedManager:  unifiedManager,
-		pluginSystem:    pluginSystem,
-		pluginRegistry:  pluginRegistry,
-		templateManager: templateManager,
+		port:           port,
+		logger:         logger,
+		unifiedManager: unifiedManager,
 	}
 }
 
@@ -111,25 +98,6 @@ func (s *APIServer) Start() error {
 			acp.POST("/execute", s.handleACPExecute)
 			acp.POST("/broadcast", s.handleACPBroadcast)
 			acp.GET("/status", s.handleACPStatus)
-		}
-
-		// Plugin endpoints
-		plugins := api.Group("/plugins")
-		{
-			plugins.GET("/", s.handleListPlugins)
-			plugins.POST("/load", s.handleLoadPlugin)
-			plugins.DELETE("/:id", s.handleUnloadPlugin)
-			plugins.POST("/:id/execute", s.handleExecutePlugin)
-			plugins.GET("/marketplace", s.handleMarketplaceSearch)
-			plugins.POST("/marketplace/register", s.handleRegisterPlugin)
-		}
-
-		// Template endpoints
-		templates := api.Group("/templates")
-		{
-			templates.GET("/", s.handleListTemplates)
-			templates.GET("/:id", s.handleGetTemplate)
-			templates.POST("/:id/generate", s.handleGenerateFromTemplate)
 		}
 
 		// Health and monitoring
@@ -306,138 +274,6 @@ func (s *APIServer) handleACPStatus(c *gin.Context) {
 	})
 }
 
-// Plugin Handlers
-
-func (s *APIServer) handleListPlugins(c *gin.Context) {
-	plugins := s.pluginSystem.ListPlugins()
-	c.JSON(200, gin.H{"plugins": plugins})
-}
-
-func (s *APIServer) handleLoadPlugin(c *gin.Context) {
-	var req struct {
-		Path string `json:"path"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
-		return
-	}
-
-	err := s.pluginSystem.LoadPlugin(req.Path)
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(200, gin.H{"status": "plugin loaded"})
-}
-
-func (s *APIServer) handleUnloadPlugin(c *gin.Context) {
-	pluginID := c.Param("id")
-
-	err := s.pluginSystem.UnloadPlugin(pluginID)
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(200, gin.H{"status": "plugin unloaded"})
-}
-
-func (s *APIServer) handleExecutePlugin(c *gin.Context) {
-	pluginID := c.Param("id")
-
-	var req struct {
-		Operation string                 `json:"operation"`
-		Params    map[string]interface{} `json:"params"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
-		return
-	}
-
-	result, err := s.pluginSystem.ExecutePluginOperation(context.Background(), pluginID, req.Operation, req.Params)
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(200, gin.H{"result": result})
-}
-
-func (s *APIServer) handleMarketplaceSearch(c *gin.Context) {
-	query := c.Query("q")
-	protocol := c.Query("protocol")
-
-	plugins := s.pluginRegistry.SearchPlugins(query, protocol, nil)
-	c.JSON(200, gin.H{"plugins": plugins})
-}
-
-func (s *APIServer) handleRegisterPlugin(c *gin.Context) {
-	var plugin services.RegistryProtocolPlugin
-	if err := c.ShouldBindJSON(&plugin); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
-		return
-	}
-
-	err := s.pluginRegistry.RegisterPlugin(&plugin)
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(200, gin.H{"status": "plugin registered"})
-}
-
-// Template Handlers
-
-func (s *APIServer) handleListTemplates(c *gin.Context) {
-	protocol := c.Query("protocol")
-
-	var templates []*services.ProtocolTemplate
-	if protocol != "" {
-		templates = s.templateManager.ListTemplatesByProtocol(protocol)
-	} else {
-		templates = s.templateManager.ListTemplates()
-	}
-
-	c.JSON(200, gin.H{"templates": templates})
-}
-
-func (s *APIServer) handleGetTemplate(c *gin.Context) {
-	templateID := c.Param("id")
-
-	template, err := s.templateManager.GetTemplate(templateID)
-	if err != nil {
-		c.JSON(404, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(200, template)
-}
-
-func (s *APIServer) handleGenerateFromTemplate(c *gin.Context) {
-	templateID := c.Param("id")
-
-	var req struct {
-		Config map[string]interface{} `json:"config"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
-		return
-	}
-
-	generated, err := s.templateManager.GeneratePluginFromTemplate(templateID, req.Config)
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(200, gin.H{"generated": generated})
-}
-
 // System Handlers
 
 func (s *APIServer) handleHealth(c *gin.Context) {
@@ -450,25 +286,20 @@ func (s *APIServer) handleHealth(c *gin.Context) {
 
 func (s *APIServer) handleStatus(c *gin.Context) {
 	c.JSON(200, gin.H{
-		"status":              "operational",
-		"plugins_loaded":      len(s.pluginSystem.ListPlugins()),
-		"templates_available": len(s.templateManager.ListTemplates()),
-		"timestamp":           time.Now().Unix(),
+		"status":    "operational",
+		"timestamp": time.Now().Unix(),
 	})
 }
 
 func (s *APIServer) handlePrometheusMetrics(c *gin.Context) {
 	// Simple Prometheus metrics format
 	metrics := `
-# HELP helixagent_plugins_loaded Number of loaded plugins
-# TYPE helixagent_plugins_loaded gauge
-helixagent_plugins_loaded %d
+# HELP helixagent_up Server is up
+# TYPE helixagent_up gauge
+helixagent_up 1
 `
-
 	c.Header("Content-Type", "text/plain")
-	c.String(200, fmt.Sprintf(metrics,
-		len(s.pluginSystem.ListPlugins()),
-	))
+	c.String(200, metrics)
 }
 
 func main() {
