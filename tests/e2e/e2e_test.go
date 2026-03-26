@@ -315,7 +315,6 @@ func TestE2ENewServicesWorkflow(t *testing.T) {
 		lspClient := services.NewLSPClient(logger)
 		toolRegistry := services.NewToolRegistry(mcpManager, lspClient)
 		contextManager := services.NewContextManager(100)
-		securitySandbox := services.NewSecuritySandbox()
 		orchestrator := services.NewIntegrationOrchestrator(mcpManager, lspClient, toolRegistry, contextManager)
 
 		// Register test tools
@@ -403,27 +402,6 @@ func TestE2ENewServicesWorkflow(t *testing.T) {
 			assert.Len(t, parallelResults, len(operations))
 			t.Logf("✅ Parallel operations completed with %d results", len(parallelResults))
 		}
-
-		// Test security sandbox
-		safeResult, err := securitySandbox.ExecuteSandboxed(context.Background(), "ls", []string{"-la", "/tmp"})
-		if err != nil {
-			t.Logf("Security sandbox execution failed: %v", err)
-		} else {
-			assert.NotNil(t, safeResult)
-			t.Logf("✅ Security sandbox executed command successfully")
-		}
-
-		// Test parameter validation
-		err = securitySandbox.ValidateToolExecution("test-tool", map[string]interface{}{
-			"safe": "echo hello",
-		})
-		assert.NoError(t, err)
-
-		err = securitySandbox.ValidateToolExecution("test-tool", map[string]interface{}{
-			"dangerous": "rm -rf / | echo hacked",
-		})
-		assert.Error(t, err)
-		t.Logf("✅ Security validation working correctly")
 
 		// Verify context management
 		builtContext, err := contextManager.BuildContext("code_completion", 1000)

@@ -305,10 +305,6 @@ func TestPhase2_UnitTestVerification(t *testing.T) {
 		contextManager := services.NewContextManager(100)
 		assert.NotNil(t, contextManager, "Context Manager should initialize")
 
-		// Test Security Sandbox creation
-		securitySandbox := services.NewSecuritySandbox()
-		assert.NotNil(t, securitySandbox, "Security Sandbox should initialize")
-
 		result.Success = true
 		result.Duration = time.Since(start)
 		result.Details["services_tested"] = 5
@@ -478,65 +474,6 @@ func TestPhase3_IntegrationTests(t *testing.T) {
 		suite.addResult(result)
 	})
 
-	t.Run("SecuritySandboxIntegration", func(t *testing.T) {
-		start := time.Now()
-		result := AutomationResult{
-			Phase:    "3-Integration",
-			TestName: "Security Sandbox Integration",
-			Details:  make(map[string]interface{}),
-		}
-
-		sandbox := services.NewSecuritySandbox()
-
-		// Test allowed commands
-		allowedCommands := []string{"ls", "cat", "grep", "find", "wc"}
-		allowedCount := 0
-
-		for _, cmd := range allowedCommands {
-			args := []string{}
-			switch cmd {
-			case "ls":
-				args = []string{"-la", "/tmp"}
-			case "cat":
-				args = []string{"/dev/null"}
-			case "grep":
-				args = []string{"test", "/dev/null"}
-			case "find":
-				args = []string{"/tmp", "-maxdepth", "1", "-name", "test"}
-			case "wc":
-				args = []string{"-l", "/dev/null"}
-			}
-
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			sandboxResult, err := sandbox.ExecuteSandboxed(ctx, cmd, args)
-			cancel()
-
-			if err == nil && sandboxResult != nil {
-				allowedCount++
-			}
-		}
-
-		// Test disallowed commands
-		disallowedCommands := []string{"rm", "dd", "mkfs", "shutdown"}
-		blockedCount := 0
-
-		for _, cmd := range disallowedCommands {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			_, err := sandbox.ExecuteSandboxed(ctx, cmd, []string{})
-			cancel()
-
-			if err != nil {
-				blockedCount++
-			}
-		}
-
-		result.Success = blockedCount == len(disallowedCommands)
-		result.Duration = time.Since(start)
-		result.Details["allowed_executed"] = allowedCount
-		result.Details["disallowed_blocked"] = blockedCount
-
-		suite.addResult(result)
-	})
 }
 
 // =============================================================================

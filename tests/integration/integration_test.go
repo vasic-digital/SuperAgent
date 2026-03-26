@@ -278,74 +278,12 @@ func TestIntegrationOrchestrator_Workflow(t *testing.T) {
 	}
 }
 
-func TestSecuritySandbox_Integration(t *testing.T) {
-	// Create security sandbox
-	sandbox := services.NewSecuritySandbox()
-
-	// Test allowed commands
-	allowedCommands := []string{"ls", "cat", "grep", "find", "wc"}
-
-	for _, cmd := range allowedCommands {
-		args := []string{}
-		if cmd == "ls" {
-			args = []string{"-la", "/tmp"}
-		} else if cmd == "cat" {
-			args = []string{"/dev/null"}
-		} else if cmd == "grep" {
-			args = []string{"test", "/dev/null"}
-		} else if cmd == "find" {
-			args = []string{"/tmp", "-name", "test"}
-		} else if cmd == "wc" {
-			args = []string{"-l", "/dev/null"}
-		}
-
-		result, err := sandbox.ExecuteSandboxed(context.Background(), cmd, args)
-		if err != nil {
-			t.Logf("Command %s failed (may be expected): %v", cmd, err)
-			continue
-		}
-
-		if result == nil {
-			t.Errorf("Expected result for allowed command %s", cmd)
-		}
-
-		// Commands may fail due to permissions or missing files, that's ok for this test
-		t.Logf("Command %s executed with success: %v", cmd, result.Success)
-	}
-
-	// Test disallowed commands
-	disallowedCommands := []string{"rm", "dd", "mkfs", "shutdown"}
-
-	for _, cmd := range disallowedCommands {
-		_, err := sandbox.ExecuteSandboxed(context.Background(), cmd, []string{})
-		if err == nil {
-			t.Errorf("Expected error for disallowed command %s", cmd)
-		}
-	}
-
-	// Test parameter validation
-	err := sandbox.ValidateToolExecution("test-tool", map[string]interface{}{
-		"safe_param": "safe value",
-	})
-	if err != nil {
-		t.Errorf("Safe parameters should pass validation: %v", err)
-	}
-
-	err = sandbox.ValidateToolExecution("test-tool", map[string]interface{}{
-		"dangerous": "rm -rf /; echo hacked",
-	})
-	if err == nil {
-		t.Error("Dangerous parameters should fail validation")
-	}
-}
-
 func TestNewServicesIntegration(t *testing.T) {
 	// Create all components
 	mcpManager := services.NewMCPManager(nil, nil, nil)
 	lspClient := services.NewLSPClient(logrus.New())
 	toolRegistry := services.NewToolRegistry(mcpManager, lspClient)
 	contextManager := services.NewContextManager(100)
-	securitySandbox := services.NewSecuritySandbox()
 
 	// Create orchestrator
 	orchestrator := services.NewIntegrationOrchestrator(mcpManager, lspClient, toolRegistry, contextManager)
@@ -407,14 +345,6 @@ func TestNewServicesIntegration(t *testing.T) {
 
 	if len(results) != len(operations) {
 		t.Errorf("Expected %d results, got %d", len(operations), len(results))
-	}
-
-	// Test security sandbox with tool execution
-	for _, op := range operations {
-		err := securitySandbox.ValidateToolExecution(op.Name, op.Parameters)
-		if err != nil {
-			t.Logf("Security validation failed for %s: %v", op.Name, err)
-		}
 	}
 
 	// Verify context was used

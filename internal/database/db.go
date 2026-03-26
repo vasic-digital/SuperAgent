@@ -243,8 +243,9 @@ func RunMigration(db *PostgresDB, migrations []string) error {
 	return nil
 }
 
-// Migrations for the LLM facade
-var migrations = []string{ //nolint:unused
+// migrations holds the SQL schema definitions for the LLM facade database.
+// These are validated by tests to ensure schema completeness.
+var migrations = []string{
 	`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`,
 
 	`CREATE TABLE IF NOT EXISTS users (

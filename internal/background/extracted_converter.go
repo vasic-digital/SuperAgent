@@ -65,11 +65,6 @@ func convertToExtractedTasks(internal []*models.BackgroundTask) []*extractedmode
 	return result
 }
 
-// convertTaskStatus converts internal TaskStatus to extracted TaskStatus
-func convertTaskStatus(status models.TaskStatus) extractedmodels.TaskStatus { //nolint:unused
-	return extractedmodels.TaskStatus(status)
-}
-
 // convertTaskPriority converts internal TaskPriority to extracted TaskPriority
 func convertTaskPriority(priority models.TaskPriority) extractedmodels.TaskPriority {
 	return extractedmodels.TaskPriority(priority)
@@ -203,47 +198,6 @@ func convertToInternalStuckAnalysis(extracted *extractedbackground.StuckAnalysis
 	return internal
 }
 
-// convertToExtractedStuckAnalysis converts internal StuckAnalysis to extracted StuckAnalysis
-func convertToExtractedStuckAnalysis(internal *StuckAnalysis) *extractedbackground.StuckAnalysis { //nolint:unused
-	if internal == nil {
-		return nil
-	}
-	extracted := &extractedbackground.StuckAnalysis{
-		IsStuck: internal.IsStuck,
-		Reason:  internal.Reason,
-		HeartbeatStatus: extractedbackground.HeartbeatStatus{
-			LastHeartbeat:      internal.HeartbeatStatus.LastHeartbeat,
-			TimeSinceHeartbeat: internal.HeartbeatStatus.TimeSinceHeartbeat,
-			Threshold:          internal.HeartbeatStatus.Threshold,
-			IsStale:            internal.HeartbeatStatus.IsStale,
-		},
-		ResourceStatus: extractedbackground.ResourceStatus{
-			CPUPercent:    internal.ResourceStatus.CPUPercent,
-			MemoryPercent: internal.ResourceStatus.MemoryPercent,
-			MemoryBytes:   internal.ResourceStatus.MemoryBytes,
-			OpenFDs:       internal.ResourceStatus.OpenFDs,
-			ThreadCount:   internal.ResourceStatus.ThreadCount,
-			IsExhausted:   internal.ResourceStatus.IsExhausted,
-		},
-		ActivityStatus: extractedbackground.ActivityStatus{
-			HasCPUActivity: internal.ActivityStatus.HasCPUActivity,
-			HasIOActivity:  internal.ActivityStatus.HasIOActivity,
-			HasNetActivity: internal.ActivityStatus.HasNetActivity,
-			IOReadBytes:    internal.ActivityStatus.IOReadBytes,
-			IOWriteBytes:   internal.ActivityStatus.IOWriteBytes,
-			NetConnections: internal.ActivityStatus.NetConnections,
-		},
-	}
-	// Copy recommendations slice (may be nil or empty)
-	if internal.Recommendations != nil {
-		extracted.Recommendations = make([]string, len(internal.Recommendations))
-		copy(extracted.Recommendations, internal.Recommendations)
-	} else {
-		extracted.Recommendations = []string{} // Ensure non-nil empty slice
-	}
-	return extracted
-}
-
 // convertToInternalWorkerStatus converts extracted WorkerStatus to internal WorkerStatus
 func convertToInternalWorkerStatus(extracted *extractedbackground.WorkerStatus) *WorkerStatus {
 	if extracted == nil {
@@ -261,19 +215,3 @@ func convertToInternalWorkerStatus(extracted *extractedbackground.WorkerStatus) 
 	}
 }
 
-// convertToExtractedWorkerStatus converts internal WorkerStatus to extracted WorkerStatus
-func convertToExtractedWorkerStatus(internal *WorkerStatus) *extractedbackground.WorkerStatus { //nolint:unused
-	if internal == nil {
-		return nil
-	}
-	return &extractedbackground.WorkerStatus{
-		ID:              internal.ID,
-		Status:          internal.Status,
-		CurrentTask:     convertToExtractedTask(internal.CurrentTask),
-		StartedAt:       internal.StartedAt,
-		LastActivity:    internal.LastActivity,
-		TasksCompleted:  internal.TasksCompleted,
-		TasksFailed:     internal.TasksFailed,
-		AvgTaskDuration: internal.AvgTaskDuration,
-	}
-}

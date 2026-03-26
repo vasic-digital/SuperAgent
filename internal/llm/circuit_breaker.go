@@ -160,20 +160,36 @@ func (cb *CircuitBreaker) CompleteStream(ctx context.Context, req *models.LLMReq
 		return nil, err
 	}
 
-	// Wrap the channel to track success/failure
+	// Wrap the channel to track success/failure.
+	// The select on ctx.Done() prevents a goroutine leak when the caller
+	// abandons the stream (context timeout/cancel).
 	wrappedCh := make(chan *models.LLMResponse)
 	go func() {
 		defer close(wrappedCh)
 		var lastResp *models.LLMResponse
-		for resp := range ch {
-			lastResp = resp
-			wrappedCh <- resp
-		}
-		// Consider it a success if we got at least one response
-		if lastResp != nil {
-			cb.afterRequest(nil)
-		} else {
-			cb.afterRequest(errors.New("empty stream"))
+		for {
+			select {
+			case resp, ok := <-ch:
+				if !ok {
+					// Upstream channel closed — stream completed normally.
+					if lastResp != nil {
+						cb.afterRequest(nil)
+					} else {
+						cb.afterRequest(errors.New("empty stream"))
+					}
+					return
+				}
+				lastResp = resp
+				select {
+				case wrappedCh <- resp:
+				case <-ctx.Done():
+					cb.afterRequest(ctx.Err())
+					return
+				}
+			case <-ctx.Done():
+				cb.afterRequest(ctx.Err())
+				return
+			}
 		}
 	}()
 
