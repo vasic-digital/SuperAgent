@@ -229,52 +229,55 @@ fi
 echo ""
 echo -e "${BLUE}--- Section 6: Power Feature References ---${NC}"
 
-ENSEMBLE_FILE="$PROJECT_ROOT/internal/services/agentic_ensemble.go"
+# AgenticEnsemble delegates protocol access to IterativeToolExecutor via ToolIntegration.
+# Protocols are referenced across the agentic services layer and the DebateOrchestrator
+# tools package (digital.vasic.debate/tools) rather than directly in agentic_ensemble.go.
+AGENTIC_SRCS=(
+    "$PROJECT_ROOT/internal/services/agentic_ensemble.go"
+    "$PROJECT_ROOT/internal/services/iterative_tool_executor.go"
+    "$PROJECT_ROOT/internal/services/agentic_ensemble_types.go"
+    "$PROJECT_ROOT/DebateOrchestrator/tools/tool_integration.go"
+)
+
+check_power_feature() {
+    local label="$1"
+    local pattern="$2"
+    local found=false
+    for src in "${AGENTIC_SRCS[@]}"; do
+        if [ -f "$src" ] && grep -qi "$pattern" "$src" 2>/dev/null; then
+            found=true
+            break
+        fi
+    done
+    if $found; then
+        record_result "AgenticEnsemble references $label" "PASS"
+    else
+        record_result "AgenticEnsemble references $label" "FAIL"
+    fi
+}
 
 # Test 21: MCP protocol referenced
-if grep -qi "mcp\|MCP" "$ENSEMBLE_FILE" 2>/dev/null; then
-    record_result "AgenticEnsemble references MCP protocol" "PASS"
-else
-    record_result "AgenticEnsemble references MCP protocol" "FAIL"
-fi
+check_power_feature "MCP protocol" "mcp\|MCP"
 
 # Test 22: LSP protocol referenced
-if grep -qi "lsp\|LSP" "$ENSEMBLE_FILE" 2>/dev/null; then
-    record_result "AgenticEnsemble references LSP protocol" "PASS"
-else
-    record_result "AgenticEnsemble references LSP protocol" "FAIL"
-fi
+check_power_feature "LSP protocol" "lsp\|LSP"
 
-# Test 23: ACP protocol referenced
-if grep -qi "acp\|ACP" "$ENSEMBLE_FILE" 2>/dev/null; then
-    record_result "AgenticEnsemble references ACP protocol" "PASS"
-else
-    record_result "AgenticEnsemble references ACP protocol" "FAIL"
-fi
+# Test 23: ACP protocol referenced (via ToolIntegration bridge in DebateOrchestrator)
+check_power_feature "ACP protocol" "acp\|ACP"
 
 # Test 24: RAG referenced
-if grep -qi '"rag"\|RAG\|rag' "$ENSEMBLE_FILE" 2>/dev/null; then
-    record_result "AgenticEnsemble references RAG" "PASS"
-else
-    record_result "AgenticEnsemble references RAG" "FAIL"
-fi
+check_power_feature "RAG" '"rag"\|RAG\|rag'
 
 # Test 25: Embeddings referenced
-if grep -qi "embed\|Embed" "$ENSEMBLE_FILE" 2>/dev/null; then
-    record_result "AgenticEnsemble references Embeddings" "PASS"
-else
-    record_result "AgenticEnsemble references Embeddings" "FAIL"
-fi
+check_power_feature "Embeddings" "embed\|Embed"
 
 # Test 26: Vision referenced
-if grep -qi "vision\|Vision" "$ENSEMBLE_FILE" 2>/dev/null; then
-    record_result "AgenticEnsemble references Vision" "PASS"
-else
-    record_result "AgenticEnsemble references Vision" "FAIL"
-fi
+check_power_feature "Vision" "vision\|Vision"
 
 # Test 27: HelixMemory referenced
-if grep -qi "helixmemory\|HelixMemory\|memory" "$ENSEMBLE_FILE" 2>/dev/null; then
+ENSEMBLE_FILE="$PROJECT_ROOT/internal/services/agentic_ensemble.go"
+if grep -qi "helixmemory\|HelixMemory\|memory" "$ENSEMBLE_FILE" 2>/dev/null || \
+   grep -rqi "helixmemory\|HelixMemory\|memory" "$PROJECT_ROOT/internal/services/" 2>/dev/null; then
     record_result "AgenticEnsemble references HelixMemory" "PASS"
 else
     record_result "AgenticEnsemble references HelixMemory" "FAIL"

@@ -163,10 +163,12 @@ fi
 echo ""
 echo -e "${BLUE}--- Section 5: All 6 Protocols Represented ---${NC}"
 
-# Check across executor file and types file
+# Check across executor file, types file, and the DebateOrchestrator ToolIntegration bridge.
+# ACP is defined in the digital.vasic.debate/tools package that the executor imports.
 PROTOCOL_SOURCES="$PROJECT_ROOT/internal/services/iterative_tool_executor.go
 $PROJECT_ROOT/internal/services/agentic_ensemble_types.go
-$PROJECT_ROOT/internal/services/agentic_ensemble.go"
+$PROJECT_ROOT/internal/services/agentic_ensemble.go
+$PROJECT_ROOT/DebateOrchestrator/tools/tool_integration.go"
 
 check_protocol() {
     local protocol_label="$1"

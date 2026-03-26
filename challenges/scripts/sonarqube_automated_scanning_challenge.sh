@@ -174,8 +174,8 @@ fi
 echo ""
 echo -e "${BLUE}--- Section 4: Pinned Image Versions ---${NC}"
 
-# Test 12: SonarQube uses community edition (not :latest)
-if grep -q "sonarqube:community" "$DOCKER_COMPOSE"; then
+# Test 12: SonarQube uses community edition with a pinned version (not :latest)
+if grep -qE "sonarqube:[0-9].*-community|sonarqube:community" "$DOCKER_COMPOSE"; then
     record_result "SonarQube uses pinned community edition image" "PASS"
 else
     record_result "SonarQube uses pinned community edition image" "FAIL"

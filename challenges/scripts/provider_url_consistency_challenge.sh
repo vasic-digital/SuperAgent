@@ -193,20 +193,32 @@ fi
 #===============================================================================
 section "Section 6: Cross-Provider Validation"
 
-# Test 6.1: No provider in provider_types.go has empty BaseURL
-EMPTY_URLS=$(grep 'BaseURL:' "$PROVIDER_TYPES" | grep -c 'BaseURL:.*""' || true)
-if [ "$EMPTY_URLS" -eq 0 ]; then
-    pass "No provider in provider_types.go has empty BaseURL"
+# Test 6.1: CLI-only providers (e.g. Junie with BYOK) may have empty BaseURL intentionally.
+# Verify that any empty BaseURL belongs to a known CLI-only provider, not an API provider.
+EMPTY_URL_LINES=$(grep -n 'BaseURL:.*""' "$PROVIDER_TYPES" || true)
+UNEXPECTED_EMPTY=0
+while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    lineno=$(echo "$line" | cut -d: -f1)
+    # Look back up to 10 lines for the provider key to determine if it's CLI-only
+    context=$(sed -n "$((lineno-10)),$((lineno))p" "$PROVIDER_TYPES")
+    # Junie is a known CLI-only BYOK provider with no direct BaseURL
+    if ! echo "$context" | grep -qiE '"junie"'; then
+        UNEXPECTED_EMPTY=$((UNEXPECTED_EMPTY + 1))
+    fi
+done <<< "$EMPTY_URL_LINES"
+if [ "$UNEXPECTED_EMPTY" -eq 0 ]; then
+    pass "No unexpected empty BaseURLs in provider_types.go (CLI-only providers exempt)"
 else
-    fail "$EMPTY_URLS provider(s) in provider_types.go have empty BaseURL"
+    fail "$UNEXPECTED_EMPTY unexpected empty BaseURL(s) in provider_types.go"
 fi
 
-# Test 6.2: All BaseURLs start with https://
-NON_HTTPS=$(grep 'BaseURL:' "$PROVIDER_TYPES" | grep -v 'BaseURL:.*"https://' | grep -v '//' | grep -c 'BaseURL:' || true)
+# Test 6.2: All non-empty BaseURLs start with https://
+NON_HTTPS=$(grep 'BaseURL:' "$PROVIDER_TYPES" | grep -v 'BaseURL:.*""' | grep -v 'BaseURL:.*"https://' | grep -v '//' | grep -c 'BaseURL:' || true)
 if [ "$NON_HTTPS" -eq 0 ]; then
-    pass "All BaseURLs in provider_types.go start with https://"
+    pass "All non-empty BaseURLs in provider_types.go start with https://"
 else
-    fail "$NON_HTTPS BaseURL(s) in provider_types.go do not start with https://"
+    fail "$NON_HTTPS non-empty BaseURL(s) in provider_types.go do not start with https://"
 fi
 
 # Test 6.3: provider_types.go Chutes matches provider_discovery.go Chutes domain

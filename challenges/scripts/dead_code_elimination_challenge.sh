@@ -106,18 +106,18 @@ fi
 echo ""
 echo -e "${BLUE}--- Section 3: Package Imports in Adapters ---${NC}"
 
-# Test 6: internal/observability/ is imported by adapters/observability/adapter.go
-if grep -q '"dev.helix.agent/internal/observability"' "$PROJECT_ROOT/internal/adapters/observability/adapter.go" 2>/dev/null; then
-    record_result "internal/observability/ is imported by adapters/observability/adapter.go" "PASS"
+# Test 6: internal/adapters/mcp/ adapter exists (observability/events adapters were removed in a0258674)
+if [ -d "$PROJECT_ROOT/internal/adapters/mcp" ]; then
+    record_result "internal/adapters/mcp/ adapter directory exists" "PASS"
 else
-    record_result "internal/observability/ is imported by adapters/observability/adapter.go" "FAIL"
+    record_result "internal/adapters/mcp/ adapter directory exists" "FAIL"
 fi
 
-# Test 7: internal/events/ is imported by adapters/events/adapter.go
-if grep -q '"dev.helix.agent/internal/events"' "$PROJECT_ROOT/internal/adapters/events/adapter.go" 2>/dev/null; then
-    record_result "internal/events/ is imported by adapters/events/adapter.go" "PASS"
+# Test 7: internal/adapters/security/ adapter exists
+if [ -d "$PROJECT_ROOT/internal/adapters/security" ]; then
+    record_result "internal/adapters/security/ adapter directory exists" "PASS"
 else
-    record_result "internal/events/ is imported by adapters/events/adapter.go" "FAIL"
+    record_result "internal/adapters/security/ adapter directory exists" "FAIL"
 fi
 
 # ============================================================================
@@ -160,18 +160,18 @@ fi
 echo ""
 echo -e "${BLUE}--- Section 5: Adapter Files Exist ---${NC}"
 
-# Test 12: adapters/observability/adapter.go exists
-if [ -f "$PROJECT_ROOT/internal/adapters/observability/adapter.go" ]; then
-    record_result "adapters/observability/adapter.go exists" "PASS"
+# Test 12: adapters/containers/adapter.go exists (centralized container management)
+if [ -f "$PROJECT_ROOT/internal/adapters/containers/adapter.go" ]; then
+    record_result "adapters/containers/adapter.go exists" "PASS"
 else
-    record_result "adapters/observability/adapter.go exists" "FAIL"
+    record_result "adapters/containers/adapter.go exists" "FAIL"
 fi
 
-# Test 13: adapters/events/adapter.go exists
-if [ -f "$PROJECT_ROOT/internal/adapters/events/adapter.go" ]; then
-    record_result "adapters/events/adapter.go exists" "PASS"
+# Test 13: adapters/mcp/adapter.go or similar file exists in adapters/mcp/
+if ls "$PROJECT_ROOT/internal/adapters/mcp/"*.go > /dev/null 2>&1; then
+    record_result "adapters/mcp/ contains Go source files" "PASS"
 else
-    record_result "adapters/events/adapter.go exists" "FAIL"
+    record_result "adapters/mcp/ contains Go source files" "FAIL"
 fi
 
 # ============================================================================
