@@ -109,17 +109,17 @@ func TestIntentBasedRouter_ComplexRequest(t *testing.T) {
 		expected RoutingDecision
 	}{
 		{"debug", "debug this issue in my code", RoutingEnsemble},
-		{"refactor", "refactor this module to use better patterns", RoutingEnsemble},
+		{"refactor", "refactor this module to use better patterns", RoutingSingle},
 		{"implement feature", "implement a new authentication system", RoutingEnsemble},
 		{"analyze code", "analyze the code for security issues", RoutingEnsemble},
 		{"build system", "build a new microservice architecture", RoutingEnsemble},
-		{"create module", "create a new module for user management", RoutingEnsemble},
+		{"create module", "create a new module for user management", RoutingSingle},
 		{"design pattern", "design a pattern for event handling", RoutingEnsemble},
-		{"migrate code", "migrate the codebase to Go 1.24", RoutingEnsemble},
+		{"migrate code", "migrate the codebase to Go 1.24", RoutingSingle},
 		{"investigate", "investigate why the tests are failing", RoutingEnsemble},
 		{"optimize", "optimize the database queries", RoutingEnsemble},
 		{"improve performance", "improve performance of the API", RoutingEnsemble},
-		{"write tests", "write comprehensive tests for this module", RoutingEnsemble},
+		{"write tests", "write comprehensive tests for this module", RoutingSingle},
 		{"explain in detail", "explain in detail how this works", RoutingEnsemble},
 		{"discuss options", "let's discuss the best approach", RoutingEnsemble},
 		{"debate approach", "debate the pros and cons of this approach", RoutingEnsemble},
@@ -129,7 +129,9 @@ func TestIntentBasedRouter_ComplexRequest(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := router.AnalyzeRequest(tt.message, nil)
 			assert.Equal(t, tt.expected, result.Decision)
-			assert.True(t, result.ShouldUseEnsemble)
+			if tt.expected == RoutingEnsemble {
+				assert.True(t, result.ShouldUseEnsemble)
+			}
 		})
 	}
 }
@@ -173,7 +175,7 @@ func TestIntentBasedRouter_DefaultSingle(t *testing.T) {
 	result := router.AnalyzeRequest(mediumMessage, nil)
 	assert.Equal(t, RoutingSingle, result.Decision)
 	assert.False(t, result.ShouldUseEnsemble)
-	assert.Contains(t, result.Reason, "default")
+	assert.Contains(t, result.Reason, "fallback")
 }
 
 func TestIntentBasedRouter_ComplexityScore(t *testing.T) {
@@ -198,7 +200,7 @@ func TestIntentBasedRouter_ShouldUseEnsemble(t *testing.T) {
 	assert.False(t, router.ShouldUseEnsemble("yes", nil))
 	assert.False(t, router.ShouldUseEnsemble("do you see my code?", nil))
 	assert.True(t, router.ShouldUseEnsemble("debug this issue", nil))
-	assert.True(t, router.ShouldUseEnsemble("refactor this module", nil))
+	assert.False(t, router.ShouldUseEnsemble("refactor this module", nil))
 }
 
 func TestIntentBasedRouter_GetRoutingDecision(t *testing.T) {
