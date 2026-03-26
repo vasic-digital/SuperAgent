@@ -1,4 +1,4 @@
-# User Manual 44: Module Integration Guide
+# User Manual 42: Module Integration Guide
 
 ## Overview
 
