@@ -109,3 +109,7 @@ internal/challenges/userflow/results/
 releases/*
 releases/*.*
 
+!releases/.version-data
+!releases/.version-data/*
+!releases/.version-data/*.*
+
