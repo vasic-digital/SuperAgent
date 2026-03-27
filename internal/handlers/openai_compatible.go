@@ -785,6 +785,9 @@ Respond concisely and helpfully.`, clientName, toolList)
 			topic = "User Query"
 		}
 
+		// Generate team introduction so the user sees the ensemble structure upfront
+		teamIntro := h.generateDebateTeamIntroduction()
+
 		debateID := fmt.Sprintf("debate-%d", time.Now().UnixNano())
 		startTime := time.Now()
 
@@ -848,6 +851,14 @@ Respond concisely and helpfully.`, clientName, toolList)
 			})
 			_, _ = fmt.Fprintf(c.Writer, "data: %s\n\n", chunkData)
 			flusher.Flush()
+		}
+
+		// Stream the team introduction first so user sees ensemble structure
+		if teamIntro != "" {
+			for _, line := range strings.Split(teamIntro, "\n") {
+				sendSSEChunk(line + "\n")
+			}
+			sendSSEChunk("\n---\n\n")
 		}
 
 		for i, rc := range debateRoles {
@@ -915,26 +926,71 @@ Respond concisely and helpfully.`, clientName, toolList)
 				// Fallback to non-streaming Complete if streaming fails
 				resp, callErr := vllm.Provider.Complete(ctx, debateReq)
 				if callErr != nil {
-					// Try next verified LLM as fallback
-					for fbIdx := llmIdx + 1; fbIdx < len(verifiedLLMs) && fbIdx < llmIdx+3; fbIdx++ {
+					// Try ALL remaining verified LLMs as fallbacks (not just +3)
+					fallbackUsed := false
+					for fbIdx := 0; fbIdx < len(verifiedLLMs); fbIdx++ {
+						if fbIdx == llmIdx {
+							continue // Skip the one that already failed
+						}
 						fb := verifiedLLMs[fbIdx]
 						if fb.Provider == nil {
 							continue
 						}
-						debateReq.ModelParams.Model = fb.ModelName
-						fbResp, fbErr := fb.Provider.Complete(ctx, debateReq)
+
+						// Create a fresh request for the fallback with its own model
+						fbReq := &models.LLMRequest{
+							Messages:    debateReq.Messages,
+							ModelParams: models.ModelParameters{Model: fb.ModelName, MaxTokens: 2048},
+						}
+
+						// Try streaming first for fallback
+						fbStream, fbStreamErr := fb.Provider.CompleteStream(ctx, fbReq)
+						if fbStreamErr == nil && fbStream != nil {
+							sendSSEChunk(fmt.Sprintf("*(fallback: %s/%s)*\n\n", fb.ProviderName, fb.ModelName))
+							for fbResp := range fbStream {
+								if fbResp == nil || fbResp.Content == "" {
+									continue
+								}
+								if fbResp.FinishReason == "stop" || fbResp.FinishReason == "STOP" {
+									break
+								}
+								sendSSEChunk(fbResp.Content)
+								roleContent.WriteString(fbResp.Content)
+							}
+							if roleContent.Len() > 0 {
+								fallbackUsed = true
+								logrus.WithFields(logrus.Fields{
+									"role":              rc.Name,
+									"failed_provider":   vllm.ProviderName,
+									"fallback_provider": fb.ProviderName,
+									"fallback_model":    fb.ModelName,
+								}).Info("[DEBATE] Fallback provider activated via streaming")
+								break
+							}
+						}
+
+						// Try non-streaming fallback
+						fbResp, fbErr := fb.Provider.Complete(ctx, fbReq)
 						if fbErr == nil && fbResp != nil && fbResp.Content != "" {
+							sendSSEChunk(fmt.Sprintf("*(fallback: %s/%s)*\n\n", fb.ProviderName, fb.ModelName))
 							sendSSEChunk(fbResp.Content)
 							roleContent.WriteString(fbResp.Content)
+							fallbackUsed = true
+							logrus.WithFields(logrus.Fields{
+								"role":              rc.Name,
+								"failed_provider":   vllm.ProviderName,
+								"fallback_provider": fb.ProviderName,
+								"fallback_model":    fb.ModelName,
+							}).Info("[DEBATE] Fallback provider activated via complete")
 							break
 						}
 					}
-					if roleContent.Len() == 0 {
+					if !fallbackUsed {
 						errMsg := callErr.Error()
 						if len(errMsg) > 100 {
 							errMsg = errMsg[:100]
 						}
-						sendSSEChunk(fmt.Sprintf("[%s failed: %s]", rc.Name, errMsg))
+						sendSSEChunk(fmt.Sprintf("*[%s failed: %s — all fallbacks exhausted]*\n", rc.Name, errMsg))
 					}
 				} else if resp != nil {
 					sendSSEChunk(resp.Content)
@@ -3045,6 +3101,33 @@ func (h *UnifiedHandler) generateDebateDialogueIntroduction(topic string, format
 	return FormatDebateTeamIntroductionForFormat(format, topic, members)
 }
 
+// generateDebateTeamIntroduction creates a concise team overview for the 8-role debate
+// showing each role's assigned LLM (round-robin from verified providers).
+func (h *UnifiedHandler) generateDebateTeamIntroduction() string {
+	if h.debateTeamConfig == nil {
+		return ""
+	}
+	verifiedLLMs := h.debateTeamConfig.GetVerifiedLLMs()
+	if len(verifiedLLMs) == 0 {
+		return ""
+	}
+
+	var sb strings.Builder
+	sb.WriteString("## AI Debate Ensemble\n\n")
+	sb.WriteString("| # | Role | Provider | Model |\n")
+	sb.WriteString("|---|------|----------|-------|\n")
+
+	roles := []string{"Architect", "Generator", "Critic", "Tester", "Security", "Performance", "Validator", "Moderator"}
+	for i, role := range roles {
+		llmIdx := i % len(verifiedLLMs)
+		vllm := verifiedLLMs[llmIdx]
+		sb.WriteString(fmt.Sprintf("| %d | **%s** | %s | %s |\n",
+			i+1, role, vllm.ProviderName, vllm.ModelName))
+	}
+	sb.WriteString(fmt.Sprintf("\n> %d verified LLMs available for fallback\n\n", len(verifiedLLMs)))
+	return sb.String()
+}
+
 // generateComprehensiveDebateIntroduction creates introduction for comprehensive debate system
 // Shows 11 roles across 5 teams dynamically with models and fallbacks
 func (h *UnifiedHandler) generateComprehensiveDebateIntroduction(topic string, format OutputFormat) string {
@@ -3704,10 +3787,27 @@ func (h *UnifiedHandler) generateRealDebateResponse(ctx context.Context, positio
 	// Create the base user prompt
 	userPrompt := fmt.Sprintf("Topic: %s%s\n\nProvide your analysis in 2-3 sentences, focused on your role.", topic, contextStr)
 
-	// Try the primary member and all fallbacks in the chain
-	currentMember := member
+	// Build the fallback chain: primary member followed by all fallbacks
+	memberChain := make([]*services.DebateTeamMember, 0, 5)
+	memberChain = append(memberChain, member)
+	// Use Fallbacks array (preferred) over deprecated singular Fallback
+	if len(member.Fallbacks) > 0 {
+		for _, fb := range member.Fallbacks {
+			if fb != nil && fb.IsActive {
+				memberChain = append(memberChain, fb)
+			}
+		}
+	} else if member.Fallback != nil {
+		// Legacy support: walk the deprecated singular Fallback chain
+		fb := member.Fallback
+		for fb != nil {
+			memberChain = append(memberChain, fb)
+			fb = fb.Fallback
+		}
+	}
+
 	attemptNum := 0
-	maxAttempts := 5 // Primary + up to 4 fallbacks
+	maxAttempts := len(memberChain)
 	var lastErr error
 
 	// Track fallback chain for visualization
@@ -3715,7 +3815,8 @@ func (h *UnifiedHandler) generateRealDebateResponse(ctx context.Context, positio
 	primaryProvider := member.ProviderName
 	primaryModel := member.ModelName
 
-	for currentMember != nil && attemptNum < maxAttempts {
+	for attemptNum < maxAttempts {
+		currentMember := memberChain[attemptNum]
 		attemptNum++
 		attemptStart := time.Now()
 
@@ -3738,7 +3839,7 @@ func (h *UnifiedHandler) generateRealDebateResponse(ctx context.Context, positio
 				"is_oauth": currentMember.IsOAuth,
 			}).WithError(providerErr).Warn("Failed to get provider, trying fallback")
 			lastErr = providerErr
-			currentMember = currentMember.Fallback
+			attemptNum++
 			continue
 		}
 
@@ -3800,7 +3901,7 @@ func (h *UnifiedHandler) generateRealDebateResponse(ctx context.Context, positio
 				"duration": attemptDuration,
 			}).WithError(err).Warn("LLM call failed, trying fallback")
 			lastErr = err
-			currentMember = currentMember.Fallback
+			attemptNum++
 			continue
 		}
 
