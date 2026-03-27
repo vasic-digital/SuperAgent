@@ -353,6 +353,13 @@ func TestProviderTypes_BaseURLsAreValid(t *testing.T) {
 			}
 			url := trimmed[firstQuote+1 : lastQuote]
 
+			// Empty BaseURL is valid for CLI-based providers (e.g., Junie)
+			// that use CLI proxy mode instead of direct HTTP API access.
+			if url == "" {
+				t.Skipf("Empty BaseURL (CLI-based provider): %s", trimmed)
+				return
+			}
+
 			// Must start with https:// or http:// (for localhost/ollama)
 			isHTTPS := strings.HasPrefix(url, "https://")
 			isHTTP := strings.HasPrefix(url, "http://")

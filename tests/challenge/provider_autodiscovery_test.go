@@ -20,6 +20,10 @@ import (
 //
 // Run with: go test -v ./tests/challenge -run TestProviderAutoDiscovery -timeout 300s
 func TestProviderAutoDiscovery(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping provider auto-discovery in short mode (creates live provider registries)")
+	}
+
 	t.Run("DiscoveryFromEnvironment", testDiscoveryFromEnvironment)
 	t.Run("ProviderScoring", testProviderScoring)
 	t.Run("BestProviderSelection", testBestProviderSelection)
@@ -238,6 +242,10 @@ func testBackwardCompatibility(t *testing.T) {
 //
 // Run with: go test -v ./tests/challenge -run TestProviderAutoDiscoveryAPI -timeout 300s
 func TestProviderAutoDiscoveryAPI(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping auto-discovery API test in short mode (requires live server)")
+	}
+
 	baseURL := getBaseURL()
 
 	// Skip if server is not running
@@ -399,6 +407,10 @@ func testReDiscoverProviders(t *testing.T, baseURL string) {
 //
 // Run with: go test -v ./tests/challenge -run TestProviderAutoDiscoveryIntegration -timeout 300s
 func TestProviderAutoDiscoveryIntegration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping auto-discovery integration test in short mode (requires live server and providers)")
+	}
+
 	baseURL := getBaseURL()
 
 	// Skip if server is not running
@@ -487,6 +499,10 @@ func TestProviderAutoDiscoveryIntegration(t *testing.T) {
 
 // TestProviderDiscoveryMapping tests the provider mapping system
 func TestProviderDiscoveryMapping(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping provider discovery mapping in short mode (creates live provider discoveries)")
+	}
+
 	// Test that known API key environment variables are properly mapped
 	knownMappings := []struct {
 		envVar           string

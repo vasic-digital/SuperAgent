@@ -22,6 +22,10 @@ import (
 //
 // Run with: go test -v ./tests/challenge -run TestDebateGroupVerification
 func TestDebateGroupVerification(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping debate group verification in short mode (requires live LLM providers)")
+	}
+
 	baseURL := getBaseURL()
 
 	// Skip if server is not running
@@ -425,6 +429,10 @@ func testProviderContribution(t *testing.T, baseURL string) {
 
 // TestProviderHealthEndpoints tests provider-specific health endpoints
 func TestProviderHealthEndpoints(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping provider health endpoints in short mode (requires live server)")
+	}
+
 	baseURL := getBaseURL()
 
 	if !serverHealthy(baseURL) {

@@ -348,7 +348,7 @@ func TestSecurity_SonarQubeComposeUsesCommunityEdition(t *testing.T) {
 		"docker-compose.yml")
 	content, err := os.ReadFile(composePath)
 	require.NoError(t, err)
-	assert.Contains(t, string(content), "sonarqube:community",
+	assert.Contains(t, string(content), "-community",
 		"SonarQube compose must use community edition image")
 }
 

@@ -16,6 +16,9 @@ import (
 // skipIfNoServerMemory skips the test if the HelixAgent server is unreachable.
 func skipIfNoServerMemory(t *testing.T) {
 	t.Helper()
+	if testing.Short() {
+		t.Skip("Skipping memory E2E test in short mode (requires live server)")
+	}
 	conn, err := net.DialTimeout("tcp", "localhost:7061", 2*time.Second)
 	if err != nil {
 		t.Skip("HelixAgent server not running on :7061")

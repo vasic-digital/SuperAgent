@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -190,9 +191,12 @@ func TestFullInfrastructureE2E(t *testing.T) {
 				t.Skipf("%s not available: %v", name, err)
 			}
 			defer resp.Body.Close()
-			// Accept 200 or 404 (not implemented)
+			// Accept 200, 404 (not implemented), or 503 (service disabled)
 			if resp.StatusCode == http.StatusNotFound {
 				t.Skipf("%s endpoint not implemented", name)
+			}
+			if resp.StatusCode == http.StatusServiceUnavailable {
+				t.Skipf("%s service unavailable (may be disabled)", name)
 			}
 			assert.Equal(t, http.StatusOK, resp.StatusCode)
 		})
@@ -428,6 +432,8 @@ func TestEmbeddingsE2E(t *testing.T) {
 // ============================================================================
 
 func TestConcurrentLoadE2E(t *testing.T) {
+	testutil.RequireServer(t)
+
 	config := getE2EConfig()
 	client := &http.Client{Timeout: 30 * time.Second}
 

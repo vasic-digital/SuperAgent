@@ -16,6 +16,9 @@ import (
 // skipIfNoServer skips the test if HelixAgent server is not running
 func skipIfNoServer(t *testing.T) {
 	t.Helper()
+	if testing.Short() {
+		t.Skip("Skipping E2E debate test in short mode (requires live LLM providers)")
+	}
 	testutil.RequireServer(t)
 }
 

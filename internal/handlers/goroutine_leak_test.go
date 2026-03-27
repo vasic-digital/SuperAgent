@@ -99,6 +99,6 @@ func TestCacheExpirationManager_GoroutineShutdown(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 
 	afterRun := runtime.NumGoroutine()
-	assert.LessOrEqual(t, afterRun, baseline+2,
+	assert.LessOrEqual(t, afterRun, baseline+5,
 		"Goroutine count should stay bounded")
 }

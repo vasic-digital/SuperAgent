@@ -28,6 +28,10 @@ import (
 //
 // Run with: go test -v ./tests/challenge -run TestAIDebateMaximalChallenge -timeout 5m
 func TestAIDebateMaximalChallenge(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping AI debate maximal challenge in short mode (requires live LLM providers, takes 5+ minutes)")
+	}
+
 	baseURL := getBaseURL()
 
 	if !serverHealthy(baseURL) {
@@ -417,7 +421,7 @@ func runStreamingDebateChallenge(t *testing.T, baseURL string, tracker *Challeng
 			},
 		}
 
-		client := &http.Client{Timeout: 60 * time.Second}
+		client := &http.Client{Timeout: 180 * time.Second}
 		body, _ := json.Marshal(reqBody)
 
 		req, _ := http.NewRequest("POST", baseURL+"/v1/chat/completions", bytes.NewReader(body))
@@ -623,7 +627,7 @@ func runDebateWithMultiPass(baseURL, prompt string) DebateResultExtended {
 	result := DebateResultExtended{}
 	start := time.Now()
 
-	client := &http.Client{Timeout: 90 * time.Second}
+	client := &http.Client{Timeout: 180 * time.Second}
 
 	reqBody := map[string]interface{}{
 		"model": "helixagent-debate",
@@ -788,7 +792,7 @@ func TestAIDebateStressChallenge(t *testing.T) {
 	const (
 		numRequests    = 20
 		maxConcurrent  = 5
-		timeoutSeconds = 120
+		timeoutSeconds = 300
 	)
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeoutSeconds*time.Second)

@@ -18,6 +18,9 @@ import (
 // skipIfNoServerFailover skips the test if HelixAgent server is not reachable.
 func skipIfNoServerFailover(t *testing.T) {
 	t.Helper()
+	if testing.Short() {
+		t.Skip("Skipping failover test in short mode (requires live server with LLM providers)")
+	}
 	conn, err := net.DialTimeout("tcp", "localhost:7061", 2*time.Second)
 	if err != nil {
 		t.Skip("HelixAgent server not running on :7061")

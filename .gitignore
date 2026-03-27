@@ -113,3 +113,6 @@ releases/*.*
 !releases/.version-data/*
 !releases/.version-data/*.*
 
+
+# QA Results (ephemeral test output)
+qa-results/

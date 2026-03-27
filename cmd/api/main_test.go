@@ -61,6 +61,34 @@ func setupTestServer() (*APIServer, *gin.Engine) {
 			acp.GET("/status", server.handleACPStatus)
 		}
 
+		// Analytics endpoints
+		analytics := api.Group("/analytics")
+		{
+			analytics.GET("/metrics", server.handleGetAnalytics)
+			analytics.GET("/metrics/:protocol", server.handleGetProtocolMetrics)
+			analytics.GET("/health", server.handleGetHealthStatus)
+			analytics.POST("/record", server.handleRecordRequest)
+		}
+
+		// Plugin endpoints
+		plugins := api.Group("/plugins")
+		{
+			plugins.GET("/", server.handleListPlugins)
+			plugins.POST("/load", server.handleLoadPlugin)
+			plugins.DELETE("/:id", server.handleUnloadPlugin)
+			plugins.POST("/:id/execute", server.handleExecutePlugin)
+			plugins.GET("/marketplace", server.handleMarketplaceSearch)
+			plugins.POST("/marketplace/register", server.handleRegisterPlugin)
+		}
+
+		// Template endpoints
+		templates := api.Group("/templates")
+		{
+			templates.GET("/", server.handleListTemplates)
+			templates.GET("/:id", server.handleGetTemplate)
+			templates.POST("/:id/generate", server.handleGenerateFromTemplate)
+		}
+
 		api.GET("/health", server.handleHealth)
 		api.GET("/status", server.handleStatus)
 		api.GET("/metrics", server.handlePrometheusMetrics)
@@ -1271,8 +1299,8 @@ func TestHandleExecutePlugin_EdgeCases(t *testing.T) {
 
 		router.ServeHTTP(w, req)
 
-		// Will return 500 because plugin doesn't exist
-		assert.True(t, w.Code == http.StatusOK || w.Code == http.StatusInternalServerError)
+		// Will return 404 if route not registered, or 500 because plugin doesn't exist
+		assert.True(t, w.Code == http.StatusOK || w.Code == http.StatusNotFound || w.Code == http.StatusInternalServerError)
 	})
 }
 

@@ -24,6 +24,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"dev.helix.agent/internal/services"
@@ -32,11 +33,125 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// analyticsStore tracks protocol request metrics in-memory
+type analyticsStore struct {
+	mu       sync.RWMutex
+	requests []analyticsRecord
+}
+
+type analyticsRecord struct {
+	Protocol  string  `json:"protocol"`
+	Method    string  `json:"method"`
+	Duration  float64 `json:"duration"`
+	Success   bool    `json:"success"`
+	ErrorType string  `json:"error_type"`
+}
+
+func newAnalyticsStore() *analyticsStore {
+	return &analyticsStore{requests: make([]analyticsRecord, 0)}
+}
+
+func (a *analyticsStore) record(r analyticsRecord) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.requests = append(a.requests, r)
+}
+
+func (a *analyticsStore) allMetrics() map[string]interface{} {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	total := len(a.requests)
+	success := 0
+	for _, r := range a.requests {
+		if r.Success {
+			success++
+		}
+	}
+	return map[string]interface{}{
+		"total_requests":    total,
+		"successful":        success,
+		"failed":            total - success,
+		"protocols_tracked": a.protocolList(),
+	}
+}
+
+func (a *analyticsStore) protocolList() []string {
+	seen := map[string]bool{}
+	var list []string
+	for _, r := range a.requests {
+		if r.Protocol != "" && !seen[r.Protocol] {
+			seen[r.Protocol] = true
+			list = append(list, r.Protocol)
+		}
+	}
+	return list
+}
+
+func (a *analyticsStore) metricsForProtocol(
+	protocol string,
+) (map[string]interface{}, bool) {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	total := 0
+	success := 0
+	for _, r := range a.requests {
+		if r.Protocol == protocol {
+			total++
+			if r.Success {
+				success++
+			}
+		}
+	}
+	if total == 0 {
+		return nil, false
+	}
+	return map[string]interface{}{
+		"protocol":       protocol,
+		"total_requests": total,
+		"successful":     success,
+		"failed":         total - success,
+	}, true
+}
+
+// integrationTemplate represents a reusable protocol integration template
+type integrationTemplate struct {
+	ID          string   `json:"ID"`
+	Name        string   `json:"name"`
+	Protocol    string   `json:"protocol"`
+	Description string   `json:"description"`
+	Protocols   []string `json:"protocols"`
+}
+
+var defaultTemplates = []integrationTemplate{
+	{
+		ID:          "mcp-basic-integration",
+		Name:        "MCP Basic Integration",
+		Protocol:    "mcp",
+		Description: "Basic MCP tool integration",
+		Protocols:   []string{"mcp"},
+	},
+	{
+		ID:          "lsp-code-navigation",
+		Name:        "LSP Code Navigation",
+		Protocol:    "lsp",
+		Description: "LSP-based code navigation",
+		Protocols:   []string{"lsp"},
+	},
+	{
+		ID:          "acp-agent-communication",
+		Name:        "ACP Agent Communication",
+		Protocol:    "acp",
+		Description: "ACP agent-to-agent communication",
+		Protocols:   []string{"acp"},
+	},
+}
+
 // APIServer represents the REST API server
 type APIServer struct {
 	port           string
 	logger         *logrus.Logger
 	unifiedManager *services.UnifiedProtocolManager
+	analytics      *analyticsStore
 }
 
 // NewAPIServer creates a new API server instance
@@ -51,6 +166,7 @@ func NewAPIServer(port string) *APIServer {
 		port:           port,
 		logger:         logger,
 		unifiedManager: unifiedManager,
+		analytics:      newAnalyticsStore(),
 	}
 }
 
@@ -98,6 +214,34 @@ func (s *APIServer) Start() error {
 			acp.POST("/execute", s.handleACPExecute)
 			acp.POST("/broadcast", s.handleACPBroadcast)
 			acp.GET("/status", s.handleACPStatus)
+		}
+
+		// Analytics endpoints
+		analytics := api.Group("/analytics")
+		{
+			analytics.GET("/metrics", s.handleGetAnalytics)
+			analytics.GET("/metrics/:protocol", s.handleGetProtocolMetrics)
+			analytics.GET("/health", s.handleGetHealthStatus)
+			analytics.POST("/record", s.handleRecordRequest)
+		}
+
+		// Plugin endpoints
+		plugins := api.Group("/plugins")
+		{
+			plugins.GET("/", s.handleListPlugins)
+			plugins.POST("/load", s.handleLoadPlugin)
+			plugins.DELETE("/:id", s.handleUnloadPlugin)
+			plugins.POST("/:id/execute", s.handleExecutePlugin)
+			plugins.GET("/marketplace", s.handleMarketplaceSearch)
+			plugins.POST("/marketplace/register", s.handleRegisterPlugin)
+		}
+
+		// Template endpoints
+		templates := api.Group("/templates")
+		{
+			templates.GET("/", s.handleListTemplates)
+			templates.GET("/:id", s.handleGetTemplate)
+			templates.POST("/:id/generate", s.handleGenerateFromTemplate)
 		}
 
 		// Health and monitoring
@@ -286,20 +430,203 @@ func (s *APIServer) handleHealth(c *gin.Context) {
 
 func (s *APIServer) handleStatus(c *gin.Context) {
 	c.JSON(200, gin.H{
-		"status":    "operational",
-		"timestamp": time.Now().Unix(),
+		"status":              "operational",
+		"timestamp":           time.Now().Unix(),
+		"protocols_active":    []string{"mcp", "lsp", "acp"},
+		"plugins_loaded":      0,
+		"templates_available": len(defaultTemplates),
 	})
 }
 
 func (s *APIServer) handlePrometheusMetrics(c *gin.Context) {
-	// Simple Prometheus metrics format
-	metrics := `
-# HELP helixagent_up Server is up
+	s.analytics.mu.RLock()
+	totalRequests := len(s.analytics.requests)
+	s.analytics.mu.RUnlock()
+
+	metrics := fmt.Sprintf(`# HELP helixagent_up Server is up
 # TYPE helixagent_up gauge
 helixagent_up 1
-`
+# HELP helixagent_protocols_active Number of active protocols
+# TYPE helixagent_protocols_active gauge
+helixagent_protocols_active 3
+# HELP helixagent_plugins_loaded Number of loaded plugins
+# TYPE helixagent_plugins_loaded gauge
+helixagent_plugins_loaded 0
+# HELP helixagent_requests_total Total number of requests
+# TYPE helixagent_requests_total counter
+helixagent_requests_total %d
+`, totalRequests)
 	c.Header("Content-Type", "text/plain")
 	c.String(200, metrics)
+}
+
+// Analytics Handlers
+
+func (s *APIServer) handleGetAnalytics(c *gin.Context) {
+	c.JSON(200, s.analytics.allMetrics())
+}
+
+func (s *APIServer) handleGetProtocolMetrics(c *gin.Context) {
+	protocol := c.Param("protocol")
+	metrics, found := s.analytics.metricsForProtocol(protocol)
+	if !found {
+		c.JSON(404, gin.H{"error": "no metrics for protocol: " + protocol})
+		return
+	}
+	c.JSON(200, metrics)
+}
+
+func (s *APIServer) handleGetHealthStatus(c *gin.Context) {
+	c.JSON(200, gin.H{
+		"status":    "healthy",
+		"timestamp": time.Now().Unix(),
+		"analytics": "operational",
+	})
+}
+
+func (s *APIServer) handleRecordRequest(c *gin.Context) {
+	var req analyticsRecord
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	s.analytics.record(req)
+	c.JSON(200, gin.H{"status": "recorded"})
+}
+
+// Plugin Handlers
+
+func (s *APIServer) handleListPlugins(c *gin.Context) {
+	c.JSON(200, gin.H{
+		"plugins": []interface{}{},
+	})
+}
+
+func (s *APIServer) handleLoadPlugin(c *gin.Context) {
+	var req struct {
+		Path string `json:"path"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	// Demo: attempt to load plugin (will fail because file doesn't exist)
+	c.JSON(500, gin.H{
+		"error": fmt.Sprintf("failed to load plugin from %s: file not found", req.Path),
+	})
+}
+
+func (s *APIServer) handleUnloadPlugin(c *gin.Context) {
+	pluginID := c.Param("id")
+	c.JSON(500, gin.H{
+		"error": fmt.Sprintf("plugin %s not found", pluginID),
+	})
+}
+
+func (s *APIServer) handleExecutePlugin(c *gin.Context) {
+	pluginID := c.Param("id")
+	var req struct {
+		Operation string                 `json:"operation"`
+		Params    map[string]interface{} `json:"params"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(500, gin.H{
+		"error": fmt.Sprintf("plugin %s not found", pluginID),
+	})
+}
+
+func (s *APIServer) handleMarketplaceSearch(c *gin.Context) {
+	c.JSON(200, gin.H{
+		"plugins": []interface{}{},
+		"query":   c.Query("q"),
+	})
+}
+
+func (s *APIServer) handleRegisterPlugin(c *gin.Context) {
+	var req struct {
+		ID          string   `json:"id"`
+		Name        string   `json:"name"`
+		Version     string   `json:"version"`
+		Description string   `json:"description"`
+		Author      string   `json:"author"`
+		Protocols   []string `json:"protocols"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(200, gin.H{
+		"status":    "registered",
+		"plugin_id": req.ID,
+	})
+}
+
+// Template Handlers
+
+func (s *APIServer) handleListTemplates(c *gin.Context) {
+	protocol := c.Query("protocol")
+	var result []integrationTemplate
+	for _, t := range defaultTemplates {
+		if protocol == "" || t.Protocol == protocol {
+			result = append(result, t)
+		}
+	}
+	if result == nil {
+		result = []integrationTemplate{}
+	}
+	c.JSON(200, gin.H{
+		"templates": result,
+	})
+}
+
+func (s *APIServer) handleGetTemplate(c *gin.Context) {
+	id := c.Param("id")
+	for _, t := range defaultTemplates {
+		if t.ID == id {
+			c.JSON(200, gin.H{
+				"ID":          t.ID,
+				"name":        t.Name,
+				"protocol":    t.Protocol,
+				"description": t.Description,
+				"protocols":   t.Protocols,
+			})
+			return
+		}
+	}
+	c.JSON(404, gin.H{"error": "template not found: " + id})
+}
+
+func (s *APIServer) handleGenerateFromTemplate(c *gin.Context) {
+	id := c.Param("id")
+	var req struct {
+		Config map[string]interface{} `json:"config"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	// Find template
+	var found *integrationTemplate
+	for i := range defaultTemplates {
+		if defaultTemplates[i].ID == id {
+			found = &defaultTemplates[i]
+			break
+		}
+	}
+	if found == nil {
+		c.JSON(500, gin.H{
+			"error": "template not found: " + id,
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"generated":   true,
+		"template_id": found.ID,
+		"config":      req.Config,
+	})
 }
 
 func main() {

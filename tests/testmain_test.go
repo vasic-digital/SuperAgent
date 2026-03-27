@@ -224,7 +224,7 @@ func verifyLocalContainers(projectRoot string) error {
 	}{
 		{"PostgreSQL", 15432, "", "Primary database"},
 		{"Redis", 16379, "", "Cache and session store"},
-		{"ChromaDB", 8001, "http://localhost:8001/api/v2/heartbeat", "Vector store"},
+		{"ChromaDB", 8000, "http://localhost:8000/api/v1/heartbeat", "Vector store"},
 		{"HelixAgent", 7061, "http://localhost:7061/health", "Main service"},
 	}
 
@@ -323,7 +323,7 @@ func waitForServices() {
 	}{
 		{"PostgreSQL", checkPostgres, 60 * time.Second},
 		{"Redis", checkRedis, 30 * time.Second},
-		{"ChromaDB", func() bool { return checkHTTP("http://localhost:8001/api/v2/heartbeat") }, 60 * time.Second},
+		{"ChromaDB", func() bool { return checkHTTP("http://localhost:8000/api/v1/heartbeat") }, 60 * time.Second},
 		{"Cognee", func() bool { return checkHTTP("http://localhost:8000/") }, 90 * time.Second},
 		{"HelixAgent", func() bool { return checkHTTP("http://localhost:7061/health") }, 30 * time.Second},
 	}

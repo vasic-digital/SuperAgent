@@ -161,8 +161,13 @@ func RequireMockLLM(t *testing.T) {
 }
 
 // RequireServer skips the test if the HelixAgent server is not available.
+// Also skips in short mode since server-dependent tests make live API calls
+// that may take minutes to complete.
 func RequireServer(t *testing.T) {
 	t.Helper()
+	if testing.Short() {
+		t.Skip("Skipping server-dependent test in short mode (requires live HelixAgent server with LLM providers)")
+	}
 	if !ServerAvailable() {
 		t.Skip("HelixAgent server not available — start with: make run")
 	}

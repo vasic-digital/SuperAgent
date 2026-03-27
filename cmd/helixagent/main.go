@@ -1238,10 +1238,12 @@ type AppConfig struct {
 	ChallengeParallel       bool          // Parallel execution
 	ChallengeVerbose        bool          // Verbose output
 	ChallengeStallThreshold time.Duration // Stall threshold for stuck detection
+	SkipVerification        bool          // Skip startup provider verification (for tests)
 	ServerHost              string
 	ServerPort              string
 	Logger                  *logrus.Logger
 	ShutdownSignal          chan os.Signal
+	ReadyNotify             chan struct{} // Closed when server is ready to accept shutdown (for tests)
 }
 
 // DefaultAppConfig returns the default application configuration
@@ -1344,6 +1346,10 @@ func run(appCfg *AppConfig) error {
 	if appCfg.ServerPort != "" && appCfg.ServerPort != "7061" {
 		cfg.Server.Port = appCfg.ServerPort
 	}
+	// Skip auto-discovery when verification is skipped (test mode)
+	if appCfg.SkipVerification {
+		cfg.LLM.DisableAutoDiscovery = true
+	}
 
 	logger := appCfg.Logger
 	if logger == nil {
@@ -1431,7 +1437,13 @@ func run(appCfg *AppConfig) error {
 
 	// Run unified startup verification (LLMsVerifier as single source of truth)
 	// This verifies ALL providers (OAuth, API Key, Free) and selects the AI Debate Team
-	startupResult, startupVerifier := runStartupVerification(logger)
+	var startupResult *verifier.StartupResult
+	var startupVerifier *verifier.StartupVerifier
+	if appCfg.SkipVerification {
+		logger.Info("Startup verification skipped (SkipVerification=true)")
+	} else {
+		startupResult, startupVerifier = runStartupVerification(logger)
+	}
 	if startupResult != nil {
 		logger.WithFields(logrus.Fields{
 			"total_providers": startupResult.TotalProviders,
@@ -1700,6 +1712,11 @@ func run(appCfg *AppConfig) error {
 	if quit == nil {
 		quit = make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	}
+
+	// Notify test harness that server is ready for shutdown
+	if appCfg.ReadyNotify != nil {
+		close(appCfg.ReadyNotify)
 	}
 
 	// Wait for shutdown signal or server error

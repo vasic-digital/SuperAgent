@@ -25,6 +25,10 @@ import (
 // Run with: go test -v ./tests/security -run TestLLMPenetration -timeout 15m
 // To skip in automated testing: set SKIP_LLM_PENETRATION_TESTS=1
 func TestLLMPenetration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping LLM penetration test in short mode (requires live LLM providers)")
+	}
+
 	testutil.RequireServer(t)
 
 	// Allow skipping in CI environments where real LLM API calls may timeout
@@ -536,6 +540,10 @@ func sendCompletionRequest(client *http.Client, baseURL, prompt string) string {
 
 // TestAPISecurityPenetration tests API-level security vulnerabilities
 func TestAPISecurityPenetration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping API security penetration test in short mode (requires live server)")
+	}
+
 	testutil.RequireServer(t)
 
 	config := SecurityTestConfig{
