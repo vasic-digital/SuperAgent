@@ -1205,6 +1205,11 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 		handlers.RegisterBenchmarkRoutes(protected, benchmarkHandler)
 		logger.Info("Benchmark endpoints registered at /v1/benchmark/* (services pending)")
 
+		// QA endpoints — HelixQA autonomous QA pipeline; adapter wired lazily
+		qaHandler := handlers.NewQAHandler(nil)
+		handlers.RegisterQARoutes(protected, qaHandler)
+		logger.Info("QA endpoints registered at /v1/qa/* (services pending)")
+
 		// GraphQL endpoint (feature-flagged, disabled by default for backward compatibility)
 		if os.Getenv("GRAPHQL_ENABLED") == "true" {
 			if err := helixgraphql.InitSchema(); err != nil {

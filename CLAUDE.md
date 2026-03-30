@@ -184,7 +184,7 @@ make monitoring-reset-circuits / force-health-check
 - `verifier/` — Startup verification orchestrator and adapters
 - `challenges/` — HelixAgent-specific challenge implementations (plugin, infra bridge, shell adapter, 22 Go-native userflow challenges with dependency graph)
 - `adapters/` — Bridge layer connecting internal types to extracted modules (20+ adapter files with 75+ tests)
-- `adapters/observability/` — OpenTelemetry integration adapter | `adapters/events/` — EventBus integration adapter | `adapters/http/` — HTTP/3 client pool adapter
+- `adapters/observability/` — OpenTelemetry integration adapter | `adapters/events/` — EventBus integration adapter | `adapters/http/` — HTTP/3 client pool adapter | `adapters/helixqa/` — HelixQA autonomous QA pipeline adapter
 
 ### Extracted Modules (submodules)
 
@@ -243,9 +243,9 @@ Each module is an independent Go module with its own go.mod, tests, CLAUDE.md, A
 - **Containers** (`Containers/`, `digital.vasic.containers`) — Generic container orchestration: runtime abstraction (Docker/Podman/K8s), health checking, compose orchestration, lifecycle management. 12 packages.
 - **Challenges** (`Challenges/`, `digital.vasic.challenges`) — Generic challenge framework: assertion engine (19 evaluators), registry, runner, reporting, monitoring, metrics, plugin system v2.0.0, userflow testing (21 adapters across 8 interfaces: browser/mobile/desktop/API/gRPC/WebSocket/build), Panoptic vision/recorder/testgen/error-analyzer adapters, AI test generation challenges. 16 packages.
 - **DocProcessor** (`DocProcessor/`, `digital.vasic.docprocessor`) — Documentation processing, feature map extraction, and coverage tracking: parser, feature map indexing, coverage reports, diff detection. 6 packages.
-- **HelixQA** (`HelixQA/`, `digital.vasic.helixqa`) — QA orchestration framework: crash detection, evidence collection, ticket generation, quality monitoring, crash replay, baseline management, policy enforcement. 11 packages.
+- **HelixQA** (`HelixQA/`, `digital.vasic.helixqa`) — QA orchestration framework: autonomous LLM-driven testing, crash detection, evidence collection, ticket generation, quality monitoring, multi-device parallel QA, credential discovery, Playwright web testing, vision analysis. 22 packages.
 - **LLMOrchestrator** (`LLMOrchestrator/`, `digital.vasic.llmorchestrator`) — CLI agent management with hybrid pipe+file protocol: lifecycle management, circuit breakers, agent registry, request routing. 6 packages.
-- **VisionEngine** (`VisionEngine/`, `digital.vasic.visionengine`) — Computer vision and UI analysis: NavigationGraph, LLM vision providers (GPT-4V, Gemini Vision, Claude), UI element detection. 5 packages.
+- **VisionEngine** (`VisionEngine/`, `digital.vasic.visionengine`) — Computer vision and UI analysis: NavigationGraph, LLM vision providers (GPT-4V, Gemini Vision, Claude), UI element detection, remote vision pool (Ollama/llama.cpp multi-instance). 6 packages.
 - **LLMsVerifier** (`LLMsVerifier/`, `digital.vasic.llmsverifier`) — Provider accuracy verification, 5-component scoring pipeline, 3-tier subscription detection, unified CLI agent config generator (48 agents). 10+ packages.
 - **MCP-Servers** (`MCP-Servers/`, collection) — 60+ containerized MCP server implementations: filesystem, memory, sequential-thinking, database, vision, embeddings, RAG, formatters, monitoring.
 
@@ -451,6 +451,7 @@ CI_RESOURCE_LIMIT=medium make ci-all  # Medium resource limits (default: low)
 ./challenges/scripts/dead_code_elimination_challenge.sh        # 15 tests
 ./challenges/scripts/concurrency_safety_comprehensive_challenge.sh  # 20 tests
 ./challenges/scripts/new_endpoints_challenge.sh                # 12 tests
+./challenges/scripts/helixqa_integration_challenge.sh          # 50 tests
 # Go-native userflow challenges (22): run with --run-challenges=userflow
 ```
 
@@ -463,7 +464,7 @@ make verifier-verify MODEL=gpt-4 PROVIDER=openai
 
 ## Protocol Endpoints
 
-MCP `/v1/mcp` | ACP `/v1/acp` | LSP `/v1/lsp` | Embeddings `/v1/embeddings` | Vision `/v1/vision` | Cognee `/v1/cognee` (optional) | Startup `/v1/startup/verification` | BigData `/v1/bigdata/health` | Tasks `/v1/tasks` | Discovery `/v1/discovery` | Scoring `/v1/scoring` | Verification `/v1/verification` | Health `/v1/health` | Agentic `/v1/agentic/workflows` | Planning `/v1/planning/{hiplan,mcts,tot}` | LLMOps `/v1/llmops/{experiments,evaluate,prompts}` | Benchmark `/v1/benchmark/{run,results}` | GraphQL `/v1/graphql` (feature-flagged, `GRAPHQL_ENABLED=true`)
+MCP `/v1/mcp` | ACP `/v1/acp` | LSP `/v1/lsp` | Embeddings `/v1/embeddings` | Vision `/v1/vision` | Cognee `/v1/cognee` (optional) | Startup `/v1/startup/verification` | BigData `/v1/bigdata/health` | Tasks `/v1/tasks` | Discovery `/v1/discovery` | Scoring `/v1/scoring` | Verification `/v1/verification` | Health `/v1/health` | Agentic `/v1/agentic/workflows` | Planning `/v1/planning/{hiplan,mcts,tot}` | LLMOps `/v1/llmops/{experiments,evaluate,prompts}` | Benchmark `/v1/benchmark/{run,results}` | QA `/v1/qa/{sessions,findings,platforms,discover}` | GraphQL `/v1/graphql` (feature-flagged, `GRAPHQL_ENABLED=true`)
 
 Fallback: routes to strongest LLM by score, falls back on failure.
 

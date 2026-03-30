@@ -19,6 +19,7 @@ require (
 	digital.vasic.eventbus v0.0.0-00010101000000-000000000000
 	digital.vasic.formatters v0.0.0-00010101000000-000000000000
 	digital.vasic.helixmemory v0.0.0-00010101000000-000000000000
+	digital.vasic.helixqa v0.0.0-00010101000000-000000000000
 	digital.vasic.helixspecifier v0.0.0-00010101000000-000000000000
 	digital.vasic.llmops v0.0.0-00010101000000-000000000000
 	digital.vasic.llmprovider v0.0.0
@@ -79,6 +80,9 @@ require (
 )
 
 require (
+	digital.vasic.docprocessor v0.0.0-00010101000000-000000000000 // indirect
+	digital.vasic.llmorchestrator v0.0.0-00010101000000-000000000000 // indirect
+	digital.vasic.visionengine v0.0.0-00010101000000-000000000000 // indirect
 	github.com/ClickHouse/ch-go v0.69.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
@@ -114,6 +118,7 @@ require (
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mattn/go-sqlite3 v1.14.37 // indirect
 	github.com/minio/crc64nvme v1.1.1 // indirect
 	github.com/minio/md5-simd v1.1.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
