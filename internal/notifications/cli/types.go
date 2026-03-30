@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"strconv"
 	"time"
 
 	"dev.helix.agent/internal/models"
@@ -412,7 +413,7 @@ func FormatFallbackIndicator(content *FallbackIndicatorContent) string {
 		}
 	case "fallback.success":
 		result += "Fallback succeeded: " + content.FallbackProvider + "/" + content.FallbackModel
-		result += " (attempt " + string(rune('0'+content.AttemptNumber)) + ")"
+		result += " (attempt " + strconv.Itoa(content.AttemptNumber) + ")"
 	case "fallback.failed":
 		result += "Fallback failed: " + content.FallbackProvider + "/" + content.FallbackModel
 		if content.ErrorMessage != "" {
@@ -421,7 +422,7 @@ func FormatFallbackIndicator(content *FallbackIndicatorContent) string {
 	case "fallback.exhausted":
 		result += "ALL FALLBACKS EXHAUSTED - No response available"
 	case "fallback.chain":
-		result += "Fallback chain summary: " + string(rune('0'+content.AttemptNumber)) + " attempts"
+		result += "Fallback chain summary: " + strconv.Itoa(content.AttemptNumber) + " attempts"
 	}
 
 	result += ColorReset

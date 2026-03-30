@@ -6,6 +6,7 @@ package messaging
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"time"
 )
 
@@ -378,9 +379,9 @@ func (c *BrokerConfig) ConnectionString() string {
 		scheme = "amqps"
 	}
 	if c.Username != "" {
-		return scheme + "://" + c.Username + ":" + c.Password + "@" + c.Host + ":" + string(rune(c.Port)) + c.VirtualHost
+		return scheme + "://" + c.Username + ":" + c.Password + "@" + c.Host + ":" + strconv.Itoa(c.Port) + c.VirtualHost
 	}
-	return scheme + "://" + c.Host + ":" + string(rune(c.Port)) + c.VirtualHost
+	return scheme + "://" + c.Host + ":" + strconv.Itoa(c.Port) + c.VirtualHost
 }
 
 // generateMessageID generates a unique message ID.

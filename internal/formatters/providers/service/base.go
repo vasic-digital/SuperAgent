@@ -135,6 +135,7 @@ func (s *ServiceFormatter) Format(ctx context.Context, req *formatters.FormatReq
 	httpReq.Header.Set("Content-Type", "application/json")
 
 	// Execute HTTP request
+	// #nosec G704 -- formatter service URL is admin-configured
 	resp, err := s.httpClient.Do(httpReq)
 	if err != nil {
 		return &formatters.FormatResult{
@@ -213,6 +214,7 @@ func (s *ServiceFormatter) HealthCheck(ctx context.Context) error {
 		return fmt.Errorf("failed to create health check request: %w", err)
 	}
 
+	// #nosec G704 -- formatter service URL is admin-configured
 	resp, err := s.httpClient.Do(httpReq)
 	if err != nil {
 		return fmt.Errorf("health check failed: %w", err)

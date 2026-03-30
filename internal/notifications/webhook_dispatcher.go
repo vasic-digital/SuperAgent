@@ -339,6 +339,7 @@ func (d *WebhookDispatcher) deliver(delivery *WebhookDelivery) {
 	}
 
 	// Send request
+	// #nosec G704 -- webhook URL is admin-configured, not user input
 	resp, err := d.client.Do(req)
 	if err != nil {
 		d.handleDeliveryFailure(delivery, webhook, err.Error(), 0)
