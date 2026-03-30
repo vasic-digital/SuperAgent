@@ -8,7 +8,6 @@ import (
 
 	authadapter "dev.helix.agent/internal/adapters/auth"
 	containeradapter "dev.helix.agent/internal/adapters/containers"
-	messagingadapter "dev.helix.agent/internal/adapters/messaging"
 	"dev.helix.agent/internal/cache"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/database"
@@ -37,8 +36,6 @@ type RouterContext struct {
 	oauthMonitor           *services.OAuthTokenMonitor
 	oauthCredentialManager *authadapter.OAuthCredentialManager // OAuth credential manager from auth adapter
 	containerAdapter       *containeradapter.Adapter           // Container adapter for orchestration
-	//nolint:unused,staticcheck
-	messagingAdapter        *messagingadapter.BrokerAdapter // Messaging adapter for Kafka/RabbitMQ
 	healthMonitor           *services.ProviderHealthMonitor
 	concurrencyMonitor      *services.ConcurrencyMonitor
 	concurrencyAlertManager *services.ConcurrencyAlertManager
