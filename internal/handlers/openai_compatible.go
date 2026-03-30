@@ -2891,25 +2891,6 @@ func (h *UnifiedHandler) sendCategorizedError(c *gin.Context, err error) {
 	h.sendOpenAIError(c, http.StatusInternalServerError, "internal_error", "An unexpected error occurred", err.Error())
 }
 
-// Helper function to check if string contains substring
-func contains(s, substr string) bool { //nolint:unused
-	return len(s) >= len(substr) &&
-		(s == substr ||
-			len(s) > len(substr) &&
-				(s[:len(substr)] == substr ||
-					s[len(s)-len(substr):] == substr ||
-					containsSubstring(s, substr)))
-}
-
-func containsSubstring(s, substr string) bool { //nolint:unused
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
-}
-
 // expandFollowUpResponse detects short follow-up responses (like "yes 1", "1", "ok", "yes")
 // and expands them with context from the previous assistant message that offered options.
 // This ensures AI Debate understands "yes 1." means "execute option 1 from your previous response".
@@ -3068,16 +3049,6 @@ func (h *UnifiedHandler) expandFollowUpResponse(userMessage string, messages []O
 	}
 
 	return "" // No context to expand with
-}
-
-// generateID generates a cryptographically secure random ID for OpenAI compatibility
-func generateID() string { //nolint:unused
-	id, err := utils.SecureRandomString(29)
-	if err != nil {
-		// Fallback to SecureRandomID if SecureRandomString fails
-		return utils.SecureRandomID("chatcmpl")
-	}
-	return id
 }
 
 // generateDebateDialogueIntroduction creates the AI debate team conversation introduction
@@ -3724,22 +3695,6 @@ func (h *UnifiedHandler) generateFallbackSynthesis(responses map[services.Debate
 	return sb.String()
 }
 
-// generateDebateDialogueResponse creates a debate response header for a position
-// Note: This only generates the header. Use generateRealDebateResponse for actual LLM calls.
-func (h *UnifiedHandler) generateDebateDialogueResponse(position services.DebateTeamPosition, topic string) string { //nolint:unused
-	if h.dialogueFormatter == nil {
-		return ""
-	}
-
-	char := h.dialogueFormatter.GetCharacter(position)
-	if char == nil {
-		return ""
-	}
-
-	// Generate just the header - actual content comes from generateRealDebateResponse
-	return fmt.Sprintf("\n%s %s:\n    \"", char.Avatar, char.Name)
-}
-
 // generateRealDebateResponse calls the actual LLM for a position and returns the real response
 // It tries the primary provider first, then automatically falls back to fallback providers if primary fails
 // The tools parameter is passed to inform the LLM about available coding assistant capabilities
@@ -4003,13 +3958,6 @@ func (h *UnifiedHandler) getProviderForMember(member *services.DebateTeamMember)
 	}
 
 	return nil, fmt.Errorf("provider %s does not implement llm.LLMProvider", member.ProviderName)
-}
-
-// buildDebateRoleSystemPrompt creates a system prompt based on the debate role
-// IMPORTANT: This prompt includes context about the AI coding assistant capabilities
-// so debate positions understand they have access to the user's codebase through tools
-func (h *UnifiedHandler) buildDebateRoleSystemPrompt(position services.DebateTeamPosition, role services.DebateRole) string { //nolint:unused
-	return h.buildDebateRoleSystemPromptWithTools(position, "", role, nil)
 }
 
 // buildDebateRoleSystemPromptWithTools creates a system prompt with specific tool information
@@ -6384,50 +6332,6 @@ All notable changes to this project will be documented in this file.
 `
 }
 
-// extractDocumentationContent extracts or generates documentation content from synthesis
-func extractDocumentationContent(synthesis string) string { //nolint:unused
-	// First try to find content between code blocks
-	if idx := strings.Index(synthesis, "```"); idx != -1 {
-		afterStart := synthesis[idx+3:]
-		// Skip language identifier
-		if nlIdx := strings.Index(afterStart, "\n"); nlIdx != -1 {
-			afterStart = afterStart[nlIdx+1:]
-		}
-		if endIdx := strings.Index(afterStart, "```"); endIdx != -1 {
-			return strings.TrimSpace(afterStart[:endIdx])
-		}
-	}
-
-	// Look for documentation-specific patterns
-	docPatterns := []string{
-		"documentation should include",
-		"document should contain",
-		"readme should have",
-		"the following documentation",
-	}
-
-	synthesisLower := strings.ToLower(synthesis)
-	for _, pattern := range docPatterns {
-		if idx := strings.Index(synthesisLower, pattern); idx != -1 {
-			// Get content after the pattern
-			remaining := synthesis[idx+len(pattern):]
-			// Find end (next section or paragraph break)
-			endIdx := strings.Index(remaining, "\n\n")
-			if endIdx != -1 {
-				return strings.TrimSpace(remaining[:endIdx])
-			}
-			return strings.TrimSpace(remaining)
-		}
-	}
-
-	// Generate a default documentation structure based on synthesis
-	cleaned := cleanSynthesisForFile(synthesis)
-	if cleaned != "" {
-		return fmt.Sprintf("# Documentation\n\n%s", cleaned)
-	}
-
-	return ""
-}
 
 // processToolResultsWithLLM processes tool results by making a direct LLM call
 // CRITICAL: This enables proper handling of tool results from CLI agents like OpenCode
