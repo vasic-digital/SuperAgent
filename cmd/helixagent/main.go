@@ -1679,9 +1679,9 @@ func run(appCfg *AppConfig) error {
 		TLSCertFile:    "", // Auto-generate self-signed cert
 		TLSKeyFile:     "",
 		MaxConnections: 1000,
-		IdleTimeout:    30 * time.Second,
+		IdleTimeout:    0,                  // Disabled: SSE streams have long gaps between chunks during debate
 		ReadTimeout:    30 * time.Second,
-		WriteTimeout:   300 * time.Second, // 5 minutes for SSE streaming support
+		WriteTimeout:   600 * time.Second,  // 10 minutes: debate responses can be very large
 	}
 	http3Server, err := transport.NewHTTP3Server(r, http3Config)
 	if err != nil {
