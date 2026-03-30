@@ -6,6 +6,7 @@ import (
 	"context"
 	"math"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -719,10 +720,10 @@ func formatScoreSuffix(score float64) string {
 										strings.Replace(
 											strings.Replace(
 												"X.XX",
-												"X", string(rune('0'+int(score))), 1),
+												"X", strconv.Itoa(int(score)), 1),
 											".", ".", 1),
-										"X", string(rune('0'+int(score*10)%10)), 1),
-									"X", string(rune('0'+int(score*100)%10)), 1),
+										"X", strconv.Itoa(int(score*10)%10), 1),
+									"X", strconv.Itoa(int(score*100)%10), 1),
 								"X", "", -1),
 							"", "", -1),
 						"", "", -1),

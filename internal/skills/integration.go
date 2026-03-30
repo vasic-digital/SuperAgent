@@ -3,6 +3,7 @@ package skills
 
 import (
 	"context"
+	"strconv"
 	"sync"
 
 	"github.com/sirupsen/logrus"
@@ -220,7 +221,7 @@ func (d *DebateIntegration) ProcessDebateRound(ctx context.Context, debateID, ro
 
 // generateDebateRequestID generates a unique request ID for a debate round.
 func generateDebateRequestID(debateID, roundNum int) string {
-	return "debate-" + string(rune(debateID)) + "-round-" + string(rune(roundNum))
+	return "debate-" + strconv.Itoa(debateID) + "-round-" + strconv.Itoa(roundNum)
 }
 
 // MCPIntegration provides specific integration for MCP protocol.

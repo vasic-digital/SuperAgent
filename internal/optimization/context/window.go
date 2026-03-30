@@ -3,6 +3,7 @@ package context
 
 import (
 	"errors"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -474,7 +475,7 @@ func generateID() string {
 	idMu.Lock()
 	defer idMu.Unlock()
 	idCounter++
-	return strings.ReplaceAll(time.Now().Format("20060102150405"), ".", "") + "_" + string(rune(idCounter))
+	return strings.ReplaceAll(time.Now().Format("20060102150405"), ".", "") + "_" + strconv.FormatInt(idCounter, 10)
 }
 
 // WindowStats contains statistics about the context window.

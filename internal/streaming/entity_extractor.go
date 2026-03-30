@@ -2,6 +2,7 @@ package streaming
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -155,7 +156,7 @@ func (ee *EntityExtractor) extractCodeBlocks(text string) []EntityData {
 
 		entities = append(entities, EntityData{
 			EntityID: uuid.New().String(),
-			Name:     "code_block_" + string(rune(i+1)),
+			Name:     "code_block_" + strconv.Itoa(i+1),
 			Type:     "code_block",
 			Properties: map[string]interface{}{
 				"language":   language,
