@@ -98,11 +98,10 @@ type SessionConfig struct {
 // It manages the memory store lifecycle and exposes autonomous QA
 // pipeline operations.
 type Adapter struct {
-	logger   *logrus.Logger
-	store    *memory.Store
-	storeMu  sync.Mutex
-	initOnce sync.Once
-	dbPath   string
+	logger  *logrus.Logger
+	store   *memory.Store
+	storeMu sync.Mutex
+	dbPath  string
 }
 
 // New creates a new HelixQA adapter with the provided logger.
@@ -117,29 +116,31 @@ func New(logger *logrus.Logger) *Adapter {
 }
 
 // Initialize opens or creates the SQLite memory store at the given
-// path. It is safe to call multiple times; subsequent calls are
-// no-ops. If dbPath is empty, "data/memory.db" relative to the
-// working directory is used.
+// path. It is safe to call concurrently; subsequent calls are
+// no-ops once the store is open. If dbPath is empty,
+// "data/memory.db" relative to the working directory is used.
 func (a *Adapter) Initialize(dbPath string) error {
-	var initErr error
-	a.initOnce = sync.Once{}
-	a.initOnce.Do(func() {
-		if dbPath == "" {
-			dbPath = filepath.Join("data", "memory.db")
-		}
-		a.dbPath = dbPath
-		store, err := memory.NewStore(dbPath)
-		if err != nil {
-			initErr = fmt.Errorf("helixqa adapter: init store: %w", err)
-			return
-		}
-		a.storeMu.Lock()
-		a.store = store
-		a.storeMu.Unlock()
-		a.logger.WithField("db_path", dbPath).Info(
-			"helixqa adapter: memory store initialized")
-	})
-	return initErr
+	if dbPath == "" {
+		dbPath = filepath.Join("data", "memory.db")
+	}
+
+	a.storeMu.Lock()
+	defer a.storeMu.Unlock()
+
+	if a.store != nil {
+		// Already initialized — idempotent no-op.
+		return nil
+	}
+
+	a.dbPath = dbPath
+	store, err := memory.NewStore(dbPath)
+	if err != nil {
+		return fmt.Errorf("helixqa adapter: init store: %w", err)
+	}
+	a.store = store
+	a.logger.WithField("db_path", dbPath).Info(
+		"helixqa adapter: memory store initialized")
+	return nil
 }
 
 // Close releases the memory store connection. Safe to call
