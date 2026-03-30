@@ -40,6 +40,8 @@ type MessagingHub struct {
 	// state
 	connected bool
 	stopCh    chan struct{}
+	closeOnce sync.Once
+	wg        sync.WaitGroup
 }
 
 // HubConfig holds configuration for the messaging hub.
@@ -158,15 +160,23 @@ func (h *MessagingHub) Initialize(ctx context.Context) error {
 
 	h.connected = true
 
-	// Start health check goroutine
-	go h.healthCheckLoop()
+	// Start health check goroutine with WaitGroup tracking to prevent leaks.
+	h.wg.Add(1)
+	go func() {
+		defer h.wg.Done()
+		h.healthCheckLoop()
+	}()
 
 	return nil
 }
 
 // Close closes the messaging hub and all brokers.
+// It is safe to call Close multiple times; subsequent calls are no-ops for the
+// stopCh signal. Close waits for the background health check goroutine to exit
+// before tearing down brokers.
 func (h *MessagingHub) Close(ctx context.Context) error {
-	close(h.stopCh)
+	h.closeOnce.Do(func() { close(h.stopCh) })
+	h.wg.Wait()
 
 	var errs MultiError
 
