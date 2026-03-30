@@ -56,6 +56,7 @@ type TieredCache struct {
 	tagIndex *tagIndex
 	ctx      context.Context
 	cancel   context.CancelFunc
+	wg       sync.WaitGroup
 }
 
 // TieredCacheMetrics tracks cache performance
@@ -163,7 +164,11 @@ func NewTieredCache(redisClient *redis.Client, config *TieredCacheConfig) *Tiere
 
 	// Start L1 cleanup goroutine
 	if config.EnableL1 {
-		go tc.l1CleanupLoop()
+		tc.wg.Add(1)
+		go func() {
+			defer tc.wg.Done()
+			tc.l1CleanupLoop()
+		}()
 	}
 
 	return tc
@@ -366,6 +371,7 @@ func (c *TieredCache) HitRate() float64 {
 // Close closes the tiered cache
 func (c *TieredCache) Close() error {
 	c.cancel()
+	c.wg.Wait()
 	return nil
 }
 

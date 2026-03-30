@@ -70,6 +70,7 @@ type QueryCache struct {
 	maxSize int
 	ctx     context.Context
 	cancel  context.CancelFunc
+	wg      sync.WaitGroup
 }
 
 type cacheEntry struct {
@@ -89,13 +90,18 @@ func NewQueryCache(ttl time.Duration, maxSize int) *QueryCache {
 		ctx:     ctx,
 		cancel:  cancel,
 	}
-	go qc.cleanupLoop()
+	qc.wg.Add(1)
+	go func() {
+		defer qc.wg.Done()
+		qc.cleanupLoop()
+	}()
 	return qc
 }
 
-// Shutdown stops the cleanup goroutine
+// Shutdown stops the cleanup goroutine and waits for it to exit.
 func (c *QueryCache) Shutdown() {
 	c.cancel()
+	c.wg.Wait()
 }
 
 func (c *QueryCache) Get(key string) (interface{}, bool) {
