@@ -148,16 +148,25 @@ func (a *SSEManagerAdapter) RegisterClient(taskID string, client chan<- []byte) 
 
 // UnregisterClient removes a client from task-specific events.
 func (a *SSEManagerAdapter) UnregisterClient(taskID string, client chan<- []byte) error {
+	// No-op: HelixAgent manages SSE client lifecycle through its own notification
+	// system (internal/notifications). The generic broker handles transport; client
+	// registration/unregistration at the task level is owned by the notification layer.
 	return nil
 }
 
 // RegisterGlobalClient registers a client for all events.
 func (a *SSEManagerAdapter) RegisterGlobalClient(client chan<- []byte) error {
+	// No-op: HelixAgent manages global SSE subscriptions through its own notification
+	// system. Global broadcast is handled directly via the broker's Broadcast method;
+	// callers do not need to pre-register to receive events.
 	return nil
 }
 
 // UnregisterGlobalClient removes a global client.
 func (a *SSEManagerAdapter) UnregisterGlobalClient(client chan<- []byte) error {
+	// No-op: HelixAgent manages global SSE subscriptions through its own notification
+	// system. Clients stop receiving events when their HTTP connection closes; no
+	// explicit unregistration is required at this adapter level.
 	return nil
 }
 
@@ -203,6 +212,10 @@ func (a *WebSocketServerAdapter) RegisterClient(taskID string, client interface{
 	if c, ok := client.(*genericws.Client); ok {
 		return a.hub.JoinRoom(c.ID(), taskID)
 	}
+	// No-op for non-*genericws.Client values: HelixAgent passes typed clients
+	// only when operating through the WebSocket subsystem. Other callers (e.g.
+	// legacy code passing a raw channel) do not require hub-level registration
+	// because routing is handled by the internal notification layer.
 	return nil
 }
 
@@ -370,8 +383,11 @@ func NewGRPCHealthServer() *genericgrpc.HealthServer {
 
 // GRPCServerOptions returns gRPC server options derived from the Config.
 func GRPCServerOptions(config *genericgrpc.Config) []interface{} {
-	// Return the options as a slice since the actual grpc.ServerOption
-	// type comes from the grpc package, not the streaming module
+	// Intentionally returns nil: the actual grpc.ServerOption type lives in the
+	// google.golang.org/grpc package, which this adapter does not import to avoid
+	// a circular dependency. Callers that need concrete ServerOptions should build
+	// them directly from the config fields (e.g. TLSConfig, MaxRecvMsgSize) using
+	// the grpc package. An empty/nil slice is safe — gRPC uses defaults in that case.
 	return nil
 }
 

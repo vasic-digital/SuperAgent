@@ -170,16 +170,26 @@ func NewMemoryDB() *MemoryDB {
 }
 
 func (m *MemoryDB) Ping() error {
+	// No-op: the in-memory store is always reachable within the same process.
+	// There is no network connection to probe, so a nil error is the correct
+	// response — it signals "available" to callers that check Ping() != nil.
 	return nil
 }
 
 func (m *MemoryDB) Exec(query string, args ...any) error {
+	// No-op: MemoryDB is a lightweight stand-in used when PostgreSQL is
+	// unavailable (standalone / testing mode). Write queries are silently
+	// discarded because the in-memory store does not parse SQL; callers that
+	// need persistence must ensure a real PostgreSQL connection is available.
 	return nil
 }
 
 func (m *MemoryDB) Query(query string, args ...any) ([]any, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
+	// Returns (nil, nil) intentionally: MemoryDB does not execute SQL queries.
+	// Callers receive an empty result set, which is the safest degraded behaviour
+	// in standalone mode. Use StoreRow/QueryRow for keyed in-memory lookups.
 	return nil, nil
 }
 
