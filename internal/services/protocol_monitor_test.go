@@ -973,10 +973,6 @@ func TestProtocolMonitor_MetricsCollector(t *testing.T) {
 	// Record some metrics first
 	monitor.RecordRequest(context.Background(), "test-protocol", 100*time.Millisecond, true, "")
 
-	// The metricsCollector runs in the background
-	// Give it a moment to potentially collect metrics
-	time.Sleep(100 * time.Millisecond)
-
 	// Verify the monitor is functioning
 	metrics, err := monitor.GetMetrics("test-protocol")
 	require.NoError(t, err)
@@ -1013,10 +1009,7 @@ func TestProtocolMonitor_AlertChecker(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 1.0, metrics.ErrorRate)
 
-	// Give alert checker time to run
-	time.Sleep(100 * time.Millisecond)
-
-	// Stop and clean up
+	// Stop and clean up (alert checker runs on 10s ticker; we just verify no panic)
 	monitor.Stop()
 }
 

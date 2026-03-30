@@ -1280,9 +1280,6 @@ func TestACPClient_ExecuteWS_WriteError(t *testing.T) {
 		Method:  "test_action",
 	}
 
-	// Wait a bit for server to close connection
-	time.Sleep(100 * time.Millisecond)
-
 	resp, err := client.ExecuteWS(ctx, wsURL, req)
 	// Should either fail to connect or fail to write
 	assert.Error(t, err)

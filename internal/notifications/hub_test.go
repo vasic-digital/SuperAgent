@@ -247,10 +247,7 @@ func TestNotificationHub_NotifyTaskEvent(t *testing.T) {
 	err := hub.NotifyTaskEvent(context.Background(), task, "progress", data)
 	assert.NoError(t, err)
 
-	// Give time for event processing
-	time.Sleep(100 * time.Millisecond)
-
-	// Check event was stored in polling store
+	// Check event was stored in polling store (StoreEvent is synchronous)
 	events := pollingStore.GetTaskEvents("task-123", nil, 10)
 	assert.Len(t, events, 1)
 	assert.Equal(t, "task-123", events[0].TaskID)
@@ -474,8 +471,10 @@ func TestNotificationHub_DispatchToSubscribers(t *testing.T) {
 	err := hub.NotifyTaskEvent(context.Background(), task, "progress", nil)
 	assert.NoError(t, err)
 
-	// Wait for processing
-	time.Sleep(200 * time.Millisecond)
+	// Wait for async dispatch via processEvents goroutine
+	require.Eventually(t, func() bool {
+		return len(subscriber.GetNotifications()) >= 1
+	}, 2*time.Second, 10*time.Millisecond)
 
 	_ = hub.Stop()
 
@@ -499,8 +498,10 @@ func TestNotificationHub_DispatchToGlobalSubscribers(t *testing.T) {
 	err := hub.NotifyTaskEvent(context.Background(), task, "progress", nil)
 	assert.NoError(t, err)
 
-	// Wait for processing
-	time.Sleep(200 * time.Millisecond)
+	// Wait for async dispatch via processEvents goroutine
+	require.Eventually(t, func() bool {
+		return len(globalSub.GetNotifications()) >= 1
+	}, 2*time.Second, 10*time.Millisecond)
 
 	_ = hub.Stop()
 

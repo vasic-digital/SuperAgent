@@ -10,6 +10,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// waitUntilOAuthMonitorRunning waits until the monitor has entered its run loop.
+func waitUntilOAuthMonitorRunning(t *testing.T, monitor *OAuthTokenMonitor) {
+	t.Helper()
+	require.Eventually(t, func() bool {
+		monitor.mu.Lock()
+		defer monitor.mu.Unlock()
+		return monitor.running
+	}, 2*time.Second, time.Millisecond)
+}
+
 func TestOAuthTokenMonitor_Creation(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
@@ -84,9 +94,6 @@ func TestOAuthTokenMonitor_StartStop(t *testing.T) {
 			close(done)
 		}()
 
-		// Wait a bit
-		time.Sleep(200 * time.Millisecond)
-
 		// Stop via context
 		cancel()
 
@@ -115,8 +122,8 @@ func TestOAuthTokenMonitor_StartStop(t *testing.T) {
 			close(done)
 		}()
 
-		// Wait a bit
-		time.Sleep(200 * time.Millisecond)
+		// Wait until monitor is running before stopping
+		waitUntilOAuthMonitorRunning(t, monitor)
 
 		// Stop via method
 		monitor.Stop()

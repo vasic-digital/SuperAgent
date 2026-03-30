@@ -948,9 +948,6 @@ func TestProtocolDiscovery_PeriodicDiscovery_Stop(t *testing.T) {
 	err := discovery.Start(ctx)
 	require.NoError(t, err)
 
-	// Wait a bit for goroutine to start
-	time.Sleep(10 * time.Millisecond)
-
 	// Stop should not hang
 	done := make(chan struct{})
 	go func() {

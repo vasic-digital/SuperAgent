@@ -838,13 +838,8 @@ func TestMemoryService_StopCleanupRoutine(t *testing.T) {
 		stopCh:          make(chan struct{}),
 	}
 
-	// Start cleanup routine
+	// Start cleanup routine and stop immediately (tests idempotency)
 	go ms.cleanupRoutine()
-
-	// Give it a moment to start
-	time.Sleep(50 * time.Millisecond)
-
-	// Stop should not panic
 	ms.Stop()
 
 	// Calling Stop again should not panic (idempotent)
@@ -875,19 +870,22 @@ func TestMemoryService_BackgroundCleanup(t *testing.T) {
 	// Start cleanup routine
 	go ms.cleanupRoutine()
 
-	// Wait for cleanup to run
-	time.Sleep(150 * time.Millisecond)
+	// Wait for cleanup to run (cleanupInterval is 50ms)
+	require.Eventually(t, func() bool {
+		ms.cacheMu.RLock()
+		_, stillExists := ms.cache["will-expire"]
+		ms.cacheMu.RUnlock()
+		return !stillExists
+	}, 2*time.Second, 10*time.Millisecond, "Expired entry should have been removed by cleanup routine")
 
 	// Stop the routine
 	ms.Stop()
 
-	// Verify expired entry was removed
+	// Verify valid entry is still present
 	ms.cacheMu.RLock()
-	_, expiredExists := ms.cache["will-expire"]
 	_, validExists := ms.cache["will-stay"]
 	ms.cacheMu.RUnlock()
 
-	assert.False(t, expiredExists, "Expired entry should have been removed")
 	assert.True(t, validExists, "Valid entry should still exist")
 }
 

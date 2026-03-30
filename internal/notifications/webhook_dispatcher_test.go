@@ -243,10 +243,10 @@ func TestWebhookDispatcher_Dispatch(t *testing.T) {
 	// Dispatch
 	dispatcher.Dispatch(notification)
 
-	// Wait for delivery
-	time.Sleep(200 * time.Millisecond)
-
-	assert.GreaterOrEqual(t, atomic.LoadInt32(&receivedRequests), int32(1))
+	// Wait for async delivery
+	require.Eventually(t, func() bool {
+		return atomic.LoadInt32(&receivedRequests) >= 1
+	}, 2*time.Second, 10*time.Millisecond)
 }
 
 // Tests for Dispatch with event filtering
@@ -280,12 +280,7 @@ func TestWebhookDispatcher_Dispatch_EventFiltering(t *testing.T) {
 	}
 	dispatcher.Dispatch(notification)
 
-	time.Sleep(100 * time.Millisecond)
-
-	// Should not receive request
-	assert.Equal(t, int32(0), atomic.LoadInt32(&receivedRequests))
-
-	// Dispatch matching event
+	// Dispatch matching event immediately after (non-matching event won't increment counter)
 	notification2 := &TaskNotification{
 		TaskID:    "task-1",
 		EventType: "task.completed",
@@ -294,10 +289,13 @@ func TestWebhookDispatcher_Dispatch_EventFiltering(t *testing.T) {
 	}
 	dispatcher.Dispatch(notification2)
 
-	time.Sleep(200 * time.Millisecond)
+	// Wait for matching event to be delivered
+	require.Eventually(t, func() bool {
+		return atomic.LoadInt32(&receivedRequests) >= 1
+	}, 2*time.Second, 10*time.Millisecond)
 
-	// Should receive request
-	assert.GreaterOrEqual(t, atomic.LoadInt32(&receivedRequests), int32(1))
+	// Non-matching event should never have been delivered (counter at most 1)
+	assert.Equal(t, int32(1), atomic.LoadInt32(&receivedRequests))
 }
 
 // Tests for Dispatch with disabled webhook
@@ -330,9 +328,7 @@ func TestWebhookDispatcher_Dispatch_DisabledWebhook(t *testing.T) {
 	}
 	dispatcher.Dispatch(notification)
 
-	time.Sleep(100 * time.Millisecond)
-
-	// Should not receive request
+	// Disabled webhook is filtered synchronously in Dispatch — no delivery queued
 	assert.Equal(t, int32(0), atomic.LoadInt32(&receivedRequests))
 }
 
@@ -373,9 +369,7 @@ func TestWebhookDispatcher_Dispatch_TaskTypeFiltering(t *testing.T) {
 	}
 	dispatcher.Dispatch(notification)
 
-	time.Sleep(100 * time.Millisecond)
-
-	// Should not receive request
+	// Non-matching task type is filtered synchronously — never queued
 	assert.Equal(t, int32(0), atomic.LoadInt32(&receivedRequests))
 
 	// Dispatch event with matching task type
@@ -392,10 +386,10 @@ func TestWebhookDispatcher_Dispatch_TaskTypeFiltering(t *testing.T) {
 	}
 	dispatcher.Dispatch(notification2)
 
-	time.Sleep(200 * time.Millisecond)
-
-	// Should receive request
-	assert.GreaterOrEqual(t, atomic.LoadInt32(&receivedRequests), int32(1))
+	// Wait for async delivery of matching event
+	require.Eventually(t, func() bool {
+		return atomic.LoadInt32(&receivedRequests) >= 1
+	}, 2*time.Second, 10*time.Millisecond)
 }
 
 // Tests for webhook signature
@@ -433,7 +427,12 @@ func TestWebhookDispatcher_Signature(t *testing.T) {
 	}
 	dispatcher.Dispatch(notification)
 
-	time.Sleep(200 * time.Millisecond)
+	// Wait for async delivery
+	require.Eventually(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		return len(receivedSignature) > 0
+	}, 2*time.Second, 10*time.Millisecond)
 
 	// Signature should be present and start with sha256=
 	mu.Lock()
@@ -481,7 +480,12 @@ func TestWebhookDispatcher_CustomHeaders(t *testing.T) {
 	}
 	dispatcher.Dispatch(notification)
 
-	time.Sleep(200 * time.Millisecond)
+	// Wait for async delivery
+	require.Eventually(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		return receivedHeaders != nil
+	}, 2*time.Second, 10*time.Millisecond)
 
 	mu.Lock()
 	headers := receivedHeaders
@@ -532,7 +536,12 @@ func TestWebhookDispatcher_Payload(t *testing.T) {
 	}
 	dispatcher.Dispatch(notification)
 
-	time.Sleep(200 * time.Millisecond)
+	// Wait for async delivery
+	require.Eventually(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		return receivedPayload != nil
+	}, 2*time.Second, 10*time.Millisecond)
 
 	mu.Lock()
 	payload := receivedPayload
@@ -591,8 +600,10 @@ func TestWebhookDispatcher_Retry(t *testing.T) {
 	}
 	dispatcher.Dispatch(notification)
 
-	// Wait for retries
-	time.Sleep(500 * time.Millisecond)
+	// Wait for retries (RetryBackoff=10ms, so 3 attempts should complete quickly)
+	require.Eventually(t, func() bool {
+		return atomic.LoadInt32(&requestCount) >= 3
+	}, 2*time.Second, 10*time.Millisecond)
 
 	// Should have multiple requests due to retries
 	assert.GreaterOrEqual(t, atomic.LoadInt32(&requestCount), int32(3))
@@ -637,7 +648,12 @@ func TestWebhookDispatcher_GetStats(t *testing.T) {
 	}
 	dispatcher.Dispatch(notification)
 
-	time.Sleep(200 * time.Millisecond)
+	// Wait for async delivery to complete and stats to update
+	require.Eventually(t, func() bool {
+		s := dispatcher.GetStats()
+		v, ok := s["deliveries_success"].(int64)
+		return ok && v >= 1
+	}, 2*time.Second, 10*time.Millisecond)
 
 	stats = dispatcher.GetStats()
 	assert.GreaterOrEqual(t, stats["deliveries_success"].(int64), int64(1))
@@ -937,10 +953,12 @@ func TestWebhookDispatcher_AutoDisable(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 	}
 
-	// Wait for processing
-	time.Sleep(500 * time.Millisecond)
+	// Wait for processing — webhook should be auto-disabled after too many failures
+	require.Eventually(t, func() bool {
+		retrieved, found := dispatcher.GetWebhook("test-webhook")
+		return found && !retrieved.Enabled
+	}, 2*time.Second, 10*time.Millisecond)
 
-	// Webhook should be disabled after too many failures
 	retrieved, found := dispatcher.GetWebhook("test-webhook")
 	assert.True(t, found)
 	assert.False(t, retrieved.Enabled)

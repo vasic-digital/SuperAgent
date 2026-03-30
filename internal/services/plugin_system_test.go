@@ -882,11 +882,8 @@ func TestHighAvailabilityManager_HandleHealthUpdate(t *testing.T) {
 		}
 		_ = ham.RegisterInstance(instance)
 
-		// This spawns a goroutine for failover
+		// This spawns a goroutine for failover; status is set synchronously
 		ham.handleHealthUpdate("fail-test", false)
-
-		// Allow goroutine to start (we just verify it doesn't crash)
-		time.Sleep(10 * time.Millisecond)
 
 		// The status should be unhealthy (set before goroutine)
 		ham.mu.RLock()

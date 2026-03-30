@@ -12,6 +12,16 @@ import (
 	"dev.helix.agent/internal/llm"
 )
 
+// waitUntilCircuitBreakerMonitorRunning waits until the monitor has entered its run loop.
+func waitUntilCircuitBreakerMonitorRunning(t *testing.T, monitor *CircuitBreakerMonitor) {
+	t.Helper()
+	require.Eventually(t, func() bool {
+		monitor.mu.RLock()
+		defer monitor.mu.RUnlock()
+		return monitor.running
+	}, 2*time.Second, time.Millisecond)
+}
+
 func TestCircuitBreakerMonitor_Creation(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
@@ -98,9 +108,6 @@ func TestCircuitBreakerMonitor_StartStop(t *testing.T) {
 			close(done)
 		}()
 
-		// Wait a bit
-		time.Sleep(200 * time.Millisecond)
-
 		// Stop via context
 		cancel()
 
@@ -130,8 +137,8 @@ func TestCircuitBreakerMonitor_StartStop(t *testing.T) {
 			close(done)
 		}()
 
-		// Wait a bit
-		time.Sleep(200 * time.Millisecond)
+		// Wait until monitor is running before stopping
+		waitUntilCircuitBreakerMonitorRunning(t, monitor)
 
 		// Stop via method
 		monitor.Stop()

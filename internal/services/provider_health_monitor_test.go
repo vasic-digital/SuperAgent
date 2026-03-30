@@ -10,6 +10,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// waitUntilProviderHealthMonitorRunning waits until the monitor has entered its run loop.
+func waitUntilProviderHealthMonitorRunning(t *testing.T, monitor *ProviderHealthMonitor) {
+	t.Helper()
+	require.Eventually(t, func() bool {
+		monitor.mu.RLock()
+		defer monitor.mu.RUnlock()
+		return monitor.running
+	}, 2*time.Second, time.Millisecond)
+}
+
 func TestProviderHealthMonitor_Creation(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
@@ -100,9 +110,6 @@ func TestProviderHealthMonitor_StartStop(t *testing.T) {
 			close(done)
 		}()
 
-		// Wait a bit
-		time.Sleep(200 * time.Millisecond)
-
 		// Stop via context
 		cancel()
 
@@ -132,8 +139,8 @@ func TestProviderHealthMonitor_StartStop(t *testing.T) {
 			close(done)
 		}()
 
-		// Wait a bit
-		time.Sleep(200 * time.Millisecond)
+		// Wait until monitor is running before stopping
+		waitUntilProviderHealthMonitorRunning(t, monitor)
 
 		// Stop via method
 		monitor.Stop()
