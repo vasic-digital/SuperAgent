@@ -774,11 +774,15 @@ Respond concisely and helpfully.`, clientName, toolList)
 		logrus.Warn("[STREAMING] All single providers failed, falling through to debate")
 	}
 
-	// For COMPLEX messages: call each comprehensive debate role directly with real LLM calls.
-	// Uses the 8-role comprehensive debate system (Architect, Generator, Critic, Refactoring,
-	// Tester, Validator, Security, Performance) with verified providers.
-	if h.debateTeamConfig != nil && ctx.Err() == nil {
-		logrus.Info("[STREAMING] Complex message — comprehensive 8-role debate with verified team")
+	// For COMPLEX messages: route through DebateService which provides:
+	// - Multi-round consensus debate (each LLM sees all previous responses)
+	// - Rounds continue until consensus (no member changes answer) or max rounds
+	// - HelixMemory integration for persistent context across sessions
+	// - HelixSpecifier auto-activation for large tasks (features, components)
+	// - 3-tier routing: simple → direct, medium → debate consensus, large → SpecKit planning
+	// - Tool execution after consensus
+	if h.debateService != nil && h.debateTeamConfig != nil && ctx.Err() == nil {
+		logrus.Info("[STREAMING] Complex message — routing through DebateService for multi-round consensus")
 
 		topic := lastUserMsg
 		if topic == "" {
@@ -788,38 +792,7 @@ Respond concisely and helpfully.`, clientName, toolList)
 		debateID := fmt.Sprintf("debate-%d", time.Now().UnixNano())
 		startTime := time.Now()
 
-		type roleResult struct {
-			Role         string
-			ProviderName string
-			ModelName    string
-			Score        float64
-			Content      string
-			Duration     time.Duration
-			Fallback     bool
-			Error        string
-		}
-
-		// Comprehensive 8-role debate system with role-specific prompts
-		type roleConfig struct {
-			Name   string
-			Prompt string
-		}
-		debateRoles := []roleConfig{
-			{"Architect", "You are THE ARCHITECT in an AI debate ensemble. Focus on system design, component architecture, data flow, and structural decisions. Be concise (2-3 paragraphs)."},
-			{"Generator", "You are THE GENERATOR in an AI debate ensemble. Focus on producing concrete solutions, code implementations, and actionable approaches. Be concise (2-3 paragraphs)."},
-			{"Critic", "You are THE CRITIC in an AI debate ensemble. Challenge assumptions, identify flaws, edge cases, and weaknesses in proposed approaches. Be concise (2-3 paragraphs)."},
-			{"Tester", "You are THE TESTER in an AI debate ensemble. Focus on quality assurance, test scenarios, validation strategies, and coverage analysis. Be concise (2-3 paragraphs)."},
-			{"Security", "You are THE SECURITY ANALYST in an AI debate ensemble. Focus on security implications, vulnerabilities, attack vectors, and hardening strategies. Be concise (2-3 paragraphs)."},
-			{"Performance", "You are THE PERFORMANCE ANALYST in an AI debate ensemble. Focus on efficiency, scalability, resource usage, and optimization opportunities. Be concise (2-3 paragraphs)."},
-			{"Validator", "You are THE VALIDATOR in an AI debate ensemble. Focus on correctness verification, type safety, contract compliance, and standards adherence. Be concise (2-3 paragraphs)."},
-			{"Moderator", "You are THE MODERATOR in an AI debate ensemble. Synthesize all perspectives into a balanced, comprehensive final answer. Incorporate insights from all team members. Be thorough (3-4 paragraphs)."},
-		}
-
-		// Get all verified LLMs and assign them to roles round-robin
-		verifiedLLMs := h.debateTeamConfig.GetVerifiedLLMs()
-		var results []roleResult
-
-		// Set up SSE streaming BEFORE the debate loop so tokens stream progressively
+		// Set up SSE streaming
 		c.Header("Content-Type", "text/event-stream")
 		c.Header("Cache-Control", "no-cache")
 		c.Header("Connection", "keep-alive")
@@ -832,7 +805,7 @@ Respond concisely and helpfully.`, clientName, toolList)
 		sseHeadersSent := false
 		sendSSEChunk := func(content string) {
 			if !sseHeadersSent {
-				roleData, _ := json.Marshal(map[string]any{ //nolint:errcheck
+				roleData, _ := json.Marshal(map[string]any{
 					"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
 					"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
 					"choices": []map[string]any{{"index": 0, "delta": map[string]any{"role": "assistant", "content": ""}, "finish_reason": nil}},
@@ -841,7 +814,7 @@ Respond concisely and helpfully.`, clientName, toolList)
 				flusher.Flush()
 				sseHeadersSent = true
 			}
-			chunkData, _ := json.Marshal(map[string]any{ //nolint:errcheck
+			chunkData, _ := json.Marshal(map[string]any{
 				"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
 				"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
 				"choices": []map[string]any{{"index": 0, "delta": map[string]any{"content": content}, "finish_reason": nil}},
@@ -850,18 +823,7 @@ Respond concisely and helpfully.`, clientName, toolList)
 			flusher.Flush()
 		}
 
-		// ============================================================
-		// PHASE 1: Collect specialist role responses INTERNALLY
-		// Roles 1-7 (Architect through Validator) provide analysis
-		// that feeds into the Moderator's synthesis. Their outputs
-		// are NOT streamed to the user.
-		// ============================================================
-		specialistRoles := debateRoles[:len(debateRoles)-1] // All except Moderator
-		moderatorRole := debateRoles[len(debateRoles)-1]    // Moderator is last
-
-		// ============================================================
-		// PHASE 1: Stream ensemble team table with positions + fallbacks
-		// ============================================================
+		// Stream team introduction
 		teamIntro := h.generateDebateTeamIntroduction()
 		if teamIntro != "" {
 			for _, line := range strings.Split(teamIntro, "\n") {
@@ -870,283 +832,162 @@ Respond concisely and helpfully.`, clientName, toolList)
 			sendSSEChunk("\n---\n\n")
 		}
 
-		// Collect tool_calls from all roles for execution after synthesis
-		var collectedToolCalls []models.ToolCall
-
-		// ============================================================
-		// PHASE 2: Stream each specialist's response with role header
-		// ============================================================
-		for i, rc := range specialistRoles {
-			if ctx.Err() != nil {
-				break
+		// Build DebateConfig for DebateService
+		// DebateService handles: multi-round consensus, HelixMemory, HelixSpecifier routing
+		verifiedLLMs := h.debateTeamConfig.GetVerifiedLLMs()
+		debateParticipants := make([]services.ParticipantConfig, 0, len(verifiedLLMs))
+		roles := []string{"Architect", "Generator", "Critic", "Tester", "Security", "Performance", "Validator"}
+		for i, vllm := range verifiedLLMs {
+			role := "Analyst"
+			if i < len(roles) {
+				role = roles[i]
 			}
-			llmIdx := i % len(verifiedLLMs)
-			if llmIdx >= len(verifiedLLMs) {
-				continue
-			}
-			vllm := verifiedLLMs[llmIdx]
-			if vllm.Provider == nil {
-				results = append(results, roleResult{
-					Role: rc.Name, ProviderName: vllm.ProviderName,
-					ModelName: vllm.ModelName, Score: vllm.Score,
-					Error: "provider nil",
-				})
-				continue
-			}
-
-			roleStart := time.Now()
-			var debateMessages []models.Message
-			for _, m := range internalReq.Messages {
-				if m.Role == "system" {
-					debateMessages = append(debateMessages, m)
-				}
-			}
-			debateMessages = append(debateMessages, models.Message{
-				Role:    "system",
-				Content: rc.Prompt + "\n\nIMPORTANT: You have FULL ACCESS to the user's codebase through tools. Use them to provide concrete, specific answers.",
+			debateParticipants = append(debateParticipants, services.ParticipantConfig{
+				ParticipantID: fmt.Sprintf("p%d", i+1),
+				Name:          role,
+				Role:          strings.ToLower(role),
+				LLMProvider:   vllm.ProviderName,
+				LLMModel:      vllm.ModelName,
+				MaxRounds:     2,
+				Timeout:       45 * time.Second,
+				Weight:        vllm.Score,
 			})
-			for _, m := range internalReq.Messages {
-				if m.Role == "user" || m.Role == "assistant" {
-					debateMessages = append(debateMessages, m)
-				}
-			}
-			debateReq := &models.LLMRequest{
-				Messages:    debateMessages,
-				ModelParams: models.ModelParameters{Model: vllm.ModelName, MaxTokens: 2048},
-			}
-			if len(req.Tools) > 0 {
-				debateReq.Tools = h.convertOpenAIToolsToModelTools(req.Tools)
-				debateReq.ToolChoice = "auto"
-			}
+		}
 
-			// Stream role header so user sees which LLM is responding
-			sendSSEChunk(fmt.Sprintf("\n**%s** (%s/%s)\n", rc.Name, vllm.ProviderName, vllm.ModelName))
+		debateConfig := &services.DebateConfig{
+			DebateID:     debateID,
+			Topic:        topic,
+			Participants: debateParticipants,
+			MaxRounds:    2,
+			Timeout:      300 * time.Second,
+			Strategy:     "confidence_weighted",
+			Metadata:     map[string]any{"stream_id": streamID, "source": "openai_compatible"},
+		}
 
-			var roleContent strings.Builder
-			usedProvider := vllm.ProviderName
-			usedModel := vllm.ModelName
+		// Build conversation context for the debate
+		var conversationContext []string
+		for _, m := range internalReq.Messages {
+			if m.Role == "user" || m.Role == "assistant" {
+				conversationContext = append(conversationContext, fmt.Sprintf("[%s]: %s", m.Role, m.Content))
+			}
+		}
+		if len(conversationContext) > 0 {
+			debateConfig.Metadata["conversation_context"] = strings.Join(conversationContext, "\n")
+		}
 
-			// Try streaming first
-			streamCh, streamErr := vllm.Provider.CompleteStream(ctx, debateReq)
-			if streamErr == nil && streamCh != nil {
-				for resp := range streamCh {
-					if resp == nil || resp.Content == "" {
-						continue
+		// Execute debate through DebateService (handles multi-round consensus,
+		// HelixSpecifier for big tasks, HelixMemory for persistence)
+		sendSSEChunk("*Conducting multi-round AI debate for consensus...*\n\n")
+
+		debateResult, debateErr := h.debateService.ConductDebate(ctx, debateConfig)
+
+		if debateErr != nil {
+			logrus.WithError(debateErr).Warn("[DEBATE] DebateService.ConductDebate failed, falling back to direct LLM")
+			// Fallback: use the best available LLM for a direct response
+			verifiedLLMs := h.debateTeamConfig.GetVerifiedLLMs()
+			if len(verifiedLLMs) > 0 {
+				bestLLM := verifiedLLMs[0]
+				if bestLLM.Provider != nil {
+					sendSSEChunk(fmt.Sprintf("*(direct response via %s/%s)*\n\n", bestLLM.ProviderName, bestLLM.ModelName))
+					directReq := &models.LLMRequest{
+						Messages:    internalReq.Messages,
+						ModelParams: models.ModelParameters{Model: bestLLM.ModelName, MaxTokens: 4096},
 					}
-					if resp.FinishReason == "stop" || resp.FinishReason == "STOP" {
-						break
-					}
-					sendSSEChunk(resp.Content)
-					roleContent.WriteString(resp.Content)
-				}
-			} else {
-				// Non-streaming fallback with full fallback chain
-				resp, callErr := vllm.Provider.Complete(ctx, debateReq)
-				if callErr != nil {
-					for fbIdx := 0; fbIdx < len(verifiedLLMs); fbIdx++ {
-						if fbIdx == llmIdx {
-							continue
-						}
-						fb := verifiedLLMs[fbIdx]
-						if fb.Provider == nil {
-							continue
-						}
-						fbReq := &models.LLMRequest{
-							Messages:    debateReq.Messages,
-							ModelParams: models.ModelParameters{Model: fb.ModelName, MaxTokens: 2048},
-						}
-						if len(debateReq.Tools) > 0 {
-							fbReq.Tools = debateReq.Tools
-							fbReq.ToolChoice = "auto"
-						}
-						fbResp, fbErr := fb.Provider.Complete(ctx, fbReq)
-						if fbErr == nil && fbResp != nil && fbResp.Content != "" {
-							sendSSEChunk(fmt.Sprintf(" *(fallback: %s/%s)*\n", fb.ProviderName, fb.ModelName))
-							sendSSEChunk(fbResp.Content)
-							roleContent.WriteString(fbResp.Content)
-							usedProvider = fb.ProviderName
-							usedModel = fb.ModelName
-							if len(fbResp.ToolCalls) > 0 {
-								collectedToolCalls = append(collectedToolCalls, fbResp.ToolCalls...)
+					directStream, directErr := bestLLM.Provider.CompleteStream(ctx, directReq)
+					if directErr == nil && directStream != nil {
+						for resp := range directStream {
+							if resp == nil || resp.Content == "" {
+								continue
 							}
-							break
+							if resp.FinishReason == "stop" || resp.FinishReason == "STOP" {
+								break
+							}
+							sendSSEChunk(resp.Content)
 						}
-					}
-					if roleContent.Len() == 0 {
-						errMsg := callErr.Error()
-						if len(errMsg) > 100 {
-							errMsg = errMsg[:100]
-						}
-						sendSSEChunk(fmt.Sprintf(" *[failed: %s]*\n", errMsg))
-					}
-				} else if resp != nil {
-					sendSSEChunk(resp.Content)
-					roleContent.WriteString(resp.Content)
-					if len(resp.ToolCalls) > 0 {
-						collectedToolCalls = append(collectedToolCalls, resp.ToolCalls...)
 					}
 				}
+			}
+			} else if debateResult != nil {
+			// Stream the debate results: show each participant's response grouped by round
+			currentRound := 0
+			for _, resp := range debateResult.AllResponses {
+				if resp.Round > currentRound {
+					currentRound = resp.Round
+					if currentRound > 1 {
+						sendSSEChunk(fmt.Sprintf("\n**--- Round %d ---**\n\n", currentRound))
+					}
+				}
+				name := resp.ParticipantName
+				if name == "" {
+					name = resp.Role
+				}
+				provider := resp.LLMProvider
+				if provider == "" {
+					provider = resp.LLMName
+				}
+				content := resp.Content
+				if content == "" {
+					content = resp.Response
+				}
+				if content != "" {
+					sendSSEChunk(fmt.Sprintf("**%s** (%s)\n", name, provider))
+					sendSSEChunk(content + "\n\n")
+				}
+			}
+
+			// Show consensus status
+			if debateResult.Consensus != nil {
+				agreement := debateResult.Consensus.AgreementScore
+				if agreement == 0 {
+					agreement = debateResult.Consensus.AgreementLevel
+				}
+				if debateResult.Consensus.Reached || debateResult.Consensus.Achieved {
+					sendSSEChunk(fmt.Sprintf("\n> Consensus reached (agreement: %.0f%%, rounds: %d)\n\n",
+						agreement*100, debateResult.RoundsConducted))
+				} else {
+					sendSSEChunk(fmt.Sprintf("\n> Best agreement: %.0f%% after %d rounds\n\n",
+						agreement*100, debateResult.RoundsConducted))
+				}
+				if debateResult.Consensus.Summary != "" {
+					sendSSEChunk(debateResult.Consensus.Summary + "\n\n")
+				}
+			}
+
+			// Stream the final synthesis
+			sendSSEChunk("---\n\n**Final Decision**\n\n")
+			if debateResult.Consensus != nil && debateResult.Consensus.FinalPosition != "" {
+				sendSSEChunk(debateResult.Consensus.FinalPosition)
+			} else if debateResult.BestResponse != nil {
+				content := debateResult.BestResponse.Content
+				if content == "" {
+					content = debateResult.BestResponse.Response
+				}
+				sendSSEChunk(content)
+			} else if len(debateResult.Participants) > 0 {
+				last := debateResult.Participants[len(debateResult.Participants)-1]
+				content := last.Content
+				if content == "" {
+					content = last.Response
+				}
+				sendSSEChunk(content)
 			}
 			sendSSEChunk("\n")
 
-			rr := roleResult{
-				Role: rc.Name, ProviderName: usedProvider,
-				ModelName: usedModel, Score: vllm.Score,
-				Duration: time.Since(roleStart), Content: roleContent.String(),
-			}
-			results = append(results, rr)
 			logrus.WithFields(logrus.Fields{
-				"role": rc.Name, "provider": rr.ProviderName,
-				"model": rr.ModelName, "duration": rr.Duration,
-				"content_len": len(rr.Content),
-			}).Info("[DEBATE] Role response streamed")
+				"debate_id":        debateID,
+				"duration":         time.Since(startTime),
+				"rounds":           debateResult.RoundsConducted,
+				"total_responses":  len(debateResult.AllResponses),
+				"consensus":        debateResult.Consensus != nil && (debateResult.Consensus.Reached || debateResult.Consensus.Achieved),
+				"final_score":      debateResult.FinalScore,
+				"memory_used":      debateResult.MemoryUsed,
+				"specialized_role": debateResult.SpecializedRole,
+			}).Info("[DEBATE] Multi-round consensus debate completed")
 		}
 
-		// ============================================================
-		// PHASE 3: Moderator synthesizes all specialist inputs into
-		// a final decision. Streamed visibly with header.
-		// ============================================================
-		logrus.Info("[DEBATE] Phase 3: Moderator synthesis from specialist inputs")
-
-		// Build synthesis context from all specialist responses
-		var synthesisContext strings.Builder
-		for _, r := range results {
-			if r.Content != "" {
-				synthesisContext.WriteString(fmt.Sprintf("[%s]: %s\n\n", r.Role, r.Content))
-			}
-		}
-
-		var moderatorMessages []models.Message
-		for _, m := range internalReq.Messages {
-			if m.Role == "system" {
-				moderatorMessages = append(moderatorMessages, m)
-			}
-		}
-		moderatorMessages = append(moderatorMessages, models.Message{
-			Role: "system",
-			Content: moderatorRole.Prompt + "\n\nSpecialist analyses:\n\n" + synthesisContext.String() +
-				"\n\nSynthesize all perspectives into a clear, comprehensive FINAL DECISION. " +
-				"If the user asked for a concrete task, produce the actual result (code, file content, report). " +
-				"Use tools when needed to read files, write code, or run commands.",
-		})
-		for _, m := range internalReq.Messages {
-			if m.Role == "user" || m.Role == "assistant" {
-				moderatorMessages = append(moderatorMessages, m)
-			}
-		}
-
-		// Use the best available LLM for the Moderator
-		moderatorLLM := verifiedLLMs[len(specialistRoles)%len(verifiedLLMs)]
-		if len(verifiedLLMs) > 0 {
-			moderatorLLM = verifiedLLMs[0] // Highest scored
-		}
-
-		moderatorReq := &models.LLMRequest{
-			Messages:    moderatorMessages,
-			ModelParams: models.ModelParameters{Model: moderatorLLM.ModelName, MaxTokens: 4096},
-		}
-		if len(req.Tools) > 0 {
-			moderatorReq.Tools = h.convertOpenAIToolsToModelTools(req.Tools)
-			moderatorReq.ToolChoice = "auto"
-		}
-
-		sendSSEChunk(fmt.Sprintf("\n---\n\n**Moderator** (%s/%s) — *Final Decision*\n", moderatorLLM.ProviderName, moderatorLLM.ModelName))
-
-		moderatorStart := time.Now()
-		var moderatorContent strings.Builder
-		modStream, modStreamErr := moderatorLLM.Provider.CompleteStream(ctx, moderatorReq)
-		if modStreamErr == nil && modStream != nil {
-			for resp := range modStream {
-				if resp == nil || resp.Content == "" {
-					continue
-				}
-				if resp.FinishReason == "stop" || resp.FinishReason == "STOP" {
-					break
-				}
-				sendSSEChunk(resp.Content)
-				moderatorContent.WriteString(resp.Content)
-			}
-		} else {
-			resp, callErr := moderatorLLM.Provider.Complete(ctx, moderatorReq)
-			if callErr != nil {
-				for fbIdx := 0; fbIdx < len(verifiedLLMs); fbIdx++ {
-					fb := verifiedLLMs[fbIdx]
-					if fb.Provider == nil || fb.ProviderName == moderatorLLM.ProviderName {
-						continue
-					}
-					moderatorReq.ModelParams.Model = fb.ModelName
-					fbResp, fbErr := fb.Provider.Complete(ctx, moderatorReq)
-					if fbErr == nil && fbResp != nil && fbResp.Content != "" {
-						sendSSEChunk(fmt.Sprintf(" *(fallback: %s/%s)*\n", fb.ProviderName, fb.ModelName))
-						sendSSEChunk(fbResp.Content)
-						moderatorContent.WriteString(fbResp.Content)
-						if len(fbResp.ToolCalls) > 0 {
-							collectedToolCalls = append(collectedToolCalls, fbResp.ToolCalls...)
-						}
-						break
-					}
-				}
-			} else if resp != nil {
-				sendSSEChunk(resp.Content)
-				moderatorContent.WriteString(resp.Content)
-				if len(resp.ToolCalls) > 0 {
-					collectedToolCalls = append(collectedToolCalls, resp.ToolCalls...)
-				}
-			}
-		}
-
-		results = append(results, roleResult{
-			Role: "Moderator", ProviderName: moderatorLLM.ProviderName,
-			ModelName: moderatorLLM.ModelName, Score: moderatorLLM.Score,
-			Duration: time.Since(moderatorStart), Content: moderatorContent.String(),
-		})
-
-		totalDuration := time.Since(startTime)
-		totalContent := 0
-		for _, r := range results {
-			totalContent += len(r.Content)
-		}
-		logrus.WithFields(logrus.Fields{
-			"debate_id":     debateID,
-			"duration":      totalDuration,
-			"roles":         len(results),
-			"total_content": totalContent,
-			"tool_calls":    len(collectedToolCalls),
-		}).Info("[DEBATE] Debate completed — all roles + moderator streamed")
-
-		// ============================================================
-		// PHASE 4: Emit collected tool_calls so the CLI agent can
-		// execute them (bash, file read/write, etc.)
-		// ============================================================
-		if len(collectedToolCalls) > 0 {
-			logrus.WithField("count", len(collectedToolCalls)).Info("[DEBATE] Sending collected tool_calls to client")
-			toolCallsJSON := make([]map[string]any, 0, len(collectedToolCalls))
-			for idx, tc := range collectedToolCalls {
-				toolCallsJSON = append(toolCallsJSON, map[string]any{
-					"index": idx,
-					"id":    tc.ID,
-					"type":  "function",
-					"function": map[string]any{
-						"name":      tc.Function.Name,
-						"arguments": tc.Function.Arguments,
-					},
-				})
-			}
-			toolData, _ := json.Marshal(map[string]any{ //nolint:errcheck
-				"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
-				"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
-				"choices": []map[string]any{{
-					"index":         0,
-					"delta":         map[string]any{"tool_calls": toolCallsJSON},
-					"finish_reason": "tool_calls",
-				}},
-			})
-			_, _ = fmt.Fprintf(c.Writer, "data: %s\n\n", toolData)
-			flusher.Flush()
-		}
-
+		// Send SSE finish marker
 		if sseHeadersSent {
-			finishData, _ := json.Marshal(map[string]any{ //nolint:errcheck
+			finishData, _ := json.Marshal(map[string]any{
 				"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
 				"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
 				"choices": []map[string]any{{"index": 0, "delta": map[string]any{}, "finish_reason": "stop"}},
@@ -1155,106 +996,14 @@ Respond concisely and helpfully.`, clientName, toolList)
 			flusher.Flush()
 			return
 		}
-
-		h.sendOpenAIError(c, http.StatusInternalServerError, "internal_error", "All debate roles failed", "")
+		h.sendOpenAIError(c, http.StatusInternalServerError, "internal_error", "Debate produced no output", "")
 		return
 	}
 
-	// OLD CODE REMOVED — comprehensive streaming replaced by ConductDebate above
-	if false { // Dead code guard — keeping for reference
+	// All debate logic is routed through DebateService.ConductDebate() above.
+	// Legacy inline debate and comprehensive debate code removed — see git history.
+	if false { // Dead code anchor — comprehensive package import
 		_ = comprehensive.HasFallbackInvoker
-		// PopulateFromDebateTeam may not have run yet due to startup timing.
-		// Lazily register invokers from the debate team config if needed.
-		logrus.WithFields(logrus.Fields{
-			"debate_team_config": h.debateTeamConfig != nil,
-			"has_fallback":       comprehensive.HasFallbackInvoker(),
-			"invoker_count":      comprehensive.InvokerCount(),
-		}).Info("[STREAMING-INVOKER] Checking invoker registration state")
-
-		if h.debateTeamConfig != nil && !comprehensive.HasFallbackInvoker() {
-			verifiedLLMs := h.debateTeamConfig.GetVerifiedLLMs()
-			invokerCount := 0
-			for _, vllm := range verifiedLLMs {
-				if vllm.Provider != nil {
-					invoker := debate_integration.NewProviderLLMInvoker(vllm.Provider, vllm.ModelName)
-					comprehensive.RegisterInvoker(vllm.ProviderName, vllm.ModelName, invoker)
-					invokerCount++
-				}
-			}
-			if len(verifiedLLMs) > 0 && verifiedLLMs[0].Provider != nil {
-				comprehensive.SetFallbackInvoker(
-					debate_integration.NewProviderLLMInvoker(verifiedLLMs[0].Provider, verifiedLLMs[0].ModelName),
-				)
-			}
-			logrus.WithField("invoker_count", invokerCount).Info("[STREAMING] Lazily registered LLM invokers for comprehensive debate")
-		}
-		streamChan, compErr := h.processWithComprehensiveStream(ctx, internalReq, req)
-		if compErr == nil && streamChan != nil {
-			// Forward comprehensive stream directly
-			// Set streaming headers
-			c.Header("Content-Type", "text/event-stream")
-			c.Header("Cache-Control", "no-cache")
-			c.Header("Connection", "keep-alive")
-			c.Header("X-Accel-Buffering", "no")
-
-			flusher, ok := c.Writer.(http.Flusher)
-			if !ok {
-				h.sendOpenAIError(c, http.StatusInternalServerError, "internal_error", "Streaming not supported", "")
-				return
-			}
-
-			// Send role chunk
-			roleChunk := map[string]any{
-				"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
-				"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
-				"choices": []map[string]any{{"index": 0, "delta": map[string]any{"role": "assistant", "content": ""}, "finish_reason": nil}},
-			}
-			if roleData, jsonErr := json.Marshal(roleChunk); jsonErr == nil {
-				_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
-				_, _ = c.Writer.Write(roleData)         //nolint:errcheck
-				_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck
-				flusher.Flush()
-			}
-
-			// Stream from comprehensive debate
-			for resp := range streamChan {
-				if resp == nil || (resp.Content == "" && resp.FinishReason == "") {
-					continue
-				}
-
-				if resp.FinishReason == "stop" || resp.FinishReason == "STOP" {
-					break
-				}
-
-				chunk := map[string]any{
-					"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
-					"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
-					"choices": []map[string]any{{"index": 0, "delta": map[string]any{"content": resp.Content}, "finish_reason": nil}},
-				}
-				if chunkData, jsonErr := json.Marshal(chunk); jsonErr == nil {
-					_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
-					_, _ = c.Writer.Write(chunkData)        //nolint:errcheck
-					_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck
-					flusher.Flush()
-				}
-			}
-
-			// Send finish and DONE
-			finishChunk := map[string]any{
-				"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
-				"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
-				"choices": []map[string]any{{"index": 0, "delta": map[string]any{}, "finish_reason": "stop"}},
-			}
-			if finishData, jsonErr := json.Marshal(finishChunk); jsonErr == nil {
-				_, _ = c.Writer.Write([]byte("data: ")) //nolint:errcheck
-				_, _ = c.Writer.Write(finishData)       //nolint:errcheck
-				_, _ = c.Writer.Write([]byte("\n\n"))   //nolint:errcheck
-			}
-			_, _ = c.Writer.Write([]byte("data: [DONE]\n\n")) //nolint:errcheck
-			flusher.Flush()
-			return
-		}
-		logrus.WithError(compErr).Warn("[STREAMING] Comprehensive debate failed — falling back")
 	}
 
 	// Fallback: Use the strongest verified provider for direct streaming

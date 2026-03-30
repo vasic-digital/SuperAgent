@@ -648,8 +648,16 @@ func (ds *DebateService) ConductDebate(
 
 	ds.logger.Infof("Starting debate %s with topic: %s", config.DebateID, config.Topic)
 
-	// NEW: Use Comprehensive Multi-Agent Debate System when enabled
-	if ds.useComprehensiveSystem && ds.comprehensiveIntegration != nil {
+	// Use Comprehensive Multi-Agent Debate System when enabled,
+	// UNLESS the request came from the OpenAI-compatible handler (which provides its own participants)
+	// or the comprehensive system has no providers configured.
+	useComprehensive := ds.useComprehensiveSystem && ds.comprehensiveIntegration != nil
+	if config.Metadata != nil {
+		if _, fromOpenAI := config.Metadata["source"]; fromOpenAI {
+			useComprehensive = false // OpenAI handler provides participants; use conductRealDebate
+		}
+	}
+	if useComprehensive {
 		ds.logger.Info("[Comprehensive Debate] Using new multi-agent debate system")
 		return ds.conductComprehensiveDebate(ctx, config, startTime, sessionID)
 	}
