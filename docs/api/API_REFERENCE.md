@@ -22,6 +22,7 @@ Complete API documentation for HelixAgent and LLMsVerifier.
 16. [Monitoring Endpoints](#monitoring-endpoints)
 17. [Debates Team API](#debates-team-api)
 18. [LLMsVerifier Capability Detection API](#llmsverifier-capability-detection-api)
+19. [QA API](#qa-api)
 
 ---
 
@@ -1771,6 +1772,65 @@ oauthProviders := capabilities.GetProvidersWithCapability("oauth", nil)
 mcpAgents := capabilities.GetCLIAgentsWithCapability("mcp")
 checkpointAgents := capabilities.GetCLIAgentsWithCapability("checkpointing")
 ```
+
+---
+
+## QA API
+
+The HelixQA subsystem exposes six endpoints under `/v1/qa` for autonomous QA
+pipeline management, findings lifecycle tracking, platform discovery, and
+project knowledge extraction.
+
+Full documentation: **[QA_API_REFERENCE.md](QA_API_REFERENCE.md)**
+
+### Quick Reference
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/v1/qa/sessions` | Start an autonomous QA session across one or more platforms |
+| `GET` | `/v1/qa/findings` | List findings, optionally filtered by status (`open`, `fixed`, `verified`) |
+| `GET` | `/v1/qa/findings/:id` | Get a specific finding by ID (e.g. `HELIX-001`) |
+| `PUT` | `/v1/qa/findings/:id` | Update a finding's lifecycle status |
+| `GET` | `/v1/qa/platforms` | List supported QA platforms (`android`, `web`, `desktop`, `cli`, `api`, …) |
+| `POST` | `/v1/qa/discover` | Discover project documentation, constraints, and credentials |
+
+### Example: Start a Web QA Session
+
+```bash
+curl -s -X POST http://localhost:7061/v1/qa/sessions \
+  -H "Authorization: Bearer $HELIXAGENT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "project_root": "/home/user/myapp",
+    "platforms": ["web"],
+    "web_url": "http://localhost:3000",
+    "output_dir": "/tmp/qa-run-01"
+  }' | jq .
+```
+
+**Response:**
+```json
+{
+  "status": "completed",
+  "session_id": "a3f1b2c4-dead-beef-cafe-000000000001",
+  "duration": 184000000000,
+  "tests_planned": 42,
+  "tests_run": 38,
+  "issues_found": 5,
+  "tickets_created": 5,
+  "coverage_pct": 74.3
+}
+```
+
+### Example: List Open Findings
+
+```bash
+curl -s "http://localhost:7061/v1/qa/findings?status=open" \
+  -H "Authorization: Bearer $HELIXAGENT_API_KEY" | jq .
+```
+
+See [QA_API_REFERENCE.md](QA_API_REFERENCE.md) for complete request/response
+schemas, all error codes, and curl examples for every endpoint.
 
 ---
 
