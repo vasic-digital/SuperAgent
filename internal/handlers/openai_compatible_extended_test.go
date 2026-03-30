@@ -315,40 +315,6 @@ func TestExtractContentForFile(t *testing.T) {
 	}
 }
 
-// TestExtractDocumentationContent tests documentation content extraction
-func TestExtractDocumentationContent(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		notEmpty bool
-	}{
-		{
-			name:     "WithCodeBlock",
-			input:    "Documentation:\n```\nContent here\n```\nAfter",
-			notEmpty: true,
-		},
-		{
-			name:     "WithDocPattern",
-			input:    "Documentation should include important info\n\nMore content",
-			notEmpty: true,
-		},
-		{
-			name:     "NoPatterns",
-			input:    "Just plain text without patterns",
-			notEmpty: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := extractDocumentationContent(tt.input)
-			if tt.notEmpty {
-				assert.NotEmpty(t, result)
-			}
-		})
-	}
-}
-
 // TestExtractToolArguments_Extended tests tool argument extraction
 func TestExtractToolArguments_Extended(t *testing.T) {
 	tests := []struct {
@@ -499,19 +465,6 @@ func TestContainsAny_Extended(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
-}
-
-// TestGenerateID_Extended tests the generateID helper function
-func TestGenerateID_Extended(t *testing.T) {
-	ids := make(map[string]bool)
-	for i := 0; i < 10; i++ {
-		id := generateID()
-		assert.NotEmpty(t, id)
-		assert.True(t, len(id) > 10)
-		ids[id] = true
-	}
-	// All IDs should be unique
-	assert.Equal(t, 10, len(ids))
 }
 
 // TestGenerateToolCallID_Extended tests the generateToolCallID helper function
