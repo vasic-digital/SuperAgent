@@ -1,0 +1,85 @@
+# CLAUDE.md - Website Module
+
+## MANDATORY: No CI/CD Pipelines
+
+**NO GitHub Actions, GitLab CI/CD, or any automated pipeline may exist in this repository!**
+
+- No `.github/workflows/` directory
+- No `.gitlab-ci.yml` file
+- No Jenkinsfile, .travis.yml, .circleci, or any other CI configuration
+- All validation is run manually via scripts or Makefile targets
+- This rule is permanent and non-negotiable
+
+## Overview
+
+This directory contains all user-facing documentation for the HelixAgent project website:
+user manuals, video courses, build scripts, styles, and static assets.
+
+**Module path:** `Website/` (not an independent Go module — content only)
+
+## Structure
+
+```
+Website/
+  user-manuals/     # Step-by-step guides (01-43)
+  video-courses/    # Video course content (course-*, video-course-*, courses-*/)
+  scripts/          # Build and validation scripts
+  styles/           # Stylesheet assets
+  public/           # Static public assets
+  build.sh          # Website build script
+  README.md         # Module overview
+  CLAUDE.md         # This file
+  AGENTS.md         # Agent development guidelines
+```
+
+## Content Standards
+
+### Markdown Formatting
+
+- Standard CommonMark Markdown
+- Headings: `#` for title, `##` for sections, `###` for subsections
+- Code blocks: triple backticks with explicit language identifier (` ```bash `, ` ```go `, etc.)
+- Line length: 80 chars preferred, 120 chars maximum
+- Blank line between every block element (headings, paragraphs, lists, code blocks)
+
+### User Manuals (`user-manuals/`)
+
+- Sequential numbering: `NN-<topic-slug>.md` (e.g., `44-helix-memory-guide.md`)
+- Next manual number: **44**
+- Each manual must include: overview, prerequisites, step-by-step instructions,
+  real curl/command examples, troubleshooting section
+- Always use live API endpoints (`http://localhost:7061/v1/...`)
+- No placeholder responses — show realistic output
+
+### Video Courses (`video-courses/`)
+
+- Primary series: `course-NN-<topic>.md` — next number: **77**
+- Extended series: `video-course-NN-<topic>.md` — follows same sequence as primary
+- Each course file must include: learning objectives, lesson outline, code examples,
+  exercises, and a summary
+- Batch subdirectories (`courses-NN-MM/`) group related courses; add new ones as needed
+
+## Key Rules
+
+- **NEVER delete existing content** — only add or update
+- **NEVER rename existing files** — external links may depend on filenames
+- **Preserve ALL existing headings and structure** when updating a file
+- Add new sections at the end of existing files unless a logical insert point exists
+- Keep all examples runnable against a local HelixAgent instance (`localhost:7061`)
+- Cross-reference related manuals: `[Provider Configuration](../user-manuals/02-provider-configuration.md)`
+- Cross-reference related courses: `[Course 03](../video-courses/course-03-deployment.md)`
+
+## Validation
+
+No build step required — content is pure Markdown. Manual validation steps:
+
+1. Check all internal links resolve to existing files
+2. Verify curl examples use correct port (`7061`) and path prefixes (`/v1/`)
+3. Confirm sequential numbering has no gaps
+4. Ensure new manuals are listed in `user-manuals/README.md`
+
+## Resource Limits
+
+Any scripts under `scripts/` must respect the project-wide resource limit policy:
+30-40% of host resources. Use `nice -n 19` and `ionice -c 3` for any background
+processing scripts.
