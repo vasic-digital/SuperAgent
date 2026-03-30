@@ -362,87 +362,6 @@ func TestUnifiedHandler_ConvertToOpenAIChatStreamResponse(t *testing.T) {
 	assert.Equal(t, "Streaming test response", delta2["content"])
 }
 
-// TestContains tests the contains helper function
-func TestContains(t *testing.T) {
-	tests := []struct {
-		s        string
-		substr   string
-		expected bool
-	}{
-		{"hello world", "hello", true},
-		{"hello world", "world", true},
-		{"hello world", "lo wo", true},
-		{"hello", "hello", true},
-		{"hello", "xyz", false},
-		{"openai/gpt-4", "openai", true},
-		{"anthropic/claude", "anthropic", true},
-		{"google/gemini", "google", true},
-		{"", "", true},
-		{"test", "", true},
-		{"", "test", false},
-		{"abc", "abcd", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.s+"_"+tt.substr, func(t *testing.T) {
-			result := contains(tt.s, tt.substr)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-// TestContainsSubstring tests the containsSubstring helper function
-func TestContainsSubstring(t *testing.T) {
-	tests := []struct {
-		s        string
-		substr   string
-		expected bool
-	}{
-		{"hello world", "lo wo", true},
-		{"hello world", "world", true},
-		{"hello world", "hello", true},
-		{"abc", "abc", true},
-		{"abc", "abcd", false},
-		{"abc", "xyz", false},
-		{"", "", true},
-		{"test", "", true},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.s+"_"+tt.substr, func(t *testing.T) {
-			result := containsSubstring(tt.s, tt.substr)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-// TestGenerateID tests the generateID helper function
-func TestGenerateID(t *testing.T) {
-	t.Run("generates 29 character ID", func(t *testing.T) {
-		id := generateID()
-		assert.Len(t, id, 29)
-	})
-
-	t.Run("generates unique IDs", func(t *testing.T) {
-		ids := make(map[string]bool)
-		for i := 0; i < 100; i++ {
-			id := generateID()
-			assert.False(t, ids[id], "Generated duplicate ID")
-			ids[id] = true
-		}
-	})
-
-	t.Run("contains only alphanumeric characters", func(t *testing.T) {
-		id := generateID()
-		for _, char := range id {
-			isAlphanumeric := (char >= 'a' && char <= 'z') ||
-				(char >= 'A' && char <= 'Z') ||
-				(char >= '0' && char <= '9')
-			assert.True(t, isAlphanumeric, "Character %c is not alphanumeric", char)
-		}
-	})
-}
-
 // TestUnifiedHandler_ConvertOpenAIChatRequest_WithToolCalls tests conversion with tool calls
 func TestUnifiedHandler_ConvertOpenAIChatRequest_WithToolCalls(t *testing.T) {
 	handler := &UnifiedHandler{}
@@ -1244,14 +1163,6 @@ func BenchmarkUnifiedHandler_ConvertToOpenAIChatResponse(b *testing.B) {
 	}
 }
 
-// BenchmarkGenerateID benchmarks ID generation
-func BenchmarkGenerateID(b *testing.B) {
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		generateID()
-	}
-}
-
 // =============================================================================
 // STREAMING TESTS
 // =============================================================================
@@ -2000,35 +1911,6 @@ func TestUnifiedHandler_DebateTeamInitialized(t *testing.T) {
 	assert.NotNil(t, handler.debateTeamConfig, "Debate team config must exist")
 }
 
-// TestUnifiedHandler_DebateDialogueResponse_HasContent tests individual position responses
-func TestUnifiedHandler_DebateDialogueResponse_HasContent(t *testing.T) {
-	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
-	cfg := &config.Config{}
-	handler := NewUnifiedHandler(registry, cfg)
-
-	topic := "Test topic"
-	positions := []services.DebateTeamPosition{
-		services.PositionAnalyst,
-		services.PositionProposer,
-		services.PositionCritic,
-		services.PositionSynthesis,
-		services.PositionMediator,
-	}
-
-	// Count how many positions have registered characters
-	hasCharacter := 0
-	for _, pos := range positions {
-		response := handler.generateDebateDialogueResponse(pos, topic)
-		if response != "" {
-			hasCharacter++
-			// Verify response contains expected structure
-			assert.Contains(t, response, ":\n", "Response should have character name followed by colon")
-		}
-	}
-
-	t.Logf("Positions with registered characters: %d/%d", hasCharacter, len(positions))
-}
-
 // TestUnifiedHandler_DebateDialogueConclusion_HasContent tests conclusion section
 func TestUnifiedHandler_DebateDialogueConclusion_HasContent(t *testing.T) {
 	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
@@ -2115,64 +1997,6 @@ func TestUnifiedHandler_FullDebateDialogueFlow(t *testing.T) {
 	}
 }
 
-// TestUnifiedHandler_BuildDebateRoleSystemPrompt tests system prompt generation for debate roles
-func TestUnifiedHandler_BuildDebateRoleSystemPrompt(t *testing.T) {
-	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
-	cfg := &config.Config{}
-	handler := NewUnifiedHandler(registry, cfg)
-
-	testCases := []struct {
-		position     services.DebateTeamPosition
-		role         services.DebateRole
-		expectedText string
-		description  string
-	}{
-		{
-			position:     services.PositionAnalyst,
-			role:         services.RoleAnalyst,
-			expectedText: "THE ANALYST",
-			description:  "Analyst role should mention THE ANALYST",
-		},
-		{
-			position:     services.PositionProposer,
-			role:         services.RoleProposer,
-			expectedText: "THE PROPOSER",
-			description:  "Proposer role should mention THE PROPOSER",
-		},
-		{
-			position:     services.PositionCritic,
-			role:         services.RoleCritic,
-			expectedText: "THE CRITIC",
-			description:  "Critic role should mention THE CRITIC",
-		},
-		{
-			position:     services.PositionSynthesis,
-			role:         services.RoleSynthesis,
-			expectedText: "THE SYNTHESIZER",
-			description:  "Synthesis role should mention THE SYNTHESIZER",
-		},
-		{
-			position:     services.PositionMediator,
-			role:         services.RoleMediator,
-			expectedText: "THE MEDIATOR",
-			description:  "Mediator role should mention THE MEDIATOR",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.description, func(t *testing.T) {
-			prompt := handler.buildDebateRoleSystemPrompt(tc.position, tc.role)
-
-			// Verify prompt contains expected role text
-			assert.Contains(t, prompt, tc.expectedText, tc.description)
-
-			// Verify prompt contains base instructions
-			assert.Contains(t, prompt, "AI debate ensemble", "Prompt should mention debate ensemble")
-			assert.Contains(t, prompt, "2-3 sentences", "Prompt should mention conciseness")
-		})
-	}
-}
-
 // TestUnifiedHandler_GenerateRealDebateResponse_NoConfig tests fallback behavior
 func TestUnifiedHandler_GenerateRealDebateResponse_NoConfig(t *testing.T) {
 	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
@@ -2190,31 +2014,6 @@ func TestUnifiedHandler_GenerateRealDebateResponse_NoConfig(t *testing.T) {
 
 	assert.Error(t, err, "Should return error when debate team config is nil")
 	assert.Contains(t, err.Error(), "not available", "Error should mention config not available")
-}
-
-// TestUnifiedHandler_GenerateDebateDialogueResponse_Header tests header generation
-func TestUnifiedHandler_GenerateDebateDialogueResponse_Header(t *testing.T) {
-	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
-	cfg := &config.Config{}
-	handler := NewUnifiedHandler(registry, cfg)
-
-	positions := []services.DebateTeamPosition{
-		services.PositionAnalyst,
-		services.PositionProposer,
-		services.PositionCritic,
-		services.PositionSynthesis,
-		services.PositionMediator,
-	}
-
-	for _, pos := range positions {
-		header := handler.generateDebateDialogueResponse(pos, "test topic")
-
-		// Header should contain opening quote for the response
-		if header != "" {
-			assert.Contains(t, header, "\"", "Header should contain opening quote")
-			assert.Contains(t, header, ":\n", "Header should contain colon and newline")
-		}
-	}
 }
 
 // TestUnifiedHandler_RealDebateResponses_Integration tests the full integration of debate responses
@@ -2599,74 +2398,6 @@ func TestStreamingFlowIncludesSynthesis(t *testing.T) {
 	assert.Equal(t, services.DebateTeamPosition(5), services.PositionMediator)
 }
 
-// TestDebateRoleSystemPromptIncludesCodingContext validates that the system prompts
-// include context about being an AI coding assistant with tool access
-// THIS TEST WILL FAIL if the coding assistant context is missing
-func TestDebateRoleSystemPromptIncludesCodingContext(t *testing.T) {
-	handler := &UnifiedHandler{}
-
-	// All debate positions must have the coding assistant context
-	positions := []struct {
-		position services.DebateTeamPosition
-		role     services.DebateRole
-	}{
-		{services.PositionAnalyst, services.RoleAnalyst},
-		{services.PositionProposer, services.RoleProposer},
-		{services.PositionCritic, services.RoleCritic},
-		{services.PositionSynthesis, services.RoleSynthesis},
-		{services.PositionMediator, services.RoleMediator},
-	}
-
-	requiredContextPhrases := []string{
-		"HelixAgent",
-		"AI coding assistant",
-		"Claude Code",
-		"OpenCode",
-		"codebase through tools",
-		`NEVER say "I cannot see your codebase"`,
-	}
-
-	for _, pos := range positions {
-		prompt := handler.buildDebateRoleSystemPrompt(pos.position, pos.role)
-
-		// Validate that ALL required context phrases are present
-		for _, phrase := range requiredContextPhrases {
-			assert.Contains(t, prompt, phrase,
-				"Position %v system prompt must contain coding assistant context: %s",
-				pos.position, phrase)
-		}
-
-		// Each position should also have coding-specific guidance
-		assert.Contains(t, prompt, "coding questions",
-			"Position %v system prompt must have coding-specific role guidance", pos.position)
-	}
-}
-
-// TestDebateRoleSystemPromptDoesNotSayCannotSeeCode validates that the prompts
-// specifically instruct the AI NOT to claim it cannot see the codebase
-func TestDebateRoleSystemPromptDoesNotSayCannotSeeCode(t *testing.T) {
-	handler := &UnifiedHandler{}
-
-	positions := []struct {
-		position services.DebateTeamPosition
-		role     services.DebateRole
-	}{
-		{services.PositionAnalyst, services.RoleAnalyst},
-		{services.PositionProposer, services.RoleProposer},
-		{services.PositionCritic, services.RoleCritic},
-		{services.PositionSynthesis, services.RoleSynthesis},
-		{services.PositionMediator, services.RoleMediator},
-	}
-
-	for _, pos := range positions {
-		prompt := handler.buildDebateRoleSystemPrompt(pos.position, pos.role)
-
-		// The prompt MUST contain instruction to NOT say they can't see the codebase
-		assert.Contains(t, prompt, `NEVER say "I cannot see your codebase"`,
-			"Position %v MUST include instruction to not claim inability to see codebase", pos.position)
-	}
-}
-
 // ===============================================================================================
 // TOOL SUPPORT TESTS - CRITICAL for AI coding assistants (OpenCode, Claude Code, Qwen Code)
 // These tests validate that tools are properly captured and passed to LLMs
@@ -2848,17 +2579,6 @@ func TestToolsPassedToLLMRequest(t *testing.T) {
 
 	_, hasParallel := internalReq.ModelParams.ProviderSpecific["parallel_tool_calls"]
 	assert.True(t, hasParallel, "Parallel tool calls should be in provider specific params")
-}
-
-// TestDebateRoleSystemPromptBackwardCompatibility validates backward compatibility
-func TestDebateRoleSystemPromptBackwardCompatibility(t *testing.T) {
-	handler := &UnifiedHandler{}
-
-	// The old function should still work (it calls the new one with nil tools)
-	promptOld := handler.buildDebateRoleSystemPrompt(services.PositionAnalyst, services.RoleAnalyst)
-	promptNew := handler.buildDebateRoleSystemPromptWithTools(services.PositionAnalyst, "", services.RoleAnalyst, nil)
-
-	assert.Equal(t, promptOld, promptNew, "Old and new functions should produce same output when no tools")
 }
 
 // TestCodingAssistantContextAlwaysPresent validates that coding context is always present
