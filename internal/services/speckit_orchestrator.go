@@ -141,6 +141,9 @@ func (so *SpecKitOrchestrator) ExecuteFlow(ctx context.Context, userRequest stri
 		result.Duration = time.Since(startTime)
 		return result, fmt.Errorf("constitution phase failed: %w", err)
 	}
+	if err := so.savePhaseToCache(flowID, PhaseConstitution, constitutionResult); err != nil {
+		so.logger.WithError(err).Warn("[SpecKit] Failed to cache phase result")
+	}
 	//nolint:errcheck // artifact type guaranteed by phase execution
 	result.Constitution = constitutionResult.Artifacts["constitution"].(*Constitution)
 
@@ -153,6 +156,9 @@ func (so *SpecKitOrchestrator) ExecuteFlow(ctx context.Context, userRequest stri
 		result.Duration = time.Since(startTime)
 		return result, fmt.Errorf("specify phase failed: %w", err)
 	}
+	if err := so.savePhaseToCache(flowID, PhaseSpecify, specifyResult); err != nil {
+		so.logger.WithError(err).Warn("[SpecKit] Failed to cache phase result")
+	}
 
 	// Phase 3: Clarify
 	clarifyResult, err := so.executeClarifyPhase(ctx, userRequest, result.Constitution, specifyResult)
@@ -162,6 +168,9 @@ func (so *SpecKitOrchestrator) ExecuteFlow(ctx context.Context, userRequest stri
 		result.EndTime = time.Now()
 		result.Duration = time.Since(startTime)
 		return result, fmt.Errorf("clarify phase failed: %w", err)
+	}
+	if err := so.savePhaseToCache(flowID, PhaseClarify, clarifyResult); err != nil {
+		so.logger.WithError(err).Warn("[SpecKit] Failed to cache phase result")
 	}
 
 	// Phase 4: Plan
@@ -173,6 +182,9 @@ func (so *SpecKitOrchestrator) ExecuteFlow(ctx context.Context, userRequest stri
 		result.Duration = time.Since(startTime)
 		return result, fmt.Errorf("plan phase failed: %w", err)
 	}
+	if err := so.savePhaseToCache(flowID, PhasePlan, planResult); err != nil {
+		so.logger.WithError(err).Warn("[SpecKit] Failed to cache phase result")
+	}
 
 	// Phase 5: Tasks
 	tasksResult, err := so.executeTasksPhase(ctx, planResult)
@@ -182,6 +194,9 @@ func (so *SpecKitOrchestrator) ExecuteFlow(ctx context.Context, userRequest stri
 		result.EndTime = time.Now()
 		result.Duration = time.Since(startTime)
 		return result, fmt.Errorf("tasks phase failed: %w", err)
+	}
+	if err := so.savePhaseToCache(flowID, PhaseTasks, tasksResult); err != nil {
+		so.logger.WithError(err).Warn("[SpecKit] Failed to cache phase result")
 	}
 
 	// Phase 6: Analyze
@@ -193,6 +208,9 @@ func (so *SpecKitOrchestrator) ExecuteFlow(ctx context.Context, userRequest stri
 		result.Duration = time.Since(startTime)
 		return result, fmt.Errorf("analyze phase failed: %w", err)
 	}
+	if err := so.savePhaseToCache(flowID, PhaseAnalyze, analyzeResult); err != nil {
+		so.logger.WithError(err).Warn("[SpecKit] Failed to cache phase result")
+	}
 
 	// Phase 7: Implement
 	implementResult, err := so.executeImplementPhase(ctx, result.Constitution, analyzeResult, tasksResult)
@@ -203,10 +221,17 @@ func (so *SpecKitOrchestrator) ExecuteFlow(ctx context.Context, userRequest stri
 		result.Duration = time.Since(startTime)
 		return result, fmt.Errorf("implement phase failed: %w", err)
 	}
+	if err := so.savePhaseToCache(flowID, PhaseImplement, implementResult); err != nil {
+		so.logger.WithError(err).Warn("[SpecKit] Failed to cache phase result")
+	}
 
 	result.Success = true
 	result.EndTime = time.Now()
 	result.Duration = time.Since(startTime)
+
+	if err := so.saveFlowToCache(result); err != nil {
+		so.logger.WithError(err).Warn("[SpecKit] Failed to cache flow result")
+	}
 
 	so.logger.WithFields(logrus.Fields{
 		"flow_id":  flowID,
