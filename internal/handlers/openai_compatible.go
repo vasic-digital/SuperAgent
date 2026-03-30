@@ -864,7 +864,23 @@ Respond concisely and helpfully.`, clientName, toolList)
 			Metadata:     map[string]any{"stream_id": streamID, "source": "openai_compatible"},
 		}
 
-		// Build conversation context for the debate
+		// Pass system context so debate participants know they are HelixAgent assistants
+		var systemContext strings.Builder
+		for _, m := range internalReq.Messages {
+			if m.Role == "system" {
+				// Truncate very long system messages (tool schemas) to avoid token limits
+				content := m.Content
+				if len(content) > 2000 {
+					content = content[:2000] + "\n...[truncated]"
+				}
+				systemContext.WriteString(content + "\n")
+			}
+		}
+		if systemContext.Len() > 0 {
+			debateConfig.Metadata["system_context"] = systemContext.String()
+		}
+
+		// Pass conversation history
 		var conversationContext []string
 		for _, m := range internalReq.Messages {
 			if m.Role == "user" || m.Role == "assistant" {

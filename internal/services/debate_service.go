@@ -653,14 +653,16 @@ func (ds *DebateService) ConductDebate(
 	// or the comprehensive system has no providers configured.
 	useComprehensive := ds.useComprehensiveSystem && ds.comprehensiveIntegration != nil
 	if config.Metadata != nil {
-		if _, fromOpenAI := config.Metadata["source"]; fromOpenAI {
-			useComprehensive = false // OpenAI handler provides participants; use conductRealDebate
+		if source, fromOpenAI := config.Metadata["source"]; fromOpenAI {
+			ds.logger.WithField("source", source).Info("[ConductDebate] OpenAI source detected, bypassing comprehensive system")
+			useComprehensive = false
 		}
 	}
 	if useComprehensive {
 		ds.logger.Info("[Comprehensive Debate] Using new multi-agent debate system")
 		return ds.conductComprehensiveDebate(ctx, config, startTime, sessionID)
 	}
+	ds.logger.WithField("participants", len(config.Participants)).Info("[ConductDebate] Using conductRealDebate with multi-round consensus")
 
 	// Require provider registry for real LLM calls - no fallback to simulated data
 	if ds.providerRegistry == nil {
@@ -720,10 +722,19 @@ func (ds *DebateService) ConductDebate(
 	}
 
 	// Standard debate with 4-Pass Validation and Tool Integration
+	ds.logger.Info("[ConductDebate] Calling conductRealDebate")
 	result, err := ds.conductRealDebate(ctx, config, startTime, sessionID)
 	if err != nil {
+		ds.logger.WithError(err).Error("[ConductDebate] conductRealDebate failed")
 		return nil, err
 	}
+	ds.logger.WithFields(logrus.Fields{
+		"all_responses":    len(result.AllResponses),
+		"participants":     len(result.Participants),
+		"rounds_conducted": result.RoundsConducted,
+		"has_best":         result.BestResponse != nil,
+		"success":          result.Success,
+	}).Info("[ConductDebate] conductRealDebate completed")
 
 	// NEW: Apply 4-Pass Validation Pipeline to result
 	if ds.validationPipeline != nil {
@@ -1143,6 +1154,14 @@ func (ds *DebateService) getParticipantResponse(
 	// Build the prompt with context from previous responses
 	prompt := ds.buildDebatePrompt(config.Topic, participant, round, previousResponses)
 
+	// Build system prompt with context from the original request
+	systemPrompt := ds.buildSystemPrompt(participant)
+	if config.Metadata != nil {
+		if sysCtx, ok := config.Metadata["system_context"].(string); ok && sysCtx != "" {
+			systemPrompt = sysCtx + "\n\n" + systemPrompt
+		}
+	}
+
 	// Create LLM request
 	llmRequest := &models.LLMRequest{
 		ID:        uuid.New().String(),
@@ -1151,7 +1170,7 @@ func (ds *DebateService) getParticipantResponse(
 		Messages: []models.Message{
 			{
 				Role:    "system",
-				Content: ds.buildSystemPrompt(participant),
+				Content: systemPrompt,
 			},
 			{
 				Role:    "user",
@@ -1440,10 +1459,9 @@ func (ds *DebateService) buildDebatePrompt(
 	hasContext := len(previousResponses) > 0
 	intentResult := ds.classifyUserIntent(topic, hasContext)
 
+	sb.WriteString("You are an AI assistant in a multi-model ensemble. Answer the user's request directly and helpfully from your role's perspective. Be concise (2-3 paragraphs max). Do NOT output code blocks or tool commands as text.\n\n")
 	sb.WriteString(fmt.Sprintf("USER REQUEST: %s\n\n", topic))
-	sb.WriteString(fmt.Sprintf("ROUND: %d\n", round))
-	sb.WriteString(fmt.Sprintf("YOUR ROLE: %s (%s)\n\n", participant.Name, participant.Role))
-	sb.WriteString("You are an AI assistant in a multi-model ensemble. Answer the user's request directly and helpfully from your role's perspective. Be concise (2-3 paragraphs max). Do NOT debate or philosophize — give a practical, actionable answer.\n\n")
+	sb.WriteString(fmt.Sprintf("ROUND: %d | YOUR ROLE: %s (%s)\n\n", round, participant.Name, participant.Role))
 
 	// Handle different user intents semantically
 	if intentResult.IsConfirmation() || intentResult.ShouldProceed() {
