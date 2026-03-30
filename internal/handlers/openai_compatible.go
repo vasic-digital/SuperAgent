@@ -859,8 +859,23 @@ Respond concisely and helpfully.`, clientName, toolList)
 		specialistRoles := debateRoles[:len(debateRoles)-1] // All except Moderator
 		moderatorRole := debateRoles[len(debateRoles)-1]    // Moderator is last
 
-		sendSSEChunk("*Analyzing with AI ensemble...*\n\n")
+		// ============================================================
+		// PHASE 1: Stream ensemble team table with positions + fallbacks
+		// ============================================================
+		teamIntro := h.generateDebateTeamIntroduction()
+		if teamIntro != "" {
+			for _, line := range strings.Split(teamIntro, "\n") {
+				sendSSEChunk(line + "\n")
+			}
+			sendSSEChunk("\n---\n\n")
+		}
 
+		// Collect tool_calls from all roles for execution after synthesis
+		var collectedToolCalls []models.ToolCall
+
+		// ============================================================
+		// PHASE 2: Stream each specialist's response with role header
+		// ============================================================
 		for i, rc := range specialistRoles {
 			if ctx.Err() != nil {
 				break
@@ -888,7 +903,7 @@ Respond concisely and helpfully.`, clientName, toolList)
 			}
 			debateMessages = append(debateMessages, models.Message{
 				Role:    "system",
-				Content: rc.Prompt + "\n\nProvide your analysis concisely (2-3 sentences). Focus on actionable insights for your specialty.",
+				Content: rc.Prompt + "\n\nIMPORTANT: You have FULL ACCESS to the user's codebase through tools. Use them to provide concrete, specific answers.",
 			})
 			for _, m := range internalReq.Messages {
 				if m.Role == "user" || m.Role == "assistant" {
@@ -897,68 +912,110 @@ Respond concisely and helpfully.`, clientName, toolList)
 			}
 			debateReq := &models.LLMRequest{
 				Messages:    debateMessages,
-				ModelParams: models.ModelParameters{Model: vllm.ModelName, MaxTokens: 1024},
+				ModelParams: models.ModelParameters{Model: vllm.ModelName, MaxTokens: 2048},
+			}
+			if len(req.Tools) > 0 {
+				debateReq.Tools = h.convertOpenAIToolsToModelTools(req.Tools)
+				debateReq.ToolChoice = "auto"
 			}
 
-			// Collect response internally (NOT streamed to user)
+			// Stream role header so user sees which LLM is responding
+			sendSSEChunk(fmt.Sprintf("\n**%s** (%s/%s)\n", rc.Name, vllm.ProviderName, vllm.ModelName))
+
 			var roleContent strings.Builder
-			resp, callErr := vllm.Provider.Complete(ctx, debateReq)
-			if callErr != nil {
-				// Try fallbacks
-				for fbIdx := 0; fbIdx < len(verifiedLLMs); fbIdx++ {
-					if fbIdx == llmIdx {
+			usedProvider := vllm.ProviderName
+			usedModel := vllm.ModelName
+
+			// Try streaming first
+			streamCh, streamErr := vllm.Provider.CompleteStream(ctx, debateReq)
+			if streamErr == nil && streamCh != nil {
+				for resp := range streamCh {
+					if resp == nil || resp.Content == "" {
 						continue
 					}
-					fb := verifiedLLMs[fbIdx]
-					if fb.Provider == nil {
-						continue
-					}
-					fbReq := &models.LLMRequest{
-						Messages:    debateReq.Messages,
-						ModelParams: models.ModelParameters{Model: fb.ModelName, MaxTokens: 1024},
-					}
-					fbResp, fbErr := fb.Provider.Complete(ctx, fbReq)
-					if fbErr == nil && fbResp != nil && fbResp.Content != "" {
-						roleContent.WriteString(fbResp.Content)
-						logrus.WithFields(logrus.Fields{
-							"role": rc.Name, "fallback": fb.ProviderName,
-						}).Info("[DEBATE] Specialist fallback activated")
+					if resp.FinishReason == "stop" || resp.FinishReason == "STOP" {
 						break
 					}
+					sendSSEChunk(resp.Content)
+					roleContent.WriteString(resp.Content)
 				}
-			} else if resp != nil {
-				roleContent.WriteString(resp.Content)
+			} else {
+				// Non-streaming fallback with full fallback chain
+				resp, callErr := vllm.Provider.Complete(ctx, debateReq)
+				if callErr != nil {
+					for fbIdx := 0; fbIdx < len(verifiedLLMs); fbIdx++ {
+						if fbIdx == llmIdx {
+							continue
+						}
+						fb := verifiedLLMs[fbIdx]
+						if fb.Provider == nil {
+							continue
+						}
+						fbReq := &models.LLMRequest{
+							Messages:    debateReq.Messages,
+							ModelParams: models.ModelParameters{Model: fb.ModelName, MaxTokens: 2048},
+						}
+						if len(debateReq.Tools) > 0 {
+							fbReq.Tools = debateReq.Tools
+							fbReq.ToolChoice = "auto"
+						}
+						fbResp, fbErr := fb.Provider.Complete(ctx, fbReq)
+						if fbErr == nil && fbResp != nil && fbResp.Content != "" {
+							sendSSEChunk(fmt.Sprintf(" *(fallback: %s/%s)*\n", fb.ProviderName, fb.ModelName))
+							sendSSEChunk(fbResp.Content)
+							roleContent.WriteString(fbResp.Content)
+							usedProvider = fb.ProviderName
+							usedModel = fb.ModelName
+							if len(fbResp.ToolCalls) > 0 {
+								collectedToolCalls = append(collectedToolCalls, fbResp.ToolCalls...)
+							}
+							break
+						}
+					}
+					if roleContent.Len() == 0 {
+						errMsg := callErr.Error()
+						if len(errMsg) > 100 {
+							errMsg = errMsg[:100]
+						}
+						sendSSEChunk(fmt.Sprintf(" *[failed: %s]*\n", errMsg))
+					}
+				} else if resp != nil {
+					sendSSEChunk(resp.Content)
+					roleContent.WriteString(resp.Content)
+					if len(resp.ToolCalls) > 0 {
+						collectedToolCalls = append(collectedToolCalls, resp.ToolCalls...)
+					}
+				}
 			}
+			sendSSEChunk("\n")
 
 			rr := roleResult{
-				Role: rc.Name, ProviderName: vllm.ProviderName,
-				ModelName: vllm.ModelName, Score: vllm.Score,
+				Role: rc.Name, ProviderName: usedProvider,
+				ModelName: usedModel, Score: vllm.Score,
 				Duration: time.Since(roleStart), Content: roleContent.String(),
 			}
 			results = append(results, rr)
 			logrus.WithFields(logrus.Fields{
 				"role": rc.Name, "provider": rr.ProviderName,
-				"duration": rr.Duration, "content_len": len(rr.Content),
-			}).Info("[DEBATE] Specialist response collected internally")
+				"model": rr.ModelName, "duration": rr.Duration,
+				"content_len": len(rr.Content),
+			}).Info("[DEBATE] Role response streamed")
 		}
 
 		// ============================================================
-		// PHASE 2: Moderator synthesizes all specialist inputs into
-		// ONE coherent response, which is the ONLY thing streamed
-		// to the user. This is what makes the ensemble useful.
+		// PHASE 3: Moderator synthesizes all specialist inputs into
+		// a final decision. Streamed visibly with header.
 		// ============================================================
-		logrus.Info("[DEBATE] Phase 2: Moderator synthesis from specialist inputs")
+		logrus.Info("[DEBATE] Phase 3: Moderator synthesis from specialist inputs")
 
 		// Build synthesis context from all specialist responses
 		var synthesisContext strings.Builder
-		synthesisContext.WriteString("You received analysis from the following AI specialists:\n\n")
 		for _, r := range results {
 			if r.Content != "" {
-				synthesisContext.WriteString(fmt.Sprintf("**%s**: %s\n\n", r.Role, r.Content))
+				synthesisContext.WriteString(fmt.Sprintf("[%s]: %s\n\n", r.Role, r.Content))
 			}
 		}
 
-		// Build Moderator request with all context
 		var moderatorMessages []models.Message
 		for _, m := range internalReq.Messages {
 			if m.Role == "system" {
@@ -967,10 +1024,10 @@ Respond concisely and helpfully.`, clientName, toolList)
 		}
 		moderatorMessages = append(moderatorMessages, models.Message{
 			Role: "system",
-			Content: moderatorRole.Prompt + "\n\n" + synthesisContext.String() +
-				"\n\nSynthesize all specialist perspectives into ONE clear, comprehensive, actionable response. " +
-				"Do NOT list each specialist's opinion separately. Instead, weave their insights into a unified answer. " +
-				"If the user asked for a task (file creation, code changes, analysis), produce the concrete result directly.",
+			Content: moderatorRole.Prompt + "\n\nSpecialist analyses:\n\n" + synthesisContext.String() +
+				"\n\nSynthesize all perspectives into a clear, comprehensive FINAL DECISION. " +
+				"If the user asked for a concrete task, produce the actual result (code, file content, report). " +
+				"Use tools when needed to read files, write code, or run commands.",
 		})
 		for _, m := range internalReq.Messages {
 			if m.Role == "user" || m.Role == "assistant" {
@@ -978,25 +1035,28 @@ Respond concisely and helpfully.`, clientName, toolList)
 			}
 		}
 
-		// Select the best available LLM for the Moderator (use highest-scored)
-		moderatorIdx := (len(specialistRoles)) % len(verifiedLLMs)
-		moderatorLLM := verifiedLLMs[moderatorIdx]
-		// Prefer using the highest-scored LLM for synthesis
+		// Use the best available LLM for the Moderator
+		moderatorLLM := verifiedLLMs[len(specialistRoles)%len(verifiedLLMs)]
 		if len(verifiedLLMs) > 0 {
-			moderatorLLM = verifiedLLMs[0] // First is highest score
+			moderatorLLM = verifiedLLMs[0] // Highest scored
 		}
 
 		moderatorReq := &models.LLMRequest{
 			Messages:    moderatorMessages,
 			ModelParams: models.ModelParameters{Model: moderatorLLM.ModelName, MaxTokens: 4096},
 		}
+		if len(req.Tools) > 0 {
+			moderatorReq.Tools = h.convertOpenAIToolsToModelTools(req.Tools)
+			moderatorReq.ToolChoice = "auto"
+		}
 
-		// Stream the Moderator's synthesis to the user
+		sendSSEChunk(fmt.Sprintf("\n---\n\n**Moderator** (%s/%s) — *Final Decision*\n", moderatorLLM.ProviderName, moderatorLLM.ModelName))
+
 		moderatorStart := time.Now()
 		var moderatorContent strings.Builder
-		streamCh, streamErr := moderatorLLM.Provider.CompleteStream(ctx, moderatorReq)
-		if streamErr == nil && streamCh != nil {
-			for resp := range streamCh {
+		modStream, modStreamErr := moderatorLLM.Provider.CompleteStream(ctx, moderatorReq)
+		if modStreamErr == nil && modStream != nil {
+			for resp := range modStream {
 				if resp == nil || resp.Content == "" {
 					continue
 				}
@@ -1007,10 +1067,8 @@ Respond concisely and helpfully.`, clientName, toolList)
 				moderatorContent.WriteString(resp.Content)
 			}
 		} else {
-			// Fallback: non-streaming
 			resp, callErr := moderatorLLM.Provider.Complete(ctx, moderatorReq)
 			if callErr != nil {
-				// Try other LLMs as moderator fallback
 				for fbIdx := 0; fbIdx < len(verifiedLLMs); fbIdx++ {
 					fb := verifiedLLMs[fbIdx]
 					if fb.Provider == nil || fb.ProviderName == moderatorLLM.ProviderName {
@@ -1019,14 +1077,21 @@ Respond concisely and helpfully.`, clientName, toolList)
 					moderatorReq.ModelParams.Model = fb.ModelName
 					fbResp, fbErr := fb.Provider.Complete(ctx, moderatorReq)
 					if fbErr == nil && fbResp != nil && fbResp.Content != "" {
+						sendSSEChunk(fmt.Sprintf(" *(fallback: %s/%s)*\n", fb.ProviderName, fb.ModelName))
 						sendSSEChunk(fbResp.Content)
 						moderatorContent.WriteString(fbResp.Content)
+						if len(fbResp.ToolCalls) > 0 {
+							collectedToolCalls = append(collectedToolCalls, fbResp.ToolCalls...)
+						}
 						break
 					}
 				}
 			} else if resp != nil {
 				sendSSEChunk(resp.Content)
 				moderatorContent.WriteString(resp.Content)
+				if len(resp.ToolCalls) > 0 {
+					collectedToolCalls = append(collectedToolCalls, resp.ToolCalls...)
+				}
 			}
 		}
 
@@ -1037,18 +1102,48 @@ Respond concisely and helpfully.`, clientName, toolList)
 		})
 
 		totalDuration := time.Since(startTime)
-
 		totalContent := 0
 		for _, r := range results {
 			totalContent += len(r.Content)
 		}
 		logrus.WithFields(logrus.Fields{
-			"debate_id":        debateID,
-			"duration":         totalDuration,
-			"specialist_roles": len(specialistRoles),
-			"total_content":    totalContent,
-			"moderator_len":   moderatorContent.Len(),
-		}).Info("[DEBATE] Debate completed — moderator synthesis streamed to user")
+			"debate_id":     debateID,
+			"duration":      totalDuration,
+			"roles":         len(results),
+			"total_content": totalContent,
+			"tool_calls":    len(collectedToolCalls),
+		}).Info("[DEBATE] Debate completed — all roles + moderator streamed")
+
+		// ============================================================
+		// PHASE 4: Emit collected tool_calls so the CLI agent can
+		// execute them (bash, file read/write, etc.)
+		// ============================================================
+		if len(collectedToolCalls) > 0 {
+			logrus.WithField("count", len(collectedToolCalls)).Info("[DEBATE] Sending collected tool_calls to client")
+			toolCallsJSON := make([]map[string]any, 0, len(collectedToolCalls))
+			for idx, tc := range collectedToolCalls {
+				toolCallsJSON = append(toolCallsJSON, map[string]any{
+					"index": idx,
+					"id":    tc.ID,
+					"type":  "function",
+					"function": map[string]any{
+						"name":      tc.Function.Name,
+						"arguments": tc.Function.Arguments,
+					},
+				})
+			}
+			toolData, _ := json.Marshal(map[string]any{ //nolint:errcheck
+				"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
+				"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
+				"choices": []map[string]any{{
+					"index":         0,
+					"delta":         map[string]any{"tool_calls": toolCallsJSON},
+					"finish_reason": "tool_calls",
+				}},
+			})
+			_, _ = fmt.Fprintf(c.Writer, "data: %s\n\n", toolData)
+			flusher.Flush()
+		}
 
 		if sseHeadersSent {
 			finishData, _ := json.Marshal(map[string]any{ //nolint:errcheck
