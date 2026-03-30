@@ -1440,9 +1440,10 @@ func (ds *DebateService) buildDebatePrompt(
 	hasContext := len(previousResponses) > 0
 	intentResult := ds.classifyUserIntent(topic, hasContext)
 
-	sb.WriteString(fmt.Sprintf("DEBATE TOPIC: %s\n\n", topic))
+	sb.WriteString(fmt.Sprintf("USER REQUEST: %s\n\n", topic))
 	sb.WriteString(fmt.Sprintf("ROUND: %d\n", round))
 	sb.WriteString(fmt.Sprintf("YOUR ROLE: %s (%s)\n\n", participant.Name, participant.Role))
+	sb.WriteString("You are an AI assistant in a multi-model ensemble. Answer the user's request directly and helpfully from your role's perspective. Be concise (2-3 paragraphs max). Do NOT debate or philosophize — give a practical, actionable answer.\n\n")
 
 	// Handle different user intents semantically
 	if intentResult.IsConfirmation() || intentResult.ShouldProceed() {
@@ -1501,11 +1502,11 @@ func (ds *DebateService) buildDebatePrompt(
 		} else if intentResult.IsRefusal() {
 			sb.WriteString("User has declined. Acknowledge and ask how else you can help.\n")
 		} else {
-			sb.WriteString("This is the opening round. Present your initial position on the topic.\n")
+			sb.WriteString("Answer the user's request directly from your specialty perspective. Be helpful and concise.\n")
 		}
 	}
 
-	sb.WriteString("\nYour response:")
+	sb.WriteString("\nYour response (answer the user, do NOT output code blocks or tool commands as text):")
 
 	return sb.String()
 }
@@ -1856,17 +1857,31 @@ func (ds *DebateService) extractDisagreements(responses []ParticipantResponse) [
 	return disagreements
 }
 
-// generateFinalPosition generates the final position summary
+// generateFinalPosition generates the final position by selecting the best response content.
+// Instead of returning generic status text, it returns the actual highest-quality answer.
 func (ds *DebateService) generateFinalPosition(responses []ParticipantResponse, consensusReached bool) string {
 	if len(responses) == 0 {
 		return "No position established"
 	}
 
-	if consensusReached {
-		return "Consensus reached: Participants found common ground on the key aspects of the topic"
+	// Find the best response by quality score
+	bestIdx := 0
+	bestScore := responses[0].QualityScore
+	for i, resp := range responses {
+		if resp.QualityScore > bestScore {
+			bestScore = resp.QualityScore
+			bestIdx = i
+		}
 	}
 
-	return "Discussion ongoing: Multiple perspectives presented with varying viewpoints"
+	content := responses[bestIdx].Content
+	if content == "" {
+		content = responses[bestIdx].Response
+	}
+	if content == "" {
+		return "No substantive position established"
+	}
+	return content
 }
 
 // getVoteDistribution gets the vote distribution by participant
