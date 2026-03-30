@@ -736,17 +736,25 @@ func (ds *DebateService) ConductDebate(
 		"success":          result.Success,
 	}).Info("[ConductDebate] conductRealDebate completed")
 
-	// NEW: Apply 4-Pass Validation Pipeline to result
-	if ds.validationPipeline != nil {
+	// Apply 4-Pass Validation Pipeline ONLY for code generation debates.
+	// Conversational requests (from OpenAI handler) should not trigger
+	// code validation/refinement which causes hallucinated /workspace errors.
+	isFromOpenAI := false
+	if config.Metadata != nil {
+		_, isFromOpenAI = config.Metadata["source"]
+	}
+	isCodeDebate := ds.detectCodeGenerationIntent(config.Topic, config.Metadata)
+	if ds.validationPipeline != nil && isCodeDebate && !isFromOpenAI {
 		validationResult, err := ds.validateDebateResult(ctx, result, config)
 		if err != nil {
 			ds.logger.WithError(err).Warn("[4-Pass Validation] Validation failed, result may need refinement")
-			// Attach partial validation results
 			result.ValidationResult = validationResult
 		} else {
 			result.ValidationResult = validationResult
 			result.QualityScore = validationResult.OverallScore
-			ds.commLogger.LogInfo("Validation", fmt.Sprintf("4-Pass: PASS | Score: %.2f", validationResult.OverallScore))
+			if ds.commLogger != nil {
+				ds.commLogger.LogInfo("Validation", fmt.Sprintf("4-Pass: PASS | Score: %.2f", validationResult.OverallScore))
+			}
 		}
 	}
 
