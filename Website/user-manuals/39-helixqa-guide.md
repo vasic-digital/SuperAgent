@@ -175,9 +175,263 @@ make test-cover # Coverage report
 - **Empty evidence directory**: Check that the platform worker has filesystem write permissions
 - **Low coverage score**: Add more test banks or enable curiosity-driven exploration in autonomous mode
 
+## Autonomous Pipeline
+
+HelixQA's autonomous mode runs a 5-phase pipeline that drives the full lifecycle of an unscripted QA session:
+
+| Phase | Name | Description |
+|-------|------|-------------|
+| 1 | **Learn** | DocProcessor extracts the feature map from documentation. LLMsVerifier selects and ranks the best available LLM agents. LLMOrchestrator spawns the agent pool. |
+| 2 | **Plan** | The SessionCoordinator builds an execution plan: prioritizes test cases by criticality, maps documented features to UI screens via VisionEngine, and schedules platform workers. |
+| 3 | **Execute** | Platform workers run the test plan in parallel. Each step captures evidence (screenshot, logcat/console, video frame). Crash/ANR detectors run continuously. Failed steps trigger immediate ticket generation. |
+| 4 | **Curiosity** | After documented features are covered, curiosity-driven exploration begins. Agents navigate to unvisited screens using the NavigationGraph BFS path planner. Edge cases and undocumented paths are exercised. |
+| 5 | **Analyze** | Coverage is aggregated across all platforms. The QA report is generated in the requested formats (Markdown, HTML, JSON). Tickets are filed and evidence is archived. |
+
+Configure the pipeline phases via environment variables:
+
+```bash
+HELIXQA_PHASES=learn,plan,execute,curiosity,analyze   # All phases (default)
+HELIXQA_PHASES=learn,plan,execute,analyze              # Skip curiosity
+HELIXQA_CURIOSITY_TIMEOUT=30m                          # Curiosity phase budget
+HELIXQA_COVERAGE_TARGET=0.90                           # Stop when 90% coverage reached
+```
+
+## Multi-Device Parallel QA
+
+HelixQA supports running the same test bank simultaneously across multiple Android devices via the `AndroidDevices` configuration. This reduces QA cycle time and validates behavior across different OS versions and screen sizes.
+
+Configure multiple devices in `.env`:
+
+```bash
+HELIXQA_ANDROID_DEVICES=emulator-5554,emulator-5556,192.168.1.100:5555
+HELIXQA_ANDROID_PACKAGE=com.example.app
+HELIXQA_PARALLEL_WORKERS=3
+```
+
+Or pass devices at runtime:
+
+```bash
+helixqa run --banks tests/banks/ --platform android \
+  --devices emulator-5554,emulator-5556,192.168.1.100:5555 \
+  --package com.example.app \
+  --parallel
+```
+
+Each device gets its own `PlatformWorker` instance with isolated evidence directories:
+
+```
+qa-results/
+  sessions/<session-id>/
+    emulator-5554/
+      screenshots/
+      logcat/
+    emulator-5556/
+      screenshots/
+      logcat/
+    192.168.1.100:5555/
+      screenshots/
+      logcat/
+    qa-report.md
+    tickets/
+```
+
+Test cases marked `platform: android` run on all connected devices. Results are merged into a single report, with per-device breakdowns for each test case.
+
+## Credential Discovery
+
+HelixQA automatically discovers credentials from `.env` files in the project directory, eliminating the need to pass API keys and configuration values on the command line. This is especially useful for autonomous sessions that need LLM provider keys, database URLs, and device credentials.
+
+Discovery order (first match wins):
+
+1. Explicit `--env` flag: `helixqa autonomous --env /path/to/.env`
+2. `.env` file in the current working directory
+3. `.env` file in the project root (when `--project` is specified)
+4. `.env.example` values (safe defaults only, no secrets)
+
+Environment variable precedence (highest to lowest):
+
+```
+Shell environment > --env file > .env in CWD > .env in project root
+```
+
+Supported credential categories discovered automatically:
+
+| Category | Variables |
+|----------|-----------|
+| LLM providers | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `*_API_KEY` |
+| Android | `HELIXQA_ANDROID_DEVICE`, `HELIXQA_ANDROID_PACKAGE` |
+| Web | `HELIXQA_WEB_URL`, `HELIXQA_WEB_BROWSER` |
+| Database | `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` |
+| Redis | `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` |
+
+To audit which credentials were discovered without running a session:
+
+```bash
+helixqa credentials --project /path/to/MyApp --env .env
+```
+
+## REST API Integration
+
+HelixQA exposes a REST API under `/v1/qa/*` for programmatic control of QA sessions. This enables integration with CI pipelines, dashboards, and external ticketing systems without using the CLI.
+
+Base URL: `http://localhost:7061/v1/qa`
+
+### Start a QA Session
+
+```http
+POST /v1/qa/sessions
+Content-Type: application/json
+
+{
+  "project": "/path/to/MyApp",
+  "platforms": ["android", "web"],
+  "banks_dir": "tests/banks/",
+  "coverage_target": 0.85,
+  "timeout": "2h",
+  "report_formats": ["markdown", "json"],
+  "output_dir": "qa-results/"
+}
+```
+
+Response:
+
+```json
+{
+  "session_id": "helix-1711234567",
+  "status": "started",
+  "phases": ["learn", "plan", "execute", "curiosity", "analyze"],
+  "started_at": "2026-03-30T10:00:00Z"
+}
+```
+
+### Query Session Status
+
+```http
+GET /v1/qa/sessions/{session_id}
+```
+
+### List Findings
+
+```http
+GET /v1/qa/sessions/{session_id}/findings?severity=critical&platform=android
+```
+
+### Update Finding Status
+
+```http
+PATCH /v1/qa/sessions/{session_id}/findings/{finding_id}
+Content-Type: application/json
+
+{
+  "status": "acknowledged",
+  "assignee": "dev-team",
+  "comment": "Known issue, fix in sprint 12"
+}
+```
+
+### Stop a Session
+
+```http
+DELETE /v1/qa/sessions/{session_id}
+```
+
+See [User Manual 44: QA API Guide](44-qa-api-guide.md) for the complete API reference with full request/response schemas and example workflows.
+
+## Playwright Web Testing
+
+HelixQA integrates with Playwright for browser-based web testing. When the `web` platform is selected, HelixQA launches a Playwright-controlled Chromium (or Firefox/WebKit) instance and drives the application under test through a real browser.
+
+Install Playwright browsers before running web tests:
+
+```bash
+npx playwright install chromium
+```
+
+Configure web testing in `.env`:
+
+```bash
+HELIXQA_WEB_URL=http://localhost:4200
+HELIXQA_WEB_BROWSER=chromium          # chromium | firefox | webkit
+HELIXQA_WEB_HEADLESS=true             # false for visual debugging
+HELIXQA_WEB_TIMEOUT=30s               # Per-action timeout
+HELIXQA_WEB_SCREENSHOT_ON_FAIL=true
+HELIXQA_WEB_VIDEO=retain-on-failure   # always | never | retain-on-failure
+```
+
+Playwright capabilities available in test steps:
+
+| Action | Description |
+|--------|-------------|
+| `navigate` | Load a URL in the browser |
+| `click` | Click an element by CSS selector or text content |
+| `fill` | Type text into an input field |
+| `select` | Choose an option from a dropdown |
+| `wait_for` | Wait for an element or network idle |
+| `screenshot` | Capture the current browser state |
+| `assert_visible` | Assert an element is visible on the page |
+| `assert_text` | Assert element text content |
+
+Web test steps in YAML use the same format as other platforms:
+
+```yaml
+test_cases:
+  - id: WEB-001
+    name: "User login flow"
+    platform: web
+    priority: critical
+    steps:
+      - name: "Navigate to login page"
+        action: "navigate"
+        target: "/login"
+        expected: "Login form is visible"
+      - name: "Enter credentials"
+        action: "fill"
+        target: "#email"
+        value: "user@example.com"
+      - name: "Submit form"
+        action: "click"
+        target: "button[type=submit]"
+        expected: "Dashboard is displayed"
+```
+
+## Google Gemini Vision Provider
+
+VisionEngine now includes a Google Gemini Vision provider, adding Google's multimodal Gemini models as a first-class vision backend. Gemini Vision offers strong performance on UI screenshot analysis, element detection, and screen identification.
+
+Configure the Gemini Vision provider:
+
+```bash
+VISION_GEMINI_API_KEY=your-gemini-api-key
+VISION_GEMINI_MODEL=gemini-1.5-flash    # gemini-1.5-flash | gemini-1.5-pro | gemini-2.0-flash
+VISION_PROVIDERS=gemini,openai,anthropic # Gemini as primary
+```
+
+Use Gemini Vision programmatically:
+
+```go
+import "github.com/digital/vasic/visionengine/pkg/llmvision"
+
+provider := llmvision.NewGeminiProvider(llmvision.GeminiConfig{
+    APIKey: os.Getenv("VISION_GEMINI_API_KEY"),
+    Model:  "gemini-1.5-flash",
+})
+
+analysis, err := provider.AnalyzeImage(ctx, screenshotBytes,
+    "Identify all interactive UI elements and their positions")
+```
+
+Gemini Vision advantages:
+
+- Strong multilingual text recognition (OCR) in screenshots
+- Large context window for analyzing complex UIs with many elements
+- `gemini-1.5-flash` offers low-latency analysis at reduced cost
+- `gemini-1.5-pro` provides the highest accuracy for complex screens
+- Seamlessly integrates with the `FallbackProvider` chain alongside OpenAI, Anthropic, and Qwen
+
 ## Related Resources
 
 - [User Manual 38: DocProcessor Guide](38-docprocessor-guide.md) -- Feature map extraction
 - [User Manual 40: LLMOrchestrator Guide](40-llmorchestrator-guide.md) -- Agent pool management
 - [User Manual 41: VisionEngine Guide](41-visionengine-guide.md) -- Screenshot analysis and navigation graphs
+- [User Manual 44: QA API Guide](44-qa-api-guide.md) -- REST API reference for programmatic QA control
 - Source: `HelixQA/README.md`, `HelixQA/CLAUDE.md`

@@ -262,6 +262,147 @@ Deliverables:
 
 ---
 
+## Module 7: Remote Vision Pool Architecture (30 min)
+
+### Video 7.1: VisionPool Design and Routing (15 min)
+
+**Topics:**
+- Why a pool: rate limits, GPU memory constraints, parallel test execution at scale
+- `VisionPool` struct: backend slots, semaphore channels, health monitor goroutine
+- Backend types: `BackendOllama` (Ollama HTTP API) and `BackendLlamaCpp` (llama.cpp server)
+- Least-loaded routing: slot selection based on available semaphore tokens
+- Health monitoring: per-backend liveness checks on a configurable interval; unhealthy backends removed from rotation and retried
+- Prometheus metrics: per-backend request count, error rate, and latency histograms
+
+**VisionPool Configuration:**
+```bash
+VISION_POOL_BACKENDS=http://gpu-host-1:11434,http://gpu-host-2:11434,http://gpu-host-3:8080
+VISION_POOL_BACKEND_TYPES=ollama,ollama,llamacpp
+VISION_POOL_MAX_CONCURRENT_PER_SLOT=2
+VISION_POOL_MODEL=llava:13b
+VISION_POOL_TIMEOUT=60s
+VISION_POOL_HEALTH_CHECK_INTERVAL=30s
+```
+
+**VisionPool Code:**
+```go
+pool, err := llmvision.NewVisionPool(llmvision.VisionPoolConfig{
+    Backends: []llmvision.BackendConfig{
+        {URL: "http://gpu-host-1:11434", Type: llmvision.BackendOllama,   Model: "llava:13b"},
+        {URL: "http://gpu-host-2:11434", Type: llmvision.BackendOllama,   Model: "llava:13b"},
+        {URL: "http://gpu-host-3:8080",  Type: llmvision.BackendLlamaCpp, Model: "llava-v1.6"},
+    },
+    MaxConcurrentPerSlot: 2,
+    Timeout:              60 * time.Second,
+})
+
+// VisionPool implements VisionProvider — use anywhere a provider is accepted
+analysis, err := pool.AnalyzeImage(ctx, screenshotBytes, "Describe UI layout")
+```
+
+### Video 7.2: Integrating VisionPool with FallbackProvider (15 min)
+
+**Topics:**
+- Composing a pool inside a `FallbackProvider`: local backends first, cloud LLM fallback
+- Graceful degradation: when all pool backends are down, FallbackProvider tries the next provider
+- Thread safety: `VisionPool` is safe for concurrent use across multiple `PlatformWorker` goroutines
+- Monitoring pool health at runtime: `/v1/vision/pool/status` endpoint
+- Capacity planning: how to size `MaxConcurrentPerSlot` for different GPU configurations
+
+**Pool + Fallback Composition:**
+```go
+// Fast local pool — tries Ollama GPU hosts first
+pool, _ := llmvision.NewVisionPool(cfg)
+
+// Cloud LLM fallback — used when pool is fully loaded or unhealthy
+gemini := llmvision.NewGeminiProvider(geminCfg)
+
+// FallbackProvider: pool → Gemini → OpenAI
+fallback, _ := llmvision.NewFallbackProvider(pool, gemini, openai)
+```
+
+---
+
+## Module 8: LlamaCpp Multi-Instance Setup (25 min)
+
+### Video 8.1: LlamaCppDeployer Internals (15 min)
+
+**Topics:**
+- `LlamaCppDeployer`: SSH-based remote management of llama.cpp server processes
+- Non-interactive operation: key-based SSH authentication, no password prompts
+- Deployment steps: connect → verify binary → launch `llama-server` → poll health endpoint
+- Key configuration fields: `RemoteHost`, `RemoteUser`, `SSHKeyPath`, `BinaryPath`, `ModelPath`, `MmprojPath`, `ListenPort`, `NGL`, `CtxSize`, `Threads`
+- `NGL` (GPU layers): tuning GPU offload for VRAM capacity — example values for 8 GB, 16 GB, 24 GB GPUs
+
+**Deployer Usage:**
+```go
+deployer := llmvision.NewLlamaCppDeployer(llmvision.DeployerConfig{
+    RemoteHost: "gpu-host-3",
+    RemoteUser: "ubuntu",
+    SSHKeyPath: "/home/user/.ssh/id_ed25519",
+    BinaryPath: "/usr/local/bin/llama-server",
+    ModelPath:  "/models/llava-v1.6-mistral-7b.gguf",
+    MmprojPath: "/models/llava-v1.6-mistral-7b-mmproj.gguf",
+    ListenPort: 8080,
+    NGL:        35,   // GPU layers; set 0 for CPU-only
+    CtxSize:    4096,
+    Threads:    8,
+})
+
+endpoint, err := deployer.Deploy(ctx)
+// endpoint == "http://gpu-host-3:8080"
+```
+
+**Deployer methods:**
+
+| Method | Description |
+|--------|-------------|
+| `Deploy(ctx)` | SSH to host, start `llama-server`, await health check |
+| `Undeploy(ctx)` | Gracefully stop the remote process |
+| `Status(ctx)` | Check if the remote server is running and healthy |
+| `Redeploy(ctx)` | Stop, optionally update the model path, restart |
+
+### Video 8.2: Multi-Instance Deployment Patterns (10 min)
+
+**Topics:**
+- Deploying a fleet of llama.cpp servers for a `VisionPool` using multiple `LlamaCppDeployer` instances
+- Coordinating deployment in parallel: `errgroup` for concurrent SSH operations
+- Model sharding: different model variants per host based on available VRAM
+- Automated teardown: `defer deployer.Undeploy(ctx)` for test session lifecycle management
+- Health check integration: deployer registers the endpoint with `VisionPool` only after health passes
+
+**Fleet Deployment Pattern:**
+```go
+hosts := []llmvision.DeployerConfig{
+    {RemoteHost: "gpu-host-1", NGL: 35, ListenPort: 8080, /* ... */},
+    {RemoteHost: "gpu-host-2", NGL: 28, ListenPort: 8080, /* ... */},
+    {RemoteHost: "gpu-host-3", NGL: 0,  ListenPort: 8080, /* ... */}, // CPU fallback
+}
+
+var endpoints []string
+g, gctx := errgroup.WithContext(ctx)
+var mu sync.Mutex
+
+for _, cfg := range hosts {
+    cfg := cfg
+    g.Go(func() error {
+        d := llmvision.NewLlamaCppDeployer(cfg)
+        ep, err := d.Deploy(gctx)
+        if err != nil { return err }
+        mu.Lock()
+        endpoints = append(endpoints, ep)
+        mu.Unlock()
+        return nil
+    })
+}
+if err := g.Wait(); err != nil {
+    log.Fatal("fleet deployment failed:", err)
+}
+// All endpoints are healthy — build VisionPool
+```
+
+---
+
 ## Resources
 
 - [VisionEngine CLAUDE.md](../../VisionEngine/CLAUDE.md)
@@ -269,5 +410,6 @@ Deliverables:
 - [Analyzer Interface Source](../../VisionEngine/pkg/analyzer/analyzer.go)
 - [NavigationGraph Source](../../VisionEngine/pkg/graph/graph.go)
 - [FallbackProvider Source](../../VisionEngine/pkg/llmvision/fallback.go)
+- [User Manual 41: VisionEngine Guide](../user-manuals/41-visionengine-guide.md)
 - [Course 70: DocProcessor Deep Dive](course-70-docprocessor.md)
 - [Course 72: LLMOrchestrator Mastery](course-72-llmorchestrator.md)
