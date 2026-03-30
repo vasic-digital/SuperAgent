@@ -1419,40 +1419,6 @@ func (ds *DebateService) evictIntentCacheIfNeeded() {
 	}
 }
 
-// isUserConfirmation detects if the user message is confirming an action plan
-// Uses semantic intent classification instead of hardcoded patterns
-func (ds *DebateService) isUserConfirmation(topic string) bool { //nolint:unused
-	// Use semantic classifier - no hardcoded patterns
-	result := ds.classifyUserIntent(topic, true) // Assume context exists in debate
-	return result.IsConfirmation() || result.ShouldProceed()
-}
-
-// isUserRefusal detects if the user is refusing/declining an action
-func (ds *DebateService) isUserRefusal(topic string) bool { //nolint:unused
-	result := ds.classifyUserIntent(topic, true)
-	return result.IsRefusal()
-}
-
-// getUserIntentDescription returns a human-readable description of the detected intent
-func (ds *DebateService) getUserIntentDescription(topic string) string { //nolint:unused
-	result := ds.classifyUserIntent(topic, true)
-
-	switch result.Intent {
-	case IntentConfirmation:
-		return "User has CONFIRMED the action plan"
-	case IntentRefusal:
-		return "User has DECLINED the action plan"
-	case IntentQuestion:
-		return "User is asking a question"
-	case IntentRequest:
-		return "User is making a new request"
-	case IntentClarification:
-		return "User needs clarification"
-	default:
-		return "User intent is unclear"
-	}
-}
-
 // buildDebatePrompt builds the prompt for a debate round
 func (ds *DebateService) buildDebatePrompt(
 	topic string,

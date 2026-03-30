@@ -888,20 +888,6 @@ func (m *LSPManager) ExecuteLSPRequest(ctx context.Context, req LSPRequest) (*LS
 	}, nil
 }
 
-// openDocument sends textDocument/didOpen notification
-func (m *LSPManager) openDocument(ctx context.Context, conn *LSPConnection, fileURI, languageID, text string) error { //nolint:unused
-	params := LSPDidOpenTextDocumentParams{
-		TextDocument: LSPTextDocumentItem{
-			URI:        fileURI,
-			LanguageID: languageID,
-			Version:    1,
-			Text:       text,
-		},
-	}
-
-	return m.sendNotification(conn, "textDocument/didOpen", params)
-}
-
 // GetDiagnostics gets diagnostics for a file from an LSP server
 func (m *LSPManager) GetDiagnostics(ctx context.Context, serverID, fileURI string) (interface{}, error) {
 	m.log.WithFields(logrus.Fields{

@@ -673,20 +673,6 @@ func (cm *ContextManager) extractKeywords(requestType string) []string {
 	return keywords
 }
 
-func (cm *ContextManager) isRelevant(entry *ContextEntry, requestType string) bool { //nolint:unused
-	// Simple relevance logic - can be enhanced with ML
-	switch requestType {
-	case "code_completion":
-		return entry.Type == "lsp" || entry.Type == "tool"
-	case "chat":
-		return entry.Type == "llm" || entry.Type == "memory"
-	case "tool_execution":
-		return entry.Type == "tool" || entry.Type == "mcp"
-	default:
-		return true
-	}
-}
-
 func (cm *ContextManager) detectSourceConflicts(source string, entries []*ContextEntry) *Conflict {
 	// Detect conflicts within entries from the same source
 

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -811,13 +810,3 @@ func (m *EmbeddingManager) ClearCache() {
 	m.log.Info("Embedding cache cleared")
 }
 
-// Helper function to convert bytes to float64
-func bytesToFloat64(b []byte) float64 { //nolint:unused
-	if len(b) < 8 {
-		padded := make([]byte, 8)
-		copy(padded, b)
-		b = padded
-	}
-	bits := binary.LittleEndian.Uint64(b[:8])
-	return math.Float64frombits(bits)
-}

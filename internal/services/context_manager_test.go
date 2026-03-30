@@ -403,32 +403,6 @@ func TestContextManager_extractKeywords(t *testing.T) {
 	})
 }
 
-func TestContextManager_isRelevant(t *testing.T) {
-	cm := NewContextManager(100)
-
-	tests := []struct {
-		entryType   string
-		requestType string
-		expected    bool
-	}{
-		{"lsp", "code_completion", true},
-		{"tool", "code_completion", true},
-		{"llm", "chat", true},
-		{"memory", "chat", true},
-		{"tool", "tool_execution", true},
-		{"mcp", "tool_execution", true},
-		{"unknown", "unknown", true},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.entryType+"_"+tt.requestType, func(t *testing.T) {
-			entry := &ContextEntry{Type: tt.entryType}
-			result := cm.isRelevant(entry, tt.requestType)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
 func TestContextEntry(t *testing.T) {
 	entry := &ContextEntry{
 		ID:       "test_id",

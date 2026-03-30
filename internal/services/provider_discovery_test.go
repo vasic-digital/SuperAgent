@@ -143,48 +143,6 @@ func TestProviderDiscoveryWithoutEnvVars(t *testing.T) {
 	assert.NotNil(t, providers, "DiscoverProviders should return a non-nil slice")
 }
 
-// TestMaskToken tests the token masking function
-func TestMaskToken(t *testing.T) {
-	tests := []struct {
-		name     string
-		token    string
-		expected string
-	}{
-		{
-			name:     "Long token gets masked",
-			token:    "sk-ant-api01-verylongtoken12345",
-			expected: "sk-an...12345",
-		},
-		{
-			name:     "Short token returns masked",
-			token:    "short",
-			expected: "***",
-		},
-		{
-			name:     "Empty token returns masked",
-			token:    "",
-			expected: "***",
-		},
-		{
-			name:     "Exactly 10 char token returns masked",
-			token:    "1234567890",
-			expected: "***",
-		},
-		{
-			name:     "11 char token gets partial masking",
-			token:    "12345678901",
-			expected: "12345...78901",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := maskToken(tt.token)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
 // TestProviderHealthStatusConstants verifies status constants are correctly defined
 func TestProviderHealthStatusConstants(t *testing.T) {
 	assert.Equal(t, ProviderHealthStatus("unknown"), ProviderStatusUnknown)

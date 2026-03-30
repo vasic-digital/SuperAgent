@@ -586,14 +586,6 @@ func (pd *ProviderDiscovery) discoverOAuthProviders(seen map[string]bool) []*Dis
 	return discovered
 }
 
-// maskToken masks the middle part of a token for safe logging
-func maskToken(token string) string { //nolint:unused
-	if len(token) <= 10 {
-		return "***"
-	}
-	return token[:5] + "..." + token[len(token)-5:]
-}
-
 // createProvider creates an LLM provider instance based on the mapping
 func (pd *ProviderDiscovery) createProvider(mapping ProviderMapping, apiKey string) (llm.LLMProvider, error) {
 	switch mapping.ProviderType {

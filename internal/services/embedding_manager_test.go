@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"encoding/binary"
 	"errors"
 	"math"
 	"testing"
@@ -762,37 +761,6 @@ func TestEmbeddingManager_getDimension(t *testing.T) {
 			assert.Equal(t, tc.expected, result)
 		})
 	}
-}
-
-func TestBytesToFloat64(t *testing.T) {
-	t.Run("converts 8 bytes correctly", func(t *testing.T) {
-		// Float64 encoding of 1.0 in little endian
-		bytes := make([]byte, 8)
-		binary.LittleEndian.PutUint64(bytes, math.Float64bits(1.0))
-		result := bytesToFloat64(bytes)
-		assert.InDelta(t, 1.0, result, 0.0001)
-	})
-
-	t.Run("handles less than 8 bytes with padding", func(t *testing.T) {
-		// Pass only 4 bytes - should be padded
-		bytes := []byte{0, 0, 0, 0}
-		result := bytesToFloat64(bytes)
-		assert.Equal(t, 0.0, result)
-	})
-
-	t.Run("handles empty bytes", func(t *testing.T) {
-		bytes := []byte{}
-		result := bytesToFloat64(bytes)
-		assert.Equal(t, 0.0, result)
-	})
-
-	t.Run("handles more than 8 bytes", func(t *testing.T) {
-		// Create bytes for 2.5 plus extra bytes
-		bytes := make([]byte, 16)
-		binary.LittleEndian.PutUint64(bytes, math.Float64bits(2.5))
-		result := bytesToFloat64(bytes)
-		assert.InDelta(t, 2.5, result, 0.0001)
-	})
 }
 
 // Tests for OpenAI embedding generation

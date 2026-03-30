@@ -565,7 +565,7 @@ func (s *LatencyBasedStrategy) SelectProvider(providers map[string]LLMProvider, 
 	lowestLatency := math.MaxFloat64
 
 	// Collect providers with metrics
-	providersWithMetrics := make([]string, 0) //nolint:unused
+	providersWithMetrics := make([]string, 0)
 	providersWithoutMetrics := make([]string, 0)
 
 	for name := range providers {

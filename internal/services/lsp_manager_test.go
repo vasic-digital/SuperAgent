@@ -1785,27 +1785,6 @@ func TestJSONSerialization(t *testing.T) {
 	})
 }
 
-// TestLSPManager_OpenDocument tests the openDocument method
-func TestLSPManager_OpenDocument(t *testing.T) {
-	log := newLSPTestLogger()
-	manager := NewLSPManager(nil, nil, log)
-	ctx := context.Background()
-
-	stdin := &MockWriteCloser{}
-	conn := &LSPConnection{
-		stdin:     stdin,
-		connected: true,
-	}
-
-	err := manager.openDocument(ctx, conn, "file:///test.go", "go", "package main")
-	require.NoError(t, err)
-
-	// Verify the notification was written
-	written := stdin.String()
-	assert.Contains(t, written, "textDocument/didOpen")
-	assert.Contains(t, written, "file:///test.go")
-}
-
 // TestLSPManager_InitializeConnection_Integration tests initialization
 func TestLSPManager_InitializeConnection_Integration(t *testing.T) {
 	// Skip if not running integration tests
