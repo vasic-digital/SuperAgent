@@ -123,6 +123,20 @@ make test-with-infra    # Run tests with Docker infra
 | Pre-commit | `make fmt vet lint` |
 | Release | `make release` |
 
+## Protocol Endpoints
+
+MCP `/v1/mcp` | ACP `/v1/acp` | LSP `/v1/lsp` | Embeddings `/v1/embeddings` | Vision `/v1/vision` | Cognee `/v1/cognee` (optional) | Startup `/v1/startup/verification` | BigData `/v1/bigdata/health` | Tasks `/v1/tasks` | Discovery `/v1/discovery` | Scoring `/v1/scoring` | Verification `/v1/verification` | Health `/v1/health` | Agentic `/v1/agentic/workflows` | Planning `/v1/planning/{hiplan,mcts,tot}` | LLMOps `/v1/llmops/{experiments,evaluate,prompts}` | Benchmark `/v1/benchmark/{run,results}` | QA `/v1/qa/{sessions,findings,platforms,discover}` | GraphQL `/v1/graphql` (feature-flagged, `GRAPHQL_ENABLED=true`)
+
+### QA Endpoints
+- `POST /v1/qa/sessions` — Start autonomous QA session
+- `GET /v1/qa/findings` — List QA findings (filter by status)
+- `GET /v1/qa/findings/:id` — Get specific finding
+- `PUT /v1/qa/findings/:id` — Update finding status
+- `GET /v1/qa/platforms` — List supported platforms
+- `POST /v1/qa/discover` — Discover project knowledge
+
+Fallback: routes to strongest LLM by score, falls back on failure.
+
 ## Adding a New LLM Provider
 
 1. Create `internal/llm/providers/<name>/<name>.go` implementing `LLMProvider`
