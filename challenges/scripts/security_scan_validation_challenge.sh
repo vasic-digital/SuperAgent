@@ -121,8 +121,7 @@ echo ""
 echo "--- No Dangerous Rune Casts ---"
 
 # Test 10: No string(rune(c.Port)) or string(rune(integer)) patterns remain
-RUNE_CAST_COUNT=$(grep -rn "string(rune(" "$PROJECT_ROOT/internal/" \
-    --include="*.go" 2>/dev/null | grep -v "_test.go" | wc -l)
+RUNE_CAST_COUNT=$(find "$PROJECT_ROOT/internal/" -name '*.go' ! -name '*_test.go' ! -path '*/vendor/*' -exec grep -l 'string(rune(' {} \; 2>/dev/null | wc -l)
 if [ "$RUNE_CAST_COUNT" -eq 0 ]; then
     record_result "No string(rune(integer)) patterns remain in production code" "PASS"
 else
