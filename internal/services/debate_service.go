@@ -664,6 +664,12 @@ func (ds *DebateService) ConductDebate(
 	}
 	ds.logger.WithField("participants", len(config.Participants)).Info("[ConductDebate] Using conductRealDebate with multi-round consensus")
 
+	// Check if request is from OpenAI handler (affects routing decisions)
+	isFromOpenAI := false
+	if config.Metadata != nil {
+		_, isFromOpenAI = config.Metadata["source"]
+	}
+
 	// Require provider registry for real LLM calls - no fallback to simulated data
 	if ds.providerRegistry == nil {
 		return nil, fmt.Errorf("provider registry is required for debate: use NewDebateServiceWithDeps to create a properly configured debate service")
@@ -686,11 +692,14 @@ func (ds *DebateService) ConductDebate(
 		config.Metadata["specialized_role"] = specializedRole
 	}
 
-	// NEW: Detect if this is a code generation debate (Test-Driven mode)
-	isCodeDebate := ds.detectCodeGenerationIntent(config.Topic, config.Metadata)
-	if isCodeDebate && ds.testGenerator != nil {
-		ds.logger.Info("[Test-Driven Debate] Code generation detected, enabling test-driven mode")
-		return ds.conductTestDrivenDebate(ctx, config, startTime, sessionID)
+	// Detect if this is a code generation debate (Test-Driven mode)
+	// Skip for OpenAI handler requests — those should go through standard debate
+	if !isFromOpenAI {
+		isCodeDebate := ds.detectCodeGenerationIntent(config.Topic, config.Metadata)
+		if isCodeDebate && ds.testGenerator != nil {
+			ds.logger.Info("[Test-Driven Debate] Code generation detected, enabling test-driven mode")
+			return ds.conductTestDrivenDebate(ctx, config, startTime, sessionID)
+		}
 	}
 
 	// Enhanced Intent Detection with HelixSpecifier / SpecKit Auto-Activation
@@ -739,12 +748,8 @@ func (ds *DebateService) ConductDebate(
 	// Apply 4-Pass Validation Pipeline ONLY for code generation debates.
 	// Conversational requests (from OpenAI handler) should not trigger
 	// code validation/refinement which causes hallucinated /workspace errors.
-	isFromOpenAI := false
-	if config.Metadata != nil {
-		_, isFromOpenAI = config.Metadata["source"]
-	}
-	isCodeDebate := ds.detectCodeGenerationIntent(config.Topic, config.Metadata)
-	if ds.validationPipeline != nil && isCodeDebate && !isFromOpenAI {
+	isCodeDebateForValidation := ds.detectCodeGenerationIntent(config.Topic, config.Metadata)
+	if ds.validationPipeline != nil && isCodeDebateForValidation && !isFromOpenAI {
 		validationResult, err := ds.validateDebateResult(ctx, result, config)
 		if err != nil {
 			ds.logger.WithError(err).Warn("[4-Pass Validation] Validation failed, result may need refinement")
