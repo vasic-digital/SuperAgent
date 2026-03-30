@@ -113,6 +113,14 @@ func (e *FormatterExecutor) ExecuteBatch(ctx context.Context, reqs []*FormatRequ
 
 	for i, req := range reqs {
 		go func(index int, request *FormatRequest) {
+			defer func() {
+				if r := recover(); r != nil {
+					resultChan <- resultPair{
+						index: index,
+						err:   fmt.Errorf("formatter panic: %v", r),
+					}
+				}
+			}()
 			result, err := e.Execute(ctx, request)
 			resultChan <- resultPair{
 				index:  index,
