@@ -1,0 +1,91 @@
+@startuml qa-pipeline-flow
+!theme plain
+skinparam activityFontSize 12
+skinparam defaultFontName Helvetica
+skinparam activityBackgroundColor #F0F8FF
+skinparam activityBorderColor #4682B4
+skinparam arrowColor #333333
+
+title HelixQA Autonomous Pipeline Flow
+
+start
+
+partition "Phase 0: Deploy" #E3F2FD {
+    :Auto-deploy Ollama / llama.cpp\non remote GPU host;
+    note right
+        VisionPool configured with
+        host, base port, inference backend.
+        Per-slot semaphore initialized.
+    end note
+}
+
+partition "Phase 1: Learn" #E8F5E9 {
+    :Scan docs, code, git history;
+    :Extract credentials from .env;
+    :Build KnowledgeBase\n(features, flows, endpoints);
+    note right
+        ProjectReader discovers:
+        - API endpoints
+        - Auth mechanisms
+        - Test entry points
+    end note
+}
+
+partition "Phase 2: Plan" #FFF8E1 {
+    :LLM generates test cases\nfrom KnowledgeBase;
+    :Reconcile with existing test banks;
+    :Assign tests to platforms\n(android, ios, web, desktop);
+}
+
+partition "Phase 3: Execute" #FCE4EC {
+    fork
+        :Run tests on platform A;
+    fork again
+        :Run tests on platform B;
+    fork again
+        :Run tests on platform C;
+    end fork
+    note right
+        Screenshots + video recording.
+        Crash / ANR detection.
+        Parallel per-device execution.
+    end note
+}
+
+if (Curiosity enabled?) then (yes)
+    partition "Phase 3.5: Curiosity" #F3E5F5 {
+        :LLM vision-driven exploration;
+        :Login, browse, interact freely;
+        :Per-device parallel execution;
+        note right
+            VisionPool slot acquired
+            per device for inference.
+            Screenshots analyzed by
+            AdaptiveProvider.
+        end note
+    }
+else (no)
+endif
+
+partition "Phase 4: Analyze" #E0F2F1 {
+    :LLM vision analyzes screenshots;
+    :Generate issue tickets (HELIX-NNN);
+    :Deduplicate findings\nacross devices and runs;
+}
+
+:Generate Report;
+note right
+    pipeline-report.json
+    Markdown tickets in issues/
+    Baseline comparison
+end note
+
+stop
+
+legend bottom center
+    Memory Store: SQLite (findings, sessions, baselines)
+    AdaptiveProvider: selects LLM backend per task type
+    VisionPool: per-slot mutex + semaphore for GPU concurrency
+end legend
+
+@enduml

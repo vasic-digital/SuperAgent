@@ -1,0 +1,77 @@
+@startuml adapter-helixqa
+!theme plain
+skinparam defaultFontName Helvetica
+skinparam componentBorderColor #555555
+skinparam componentBackgroundColor #FFFFFF
+skinparam packageBorderColor #4682B4
+skinparam packageBackgroundColor #F0F8FF
+skinparam arrowColor #333333
+skinparam noteBorderColor #888888
+skinparam noteBackgroundColor #FFFDE7
+
+title HelixQA Adapter Integration
+
+package "HTTP Layer" {
+    [QAHandler] as QH
+    note bottom of QH
+        POST /v1/qa/sessions
+        GET  /v1/qa/findings
+        PUT  /v1/qa/findings/:id
+        GET  /v1/qa/platforms
+        POST /v1/qa/discover
+    end note
+}
+
+package "Adapter Layer" {
+    [HelixQA Adapter] as HA
+    note bottom of HA
+        internal/adapters/helixqa/adapter.go
+        Translates HTTP requests to
+        module types. Owns provider
+        and store initialization.
+    end note
+}
+
+package "HelixQA Module" {
+    [SessionPipeline] as SP
+    [Memory Store\n(SQLite)] as MS
+    [AdaptiveProvider] as AP
+    [ProjectReader] as PR
+}
+
+package "VisionEngine Module" {
+    [VisionPool] as VP
+    note bottom of VP
+        Per-slot semaphore.
+        Remote GPU inference
+        via llama-server / Ollama.
+    end note
+}
+
+QH --> HA : SessionConfig
+
+HA --> SP : PipelineConfig\n+ Provider + Store
+HA --> MS : GetFindings /\nCreateFinding
+HA --> PR : DiscoverCredentials
+HA --> AP : buildProvider()
+
+SP --> VP : Vision inference\n(GetSlot / Release)
+SP --> MS : Save findings\nUpdate session state
+
+AP .> VP : delegates image\ninference calls
+
+note right of HA
+    Adapter responsibilities:
+    - Parse and validate request
+    - Construct PipelineConfig
+    - Inject AdaptiveProvider
+    - Inject Memory Store
+    - Map module errors to HTTP codes
+end note
+
+legend bottom center
+    Adapter layer decouples HTTP concerns from HelixQA module internals.
+    VisionEngine slot lifecycle managed entirely within SessionPipeline.
+end legend
+
+@enduml

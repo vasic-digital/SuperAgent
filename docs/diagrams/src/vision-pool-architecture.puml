@@ -1,0 +1,64 @@
+@startuml vision-pool-architecture
+!theme plain
+skinparam defaultFontName Helvetica
+skinparam componentBorderColor #555555
+skinparam componentBackgroundColor #FFFFFF
+skinparam packageBorderColor #4682B4
+skinparam packageBackgroundColor #F0F8FF
+skinparam arrowColor #333333
+skinparam noteBorderColor #888888
+skinparam noteBackgroundColor #FFFDE7
+
+title VisionEngine Remote Pool Architecture
+
+package "HelixAgent Host" {
+    [QA Pipeline] as QA
+    [VisionPool] as VP
+    note bottom of VP
+        PoolConfig:
+        - Host: thinker.local
+        - MaxConcurrentPerSlot: 2
+        - InferenceBackend: llama-cpp
+        - BasePort: 8080
+    end note
+}
+
+package "Remote GPU Host" {
+    [Ollama] as OL
+    [llama-server :8080] as LS1
+    [llama-server :8081] as LS2
+    [llama-server :8082] as LS3
+
+    note bottom of LS1
+        Each slot has:
+        - Mutex for exclusive access
+        - Semaphore for concurrency limit
+        - Metrics (calls, time, errors)
+    end note
+}
+
+QA --> VP : GetSlot(platform, device)
+
+VP --> LS1 : Slot: android:dev1\nAcquire / Release
+VP --> LS2 : Slot: android:dev2\nAcquire / Release
+VP --> LS3 : Slot: web\nAcquire / Release
+
+OL .> LS1 : model serving
+OL .> LS2 : model serving
+OL .> LS3 : model serving
+
+note right of VP
+    Slot lifecycle:
+    1. Acquire (blocks if at concurrency limit)
+    2. Send image + prompt via HTTP
+    3. Receive inference result
+    4. Release slot
+end note
+
+legend bottom center
+    VisionPool manages slot allocation across devices and platforms.
+    Semaphores prevent GPU oversubscription.
+    Metrics feed Prometheus / OpenTelemetry observability.
+end legend
+
+@enduml
