@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -874,5 +875,337 @@ func extractBestResponse(debateResult *DebateResult) string {
 	}
 
 	return ""
+}
+
+// Phase Caching and Resumption Methods
+
+// savePhaseToCache saves a phase result to the cache
+func (so *SpecKitOrchestrator) savePhaseToCache(flowID string, phase SpecKitPhase, result *SpecKitPhaseResult) error {
+	if !so.enableCaching {
+		return nil
+	}
+
+	// Create cache directory if it doesn't exist
+	cacheFilePath := filepath.Join(so.cacheDir, flowID)
+	if err := ensureDir(cacheFilePath); err != nil {
+		so.logger.WithError(err).Warn("[SpecKit Cache] Failed to create cache directory")
+		return err
+	}
+
+	// Save phase result as JSON
+	phaseFile := filepath.Join(cacheFilePath, fmt.Sprintf("%s.json", phase))
+	data, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal phase result: %w", err)
+	}
+
+	if err := writeFile(phaseFile, data); err != nil {
+		return fmt.Errorf("failed to write phase cache: %w", err)
+	}
+
+	so.logger.WithFields(logrus.Fields{
+		"flow_id": flowID,
+		"phase":   phase,
+		"file":    phaseFile,
+	}).Debug("[SpecKit Cache] Phase result cached")
+
+	return nil
+}
+
+// loadPhaseFromCache loads a cached phase result
+func (so *SpecKitOrchestrator) loadPhaseFromCache(flowID string, phase SpecKitPhase) (*SpecKitPhaseResult, error) {
+	if !so.enableCaching {
+		return nil, fmt.Errorf("caching disabled")
+	}
+
+	phaseFile := filepath.Join(so.cacheDir, flowID, fmt.Sprintf("%s.json", phase))
+	data, err := readFile(phaseFile)
+	if err != nil {
+		return nil, fmt.Errorf("phase cache not found: %w", err)
+	}
+
+	var result SpecKitPhaseResult
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal phase cache: %w", err)
+	}
+
+	result.Cached = true
+
+	so.logger.WithFields(logrus.Fields{
+		"flow_id": flowID,
+		"phase":   phase,
+	}).Info("[SpecKit Cache] Loaded phase from cache")
+
+	return &result, nil
+}
+
+// saveFlowToCache saves the complete flow result to cache
+func (so *SpecKitOrchestrator) saveFlowToCache(result *SpecKitFlowResult) error {
+	if !so.enableCaching {
+		return nil
+	}
+
+	cacheFilePath := filepath.Join(so.cacheDir, result.FlowID)
+	if err := ensureDir(cacheFilePath); err != nil {
+		return err
+	}
+
+	flowFile := filepath.Join(cacheFilePath, "flow.json")
+	data, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal flow result: %w", err)
+	}
+
+	if err := writeFile(flowFile, data); err != nil {
+		return fmt.Errorf("failed to write flow cache: %w", err)
+	}
+
+	so.logger.WithFields(logrus.Fields{
+		"flow_id":       result.FlowID,
+		"phases_cached": len(result.PhaseResults),
+	}).Debug("[SpecKit Cache] Flow result cached")
+
+	return nil
+}
+
+// loadFlowFromCache loads a complete flow result from cache
+func (so *SpecKitOrchestrator) loadFlowFromCache(flowID string) (*SpecKitFlowResult, error) {
+	if !so.enableCaching {
+		return nil, fmt.Errorf("caching disabled")
+	}
+
+	flowFile := filepath.Join(so.cacheDir, flowID, "flow.json")
+	data, err := readFile(flowFile)
+	if err != nil {
+		return nil, fmt.Errorf("flow cache not found: %w", err)
+	}
+
+	var result SpecKitFlowResult
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal flow cache: %w", err)
+	}
+
+	result.ResumedFromCache = true
+
+	so.logger.WithFields(logrus.Fields{
+		"flow_id":       flowID,
+		"phases_loaded": len(result.PhaseResults),
+		"last_phase":    result.PhaseResults[len(result.PhaseResults)-1].Phase,
+	}).Info("[SpecKit Cache] Loaded flow from cache")
+
+	return &result, nil
+}
+
+// clearFlowCache clears all cached data for a flow
+func (so *SpecKitOrchestrator) clearFlowCache(flowID string) error {
+	if !so.enableCaching {
+		return nil
+	}
+
+	cacheFilePath := filepath.Join(so.cacheDir, flowID)
+	if err := removeDir(cacheFilePath); err != nil {
+		return fmt.Errorf("failed to clear flow cache: %w", err)
+	}
+
+	so.logger.WithField("flow_id", flowID).Debug("[SpecKit Cache] Cleared flow cache")
+	return nil
+}
+
+// resumeFlow resumes a SpecKit flow from the last cached phase
+func (so *SpecKitOrchestrator) resumeFlow(ctx context.Context, flowID string, userRequest string, intentResult *EnhancedIntentResult) (*SpecKitFlowResult, error) {
+	// Try to load cached flow
+	cachedFlow, err := so.loadFlowFromCache(flowID)
+	if err != nil {
+		return nil, fmt.Errorf("cannot resume flow: %w", err)
+	}
+
+	if cachedFlow.Success {
+		so.logger.Info("[SpecKit Resumption] Flow already completed, returning cached result")
+		return cachedFlow, nil
+	}
+
+	// Determine where to resume from
+	lastPhase := cachedFlow.PhaseResults[len(cachedFlow.PhaseResults)-1].Phase
+	so.logger.WithFields(logrus.Fields{
+		"flow_id":    flowID,
+		"last_phase": lastPhase,
+	}).Info("[SpecKit Resumption] Resuming flow from last completed phase")
+
+	// Determine remaining phases
+	allPhases := []SpecKitPhase{
+		PhaseConstitution, PhaseSpecify, PhaseClarify,
+		PhasePlan, PhaseTasks, PhaseAnalyze, PhaseImplement,
+	}
+
+	// Find index of last completed phase
+	lastPhaseIndex := -1
+	for i, phase := range allPhases {
+		if phase == lastPhase {
+			lastPhaseIndex = i
+			break
+		}
+	}
+
+	if lastPhaseIndex == -1 {
+		return nil, fmt.Errorf("unknown last phase: %s", lastPhase)
+	}
+
+	// If all phases complete, return cached flow
+	if lastPhaseIndex == len(allPhases)-1 {
+		so.logger.Info("[SpecKit Resumption] All phases already completed")
+		cachedFlow.ResumedFromPhase = lastPhase
+		return cachedFlow, nil
+	}
+
+	// Execute remaining phases
+	remainingPhases := allPhases[lastPhaseIndex+1:]
+	so.logger.WithFields(logrus.Fields{
+		"remaining_phases": len(remainingPhases),
+		"phases":           remainingPhases,
+	}).Info("[SpecKit Resumption] Executing remaining phases")
+
+	// Extract context from cached phases
+	constitution := cachedFlow.Constitution
+	var specifyResult, clarifyResult, planResult, tasksResult, analyzeResult *SpecKitPhaseResult
+
+	// Build context from cached phases
+	cachedFlow.Phases = make(map[string]*SpecKitPhaseResult)
+	for i := range cachedFlow.PhaseResults {
+		phase := &cachedFlow.PhaseResults[i]
+		cachedFlow.Phases[string(phase.Phase)] = phase
+
+		switch phase.Phase {
+		case PhaseSpecify:
+			specifyResult = phase
+		case PhaseClarify:
+			clarifyResult = phase
+		case PhasePlan:
+			planResult = phase
+		case PhaseTasks:
+			tasksResult = phase
+		case PhaseAnalyze:
+			analyzeResult = phase
+		}
+	}
+
+	// Execute remaining phases
+	for _, phase := range remainingPhases {
+		var phaseResult *SpecKitPhaseResult
+		var err error
+
+		switch phase {
+		case PhaseConstitution:
+			// Should never resume from before Constitution
+			return nil, fmt.Errorf("cannot resume before Constitution phase")
+
+		case PhaseSpecify:
+			phaseResult, err = so.executeSpecifyPhase(ctx, userRequest, constitution)
+
+		case PhaseClarify:
+			phaseResult, err = so.executeClarifyPhase(ctx, userRequest, constitution, specifyResult)
+
+		case PhasePlan:
+			phaseResult, err = so.executePlanPhase(ctx, userRequest, constitution, clarifyResult)
+
+		case PhaseTasks:
+			phaseResult, err = so.executeTasksPhase(ctx, planResult)
+
+		case PhaseAnalyze:
+			phaseResult, err = so.executeAnalyzePhase(ctx, constitution, tasksResult)
+
+		case PhaseImplement:
+			phaseResult, err = so.executeImplementPhase(ctx, constitution, analyzeResult, tasksResult)
+		}
+
+		if err != nil {
+			so.logger.WithError(err).WithField("phase", phase).Error("[SpecKit Resumption] Phase execution failed")
+			cachedFlow.Success = false
+			cachedFlow.EndTime = time.Now()
+			cachedFlow.Duration = cachedFlow.EndTime.Sub(cachedFlow.StartTime)
+
+			// Save partial progress
+			if saveErr := so.saveFlowToCache(cachedFlow); saveErr != nil {
+				so.logger.WithError(saveErr).Warn("[SpecKit Resumption] Failed to save partial progress")
+			}
+
+			return cachedFlow, fmt.Errorf("phase %s failed during resumption: %w", phase, err)
+		}
+
+		// Add result to flow
+		cachedFlow.PhaseResults = append(cachedFlow.PhaseResults, *phaseResult)
+		cachedFlow.Phases[string(phase)] = phaseResult
+
+		// Update context for next phases
+		switch phase {
+		case PhaseSpecify:
+			specifyResult = phaseResult
+		case PhaseClarify:
+			clarifyResult = phaseResult
+		case PhasePlan:
+			planResult = phaseResult
+		case PhaseTasks:
+			tasksResult = phaseResult
+		case PhaseAnalyze:
+			analyzeResult = phaseResult
+		}
+
+		// Save progress after each phase
+		if err := so.savePhaseToCache(flowID, phase, phaseResult); err != nil {
+			so.logger.WithError(err).Warn("[SpecKit Resumption] Failed to cache phase result")
+		}
+
+		so.logger.WithField("phase", phase).Info("[SpecKit Resumption] Phase completed")
+	}
+
+	// Mark flow as complete
+	cachedFlow.Success = true
+	cachedFlow.EndTime = time.Now()
+	cachedFlow.Duration = cachedFlow.EndTime.Sub(cachedFlow.StartTime)
+	cachedFlow.ResumedFromPhase = lastPhase
+
+	// Calculate overall quality score
+	totalScore := 0.0
+	for _, phaseResult := range cachedFlow.PhaseResults {
+		totalScore += phaseResult.QualityScore
+	}
+	cachedFlow.OverallQualityScore = totalScore / float64(len(cachedFlow.PhaseResults))
+
+	// Extract final artifact (implementation output)
+	if implementPhase, ok := cachedFlow.Phases[string(PhaseImplement)]; ok {
+		cachedFlow.FinalArtifact = implementPhase.Artifact
+	}
+
+	// Save completed flow
+	if err := so.saveFlowToCache(cachedFlow); err != nil {
+		so.logger.WithError(err).Warn("[SpecKit Resumption] Failed to save completed flow")
+	}
+
+	so.logger.WithFields(logrus.Fields{
+		"flow_id":         flowID,
+		"phases_resumed":  len(remainingPhases),
+		"overall_quality": cachedFlow.OverallQualityScore,
+	}).Info("[SpecKit Resumption] Flow completed successfully")
+
+	return cachedFlow, nil
+}
+
+// Helper functions for file operations
+
+func ensureDir(dir string) error {
+	// #nosec G301 -- speckit cache directories use standard 0750 permissions
+	return os.MkdirAll(dir, 0750)
+}
+
+func writeFile(path string, data []byte) error {
+	// #nosec G306 -- speckit phase cache files use standard 0600 permissions
+	return os.WriteFile(path, data, 0600)
+}
+
+func readFile(path string) ([]byte, error) {
+	return os.ReadFile(path)
+}
+
+func removeDir(dir string) error {
+	return os.RemoveAll(dir)
 }
 
