@@ -256,6 +256,10 @@ func (a *Adapter) GetFinding(id string) (*Finding, error) {
 		return nil, fmt.Errorf(
 			"helixqa adapter: get finding %q: %w", id, err)
 	}
+	if f == nil {
+		return nil, fmt.Errorf(
+			"helixqa adapter: finding %q not found", id)
+	}
 
 	result := toAdapterFinding(*f)
 	return &result, nil
