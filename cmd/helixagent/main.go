@@ -1947,12 +1947,9 @@ type OpenCodeConfig struct {
 	Provider     map[string]OpenCodeProviderDefNew  `json:"provider,omitempty"`     // Note: singular "provider"
 	Agent        map[string]OpenCodeAgentDefNew     `json:"agent,omitempty"`        // Note: singular "agent"
 	MCP          map[string]OpenCodeMCPServerDefNew `json:"mcp,omitempty"`          // OpenCode expects "mcp" key
+	Plugin       []string                           `json:"plugin,omitempty"`       // OpenCode plugins (e.g., "opencode-agent-skills@0.6.5")
 	Instructions []string                           `json:"instructions,omitempty"` // Rule files
 	TUI          *OpenCodeTUIDef                    `json:"tui,omitempty"`
-	// NOTE: OpenCode has strict schema validation — only $schema, provider, agent, mcp,
-	// instructions, tui are valid top-level keys. Plugins, extensions, formatters, and
-	// skills are accessed via HelixAgent MCP endpoints (helixagent-rag, helixagent-formatters,
-	// helixagent-lsp, helixagent-acp, helixagent-embeddings) — NOT as config keys.
 }
 
 // OpenCodeProviderDefNew represents a provider in OpenCode config (correct schema)
@@ -2190,6 +2187,7 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 			},
 		},
 		MCP:          getMCPServers(baseURL, *workingMCPsOnly),
+		Plugin:       []string{"opencode-agent-skills@0.6.5"},
 		Instructions: []string{"CLAUDE.md", "opencode.md"},
 		TUI:          &OpenCodeTUIDef{Theme: "opencode"},
 	}

@@ -785,9 +785,6 @@ Respond concisely and helpfully.`, clientName, toolList)
 			topic = "User Query"
 		}
 
-		// Generate team introduction so the user sees the ensemble structure upfront
-		teamIntro := h.generateDebateTeamIntroduction()
-
 		debateID := fmt.Sprintf("debate-%d", time.Now().UnixNano())
 		startTime := time.Now()
 
@@ -853,19 +850,21 @@ Respond concisely and helpfully.`, clientName, toolList)
 			flusher.Flush()
 		}
 
-		// Stream the team introduction first so user sees ensemble structure
-		if teamIntro != "" {
-			for _, line := range strings.Split(teamIntro, "\n") {
-				sendSSEChunk(line + "\n")
-			}
-			sendSSEChunk("\n---\n\n")
-		}
+		// ============================================================
+		// PHASE 1: Collect specialist role responses INTERNALLY
+		// Roles 1-7 (Architect through Validator) provide analysis
+		// that feeds into the Moderator's synthesis. Their outputs
+		// are NOT streamed to the user.
+		// ============================================================
+		specialistRoles := debateRoles[:len(debateRoles)-1] // All except Moderator
+		moderatorRole := debateRoles[len(debateRoles)-1]    // Moderator is last
 
-		for i, rc := range debateRoles {
+		sendSSEChunk("*Analyzing with AI ensemble...*\n\n")
+
+		for i, rc := range specialistRoles {
 			if ctx.Err() != nil {
 				break
 			}
-			// Assign LLM round-robin from verified providers
 			llmIdx := i % len(verifiedLLMs)
 			if llmIdx >= len(verifiedLLMs) {
 				continue
@@ -881,20 +880,16 @@ Respond concisely and helpfully.`, clientName, toolList)
 			}
 
 			roleStart := time.Now()
-			// Build messages: include original system context (tool schemas, codebase access)
-			// PLUS the role-specific prompt, so each debater has full tool awareness
 			var debateMessages []models.Message
 			for _, m := range internalReq.Messages {
 				if m.Role == "system" {
 					debateMessages = append(debateMessages, m)
 				}
 			}
-			// Append the role-specific debate instruction
 			debateMessages = append(debateMessages, models.Message{
 				Role:    "system",
-				Content: rc.Prompt + "\n\nIMPORTANT: You have FULL ACCESS to the user's codebase through tools. Use them to provide concrete, specific answers. Do NOT say you cannot see the codebase.",
+				Content: rc.Prompt + "\n\nProvide your analysis concisely (2-3 sentences). Focus on actionable insights for your specialty.",
 			})
-			// Include conversation history (user/assistant messages)
 			for _, m := range internalReq.Messages {
 				if m.Role == "user" || m.Role == "assistant" {
 					debateMessages = append(debateMessages, m)
@@ -902,100 +897,37 @@ Respond concisely and helpfully.`, clientName, toolList)
 			}
 			debateReq := &models.LLMRequest{
 				Messages:    debateMessages,
-				ModelParams: models.ModelParameters{Model: vllm.ModelName, MaxTokens: 2048},
+				ModelParams: models.ModelParameters{Model: vllm.ModelName, MaxTokens: 1024},
 			}
 
-			// Stream role header immediately so user sees progress
-			sendSSEChunk(fmt.Sprintf("\n### %s (%s/%s)\n\n", rc.Name, vllm.ProviderName, vllm.ModelName))
-
-			// Try streaming first for real-time token delivery
+			// Collect response internally (NOT streamed to user)
 			var roleContent strings.Builder
-			streamCh, streamErr := vllm.Provider.CompleteStream(ctx, debateReq)
-			if streamErr == nil && streamCh != nil {
-				for resp := range streamCh {
-					if resp == nil || resp.Content == "" {
+			resp, callErr := vllm.Provider.Complete(ctx, debateReq)
+			if callErr != nil {
+				// Try fallbacks
+				for fbIdx := 0; fbIdx < len(verifiedLLMs); fbIdx++ {
+					if fbIdx == llmIdx {
 						continue
 					}
-					if resp.FinishReason == "stop" || resp.FinishReason == "STOP" {
+					fb := verifiedLLMs[fbIdx]
+					if fb.Provider == nil {
+						continue
+					}
+					fbReq := &models.LLMRequest{
+						Messages:    debateReq.Messages,
+						ModelParams: models.ModelParameters{Model: fb.ModelName, MaxTokens: 1024},
+					}
+					fbResp, fbErr := fb.Provider.Complete(ctx, fbReq)
+					if fbErr == nil && fbResp != nil && fbResp.Content != "" {
+						roleContent.WriteString(fbResp.Content)
+						logrus.WithFields(logrus.Fields{
+							"role": rc.Name, "fallback": fb.ProviderName,
+						}).Info("[DEBATE] Specialist fallback activated")
 						break
 					}
-					sendSSEChunk(resp.Content)
-					roleContent.WriteString(resp.Content)
 				}
-			} else {
-				// Fallback to non-streaming Complete if streaming fails
-				resp, callErr := vllm.Provider.Complete(ctx, debateReq)
-				if callErr != nil {
-					// Try ALL remaining verified LLMs as fallbacks (not just +3)
-					fallbackUsed := false
-					for fbIdx := 0; fbIdx < len(verifiedLLMs); fbIdx++ {
-						if fbIdx == llmIdx {
-							continue // Skip the one that already failed
-						}
-						fb := verifiedLLMs[fbIdx]
-						if fb.Provider == nil {
-							continue
-						}
-
-						// Create a fresh request for the fallback with its own model
-						fbReq := &models.LLMRequest{
-							Messages:    debateReq.Messages,
-							ModelParams: models.ModelParameters{Model: fb.ModelName, MaxTokens: 2048},
-						}
-
-						// Try streaming first for fallback
-						fbStream, fbStreamErr := fb.Provider.CompleteStream(ctx, fbReq)
-						if fbStreamErr == nil && fbStream != nil {
-							sendSSEChunk(fmt.Sprintf("*(fallback: %s/%s)*\n\n", fb.ProviderName, fb.ModelName))
-							for fbResp := range fbStream {
-								if fbResp == nil || fbResp.Content == "" {
-									continue
-								}
-								if fbResp.FinishReason == "stop" || fbResp.FinishReason == "STOP" {
-									break
-								}
-								sendSSEChunk(fbResp.Content)
-								roleContent.WriteString(fbResp.Content)
-							}
-							if roleContent.Len() > 0 {
-								fallbackUsed = true
-								logrus.WithFields(logrus.Fields{
-									"role":              rc.Name,
-									"failed_provider":   vllm.ProviderName,
-									"fallback_provider": fb.ProviderName,
-									"fallback_model":    fb.ModelName,
-								}).Info("[DEBATE] Fallback provider activated via streaming")
-								break
-							}
-						}
-
-						// Try non-streaming fallback
-						fbResp, fbErr := fb.Provider.Complete(ctx, fbReq)
-						if fbErr == nil && fbResp != nil && fbResp.Content != "" {
-							sendSSEChunk(fmt.Sprintf("*(fallback: %s/%s)*\n\n", fb.ProviderName, fb.ModelName))
-							sendSSEChunk(fbResp.Content)
-							roleContent.WriteString(fbResp.Content)
-							fallbackUsed = true
-							logrus.WithFields(logrus.Fields{
-								"role":              rc.Name,
-								"failed_provider":   vllm.ProviderName,
-								"fallback_provider": fb.ProviderName,
-								"fallback_model":    fb.ModelName,
-							}).Info("[DEBATE] Fallback provider activated via complete")
-							break
-						}
-					}
-					if !fallbackUsed {
-						errMsg := callErr.Error()
-						if len(errMsg) > 100 {
-							errMsg = errMsg[:100]
-						}
-						sendSSEChunk(fmt.Sprintf("*[%s failed: %s — all fallbacks exhausted]*\n", rc.Name, errMsg))
-					}
-				} else if resp != nil {
-					sendSSEChunk(resp.Content)
-					roleContent.WriteString(resp.Content)
-				}
+			} else if resp != nil {
+				roleContent.WriteString(resp.Content)
 			}
 
 			rr := roleResult{
@@ -1006,28 +938,119 @@ Respond concisely and helpfully.`, clientName, toolList)
 			results = append(results, rr)
 			logrus.WithFields(logrus.Fields{
 				"role": rc.Name, "provider": rr.ProviderName,
-				"model": rr.ModelName, "duration": rr.Duration,
-				"content_len": len(rr.Content),
-			}).Info("[DEBATE] Role response received")
+				"duration": rr.Duration, "content_len": len(rr.Content),
+			}).Info("[DEBATE] Specialist response collected internally")
 		}
+
+		// ============================================================
+		// PHASE 2: Moderator synthesizes all specialist inputs into
+		// ONE coherent response, which is the ONLY thing streamed
+		// to the user. This is what makes the ensemble useful.
+		// ============================================================
+		logrus.Info("[DEBATE] Phase 2: Moderator synthesis from specialist inputs")
+
+		// Build synthesis context from all specialist responses
+		var synthesisContext strings.Builder
+		synthesisContext.WriteString("You received analysis from the following AI specialists:\n\n")
+		for _, r := range results {
+			if r.Content != "" {
+				synthesisContext.WriteString(fmt.Sprintf("**%s**: %s\n\n", r.Role, r.Content))
+			}
+		}
+
+		// Build Moderator request with all context
+		var moderatorMessages []models.Message
+		for _, m := range internalReq.Messages {
+			if m.Role == "system" {
+				moderatorMessages = append(moderatorMessages, m)
+			}
+		}
+		moderatorMessages = append(moderatorMessages, models.Message{
+			Role: "system",
+			Content: moderatorRole.Prompt + "\n\n" + synthesisContext.String() +
+				"\n\nSynthesize all specialist perspectives into ONE clear, comprehensive, actionable response. " +
+				"Do NOT list each specialist's opinion separately. Instead, weave their insights into a unified answer. " +
+				"If the user asked for a task (file creation, code changes, analysis), produce the concrete result directly.",
+		})
+		for _, m := range internalReq.Messages {
+			if m.Role == "user" || m.Role == "assistant" {
+				moderatorMessages = append(moderatorMessages, m)
+			}
+		}
+
+		// Select the best available LLM for the Moderator (use highest-scored)
+		moderatorIdx := (len(specialistRoles)) % len(verifiedLLMs)
+		moderatorLLM := verifiedLLMs[moderatorIdx]
+		// Prefer using the highest-scored LLM for synthesis
+		if len(verifiedLLMs) > 0 {
+			moderatorLLM = verifiedLLMs[0] // First is highest score
+		}
+
+		moderatorReq := &models.LLMRequest{
+			Messages:    moderatorMessages,
+			ModelParams: models.ModelParameters{Model: moderatorLLM.ModelName, MaxTokens: 4096},
+		}
+
+		// Stream the Moderator's synthesis to the user
+		moderatorStart := time.Now()
+		var moderatorContent strings.Builder
+		streamCh, streamErr := moderatorLLM.Provider.CompleteStream(ctx, moderatorReq)
+		if streamErr == nil && streamCh != nil {
+			for resp := range streamCh {
+				if resp == nil || resp.Content == "" {
+					continue
+				}
+				if resp.FinishReason == "stop" || resp.FinishReason == "STOP" {
+					break
+				}
+				sendSSEChunk(resp.Content)
+				moderatorContent.WriteString(resp.Content)
+			}
+		} else {
+			// Fallback: non-streaming
+			resp, callErr := moderatorLLM.Provider.Complete(ctx, moderatorReq)
+			if callErr != nil {
+				// Try other LLMs as moderator fallback
+				for fbIdx := 0; fbIdx < len(verifiedLLMs); fbIdx++ {
+					fb := verifiedLLMs[fbIdx]
+					if fb.Provider == nil || fb.ProviderName == moderatorLLM.ProviderName {
+						continue
+					}
+					moderatorReq.ModelParams.Model = fb.ModelName
+					fbResp, fbErr := fb.Provider.Complete(ctx, moderatorReq)
+					if fbErr == nil && fbResp != nil && fbResp.Content != "" {
+						sendSSEChunk(fbResp.Content)
+						moderatorContent.WriteString(fbResp.Content)
+						break
+					}
+				}
+			} else if resp != nil {
+				sendSSEChunk(resp.Content)
+				moderatorContent.WriteString(resp.Content)
+			}
+		}
+
+		results = append(results, roleResult{
+			Role: "Moderator", ProviderName: moderatorLLM.ProviderName,
+			ModelName: moderatorLLM.ModelName, Score: moderatorLLM.Score,
+			Duration: time.Since(moderatorStart), Content: moderatorContent.String(),
+		})
 
 		totalDuration := time.Since(startTime)
 
-		// Content was already streamed progressively above.
-		// Just log the debate result and send the finish marker.
 		totalContent := 0
 		for _, r := range results {
 			totalContent += len(r.Content)
 		}
 		logrus.WithFields(logrus.Fields{
-			"debate_id":     debateID,
-			"duration":      totalDuration,
-			"roles":         len(results),
-			"total_content": totalContent,
-		}).Info("[STREAMING] Debate completed — all roles streamed progressively")
+			"debate_id":        debateID,
+			"duration":         totalDuration,
+			"specialist_roles": len(specialistRoles),
+			"total_content":    totalContent,
+			"moderator_len":   moderatorContent.Len(),
+		}).Info("[DEBATE] Debate completed — moderator synthesis streamed to user")
 
 		if sseHeadersSent {
-			// Send finish marker
 			finishData, _ := json.Marshal(map[string]any{ //nolint:errcheck
 				"id": streamID, "object": "chat.completion.chunk", "created": time.Now().Unix(),
 				"model": "helixagent-debate", "system_fingerprint": "fp_helixagent_v1",
@@ -1038,7 +1061,6 @@ Respond concisely and helpfully.`, clientName, toolList)
 			return
 		}
 
-		// Fallback: if no SSE was sent (all roles failed), send error
 		h.sendOpenAIError(c, http.StatusInternalServerError, "internal_error", "All debate roles failed", "")
 		return
 	}
