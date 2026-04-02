@@ -1,24 +1,73 @@
-# Ollama code
+# Ollama Code
 
 ## Overview
 
-**Ollama code** is a CLI agent supported by HelixAgent.
+**Ollama Code** is a TypeScript-based CLI for local AI coding using Ollama models. It provides AI-powered code completion and generation running entirely on your local machine.
 
-**Location:** `cli_agents/ollama-code/`
+**Repository:** https://github.com/tcsenpai/ollama-code
 
 ---
 
 ## Key Features
 
-- AI-powered coding assistance
-- Terminal-based interface
-- Code generation and editing
+| Feature | Description |
+|---------|-------------|
+| **Local AI** | Runs entirely on your machine |
+| **Ollama Integration** | Uses Ollama for model management |
+| **Privacy** | No data sent to external services |
+| **VS Code Extension** | IDE integration available |
+| **TypeScript** | Modern TypeScript codebase |
 
 ---
 
 ## Installation
 
-See repository for installation instructions.
+```bash
+# Install Ollama first
+# See https://ollama.ai
+
+# Install Ollama Code
+npm install -g ollama-code
+```
+
+## Quick Start
+
+```bash
+# Make sure Ollama is running
+ollama serve
+
+# Start Ollama Code
+ollama-code
+```
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      Ollama Code                             │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐   │
+│  │  Terminal/   │    │  Ollama      │    │  Local LLM   │   │
+│  │  VS Code     │◄──►│  Code CLI    │◄──►│  (Ollama)    │   │
+│  └──────────────┘    └──────────────┘    └──────────────┘   │
+│                             │                                │
+│                        ┌────┴────┐                          │
+│                        │ Models  │                          │
+│                        │ (Local) │                          │
+│                        └─────────┘                          │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Requirements
+
+- Ollama installed and running
+- Sufficient RAM for local models
 
 ---
 

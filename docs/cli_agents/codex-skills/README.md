@@ -1,24 +1,57 @@
-# Codex skills
+# $(echo $agent | tr '-' ' ' | sed 's/.*/\u&/')
 
 ## Overview
 
-**Codex skills** is a CLI agent supported by HelixAgent.
+**$(echo $agent | tr '-' ' ' | sed 's/.*/\u&/')** is a CLI agent supported by HelixAgent for AI-powered coding assistance.
 
-**Location:** `cli_agents/codex-skills/`
+**Location:** \`cli_agents/$agent/\`
 
 ---
 
 ## Key Features
 
-- AI-powered coding assistance
+- AI-powered code generation and editing
 - Terminal-based interface
-- Code generation and editing
+- Integration with development workflows
+- Support for multiple programming languages
 
 ---
 
 ## Installation
 
-See repository for installation instructions.
+See the repository for installation instructions:
+\`\`\`bash
+cd cli_agents/$agent
+# Follow repository README for setup
+\`\`\`
+
+---
+
+## Architecture
+
+\`\`\`
+┌─────────────────────────────────────────────────────────────┐
+│                    $(echo $agent | tr '-' ' ' | sed 's/.*/\u&/')                             │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐   │
+│  │    User      │◄──►│   Agent      │◄──►│  LLM/API     │   │
+│  │   Terminal   │    │   (Core)     │    │  (Provider)  │   │
+│  └──────────────┘    └──────────────┘    └──────────────┘   │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+\`\`\`
+
+---
+
+## Usage
+
+\`\`\`bash
+# Start the agent
+$agent
+
+# See repository documentation for detailed usage
+\`\`\`
 
 ---
 

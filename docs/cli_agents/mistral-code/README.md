@@ -1,24 +1,43 @@
-# Mistral code
+# Mistral Code
 
 ## Overview
 
-**Mistral code** is a CLI agent supported by HelixAgent.
+**Mistral Code** is a CLI for Mistral AI's coding models, providing high-performance code generation and assistance.
 
-**Location:** `cli_agents/mistral-code/`
+**Repository:** https://github.com/mistralai/mistral-code
 
 ---
 
 ## Key Features
 
-- AI-powered coding assistance
-- Terminal-based interface
-- Code generation and editing
+| Feature | Description |
+|---------|-------------|
+| **Mistral Models** | Codestral and other Mistral models |
+| **High Performance** | Fast code generation |
+| **Fill-in-Middle** | Advanced code completion |
+| **Multi-Language** | Supports many programming languages |
+| **API Access** | Direct Mistral API integration |
 
 ---
 
 ## Installation
 
-See repository for installation instructions.
+```bash
+# Via pip
+pip install mistral-code
+
+# Or see repository for latest instructions
+```
+
+## Quick Start
+
+```bash
+# Set API key
+export MISTRAL_API_KEY="your-api-key"
+
+# Start Mistral Code
+mistral-code
+```
 
 ---
 

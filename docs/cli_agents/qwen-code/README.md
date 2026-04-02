@@ -1,24 +1,43 @@
-# Qwen code
+# Qwen Code
 
 ## Overview
 
-**Qwen code** is a CLI agent supported by HelixAgent.
+**Qwen Code** is the official CLI for Qwen (通义千问), Alibaba's large language model, providing AI-powered coding assistance.
 
-**Location:** `cli_agents/qwen-code/`
+**Repository:** https://github.com/QwenLM/qwen-code
 
 ---
 
 ## Key Features
 
-- AI-powered coding assistance
-- Terminal-based interface
-- Code generation and editing
+| Feature | Description |
+|---------|-------------|
+| **Qwen Models** | Official Qwen model support |
+| **Code Generation** | AI-powered code writing |
+| **Chinese Support** | Optimized for Chinese language |
+| **Multi-Language** | Supports 100+ programming languages |
+| **Alibaba Cloud** | Cloud integration available |
 
 ---
 
 ## Installation
 
-See repository for installation instructions.
+```bash
+# Via npm
+npm install -g @qwen/code
+
+# Or see repository for latest instructions
+```
+
+## Quick Start
+
+```bash
+# Set API key
+export QWEN_API_KEY="your-api-key"
+
+# Start Qwen Code
+qwen-code
+```
 
 ---
 
