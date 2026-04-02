@@ -47,8 +47,9 @@ func TestDebateService_SetComprehensiveIntegration(t *testing.T) {
 			logger: logger,
 		}
 
-		mockIntegration := &MockComprehensiveIntegration{}
-		ds.SetComprehensiveIntegration(mockIntegration)
+		// Create a real IntegrationManager to test with
+		mgr := &comprehensive.IntegrationManager{}
+		ds.SetComprehensiveIntegration(mgr)
 
 		assert.NotNil(t, ds.comprehensiveIntegration)
 		assert.True(t, ds.useComprehensiveSystem)
@@ -99,7 +100,7 @@ func TestDebateService_conductComprehensiveDebate(t *testing.T) {
 					Success:         true,
 					RoundsConducted: 3,
 					QualityScore:    0.85,
-					Phases:          []string{"phase1", "phase2", "phase3"},
+					Phases:          []*comprehensive.PhaseResult{},
 				}, nil
 			},
 		}
@@ -174,7 +175,7 @@ func TestDebateService_conductComprehensiveDebate(t *testing.T) {
 					Success:         true,
 					RoundsConducted: 5,
 					QualityScore:    0.92,
-					Phases:          []string{"p1", "p2", "p3", "p4"},
+					Phases:          []*comprehensive.PhaseResult{{}, {}, {}, {}},
 				}, nil
 			},
 		}
@@ -255,13 +256,12 @@ func TestDebateService_conductComprehensiveDebateStreaming(t *testing.T) {
 			StreamDebateFunc: func(ctx context.Context, req *comprehensive.DebateStreamRequest) (*comprehensive.DebateResponse, error) {
 				assert.Equal(t, "streaming-debate-123", req.ID)
 				assert.Equal(t, "Streaming Topic", req.Topic)
-				assert.True(t, req.Stream)
 
 				return &comprehensive.DebateResponse{
 					Success:         true,
 					RoundsConducted: 4,
 					QualityScore:    0.88,
-					Phases:          []string{"p1", "p2"},
+					Phases:          []*comprehensive.PhaseResult{{}, {}},
 					Participants:    []string{"agent1", "agent2", "agent3"},
 				}, nil
 			},
@@ -375,7 +375,7 @@ func TestDebateService_conductComprehensiveDebateStreaming(t *testing.T) {
 					Success:         true,
 					RoundsConducted: 3,
 					QualityScore:    0.80,
-					Phases:          []string{"p1"},
+					Phases:          []*comprehensive.PhaseResult{{}},
 					Participants:    []string{"agent1"},
 				}, nil
 			},
