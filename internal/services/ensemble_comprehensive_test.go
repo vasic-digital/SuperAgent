@@ -54,7 +54,7 @@ func (m *MockLLMProviderForEnsemble) CompleteStream(ctx context.Context, req *mo
 
 var _ LLMProvider = (*MockLLMProviderForEnsemble)(nil)
 
-func TestNewEnsembleService(t *testing.T) {
+func TestNewEnsembleService_Additional(t *testing.T) {
 	t.Run("creates service with default values", func(t *testing.T) {
 		service := NewEnsembleService("confidence_weighted", 30*time.Second)
 
@@ -73,7 +73,7 @@ func TestNewEnsembleService(t *testing.T) {
 	})
 }
 
-func TestEnsembleService_RegisterProvider(t *testing.T) {
+func TestEnsembleService_RegisterProvider_Additional(t *testing.T) {
 	t.Run("registers provider successfully", func(t *testing.T) {
 		service := NewEnsembleService("confidence_weighted", 30*time.Second)
 		provider := &MockLLMProviderForEnsemble{}
@@ -110,7 +110,7 @@ func TestEnsembleService_RegisterProvider(t *testing.T) {
 	})
 }
 
-func TestEnsembleService_RemoveProvider(t *testing.T) {
+func TestEnsembleService_RemoveProvider_Additional(t *testing.T) {
 	t.Run("removes registered provider", func(t *testing.T) {
 		service := NewEnsembleService("confidence_weighted", 30*time.Second)
 		service.RegisterProvider("test-provider", &MockLLMProviderForEnsemble{})
@@ -133,7 +133,7 @@ func TestEnsembleService_RemoveProvider(t *testing.T) {
 	})
 }
 
-func TestEnsembleService_GetProviders(t *testing.T) {
+func TestEnsembleService_GetProviders_Additional(t *testing.T) {
 	t.Run("returns empty slice when no providers", func(t *testing.T) {
 		service := NewEnsembleService("confidence_weighted", 30*time.Second)
 

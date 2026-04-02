@@ -75,7 +75,7 @@ func (m *MockRegistryLLMProvider) ValidateConfig(config map[string]interface{}) 
 
 var _ llm.LLMProvider = (*MockRegistryLLMProvider)(nil)
 
-func TestNewProviderRegistry(t *testing.T) {
+func TestNewProviderRegistry_Additional(t *testing.T) {
 	t.Run("creates registry with default config", func(t *testing.T) {
 		registry := NewProviderRegistry(nil, nil)
 
@@ -103,7 +103,7 @@ func TestNewProviderRegistry(t *testing.T) {
 	})
 }
 
-func TestNewProviderRegistryWithoutAutoDiscovery(t *testing.T) {
+func TestNewProviderRegistryWithoutAutoDiscovery_Additional(t *testing.T) {
 	t.Run("creates registry without auto-discovery", func(t *testing.T) {
 		registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 
@@ -112,7 +112,7 @@ func TestNewProviderRegistryWithoutAutoDiscovery(t *testing.T) {
 	})
 }
 
-func TestProviderRegistry_RegisterProvider(t *testing.T) {
+func TestProviderRegistry_RegisterProvider_Additional(t *testing.T) {
 	t.Run("registers provider successfully", func(t *testing.T) {
 		registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 		provider := &MockRegistryLLMProvider{name: "test-provider"}
@@ -161,7 +161,7 @@ func TestProviderRegistry_RegisterProvider(t *testing.T) {
 	})
 }
 
-func TestProviderRegistry_UnregisterProvider(t *testing.T) {
+func TestProviderRegistry_UnregisterProvider_Additional(t *testing.T) {
 	t.Run("unregisters existing provider", func(t *testing.T) {
 		registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 		provider := &MockRegistryLLMProvider{name: "test-provider"}
@@ -184,7 +184,7 @@ func TestProviderRegistry_UnregisterProvider(t *testing.T) {
 	})
 }
 
-func TestProviderRegistry_GetProvider(t *testing.T) {
+func TestProviderRegistry_GetProvider_Additional(t *testing.T) {
 	t.Run("returns existing provider", func(t *testing.T) {
 		registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 		provider := &MockRegistryLLMProvider{name: "test-provider"}
@@ -207,7 +207,7 @@ func TestProviderRegistry_GetProvider(t *testing.T) {
 	})
 }
 
-func TestProviderRegistry_ListProviders(t *testing.T) {
+func TestProviderRegistry_ListProviders_Additional(t *testing.T) {
 	t.Run("returns empty list when no providers", func(t *testing.T) {
 		registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 
@@ -243,7 +243,7 @@ func TestProviderRegistry_ListProviders(t *testing.T) {
 	})
 }
 
-func TestProviderRegistry_GetProviderConfig(t *testing.T) {
+func TestProviderRegistry_GetProviderConfig_Additional(t *testing.T) {
 	t.Run("returns config for registered provider", func(t *testing.T) {
 		registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 		provider := &MockRegistryLLMProvider{name: "test-provider"}
@@ -275,7 +275,7 @@ func TestProviderRegistry_GetProviderConfig(t *testing.T) {
 	})
 }
 
-func TestProviderRegistry_UpdateProviderConfig(t *testing.T) {
+func TestProviderRegistry_UpdateProviderConfig_Additional(t *testing.T) {
 	t.Run("updates existing provider config", func(t *testing.T) {
 		registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 		provider := &MockRegistryLLMProvider{name: "test-provider"}
@@ -316,7 +316,7 @@ func TestProviderRegistry_UpdateProviderConfig(t *testing.T) {
 	})
 }
 
-func TestProviderRegistry_IsProviderHealthy(t *testing.T) {
+func TestProviderRegistry_IsProviderHealthy_Additional(t *testing.T) {
 	t.Run("returns true for healthy provider", func(t *testing.T) {
 		registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 		provider := &MockRegistryLLMProvider{
@@ -356,7 +356,7 @@ func TestProviderRegistry_IsProviderHealthy(t *testing.T) {
 	})
 }
 
-func TestProviderRegistry_GetProviderHealthStatus(t *testing.T) {
+func TestProviderRegistry_GetProviderHealthStatus_Additional(t *testing.T) {
 	t.Run("returns health status for provider", func(t *testing.T) {
 		registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 		provider := &MockRegistryLLMProvider{name: "test-provider"}
@@ -389,7 +389,7 @@ func TestProviderRegistry_GetProviderHealthStatus(t *testing.T) {
 	})
 }
 
-func TestProviderRegistry_Complete(t *testing.T) {
+func TestProviderRegistry_Complete_Additional(t *testing.T) {
 	t.Run("completes request with provider", func(t *testing.T) {
 		registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 		provider := &MockRegistryLLMProvider{
@@ -448,7 +448,7 @@ func TestProviderRegistry_Complete(t *testing.T) {
 	})
 }
 
-func TestProviderRegistry_CompleteWithFallback(t *testing.T) {
+func TestProviderRegistry_CompleteWithFallback_Additional(t *testing.T) {
 	t.Run("falls back to secondary provider", func(t *testing.T) {
 		registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 		
@@ -501,7 +501,7 @@ func TestProviderRegistry_CompleteWithFallback(t *testing.T) {
 	})
 }
 
-func TestProviderRegistry_CompleteStream(t *testing.T) {
+func TestProviderRegistry_CompleteStream_Additional(t *testing.T) {
 	t.Run("streams from provider", func(t *testing.T) {
 		registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 		
@@ -543,7 +543,7 @@ func TestProviderRegistry_CompleteStream(t *testing.T) {
 	})
 }
 
-func TestProviderRegistry_RunEnsemble(t *testing.T) {
+func TestProviderRegistry_RunEnsemble_Additional(t *testing.T) {
 	t.Run("runs ensemble with registered providers", func(t *testing.T) {
 		registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 		
@@ -593,7 +593,7 @@ func TestProviderRegistry_RunEnsemble(t *testing.T) {
 	})
 }
 
-func TestProviderRegistry_ConcurrentAccess(t *testing.T) {
+func TestProviderRegistry_ConcurrentAccess_Additional(t *testing.T) {
 	t.Run("handles concurrent provider registration", func(t *testing.T) {
 		registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 
