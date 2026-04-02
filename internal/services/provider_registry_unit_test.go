@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"errors"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"dev.helix.agent/internal/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/sync/semaphore"
 )
 
 // =============================================================================
@@ -520,7 +520,7 @@ func TestProviderRegistryUnit_UpdateProvider(t *testing.T) {
 		Ensemble: &models.EnsembleConfig{
 			Strategy: "confidence_weighted",
 		},
-		Routing: &RouterConfig{
+		Routing: &RoutingConfig{
 			Strategy: "weighted",
 		},
 	}
@@ -1025,11 +1025,9 @@ func TestProviderRegistryUnit_GetBestProvidersForDebate(t *testing.T) {
 // Circuit Breaker Provider Tests
 // =============================================================================
 
-func TestCircuitBreakerProvider_Complete(t *testing.T) {
+func TestProviderRegistryUnit_CircuitBreakerProvider_Complete(t *testing.T) {
 	mockProvider := newRegistryMockProvider("cb-wrap")
 	cb := NewCircuitBreaker(5, 2, 60*time.Second)
-	sem := make(chan struct{}, 10)
-	
 	// Create weighted semaphore
 	weightedSem := semaphore.NewWeighted(10)
 	
@@ -1080,7 +1078,7 @@ func TestCircuitBreakerProvider_Complete_NoCircuitBreaker(t *testing.T) {
 	assert.NotNil(t, resp)
 }
 
-func TestCircuitBreakerProvider_CompleteStream(t *testing.T) {
+func TestProviderRegistryUnit_CircuitBreakerProvider_CompleteStream(t *testing.T) {
 	mockProvider := newRegistryMockProvider("cb-stream")
 	weightedSem := semaphore.NewWeighted(10)
 	var counter int64
@@ -1106,7 +1104,7 @@ func TestCircuitBreakerProvider_CompleteStream(t *testing.T) {
 	assert.NotNil(t, stream)
 }
 
-func TestCircuitBreakerProvider_HealthCheck(t *testing.T) {
+func TestProviderRegistryUnit_CircuitBreakerProvider_HealthCheck(t *testing.T) {
 	mockProvider := newRegistryMockProvider("cb-health")
 	weightedSem := semaphore.NewWeighted(10)
 	var counter int64
@@ -1125,7 +1123,7 @@ func TestCircuitBreakerProvider_HealthCheck(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestCircuitBreakerProvider_GetCapabilities(t *testing.T) {
+func TestProviderRegistryUnit_CircuitBreakerProvider_GetCapabilities(t *testing.T) {
 	mockProvider := newRegistryMockProvider("cb-caps")
 	weightedSem := semaphore.NewWeighted(10)
 	var counter int64
@@ -1142,7 +1140,7 @@ func TestCircuitBreakerProvider_GetCapabilities(t *testing.T) {
 	assert.NotNil(t, caps)
 }
 
-func TestCircuitBreakerProvider_ValidateConfig(t *testing.T) {
+func TestProviderRegistryUnit_CircuitBreakerProvider_ValidateConfig(t *testing.T) {
 	mockProvider := newRegistryMockProvider("cb-validate")
 	weightedSem := semaphore.NewWeighted(10)
 	var counter int64

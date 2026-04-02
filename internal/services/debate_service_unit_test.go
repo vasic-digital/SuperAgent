@@ -14,6 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/sync/semaphore"
 )
 
 // =============================================================================
@@ -243,12 +244,9 @@ func TestDebateServiceUnit_SetTeamConfig(t *testing.T) {
 	logger := newDebateServiceUnitTestLogger()
 	ds := NewDebateService(logger)
 
-	teamConfig := &DebateTeamConfig{
-		ProposerProvider: "claude",
-		ProposerModel:    "claude-3-opus",
-		OpponentProvider: "deepseek",
-		OpponentModel:    "deepseek-coder",
-	}
+	// DebateTeamConfig is used for team configuration
+	// The actual fields depend on the implementation in debate_team_config.go
+	teamConfig := &DebateTeamConfig{}
 
 	ds.SetTeamConfig(teamConfig)
 	assert.Equal(t, teamConfig, ds.GetTeamConfig())
@@ -856,8 +854,8 @@ func TestDebateServiceUnit_CheckEarlyTermination(t *testing.T) {
 	ds := NewDebateServiceWithDeps(logger, registry, nil)
 
 	responses := map[DebateTeamPosition]string{
-		"proposer": "We agree on this",
-		"opponent": "Yes, we agree on this",
+		PositionProposer: "We agree on this",
+		PositionCritic:   "Yes, we agree on this",
 	}
 
 	// Should not panic
