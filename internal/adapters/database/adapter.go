@@ -20,6 +20,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// databaseWithMigrate extends db.Database with the Migrate method
+type databaseWithMigrate interface {
+	db.Database
+	Migrate(ctx context.Context, migrations []string) error
+}
+
 // Client wraps the digital.vasic.database postgres client and provides
 // backward-compatible methods for HelixAgent's existing code.
 type Client struct {
@@ -27,14 +33,15 @@ type Client struct {
 	pool        *pgxpool.Pool
 	connectOnce sync.Once
 	connectErr  error
+	testPG      databaseWithMigrate // test hook for injecting mock database
 }
 
-// errorRow implements db.Row for returning connection errors
-type errorRow struct {
+// ErrorRow implements db.Row for returning connection errors
+type ErrorRow struct {
 	err error
 }
 
-func (r *errorRow) Scan(dest ...any) error {
+func (r *ErrorRow) Scan(dest ...any) error {
 	return r.err
 }
 
@@ -42,6 +49,11 @@ func (r *errorRow) Scan(dest ...any) error {
 // This method is safe for concurrent calls and uses sync.Once for idempotency.
 func (c *Client) initConnection(ctx context.Context) error {
 	c.connectOnce.Do(func() {
+		// Use test hook if available (for testing)
+		if c.testPG != nil {
+			c.connectErr = nil
+			return
+		}
 		// Connect with timeout if context doesn't have one
 		if _, hasDeadline := ctx.Deadline(); !hasDeadline {
 			var cancel context.CancelFunc
@@ -148,16 +160,26 @@ func (c *Client) Pool() *pgxpool.Pool {
 	if err := c.ensureConnected(); err != nil {
 		return nil
 	}
+	// Return test pool if available
+	if c.testPG != nil {
+		return nil
+	}
 	return c.pool
 }
 
 // Database returns the underlying database.Database interface.
 func (c *Client) Database() db.Database {
+	if c.testPG != nil {
+		return c.testPG
+	}
 	return c.pg
 }
 
 // Close closes the database connection.
 func (c *Client) Close() error {
+	if c.testPG != nil {
+		return c.testPG.Close()
+	}
 	return c.pg.Close()
 }
 
@@ -165,6 +187,9 @@ func (c *Client) Close() error {
 func (c *Client) Ping() error {
 	if err := c.ensureConnected(); err != nil {
 		return err
+	}
+	if c.testPG != nil {
+		return c.testPG.HealthCheck(context.Background())
 	}
 	return c.pg.HealthCheck(context.Background())
 }
@@ -176,6 +201,9 @@ func (c *Client) HealthCheck() error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
+	if c.testPG != nil {
+		return c.testPG.HealthCheck(ctx)
+	}
 	return c.pg.HealthCheck(ctx)
 }
 
@@ -183,6 +211,10 @@ func (c *Client) HealthCheck() error {
 // This method provides backward compatibility with the old interface.
 func (c *Client) Exec(query string, args ...any) error {
 	if err := c.ensureConnected(); err != nil {
+		return err
+	}
+	if c.testPG != nil {
+		_, err := c.testPG.Exec(context.Background(), query, args...)
 		return err
 	}
 	_, err := c.pg.Exec(context.Background(), query, args...)
@@ -195,7 +227,13 @@ func (c *Client) Query(query string, args ...any) ([]any, error) {
 	if err := c.ensureConnected(); err != nil {
 		return nil, err
 	}
-	rows, err := c.pg.Query(context.Background(), query, args...)
+	var rows db.Rows
+	var err error
+	if c.testPG != nil {
+		rows, err = c.testPG.Query(context.Background(), query, args...)
+	} else {
+		rows, err = c.pg.Query(context.Background(), query, args...)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +253,11 @@ func (c *Client) Query(query string, args ...any) ([]any, error) {
 func (c *Client) QueryRow(query string, args ...any) db.Row {
 	if err := c.ensureConnected(); err != nil {
 		// Return a row that will return the connection error on Scan
-		return &errorRow{err: err}
+		return &ErrorRow{err: err}
+	}
+	// Use test hook if available
+	if c.testPG != nil {
+		return c.testPG.QueryRow(context.Background(), query, args...)
 	}
 	return c.pg.QueryRow(context.Background(), query, args...)
 }
@@ -224,6 +266,9 @@ func (c *Client) QueryRow(query string, args ...any) db.Row {
 func (c *Client) Begin(ctx context.Context) (db.Tx, error) {
 	if err := c.initConnection(ctx); err != nil {
 		return nil, err
+	}
+	if c.testPG != nil {
+		return c.testPG.Begin(ctx)
 	}
 	return c.pg.Begin(ctx)
 }

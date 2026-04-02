@@ -13,6 +13,7 @@ import (
 
 	"dev.helix.agent/internal/llm/discovery"
 	"dev.helix.agent/internal/models"
+	"dev.helix.agent/internal/transport"
 )
 
 const (
@@ -139,12 +140,10 @@ func NewDeepSeekProviderWithRetry(apiKey, baseURL, model string, retryConfig Ret
 	}
 
 	p := &DeepSeekProvider{
-		apiKey:  apiKey,
-		baseURL: baseURL,
-		model:   model,
-		httpClient: &http.Client{
-			Timeout: 60 * time.Second,
-		},
+		apiKey:      apiKey,
+		baseURL:     baseURL,
+		model:       model,
+		httpClient:  transport.NewHTTP3Client(nil).HTTPClient(),
 		retryConfig: retryConfig,
 	}
 

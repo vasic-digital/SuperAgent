@@ -14,6 +14,7 @@ import (
 
 	"dev.helix.agent/internal/llm/discovery"
 	"dev.helix.agent/internal/models"
+	"dev.helix.agent/internal/transport"
 )
 
 const (
@@ -154,13 +155,14 @@ func NewProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig
 		model = DefaultModel
 	}
 
+	config := transport.DefaultHTTP3ClientConfig()
+	config.Timeout = 300 * time.Second // Anthropic can have long responses
+
 	p := &Provider{
-		apiKey:  apiKey,
-		baseURL: baseURL,
-		model:   model,
-		httpClient: &http.Client{
-			Timeout: 300 * time.Second, // Anthropic can have long responses
-		},
+		apiKey:      apiKey,
+		baseURL:     baseURL,
+		model:       model,
+		httpClient:  transport.NewHTTP3Client(config).HTTPClient(),
 		retryConfig: retryConfig,
 	}
 

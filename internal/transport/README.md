@@ -1,126 +1,166 @@
-# Transport Package
+# HTTP/3 Transport Package
 
-The transport package provides HTTP client and server transport layer functionality.
+This package provides HTTP/3 client and server implementations with fallback to HTTP/2 and HTTP/1.1, plus Brotli compression support.
 
 ## Overview
 
-This package handles:
-- HTTP client configuration for provider APIs
-- Request/response serialization
-- Retry logic and circuit breakers
-- Connection pooling
+The transport package implements:
 
-## Components
+- **HTTP/3 Client** (`http3_client.go`): Full-featured HTTP client with HTTP/3 (QUIC) support, automatic fallback, retry logic, and Brotli decompression
+- **HTTP/3 Server** (`http3.go`): Server implementation supporting HTTP/3, HTTP/2, and HTTP/1.1
+- **Compression Support**: Brotli and Gzip compression/decompression
 
-### HTTP Client
+## HTTP/3 Client
 
-Configurable HTTP client for API calls:
+### Basic Usage
 
 ```go
-client := transport.NewHTTPClient(transport.ClientConfig{
-    Timeout:             30 * time.Second,
-    MaxIdleConns:        100,
-    MaxIdleConnsPerHost: 10,
-    IdleConnTimeout:     90 * time.Second,
-})
-```
+import "dev.helix.agent/internal/transport"
 
-### Retry Configuration
+// Create client with default configuration
+client := transport.NewHTTP3Client(nil).HTTPClient()
 
-Built-in retry logic with exponential backoff:
-
-```go
-client := transport.NewHTTPClient(transport.ClientConfig{
-    RetryCount:     3,
-    RetryWaitTime:  100 * time.Millisecond,
-    RetryMaxWait:   2 * time.Second,
-    RetryCondition: transport.DefaultRetryCondition,
-})
-```
-
-### Circuit Breaker
-
-Prevents cascading failures:
-
-```go
-client := transport.NewHTTPClientWithCircuitBreaker(
-    transport.CircuitBreakerConfig{
-        Threshold:   5,
-        Timeout:     30 * time.Second,
-        HalfOpenMax: 3,
-    },
-)
-```
-
-## Usage
-
-### Making Requests
-
-```go
-// GET request
-resp, err := client.Get(ctx, url, headers)
-
-// POST request with JSON body
-resp, err := client.PostJSON(ctx, url, body, headers)
-
-// Streaming request
-stream, err := client.StreamRequest(ctx, url, body, headers)
-```
-
-### Response Handling
-
-```go
-resp, err := client.Get(ctx, url, nil)
+// Simple GET request
+ctx := context.Background()
+resp, err := client.Get(ctx, "https://api.example.com/data")
 if err != nil {
-    return err
+    log.Fatal(err)
 }
 defer resp.Body.Close()
 
-var result MyResponse
-if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-    return err
-}
+// POST with JSON
+jsonData := []byte(`{"key":"value"}`)
+resp, err = client.Post(url, "application/json", bytes.NewReader(jsonData))
 ```
 
-## Configuration Options
-
-| Option | Description | Default |
-|--------|-------------|---------|
-| `Timeout` | Request timeout | 30s |
-| `MaxIdleConns` | Max idle connections | 100 |
-| `MaxIdleConnsPerHost` | Max idle per host | 10 |
-| `IdleConnTimeout` | Idle connection timeout | 90s |
-| `RetryCount` | Number of retries | 3 |
-| `RetryWaitTime` | Initial retry wait | 100ms |
-
-## Streaming Support
-
-For SSE (Server-Sent Events) streaming:
+### Custom Configuration
 
 ```go
-stream, err := client.StreamSSE(ctx, url, body, headers)
-if err != nil {
-    return err
+config := &transport.HTTP3ClientConfig{
+    EnableHTTP3:     true,                    // Enable HTTP/3 (QUIC)
+    EnableHTTP2:     true,                    // Enable HTTP/2 fallback
+    EnableBrotli:    true,                    // Enable Brotli decompression
+    Timeout:         120 * time.Second,       // Request timeout
+    DialTimeout:     30 * time.Second,        // Connection timeout
+    IdleConnTimeout: 90 * time.Second,        // Idle connection timeout
+    MaxIdleConns:    100,                     // Max idle connections
+    MaxRetries:      3,                       // Max retry attempts
+    RetryDelay:      1 * time.Second,         // Initial retry delay
+    MaxRetryDelay:   30 * time.Second,        // Max retry delay
+    RetryMultiplier: 2.0,                     // Exponential backoff multiplier
 }
 
-for event := range stream.Events() {
-    if event.Error != nil {
-        return event.Error
-    }
-    fmt.Println(event.Data)
-}
+client := transport.NewHTTP3Client(config).HTTPClient()
 ```
 
-## Custom Transport
-
-Create custom transport for specialized needs:
+### Using with LLM Providers
 
 ```go
-transport := &http.Transport{
-    TLSClientConfig: &tls.Config{
-        InsecureSkipVerify: false,
-    },
-    Proxy: http.ProxyFromEnvironment,
+// Replace standard http.Client in providers
+client := transport.NewHTTP3Client(nil).HTTPClient()
+
+// Use in provider initialization
+provider := &Provider{
+    apiKey:     apiKey,
+    baseURL:    baseURL,
+    httpClient: client,  // HTTP/3 enabled client
 }
-client := transport.NewHTTPClientWithTransport(transport)
 ```
+
+### Advanced Usage with HTTP3Client
+
+```go
+// Get the HTTP3Client wrapper for more control
+h3Client := transport.NewHTTP3Client(nil)
+
+// Access the underlying http.Client
+httpClient := h3Client.HTTPClient()
+
+// Use helper methods
+ctx := context.Background()
+resp, err := h3Client.Get(ctx, "https://api.example.com/data")
+resp, err = h3Client.PostJSON(ctx, url, jsonBytes)
+
+// Get configuration
+config := h3Client.GetConfig()
+
+// Close connections when done
+defer h3Client.Close()
+```
+
+### Global Client Instance
+
+```go
+// Get global singleton instance
+client := transport.GetGlobalHTTP3Client().HTTPClient()
+
+// Set custom global instance
+transport.SetGlobalHTTP3Client(myCustomClient)
+
+// Reset to defaults
+transport.ResetGlobalHTTP3Client()
+```
+
+## HTTP/3 Round Tripper
+
+For use with standard `http.Client`:
+
+```go
+roundTripper := transport.NewHTTP3RoundTripper(true) // enable HTTP/3
+client := &http.Client{
+    Transport: roundTripper,
+    Timeout:   30 * time.Second,
+}
+```
+
+## Features
+
+### Protocol Negotiation
+- Attempts HTTP/3 (QUIC) first
+- Falls back to HTTP/2 or HTTP/1.1 automatically
+- Transparent to calling code
+
+### Retry Logic
+- Exponential backoff with jitter
+- Configurable max retries
+- Automatic retry on network errors
+- Respects context cancellation
+
+### Compression
+- Automatic Brotli decompression
+- Configurable compression levels
+- Transparent to calling code
+
+### Connection Pooling
+- Idle connection reuse
+- Configurable pool sizes
+- Automatic cleanup
+
+## Configuration Constants
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| EnableHTTP3 | true | Enable HTTP/3 support |
+| EnableHTTP2 | true | Enable HTTP/2 fallback |
+| EnableBrotli | true | Enable Brotli compression |
+| Timeout | 120s | Total request timeout |
+| DialTimeout | 30s | Connection establishment timeout |
+| MaxRetries | 3 | Maximum retry attempts |
+
+## Testing
+
+Run tests with:
+
+```bash
+go test ./internal/transport/... -v
+```
+
+## Requirements
+
+- Go 1.25+
+- `github.com/quic-go/quic-go` for HTTP/3
+- `github.com/andybalholm/brotli` for Brotli compression
+
+## Compliance
+
+This implementation satisfies **CONST-023**: HTTP/3 Support Required

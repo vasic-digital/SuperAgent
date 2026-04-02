@@ -14,6 +14,7 @@ import (
 
 	"dev.helix.agent/internal/llm/discovery"
 	"dev.helix.agent/internal/models"
+	"dev.helix.agent/internal/transport"
 )
 
 const (
@@ -127,13 +128,11 @@ func NewGeminiAPIProviderWithRetry(
 	}
 
 	p := &GeminiAPIProvider{
-		apiKey:    apiKey,
-		baseURL:   baseURL,
-		streamURL: streamURL,
-		model:     model,
-		httpClient: &http.Client{
-			Timeout: 120 * time.Second,
-		},
+		apiKey:      apiKey,
+		baseURL:     baseURL,
+		streamURL:   streamURL,
+		model:       model,
+		httpClient:  transport.NewHTTP3Client(nil).HTTPClient(),
 		retryConfig: retryConfig,
 	}
 

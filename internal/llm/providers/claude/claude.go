@@ -15,6 +15,7 @@ import (
 	"dev.helix.agent/internal/auth/oauth_credentials"
 	"dev.helix.agent/internal/llm/discovery"
 	"dev.helix.agent/internal/models"
+	"dev.helix.agent/internal/transport"
 )
 
 const (
@@ -153,12 +154,10 @@ func NewClaudeProviderWithRetry(apiKey, baseURL, model string, retryConfig Retry
 	}
 
 	p := &ClaudeProvider{
-		apiKey:  apiKey,
-		baseURL: baseURL,
-		model:   model,
-		httpClient: &http.Client{
-			Timeout: 60 * time.Second,
-		},
+		apiKey:      apiKey,
+		baseURL:     baseURL,
+		model:       model,
+		httpClient:  transport.NewHTTP3Client(nil).HTTPClient(),
 		retryConfig: retryConfig,
 		authType:    AuthTypeAPIKey,
 	}
@@ -221,12 +220,10 @@ func NewClaudeProviderWithOAuthAndRetry(baseURL, model string, retryConfig Retry
 	}
 
 	p := &ClaudeProvider{
-		apiKey:  "", // Will use OAuth token instead
-		baseURL: baseURL,
-		model:   model,
-		httpClient: &http.Client{
-			Timeout: 60 * time.Second,
-		},
+		apiKey:          "", // Will use OAuth token instead
+		baseURL:         baseURL,
+		model:           model,
+		httpClient:      transport.NewHTTP3Client(nil).HTTPClient(),
 		retryConfig:     retryConfig,
 		authType:        AuthTypeOAuth,
 		oauthCredReader: credReader,
