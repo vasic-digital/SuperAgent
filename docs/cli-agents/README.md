@@ -18,6 +18,18 @@ HelixAgent supports **48 CLI agents** with unified configuration generation, val
 12. [Troubleshooting](./12-troubleshooting.md) - Common issues and solutions
 13. [API Reference](./13-api-reference.md) - CLI flags and programmatic API
 
+## Agent-Specific Documentation
+
+We are building comprehensive documentation for each CLI agent:
+
+| Agent | Documentation | Status |
+|-------|--------------|--------|
+| **Claude Code** | [View Docs](../cli_agents/claude-code/README.md) | ✅ Complete |
+
+*More agents coming soon...*
+
+---
+
 ## Quick Links
 
 ### Generate Configurations
