@@ -17,7 +17,7 @@ func TestBootManager_NewBootManager(t *testing.T) {
 	t.Run("creates boot manager with defaults", func(t *testing.T) {
 		logger := logrus.New()
 		cfg := &config.ServicesConfig{
-			Postgres: config.ServiceEndpoint{Enabled: true},
+			PostgreSQL: config.ServiceEndpoint{Enabled: true},
 		}
 
 		bm := NewBootManager(cfg, logger)
@@ -265,7 +265,7 @@ func TestBootManager_ShutdownAll(t *testing.T) {
 	t.Run("skips remote services during shutdown", func(t *testing.T) {
 		logger := logrus.New()
 		cfg := &config.ServicesConfig{
-			Postgres: config.ServiceEndpoint{
+			PostgreSQL: config.ServiceEndpoint{
 				Enabled: true,
 				Remote:  true,
 			},
