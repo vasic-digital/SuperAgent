@@ -217,6 +217,69 @@ aider --auto-commits src/file.py
 # Changes committed automatically
 ```
 
+## API/Protocol Endpoints
+
+Aider connects directly to LLM provider APIs without exposing its own API. Here are the supported provider configurations:
+
+### Supported LLM Providers
+
+| Provider | API Endpoint | Auth Method | Example Model |
+|----------|--------------|-------------|---------------|
+| OpenAI | api.openai.com | API Key | gpt-4o, gpt-5 |
+| Anthropic | api.anthropic.com | API Key | claude-sonnet-4 |
+| Azure OpenAI | {resource}.openai.azure.com | API Key | gpt-4 |
+| DeepSeek | api.deepseek.com | API Key | deepseek-chat |
+| OpenRouter | openrouter.ai/api | API Key | various |
+| Gemini | generativelanguage.googleapis.com | API Key | gemini-pro |
+| Cohere | api.cohere.com | API Key | command-r |
+| Groq | api.groq.com | API Key | llama-3-70b |
+| Local/Ollama | localhost:11434 | None | local models |
+
+### Ollama Local Model Setup
+
+```bash
+# Install and start Ollama
+ollama serve
+
+# Pull a model
+ollama pull codellama
+
+# Use with Aider
+aider --model ollama/codellama
+```
+
+### API Key Configuration
+
+```bash
+# OpenAI
+export OPENAI_API_KEY="sk-..."
+
+# Anthropic
+export ANTHROPIC_API_KEY="sk-ant-..."
+
+# Azure
+export AZURE_API_KEY="..."
+export AZURE_API_BASE="https://your-resource.openai.azure.com"
+
+# DeepSeek
+export DEEPSEEK_API_KEY="sk-..."
+
+# OpenRouter
+export OPENROUTER_API_KEY="sk-or-..."
+```
+
+### OpenAI-Compatible APIs
+
+For custom or self-hosted models with OpenAI-compatible API:
+
+```bash
+# Set custom base URL
+export OPENAI_API_BASE="https://your-api-endpoint.com/v1"
+
+# Use with Aider
+aider --model openai/custom-model
+```
+
 ## Troubleshooting
 
 ### Issue: API Key Not Found
