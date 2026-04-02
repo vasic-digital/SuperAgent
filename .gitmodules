@@ -406,3 +406,6 @@
 [submodule "VisionEngine"]
 	path = VisionEngine
 	url = git@github.com:vasic-digital/VisionEngine.git
+[submodule "cli_agents/claude-code-source"]
+	path = cli_agents/claude-code-source
+	url = git@github.com:milos85vasic/CCode-Private.git
