@@ -658,3 +658,71 @@ make run-dev
 **Last Updated**: 2026-04-02
 **Version**: 1.0.0
 **Go Version**: 1.25.3+
+
+---
+
+## CLI Agents Documentation
+
+HelixAgent supports **47 CLI agents** with unified configuration generation, validation, and plugin integration.
+
+### Documentation Structure
+
+Each CLI agent has comprehensive documentation in `docs/cli-agents/`:
+
+| File | Purpose |
+|------|---------|
+| README.md | Overview, features, installation |
+| ARCHITECTURE.md | System design, components |
+| API.md | CLI reference, endpoints |
+| USAGE.md | Workflows, examples |
+| REFERENCES.md | External resources |
+| USER-GUIDE.md | Complete user manual (600-900+ lines) |
+| DIAGRAMS.md | Visual diagrams (Tier 1 agents) |
+| GAP_ANALYSIS.md | Improvement opportunities (Tier 1) |
+
+### Integration Documentation
+
+Integration docs in `docs/cli-agents-integration/`:
+
+| File | Purpose |
+|------|---------|
+| ARCHITECTURE.md | System architecture, data flows |
+| MCP_SERVERS.md | 45+ MCP servers reference |
+| HTTP_ENDPOINTS.md | All API endpoints documented |
+| README.md | Integration overview |
+
+### Configuration Files
+
+All 47 agents have JSON configs in `cli_agents_configs/`:
+- Provider settings (HelixAgent endpoint)
+- MCP server configurations
+- Model capabilities
+- Formatter preferences
+
+### Key Integration Points
+
+1. **Provider**: `http://localhost:7061/v1` (OpenAI-compatible)
+2. **Model**: `helixagent-debate` (AI Debate Ensemble)
+3. **MCP Servers**: 45+ available
+4. **Formatters**: 32+ programming languages
+
+### Generate Configurations
+
+```bash
+# List all 47 agents
+./bin/helixagent --list-agents
+
+# Generate for specific agent
+./bin/helixagent --generate-agent-config=codex --agent-config-output=codex.json
+
+# Generate all 47 at once
+./bin/helixagent --generate-all-agents --all-agents-output-dir=~/agent-configs/
+```
+
+### Total Documentation
+
+- **47 CLI Agents** fully documented
+- **850 Documentation Files**
+- **325,013 Lines** of documentation
+- **Complete User Guides** for all agents
+
