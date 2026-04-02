@@ -40,7 +40,7 @@ func TestInitConnection_PoolAssignment_RealPath(t *testing.T) {
 
 // TestNewClientWithFallback_SuccessPath tests line 102 of adapter.go
 // This is the success path where Ping() succeeds and client is returned
-func TestNewClientWithFallback_SuccessPath(t *testing.T) {
+func TestNewClientWithFallback_SuccessPath_Final(t *testing.T) {
 	// Create client with mock to simulate successful ping
 	mock := &mockDatabase{}
 	client := newTestClient(mock)
@@ -264,7 +264,7 @@ func TestMigrate_WithRealPGPath(t *testing.T) {
 
 // TestNewPostgresDB_ErrorPath tests lines 46-48 of compat.go
 // This covers the error return path (currently unreachable but exercisable)
-func TestNewPostgresDB_ErrorPath(t *testing.T) {
+func TestNewPostgresDB_ErrorPath_Final(t *testing.T) {
 	cfg := &config.Config{}
 	
 	// Currently NewClient never returns error, but this exercises the code path
@@ -293,7 +293,7 @@ func TestNewPostgresDBWithFallback_SuccessPath(t *testing.T) {
 
 // TestConnect_ErrorPath tests lines 71-73 of compat.go
 // This covers the error return path
-func TestConnect_ErrorPath(t *testing.T) {
+func TestConnect_ErrorPath_Complete(t *testing.T) {
 	// Currently NewPostgresDB never returns error, but this exercises the code path
 	db, err := Connect()
 	
@@ -304,7 +304,7 @@ func TestConnect_ErrorPath(t *testing.T) {
 
 // TestNewPostgresDBWithFallback_DBError tests lines 56 and 59 of compat.go
 // This covers the path where NewPostgresDB fails and we fall back to MemoryDB
-func TestNewPostgresDBWithFallback_DBError(t *testing.T) {
+func TestNewPostgresDBWithFallback_DBError_Final(t *testing.T) {
 	cfg := &config.Config{
 		Database: config.DatabaseConfig{
 			Host:     "invalid-host-that-does-not-exist.example.com",
