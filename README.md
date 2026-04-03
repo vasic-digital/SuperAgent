@@ -627,6 +627,21 @@ export REQUEST_LOGGING=true
 - **[Deployment Guide](./docs/deployment/DEPLOYMENT_GUIDE.md)**: Production deployment
 - **[Quick Start](./docs/guides/quick-start-guide.md)**: Getting started guide
 
+### 🔬 Research Documentation (328KB)
+Comprehensive analysis of 47 CLI agents and protocol specifications:
+- **[Research Master Index](./docs/research/MASTER_INDEX.md)**: Navigation guide for all research docs
+- **[Comparative Analysis](./docs/research/against_cli_agents/)**: 47 CLI agents vs HelixAgent comparison
+  - Tier 1 detailed comparisons (Claude Code, Aider, Codex, Cline, OpenHands, Kiro)
+  - Feature matrices and strategic analysis
+- **[API Documentation](./docs/research/api_documentation/)**: Complete API specs with cross-references
+  - REST APIs, WebSocket protocols, authentication
+  - Provider compatibility matrices
+- **[Protocol Documentation](./docs/research/protocol_documentation/)**: Full protocol specifications
+  - MCP (Model Context Protocol)
+  - ACP (Agent Communication Protocol)
+  - LSP (Language Server Protocol)
+  - Embeddings and RAG protocols
+
 ### Community
 - **GitHub Discussions**: [Community Support](https://dev.helix.agent/discussions)
 - **Issues**: [Bug Reports & Feature Requests](https://dev.helix.agent/issues)
