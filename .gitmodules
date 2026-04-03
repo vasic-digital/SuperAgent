@@ -442,3 +442,9 @@
 [submodule "cli_agents/open-interpreter"]
 	path = cli_agents/open-interpreter
 	url = https://github.com/OpenInterpreter/open-interpreter.git
+[submodule "cli_agents/continue"]
+	path = cli_agents/continue
+	url = git@github.com:continuedev/continue.git
+[submodule "tools/snow-cli"]
+	path = tools/snow-cli
+	url = git@github.com:MayDay-wpf/snow-cli.git
