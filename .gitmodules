@@ -441,7 +441,7 @@
 	url = https://github.com/RooVetGit/Roo-Code.git
 [submodule "cli_agents/open-interpreter"]
 	path = cli_agents/open-interpreter
-	url = https://github.com/OpenInterpreter/open-interpreter.git
+	url = git@github.com:KillianLucas/open-interpreter.git
 [submodule "cli_agents/continue"]
 	path = cli_agents/continue
 	url = git@github.com:continuedev/continue.git
