@@ -130,13 +130,16 @@ if [ "$DISK_GB" != "unknown" ]; then
     fi
 fi
 
-# Check Docker availability
+# Check Container Runtime availability
 echo
 echo "=== Container Runtime Detection ==="
+
+CONTAINER_RUNTIME=""
 
 if command_exists docker; then
     if docker info >/dev/null 2>&1; then
         echo -e "${GREEN}✓ Docker is available${NC}"
+        CONTAINER_RUNTIME="docker"
         
         # Check Docker Compose
         if command_exists docker-compose || docker compose version >/dev/null 2>&1; then
@@ -149,8 +152,24 @@ if command_exists docker; then
         echo -e "${YELLOW}⚠ Docker daemon not running${NC}"
         CAN_RUN_LOCAL=false
     fi
+elif command_exists podman; then
+    if podman info >/dev/null 2>&1; then
+        echo -e "${GREEN}✓ Podman is available${NC}"
+        CONTAINER_RUNTIME="podman"
+        
+        # Check Podman Compose
+        if command_exists podman-compose; then
+            echo -e "${GREEN}✓ Podman Compose is available${NC}"
+        else
+            echo -e "${YELLOW}⚠ Podman Compose not found (pip install podman-compose)${NC}"
+            CAN_RUN_LOCAL=false
+        fi
+    else
+        echo -e "${YELLOW}⚠ Podman not running${NC}"
+        CAN_RUN_LOCAL=false
+    fi
 else
-    echo -e "${YELLOW}⚠ Docker not installed${NC}"
+    echo -e "${YELLOW}⚠ Neither Docker nor Podman found${NC}"
     CAN_RUN_LOCAL=false
 fi
 
