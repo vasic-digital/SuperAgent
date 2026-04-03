@@ -1,0 +1,326 @@
+// Package benchmarks implements comprehensive provider benchmarks
+package benchmarks
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"sync"
+	"testing"
+	"time"
+
+	"dev.helix.agent/internal/llm"
+	"go.uber.org/zap"
+)
+
+// ProviderBenchConfig holds benchmark configuration
+type ProviderBenchConfig struct {
+	Name         string
+	EnvVar       string
+	Type         string
+	Model        string
+}
+
+var benchmarkProviders = []ProviderBenchConfig{
+	{Name: "OpenAI-GPT4o-mini", EnvVar: "OPENAI_API_KEY", Type: "openai", Model: "gpt-4o-mini"},
+	{Name: "OpenAI-GPT4o", EnvVar: "OPENAI_API_KEY", Type: "openai", Model: "gpt-4o"},
+	{Name: "Anthropic-Haiku", EnvVar: "ANTHROPIC_API_KEY", Type: "anthropic", Model: "claude-3-5-haiku-20241022"},
+	{Name: "Anthropic-Sonnet", EnvVar: "ANTHROPIC_API_KEY", Type: "anthropic", Model: "claude-3-5-sonnet-20241022"},
+	{Name: "DeepSeek-Chat", EnvVar: "DEEPSEEK_API_KEY", Type: "deepseek", Model: "deepseek-chat"},
+	{Name: "Groq-Llama-8B", EnvVar: "GROQ_API_KEY", Type: "groq", Model: "llama-3.1-8b-instant"},
+	{Name: "Groq-Llama-70B", EnvVar: "GROQ_API_KEY", Type: "groq", Model: "llama-3.1-70b-versatile"},
+	{Name: "Mistral-Small", EnvVar: "MISTRAL_API_KEY", Type: "mistral", Model: "mistral-small-latest"},
+	{Name: "Gemini-Flash", EnvVar: "GEMINI_API_KEY", Type: "gemini", Model: "gemini-2.0-flash-exp"},
+}
+
+// BenchmarkProvider_Latency measures single-request latency
+func BenchmarkProvider_Latency(b *testing.B) {
+	logger := zap.NewNop()
+
+	for _, p := range benchmarkProviders {
+		apiKey := os.Getenv(p.EnvVar)
+		if apiKey == "" {
+			continue
+		}
+
+		b.Run(p.Name, func(b *testing.B) {
+			client := llm.NewClient(p.Type, apiKey, logger)
+			ctx := context.Background()
+
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				start := time.Now()
+				_, err := client.Chat(ctx, llm.ChatRequest{
+					Model: p.Model,
+					Messages: []llm.Message{
+						{Role: "user", Content: "Say hello"},
+					},
+					MaxTokens: 20,
+				})
+				if err != nil {
+					b.Fatal(err)
+				}
+				b.ReportMetric(float64(time.Since(start).Milliseconds()), "ms/latency")
+			}
+		})
+	}
+}
+
+// BenchmarkProvider_Throughput measures tokens per second
+func BenchmarkProvider_Throughput(b *testing.B) {
+	logger := zap.NewNop()
+
+	for _, p := range benchmarkProviders {
+		apiKey := os.Getenv(p.EnvVar)
+		if apiKey == "" {
+			continue
+		}
+
+		b.Run(p.Name, func(b *testing.B) {
+			client := llm.NewClient(p.Type, apiKey, logger)
+			ctx := context.Background()
+
+			prompt := "Write a detailed explanation of how neural networks work."
+
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				start := time.Now()
+				resp, err := client.Chat(ctx, llm.ChatRequest{
+					Model: p.Model,
+					Messages: []llm.Message{
+						{Role: "user", Content: prompt},
+					},
+					MaxTokens: 500,
+				})
+				if err != nil {
+					b.Fatal(err)
+				}
+				duration := time.Since(start)
+				tokensPerSec := float64(resp.Usage.OutputTokens) / duration.Seconds()
+				b.ReportMetric(tokensPerSec, "tokens/sec")
+			}
+		})
+	}
+}
+
+// BenchmarkProvider_StreamingThroughput measures streaming performance
+func BenchmarkProvider_StreamingThroughput(b *testing.B) {
+	logger := zap.NewNop()
+
+	for _, p := range benchmarkProviders {
+		apiKey := os.Getenv(p.EnvVar)
+		if apiKey == "" {
+			continue
+		}
+
+		b.Run(p.Name, func(b *testing.B) {
+			client := llm.NewClient(p.Type, apiKey, logger)
+			ctx := context.Background()
+
+			prompt := "Count from 1 to 100."
+
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				start := time.Now()
+				stream, err := client.ChatStream(ctx, llm.ChatRequest{
+					Model: p.Model,
+					Messages: []llm.Message{
+						{Role: "user", Content: prompt},
+					},
+					MaxTokens: 300,
+				})
+				if err != nil {
+					b.Fatal(err)
+				}
+
+				var totalTokens int
+				for chunk := range stream {
+					if chunk.Error != nil {
+						b.Fatal(chunk.Error)
+					}
+					totalTokens++
+				}
+
+				duration := time.Since(start)
+				tokensPerSec := float64(totalTokens) / duration.Seconds()
+				b.ReportMetric(tokensPerSec, "chunks/sec")
+			}
+		})
+	}
+}
+
+// BenchmarkProvider_Concurrent tests concurrent request handling
+func BenchmarkProvider_Concurrent(b *testing.B) {
+	logger := zap.NewNop()
+	concurrencyLevels := []int{1, 5, 10}
+
+	for _, p := range benchmarkProviders {
+		apiKey := os.Getenv(p.EnvVar)
+		if apiKey == "" {
+			continue
+		}
+
+		for _, concurrency := range concurrencyLevels {
+			b.Run(fmt.Sprintf("%s-%d-concurrent", p.Name, concurrency), func(b *testing.B) {
+				client := llm.NewClient(p.Type, apiKey, logger)
+				ctx := context.Background()
+
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					var wg sync.WaitGroup
+					errors := make(chan error, concurrency)
+
+					for j := 0; j < concurrency; j++ {
+						wg.Add(1)
+						go func() {
+							defer wg.Done()
+							_, err := client.Chat(ctx, llm.ChatRequest{
+								Model: p.Model,
+								Messages: []llm.Message{
+									{Role: "user", Content: "Say test"},
+								},
+								MaxTokens: 10,
+							})
+							if err != nil {
+								errors <- err
+							}
+						}()
+					}
+
+					wg.Wait()
+					close(errors)
+
+					errorCount := 0
+					for err := range errors {
+						if err != nil {
+							errorCount++
+						}
+					}
+					b.ReportMetric(float64(errorCount), "errors")
+				}
+			})
+		}
+	}
+}
+
+// BenchmarkProvider_ContextWindow tests large context handling
+func BenchmarkProvider_ContextWindow(b *testing.B) {
+	logger := zap.NewNop()
+	contextSizes := []int{1000, 10000, 50000}
+
+	for _, p := range benchmarkProviders {
+		apiKey := os.Getenv(p.EnvVar)
+		if apiKey == "" {
+			continue
+		}
+
+		for _, size := range contextSizes {
+			b.Run(fmt.Sprintf("%s-%d-tokens", p.Name, size), func(b *testing.B) {
+				client := llm.NewClient(p.Type, apiKey, logger)
+				ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+				defer cancel()
+
+				bigText := generateText(size)
+
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					start := time.Now()
+					_, err := client.Chat(ctx, llm.ChatRequest{
+						Model: p.Model,
+						Messages: []llm.Message{
+							{Role: "user", Content: "Summarize: " + bigText},
+						},
+						MaxTokens: 100,
+					})
+					if err != nil {
+						b.Fatal(err)
+					}
+					duration := time.Since(start)
+					b.ReportMetric(float64(duration.Seconds()), "seconds")
+				}
+			})
+		}
+	}
+}
+
+// BenchmarkProvider_QualityVsSpeed compares quality models vs speed models
+func BenchmarkProvider_QualityVsSpeed(b *testing.B) {
+	logger := zap.NewNop()
+
+	comparisons := []struct {
+		name        string
+		fastModel   ProviderBenchConfig
+		qualityModel ProviderBenchConfig
+	}{
+		{
+			name: "OpenAI",
+			fastModel:    ProviderBenchConfig{Name: "GPT4o-mini", EnvVar: "OPENAI_API_KEY", Type: "openai", Model: "gpt-4o-mini"},
+			qualityModel: ProviderBenchConfig{Name: "GPT4o", EnvVar: "OPENAI_API_KEY", Type: "openai", Model: "gpt-4o"},
+		},
+		{
+			name: "Anthropic",
+			fastModel:    ProviderBenchConfig{Name: "Haiku", EnvVar: "ANTHROPIC_API_KEY", Type: "anthropic", Model: "claude-3-5-haiku-20241022"},
+			qualityModel: ProviderBenchConfig{Name: "Sonnet", EnvVar: "ANTHROPIC_API_KEY", Type: "anthropic", Model: "claude-3-5-sonnet-20241022"},
+		},
+	}
+
+	prompt := "Explain the theory of relativity in detail."
+
+	for _, comp := range comparisons {
+		fastKey := os.Getenv(comp.fastModel.EnvVar)
+		if fastKey == "" {
+			continue
+		}
+
+		b.Run(comp.name+"-Fast", func(b *testing.B) {
+			client := llm.NewClient(comp.fastModel.Type, fastKey, logger)
+			ctx := context.Background()
+
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				resp, err := client.Chat(ctx, llm.ChatRequest{
+					Model: comp.fastModel.Model,
+					Messages: []llm.Message{
+						{Role: "user", Content: prompt},
+					},
+					MaxTokens: 300,
+				})
+				if err != nil {
+					b.Fatal(err)
+				}
+				b.ReportMetric(float64(len(resp.Content)), "chars")
+			}
+		})
+
+		b.Run(comp.name+"-Quality", func(b *testing.B) {
+			client := llm.NewClient(comp.qualityModel.Type, fastKey, logger)
+			ctx := context.Background()
+
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				resp, err := client.Chat(ctx, llm.ChatRequest{
+					Model: comp.qualityModel.Model,
+					Messages: []llm.Message{
+						{Role: "user", Content: prompt},
+					},
+					MaxTokens: 300,
+				})
+				if err != nil {
+					b.Fatal(err)
+				}
+				b.ReportMetric(float64(len(resp.Content)), "chars")
+			}
+		})
+	}
+}
+
+// generateText generates text of approximately n tokens
+func generateText(tokens int) string {
+	word := "word "
+	wordsNeeded := tokens / 2
+	result := make([]byte, 0, wordsNeeded*len(word))
+	for i := 0; i < wordsNeeded; i++ {
+		result = append(result, word...)
+	}
+	return string(result)
+}
