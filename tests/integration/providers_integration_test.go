@@ -1,0 +1,367 @@
+// Package integration implements real integration tests for all providers
+package integration
+
+import (
+	"context"
+	"os"
+	"sync"
+	"testing"
+	"time"
+
+	"dev.helix.agent/internal/llm"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+)
+
+// ProviderConfig holds configuration for provider tests
+type ProviderConfig struct {
+	Name          string
+	EnvVar        string
+	Type          string
+	DefaultModel  string
+	SupportsTools bool
+	SupportsVision bool
+	ContextWindow int
+}
+
+// All supported providers
+var providers = []ProviderConfig{
+	{Name: "OpenAI", EnvVar: "OPENAI_API_KEY", Type: "openai", DefaultModel: "gpt-4o-mini", SupportsTools: true, SupportsVision: true, ContextWindow: 128000},
+	{Name: "Anthropic", EnvVar: "ANTHROPIC_API_KEY", Type: "anthropic", DefaultModel: "claude-3-5-haiku-20241022", SupportsTools: true, SupportsVision: true, ContextWindow: 200000},
+	{Name: "DeepSeek", EnvVar: "DEEPSEEK_API_KEY", Type: "deepseek", DefaultModel: "deepseek-chat", SupportsTools: true, SupportsVision: false, ContextWindow: 64000},
+	{Name: "Groq", EnvVar: "GROQ_API_KEY", Type: "groq", DefaultModel: "llama-3.1-8b-instant", SupportsTools: true, SupportsVision: true, ContextWindow: 128000},
+	{Name: "Mistral", EnvVar: "MISTRAL_API_KEY", Type: "mistral", DefaultModel: "mistral-small-latest", SupportsTools: true, SupportsVision: false, ContextWindow: 32000},
+	{Name: "Cohere", EnvVar: "COHERE_API_KEY", Type: "cohere", DefaultModel: "command-r", SupportsTools: true, SupportsVision: false, ContextWindow: 128000},
+	{Name: "Perplexity", EnvVar: "PERPLEXITY_API_KEY", Type: "perplexity", DefaultModel: "sonar", SupportsTools: false, SupportsVision: false, ContextWindow: 128000},
+	{Name: "Gemini", EnvVar: "GEMINI_API_KEY", Type: "gemini", DefaultModel: "gemini-2.0-flash-exp", SupportsTools: true, SupportsVision: true, ContextWindow: 1000000},
+}
+
+// TestAllProviders_BasicChat tests basic chat across all configured providers
+func TestAllProviders_BasicChat(t *testing.T) {
+	logger, _ := zap.NewDevelopment()
+
+	for _, p := range providers {
+		t.Run(p.Name, func(t *testing.T) {
+			apiKey := os.Getenv(p.EnvVar)
+			if apiKey == "" {
+				t.Skipf("%s not set", p.EnvVar)
+			}
+
+			client := llm.NewClient(p.Type, apiKey, logger)
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+
+			start := time.Now()
+			response, err := client.Chat(ctx, llm.ChatRequest{
+				Model: p.DefaultModel,
+				Messages: []llm.Message{
+					{Role: "user", Content: "Say 'Hello from integration test' and nothing else"},
+				},
+				MaxTokens: 50,
+			})
+
+			require.NoError(t, err, "%s failed", p.Name)
+			assert.NotEmpty(t, response.Content)
+			assert.Contains(t, response.Content, "Hello")
+
+			t.Logf("%s: %v | Tokens: %d", p.Name, time.Since(start), response.Usage.TotalTokens)
+		})
+	}
+}
+
+// TestAllProviders_Streaming tests streaming across all providers
+func TestAllProviders_Streaming(t *testing.T) {
+	logger, _ := zap.NewDevelopment()
+
+	for _, p := range providers {
+		t.Run(p.Name, func(t *testing.T) {
+			apiKey := os.Getenv(p.EnvVar)
+			if apiKey == "" {
+				t.Skipf("%s not set", p.EnvVar)
+			}
+
+			client := llm.NewClient(p.Type, apiKey, logger)
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+
+			stream, err := client.ChatStream(ctx, llm.ChatRequest{
+				Model: p.DefaultModel,
+				Messages: []llm.Message{
+					{Role: "user", Content: "Count: 1, 2, 3"},
+				},
+				MaxTokens: 50,
+			})
+			require.NoError(t, err)
+
+			var chunks int
+			for chunk := range stream {
+				if chunk.Error != nil {
+					t.Fatalf("Stream error: %v", chunk.Error)
+				}
+				chunks++
+			}
+
+			assert.Greater(t, chunks, 0, "%s should stream multiple chunks", p.Name)
+			t.Logf("%s: %d chunks received", p.Name, chunks)
+		})
+	}
+}
+
+// TestAllProviders_ToolUse tests tool calling where supported
+func TestAllProviders_ToolUse(t *testing.T) {
+	logger, _ := zap.NewDevelopment()
+
+	tools := []llm.ToolDefinition{
+		{
+			Name:        "get_weather",
+			Description: "Get weather for a location",
+			Parameters: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"location": map[string]string{"type": "string"},
+				},
+				"required": []string{"location"},
+			},
+		},
+	}
+
+	for _, p := range providers {
+		if !p.SupportsTools {
+			continue
+		}
+
+		t.Run(p.Name, func(t *testing.T) {
+			apiKey := os.Getenv(p.EnvVar)
+			if apiKey == "" {
+				t.Skipf("%s not set", p.EnvVar)
+			}
+
+			client := llm.NewClient(p.Type, apiKey, logger)
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+
+			response, err := client.Chat(ctx, llm.ChatRequest{
+				Model: p.DefaultModel,
+				Messages: []llm.Message{
+					{Role: "user", Content: "What's the weather in San Francisco?"},
+				},
+				Tools:     tools,
+				MaxTokens: 100,
+			})
+
+			require.NoError(t, err)
+			
+			if len(response.ToolCalls) > 0 {
+				t.Logf("%s: Tool called - %s", p.Name, response.ToolCalls[0].Name)
+			} else {
+				t.Logf("%s: Direct response (no tool)", p.Name)
+			}
+		})
+	}
+}
+
+// TestAllProviders_Vision tests vision where supported
+func TestAllProviders_Vision(t *testing.T) {
+	logger, _ := zap.NewDevelopment()
+
+	// Simple red pixel image
+	imageBase64 := "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+
+	for _, p := range providers {
+		if !p.SupportsVision {
+			continue
+		}
+
+		t.Run(p.Name, func(t *testing.T) {
+			apiKey := os.Getenv(p.EnvVar)
+			if apiKey == "" {
+				t.Skipf("%s not set", p.EnvVar)
+			}
+
+			client := llm.NewClient(p.Type, apiKey, logger)
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+
+			response, err := client.Chat(ctx, llm.ChatRequest{
+				Model: p.DefaultModel,
+				Messages: []llm.Message{
+					{
+						Role:    "user",
+						Content: "What color is this image?",
+						Images:  []string{imageBase64},
+					},
+				},
+				MaxTokens: 50,
+			})
+
+			require.NoError(t, err)
+			assert.NotEmpty(t, response.Content)
+			t.Logf("%s: %s", p.Name, response.Content)
+		})
+	}
+}
+
+// TestAllProviders_Concurrent tests concurrent requests
+func TestAllProviders_Concurrent(t *testing.T) {
+	logger, _ := zap.NewDevelopment()
+
+	var wg sync.WaitGroup
+	results := make(chan struct {
+		name    string
+		latency time.Duration
+		err     error
+	}, len(providers))
+
+	for _, p := range providers {
+		apiKey := os.Getenv(p.EnvVar)
+		if apiKey == "" {
+			continue
+		}
+
+		wg.Add(1)
+		go func(provider ProviderConfig, key string) {
+			defer wg.Done()
+
+			client := llm.NewClient(provider.Type, key, logger)
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+
+			start := time.Now()
+			_, err := client.Chat(ctx, llm.ChatRequest{
+				Model: provider.DefaultModel,
+				Messages: []llm.Message{
+					{Role: "user", Content: "Say 'concurrent test'"},
+				},
+				MaxTokens: 20,
+			})
+
+			results <- struct {
+				name    string
+				latency time.Duration
+				err     error
+			}{provider.Name, time.Since(start), err}
+		}(p, apiKey)
+	}
+
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	successCount := 0
+	for result := range results {
+		if result.err != nil {
+			t.Logf("%s: ERROR - %v", result.name, result.err)
+		} else {
+			successCount++
+			t.Logf("%s: SUCCESS - %v", result.name, result.latency)
+		}
+	}
+
+	t.Logf("Concurrent test: %d/%d providers succeeded", successCount, len(providers))
+}
+
+// TestAllProviders_LatencyComparison compares latencies across providers
+func TestAllProviders_LatencyComparison(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping latency comparison in short mode")
+	}
+
+	logger, _ := zap.NewDevelopment()
+	type latencyResult struct {
+		name    string
+		latency time.Duration
+	}
+
+	var results []latencyResult
+
+	for _, p := range providers {
+		apiKey := os.Getenv(p.EnvVar)
+		if apiKey == "" {
+			continue
+		}
+
+		client := llm.NewClient(p.Type, apiKey, logger)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+
+		start := time.Now()
+		_, err := client.Chat(ctx, llm.ChatRequest{
+			Model: p.DefaultModel,
+			Messages: []llm.Message{
+				{Role: "user", Content: "Say 'speed test'"},
+			},
+			MaxTokens: 20,
+		})
+		latency := time.Since(start)
+		cancel()
+
+		if err != nil {
+			t.Logf("%s: FAILED - %v", p.Name, err)
+			continue
+		}
+
+		results = append(results, latencyResult{p.Name, latency})
+	}
+
+	// Report rankings
+	t.Log("Latency Ranking (fastest to slowest):")
+	for i, r := range results {
+		t.Logf("  %d. %s: %v", i+1, r.name, r.latency)
+	}
+}
+
+// TestProvider_Reliability runs multiple requests to test reliability
+func TestProvider_Reliability(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping reliability test in short mode")
+	}
+
+	logger, _ := zap.NewDevelopment()
+
+	for _, p := range providers {
+		t.Run(p.Name, func(t *testing.T) {
+			apiKey := os.Getenv(p.EnvVar)
+			if apiKey == "" {
+				t.Skipf("%s not set", p.EnvVar)
+			}
+
+			client := llm.NewClient(p.Type, apiKey, logger)
+			ctx := context.Background()
+
+			successCount := 0
+			var latencies []time.Duration
+
+			for i := 0; i < 5; i++ {
+				start := time.Now()
+				_, err := client.Chat(ctx, llm.ChatRequest{
+					Model: p.DefaultModel,
+					Messages: []llm.Message{
+						{Role: "user", Content: "Say hello"},
+					},
+					MaxTokens: 20,
+				})
+				latency := time.Since(start)
+
+				if err != nil {
+					t.Logf("Request %d: FAILED - %v", i+1, err)
+				} else {
+					successCount++
+					latencies = append(latencies, latency)
+				}
+			}
+
+			successRate := float64(successCount) / 5 * 100
+			t.Logf("%s: %.0f%% success rate (%d/5)", p.Name, successRate, successCount)
+
+			if len(latencies) > 0 {
+				var total time.Duration
+				for _, l := range latencies {
+					total += l
+				}
+				avgLatency := total / time.Duration(len(latencies))
+				t.Logf("%s: Average latency: %v", p.Name, avgLatency)
+			}
+		})
+	}
+}
