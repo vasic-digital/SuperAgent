@@ -2,9 +2,13 @@
 package openhands
 
 import (
+	"archive/tar"
+	"bytes"
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -16,28 +20,28 @@ import (
 // Sandbox provides Docker-based secure code execution.
 // Ported from OpenHands' sandbox implementation
 type Sandbox struct {
-	client     *client.Client
+	client      *client.Client
 	containerID string
-	image      string
-	
+	image       string
+
 	// Resource limits
 	memoryMB     int64
 	memorySwapMB int64
 	cpuPercent   int64
 	cpuCount     float64
-	
+
 	// Security
-	securityOpt  []string
-	capDrop      []string
-	capAdd       []string
-	
+	securityOpt []string
+	capDrop     []string
+	capAdd      []string
+
 	// Network
-	networkMode  string
-	dns          []string
-	
+	networkMode string
+	dns         []string
+
 	// Timeouts
-	execTimeout  time.Duration
-	
+	execTimeout time.Duration
+
 	// State
 	isRunning    bool
 	workspaceDir string
@@ -76,7 +80,7 @@ func NewSandbox(cli *client.Client, config SandboxConfig) (*Sandbox, error) {
 			return nil, fmt.Errorf("create docker client: %w", err)
 		}
 	}
-	
+
 	sb := &Sandbox{
 		client:       cli,
 		image:        config.Image,
@@ -91,7 +95,7 @@ func NewSandbox(cli *client.Client, config SandboxConfig) (*Sandbox, error) {
 		execTimeout:  config.Timeout,
 		workspaceDir: config.WorkspaceDir,
 	}
-	
+
 	return sb, nil
 }
 
@@ -100,7 +104,7 @@ func (sb *Sandbox) Start(ctx context.Context, hostWorkspace string) error {
 	if sb.isRunning {
 		return fmt.Errorf("sandbox already running")
 	}
-	
+
 	// Pull image if needed
 	_, _, err := sb.client.ImageInspectWithRaw(ctx, sb.image)
 	if err != nil {
@@ -112,7 +116,7 @@ func (sb *Sandbox) Start(ctx context.Context, hostWorkspace string) error {
 		defer pullReader.Close()
 		io.Copy(io.Discard, pullReader)
 	}
-	
+
 	// Create container
 	config := &container.Config{
 		Image:        sb.image,
@@ -125,12 +129,12 @@ func (sb *Sandbox) Start(ctx context.Context, hostWorkspace string) error {
 			"WORKSPACE=" + sb.workspaceDir,
 		},
 	}
-	
+
 	hostConfig := &container.HostConfig{
 		Binds: []string{
 			fmt.Sprintf("%s:%s:rw", hostWorkspace, sb.workspaceDir),
 		},
-		
+
 		// Resource limits
 		Resources: container.Resources{
 			Memory:     sb.memoryMB * 1024 * 1024,
@@ -139,18 +143,18 @@ func (sb *Sandbox) Start(ctx context.Context, hostWorkspace string) error {
 			CpuPeriod:  100000,
 			CpuCount:   sb.cpuCount,
 		},
-		
+
 		// Security
-		CapDrop:      sb.capDrop,
-		CapAdd:       sb.capAdd,
-		SecurityOpt:  sb.securityOpt,
-		NetworkMode:  container.NetworkMode(sb.networkMode),
+		CapDrop:        sb.capDrop,
+		CapAdd:         sb.capAdd,
+		SecurityOpt:    sb.securityOpt,
+		NetworkMode:    container.NetworkMode(sb.networkMode),
 		ReadonlyRootfs: true,
 		Tmpfs: map[string]string{
 			"/tmp": "rw,noexec,nosuid,size=100m",
 		},
 	}
-	
+
 	resp, err := sb.client.ContainerCreate(
 		ctx,
 		config,
@@ -162,18 +166,18 @@ func (sb *Sandbox) Start(ctx context.Context, hostWorkspace string) error {
 	if err != nil {
 		return fmt.Errorf("create container: %w", err)
 	}
-	
+
 	sb.containerID = resp.ID
-	
+
 	// Start container
 	if err := sb.client.ContainerStart(ctx, sb.containerID, types.ContainerStartOptions{}); err != nil {
 		// Cleanup on failure
 		sb.client.ContainerRemove(ctx, sb.containerID, types.ContainerRemoveOptions{Force: true})
 		return fmt.Errorf("start container: %w", err)
 	}
-	
+
 	sb.isRunning = true
-	
+
 	return nil
 }
 
@@ -182,7 +186,7 @@ func (sb *Sandbox) Execute(ctx context.Context, command string, options ...Execu
 	if !sb.isRunning {
 		return nil, fmt.Errorf("sandbox not running")
 	}
-	
+
 	// Apply options
 	opts := &executeOptions{
 		timeout: sb.execTimeout,
@@ -191,11 +195,11 @@ func (sb *Sandbox) Execute(ctx context.Context, command string, options ...Execu
 	for _, opt := range options {
 		opt(opts)
 	}
-	
+
 	// Create timeout context
 	ctx, cancel := context.WithTimeout(ctx, opts.timeout)
 	defer cancel()
-	
+
 	// Create exec
 	execConfig := types.ExecConfig{
 		Cmd:          []string{"sh", "-c", command},
@@ -204,36 +208,36 @@ func (sb *Sandbox) Execute(ctx context.Context, command string, options ...Execu
 		AttachStderr: true,
 		Env:          opts.env,
 	}
-	
+
 	execResp, err := sb.client.ContainerExecCreate(ctx, sb.containerID, execConfig)
 	if err != nil {
 		return nil, fmt.Errorf("create exec: %w", err)
 	}
-	
+
 	// Attach and run
 	attachResp, err := sb.client.ContainerExecAttach(ctx, execResp.ID, types.ExecStartCheck{})
 	if err != nil {
 		return nil, fmt.Errorf("attach exec: %w", err)
 	}
 	defer attachResp.Close()
-	
+
 	// Read output
 	output, err := io.ReadAll(attachResp.Reader)
 	if err != nil {
 		return nil, fmt.Errorf("read output: %w", err)
 	}
-	
+
 	// Get exit code
 	inspect, err := sb.client.ContainerExecInspect(ctx, execResp.ID)
 	if err != nil {
 		return nil, fmt.Errorf("inspect exec: %w", err)
 	}
-	
+
 	return &ExecutionResult{
-		ExitCode:  inspect.ExitCode,
-		Output:    string(output),
-		TimedOut:  ctx.Err() == context.DeadlineExceeded,
-		Duration:  opts.timeout,
+		ExitCode: inspect.ExitCode,
+		Output:   string(output),
+		TimedOut: ctx.Err() == context.DeadlineExceeded,
+		Duration: opts.timeout,
 	}, nil
 }
 
@@ -242,7 +246,7 @@ func (sb *Sandbox) ExecuteScript(ctx context.Context, scriptPath string, interpr
 	if interpreter == "" {
 		interpreter = "sh"
 	}
-	
+
 	command := fmt.Sprintf("%s %s", interpreter, scriptPath)
 	return sb.Execute(ctx, command)
 }
@@ -252,10 +256,50 @@ func (sb *Sandbox) CopyTo(ctx context.Context, srcPath, dstPath string) error {
 	if !sb.isRunning {
 		return fmt.Errorf("sandbox not running")
 	}
-	
-	// Use tar archive for copying
-	// Implementation would use client.CopyToContainer
-	return fmt.Errorf("not implemented")
+
+	// Open source file
+	srcFile, err := os.Open(srcPath)
+	if err != nil {
+		return fmt.Errorf("open source file: %w", err)
+	}
+	defer srcFile.Close()
+
+	// Get file info
+	stat, err := srcFile.Stat()
+	if err != nil {
+		return fmt.Errorf("stat source file: %w", err)
+	}
+
+	// Create tar archive in memory
+	var buf bytes.Buffer
+	tw := tar.NewWriter(&buf)
+
+	// Write tar header
+	header := &tar.Header{
+		Name: filepath.Base(dstPath),
+		Mode: int64(stat.Mode()),
+		Size: stat.Size(),
+	}
+	if err := tw.WriteHeader(header); err != nil {
+		return fmt.Errorf("write tar header: %w", err)
+	}
+
+	// Write file content
+	if _, err := io.Copy(tw, srcFile); err != nil {
+		return fmt.Errorf("write file to tar: %w", err)
+	}
+
+	if err := tw.Close(); err != nil {
+		return fmt.Errorf("close tar writer: %w", err)
+	}
+
+	// Copy to container
+	dstDir := filepath.Dir(dstPath)
+	if err := sb.client.CopyToContainer(ctx, sb.containerID, dstDir, &buf, types.CopyToContainerOptions{}); err != nil {
+		return fmt.Errorf("copy to container: %w", err)
+	}
+
+	return nil
 }
 
 // CopyFrom copies a file from the sandbox.
@@ -263,10 +307,52 @@ func (sb *Sandbox) CopyFrom(ctx context.Context, srcPath, dstPath string) error 
 	if !sb.isRunning {
 		return fmt.Errorf("sandbox not running")
 	}
-	
-	// Use tar archive for copying
-	// Implementation would use client.CopyFromContainer
-	return fmt.Errorf("not implemented")
+
+	// Copy from container
+	reader, _, err := sb.client.CopyFromContainer(ctx, sb.containerID, srcPath)
+	if err != nil {
+		return fmt.Errorf("copy from container: %w", err)
+	}
+	defer reader.Close()
+
+	// Create destination directory if needed
+	dstDir := filepath.Dir(dstPath)
+	if err := os.MkdirAll(dstDir, 0755); err != nil {
+		return fmt.Errorf("create destination directory: %w", err)
+	}
+
+	// Create destination file
+	dstFile, err := os.Create(dstPath)
+	if err != nil {
+		return fmt.Errorf("create destination file: %w", err)
+	}
+	defer dstFile.Close()
+
+	// Extract from tar
+	tr := tar.NewReader(reader)
+
+	// Read first header
+	header, err := tr.Next()
+	if err != nil {
+		return fmt.Errorf("read tar header: %w", err)
+	}
+
+	// Skip if it's a directory
+	if header.Typeflag == tar.TypeDir {
+		return fmt.Errorf("source is a directory, not a file")
+	}
+
+	// Copy content
+	if _, err := io.Copy(dstFile, tr); err != nil {
+		return fmt.Errorf("copy file content: %w", err)
+	}
+
+	// Set permissions
+	if err := dstFile.Chmod(os.FileMode(header.Mode)); err != nil {
+		return fmt.Errorf("set file permissions: %w", err)
+	}
+
+	return nil
 }
 
 // Stop stops the sandbox.
@@ -274,7 +360,7 @@ func (sb *Sandbox) Stop(ctx context.Context) error {
 	if !sb.isRunning {
 		return nil
 	}
-	
+
 	// Stop container
 	timeout := 10
 	if err := sb.client.ContainerStop(ctx, sb.containerID, container.StopOptions{
@@ -282,17 +368,17 @@ func (sb *Sandbox) Stop(ctx context.Context) error {
 	}); err != nil {
 		return fmt.Errorf("stop container: %w", err)
 	}
-	
+
 	// Remove container
 	if err := sb.client.ContainerRemove(ctx, sb.containerID, types.ContainerRemoveOptions{
 		Force: true,
 	}); err != nil {
 		return fmt.Errorf("remove container: %w", err)
 	}
-	
+
 	sb.isRunning = false
 	sb.containerID = ""
-	
+
 	return nil
 }
 
@@ -308,11 +394,11 @@ func (sb *Sandbox) GetContainerID() string {
 
 // ExecutionResult contains command execution results.
 type ExecutionResult struct {
-	ExitCode   int
-	Output     string
+	ExitCode    int
+	Output      string
 	ErrorOutput string
-	TimedOut   bool
-	Duration   time.Duration
+	TimedOut    bool
+	Duration    time.Duration
 }
 
 // Success returns whether the execution succeeded.
@@ -364,7 +450,7 @@ func NewSandboxManager() (*SandboxManager, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &SandboxManager{
 		sandboxes: make(map[string]*Sandbox),
 		client:    cli,
@@ -375,16 +461,16 @@ func NewSandboxManager() (*SandboxManager, error) {
 func (sm *SandboxManager) Create(id string, config SandboxConfig) (*Sandbox, error) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
-	
+
 	if _, exists := sm.sandboxes[id]; exists {
 		return nil, fmt.Errorf("sandbox %s already exists", id)
 	}
-	
+
 	sb, err := NewSandbox(sm.client, config)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	sm.sandboxes[id] = sb
 	return sb, nil
 }
@@ -393,12 +479,12 @@ func (sm *SandboxManager) Create(id string, config SandboxConfig) (*Sandbox, err
 func (sm *SandboxManager) Get(id string) (*Sandbox, error) {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
-	
+
 	sb, ok := sm.sandboxes[id]
 	if !ok {
 		return nil, fmt.Errorf("sandbox %s not found", id)
 	}
-	
+
 	return sb, nil
 }
 
@@ -406,17 +492,17 @@ func (sm *SandboxManager) Get(id string) (*Sandbox, error) {
 func (sm *SandboxManager) Remove(id string) error {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
-	
+
 	sb, ok := sm.sandboxes[id]
 	if !ok {
 		return fmt.Errorf("sandbox %s not found", id)
 	}
-	
+
 	// Stop if running
 	if sb.IsRunning() {
 		sb.Stop(context.Background())
 	}
-	
+
 	delete(sm.sandboxes, id)
 	return nil
 }
@@ -425,12 +511,12 @@ func (sm *SandboxManager) Remove(id string) error {
 func (sm *SandboxManager) List() []string {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
-	
+
 	ids := make([]string, 0, len(sm.sandboxes))
 	for id := range sm.sandboxes {
 		ids = append(ids, id)
 	}
-	
+
 	return ids
 }
 
@@ -438,13 +524,13 @@ func (sm *SandboxManager) List() []string {
 func (sm *SandboxManager) Cleanup() {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
-	
+
 	ctx := context.Background()
 	for _, sb := range sm.sandboxes {
 		if sb.IsRunning() {
 			sb.Stop(ctx)
 		}
 	}
-	
+
 	sm.sandboxes = make(map[string]*Sandbox)
 }
