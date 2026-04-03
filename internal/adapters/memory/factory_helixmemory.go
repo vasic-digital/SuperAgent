@@ -1,8 +1,9 @@
 // Package memory provides adapters between HelixAgent's internal/memory types
-// and the extracted digital.vasic.memory module.
+// and the extracted digital.vasic.helixmemory module.
 //
 // This is the DEFAULT memory implementation using the HelixMemory unified
-// cognitive engine. It is active unless you explicitly opt out with:
+// cognitive engine (Cognee + Mem0 + Letta fusion). It is active unless you
+// explicitly opt out with:
 //
 //	go build -tags nohelixmemory
 //
@@ -13,42 +14,39 @@ package memory
 import (
 	"log"
 
-	cogneeclient "digital.vasic.helixmemory/pkg/clients/cognee"
-	graphiticlient "digital.vasic.helixmemory/pkg/clients/graphiti"
-	lettaclient "digital.vasic.helixmemory/pkg/clients/letta"
-	mem0client "digital.vasic.helixmemory/pkg/clients/mem0"
-	helixcfg "digital.vasic.helixmemory/pkg/config"
-	helixprovider "digital.vasic.helixmemory/pkg/provider"
+	"dev.helix.agent/internal/config"
 )
 
 // NewOptimalStoreAdapter creates a StoreAdapter backed by the HelixMemory
-// unified cognitive memory engine. It initializes all four backends (Mem0,
-// Cognee, Letta, Graphiti) and registers them with the UnifiedMemoryProvider.
-// The resulting adapter implements digital.vasic.memory/pkg/store.MemoryStore
-// via the HelixMemory fusion engine.
+// unified cognitive memory engine. It initializes the FusionEngine that
+// combines Cognee (knowledge graphs), Mem0 (semantic memory), and Letta
+// (agent memory) into a single powerful memory system.
 //
 // Configuration is read from HELIX_MEMORY_* environment variables.
-// See HelixMemory/pkg/config for available settings.
-func NewOptimalStoreAdapter() *StoreAdapter {
-	cfg := helixcfg.FromEnv()
+// See docs/HELIXMEMORY_SETUP.md for detailed setup instructions.
+//
+// Default Behavior:
+//   - Local mode (containers): All services run in Docker
+//   - Cognee defaults to local (requires paid subscription for cloud)
+//   - Automatic fallback between systems via circuit breaker
+//   - Intelligent routing based on memory type
+func NewOptimalStoreAdapter() *HelixMemoryFusionAdapter {
+	cfg := config.Load()
+	adapter, err := NewHelixMemoryFusionAdapter(cfg)
+	if err != nil {
+		log.Printf("[HelixMemory] Warning: Failed to initialize fusion engine: %v", err)
+		log.Printf("[HelixMemory] Falling back to in-memory store")
+		return nil
+	}
 
-	// Create the unified provider (orchestrator)
-	unified := helixprovider.New(cfg)
+	// Log active configuration
+	stats := adapter.GetStats()
+	log.Printf("[HelixMemory] Fusion engine initialized:")
+	log.Printf("  - Cognee: %v", stats.CogneeHealthy)
+	log.Printf("  - Mem0: %v", stats.Mem0Healthy)
+	log.Printf("  - Letta: %v", stats.LettaHealthy)
 
-	// Register all four memory backends
-	unified.RegisterProvider(mem0client.NewClient(cfg))
-	unified.RegisterProvider(cogneeclient.NewClient(cfg))
-	unified.RegisterProvider(lettaclient.NewClient(cfg))
-	unified.RegisterProvider(graphiticlient.NewClient(cfg))
-
-	// Create HelixMemory's MemoryStore adapter (implements digital.vasic.memory)
-	helixStore := helixprovider.NewMemoryStoreAdapter(unified)
-
-	log.Printf("[memory] Using HelixMemory unified engine (%d backends)",
-		len(unified.AvailableProviders()))
-
-	// Wrap it in HelixAgent's StoreAdapter
-	return NewStoreAdapter(helixStore)
+	return adapter
 }
 
 // IsHelixMemoryEnabled returns whether HelixMemory is compiled into the binary.
@@ -58,10 +56,14 @@ func IsHelixMemoryEnabled() bool {
 
 // MemoryBackendName returns the name of the active memory backend.
 func MemoryBackendName() string {
-	return "digital.vasic.helixmemory"
+	return "digital.vasic.helixmemory (Fusion: Cognee+Mem0+Letta)"
 }
 
-// NewHelixMemoryProvider creates a standalone UnifiedMemoryProvider for
+// NewHelixMemoryProvider creates a standalone HelixMemoryFusionAdapter for
 // direct access to HelixMemory features (temporal queries, core memory,
 // consolidation, power features). Use this when you need more than
 // the basic MemoryStore interface.
+func NewHelixMemoryProvider() (*HelixMemoryFusionAdapter, error) {
+	cfg := config.Load()
+	return NewHelixMemoryFusionAdapter(cfg)
+}
