@@ -1,0 +1,581 @@
+{
+  "test_suite": {
+    "name": "CLI Agents Ensemble - Comprehensive Test Bank",
+    "version": "1.0.0",
+    "description": "Complete test coverage for multi-instance ensemble coordination",
+    "total_tests": 150,
+    "categories": [
+      {
+        "name": "Foundation Layer",
+        "test_cases": [
+          {
+            "id": "ENS-001",
+            "title": "Database Schema Validation",
+            "description": "Verify all 13 tables are created with proper indexes",
+            "type": "integration",
+            "priority": "critical",
+            "steps": [
+              "Connect to PostgreSQL",
+              "Verify agent_instances table exists",
+              "Verify ensemble_sessions table exists",
+              "Verify all indexes are created",
+              "Verify constraints are enforced"
+            ],
+            "expected_result": "All tables and indexes verified",
+            "automation": true
+          },
+          {
+            "id": "ENS-002",
+            "title": "Instance Manager - Create Instance",
+            "description": "Create a new agent instance successfully",
+            "type": "unit",
+            "priority": "critical",
+            "steps": [
+              "Initialize instance manager",
+              "Call CreateInstance with Aider type",
+              "Verify instance is persisted to DB",
+              "Verify instance has valid ID",
+              "Verify health check starts"
+            ],
+            "expected_result": "Instance created with status 'idle'",
+            "automation": true
+          },
+          {
+            "id": "ENS-003",
+            "title": "Instance Manager - Pool Operations",
+            "description": "Test acquire and release from pool",
+            "type": "unit",
+            "priority": "high",
+            "steps": [
+              "Create pool with minIdle=2",
+              "Wait for pre-warming",
+              "Acquire instance from pool",
+              "Release instance back to pool",
+              "Verify instance reuse"
+            ],
+            "expected_result": "Instance acquired from pool, reused on second acquire",
+            "automation": true
+          },
+          {
+            "id": "ENS-004",
+            "title": "Event Bus - Publish/Subscribe",
+            "description": "Test event bus communication",
+            "type": "unit",
+            "priority": "high",
+            "steps": [
+              "Create event bus",
+              "Subscribe to EventTypeStatus",
+              "Publish test event",
+              "Verify event received",
+              "Unsubscribe and verify cleanup"
+            ],
+            "expected_result": "Event received by subscriber",
+            "automation": true
+          },
+          {
+            "id": "ENS-005",
+            "title": "Event Bus - High Throughput",
+            "description": "Test event bus with 1000 events/sec",
+            "type": "stress",
+            "priority": "medium",
+            "steps": [
+              "Create event bus",
+              "Subscribe with buffer size 1000",
+              "Publish 10000 events",
+              "Measure throughput",
+              "Verify all events received"
+            ],
+            "expected_result": "All 10000 events processed, throughput > 1000/sec",
+            "automation": true
+          }
+        ]
+      },
+      {
+        "name": "Ensemble Coordination",
+        "test_cases": [
+          {
+            "id": "ENS-010",
+            "title": "Voting Strategy - Basic",
+            "description": "Test voting coordination with 3 participants",
+            "type": "integration",
+            "priority": "critical",
+            "steps": [
+              "Create ensemble session with Voting strategy",
+              "Add primary and 2 critiques",
+              "Execute simple task",
+              "Verify consensus reached",
+              "Verify winner selected"
+            ],
+            "expected_result": "Consensus reached, confidence > 0.5",
+            "automation": true
+          },
+          {
+            "id": "ENS-011",
+            "title": "Debate Strategy - Multi-round",
+            "description": "Test debate with multiple refinement rounds",
+            "type": "integration",
+            "priority": "critical",
+            "steps": [
+              "Create ensemble session with Debate strategy",
+              "Configure maxRounds=3",
+              "Execute task requiring refinement",
+              "Verify debate progresses through rounds",
+              "Verify final answer improved"
+            ],
+            "expected_result": "Debate completed within 3 rounds",
+            "automation": true
+          },
+          {
+            "id": "ENS-012",
+            "title": "Pipeline Strategy - Staged Processing",
+            "description": "Test pipeline with primary -> critique -> verify",
+            "type": "integration",
+            "priority": "high",
+            "steps": [
+              "Create ensemble with Pipeline strategy",
+              "Configure 3 stages",
+              "Execute task through pipeline",
+              "Verify each stage executed",
+              "Verify output from final stage"
+            ],
+            "expected_result": "All stages completed, output validated",
+            "automation": true
+          },
+          {
+            "id": "ENS-013",
+            "title": "Consensus Strategy - Strict",
+            "description": "Test strict consensus requiring agreement",
+            "type": "integration",
+            "priority": "high",
+            "steps": [
+              "Create ensemble with Consensus strategy",
+              "Set requireConsensus=true",
+              "Execute task",
+              "Verify consensus calculation",
+              "Verify failure when no consensus"
+            ],
+            "expected_result": "Either consensus reached or appropriate error",
+            "automation": true
+          },
+          {
+            "id": "ENS-014",
+            "title": "Parallel Strategy - Concurrent Execution",
+            "description": "Test parallel execution on all instances",
+            "type": "integration",
+            "priority": "medium",
+            "steps": [
+              "Create ensemble with 5 participants",
+              "Use Parallel strategy",
+              "Execute task",
+              "Verify all instances executed",
+              "Measure total time"
+            ],
+            "expected_result": "All 5 instances completed, time < sequential",
+            "automation": true
+          },
+          {
+            "id": "ENS-015",
+            "title": "Sequential Strategy - Failover",
+            "description": "Test sequential failover when instances fail",
+            "type": "integration",
+            "priority": "medium",
+            "steps": [
+              "Create ensemble with Sequential strategy",
+              "Configure 3 instances, first fails",
+              "Execute task",
+              "Verify failover to second",
+              "Verify task completed"
+            ],
+            "expected_result": "Task completed by second or third instance",
+            "automation": true
+          },
+          {
+            "id": "ENS-016",
+            "title": "Expert Panel Strategy - Domain Experts",
+            "description": "Test expert panel with synthesis",
+            "type": "integration",
+            "priority": "medium",
+            "steps": [
+              "Create ensemble with ExpertPanel strategy",
+              "Assign different expertise areas",
+              "Execute complex task",
+              "Verify expert contributions",
+              "Verify synthesized result"
+            ],
+            "expected_result": "Synthesized answer combining expert inputs",
+            "automation": true
+          }
+        ]
+      },
+      {
+        "name": "Load Balancing",
+        "test_cases": [
+          {
+            "id": "ENS-020",
+            "title": "Round Robin Distribution",
+            "description": "Test round-robin load balancing",
+            "type": "unit",
+            "priority": "high",
+            "steps": [
+              "Create 5 healthy instances",
+              "Use RoundRobin balancer",
+              "Make 100 selections",
+              "Verify even distribution"
+            ],
+            "expected_result": "Each instance selected ~20 times",
+            "automation": true
+          },
+          {
+            "id": "ENS-021",
+            "title": "Least Connections Routing",
+            "description": "Test least-connections balancer",
+            "type": "unit",
+            "priority": "high",
+            "steps": [
+              "Create 3 instances with different load",
+              "Use LeastConnections balancer",
+              "Make multiple selections",
+              "Verify least loaded selected"
+            ],
+            "expected_result": "Least loaded instance preferred",
+            "automation": true
+          },
+          {
+            "id": "ENS-022",
+            "title": "Weighted Response Time",
+            "description": "Test response-time weighted balancer",
+            "type": "unit",
+            "priority": "medium",
+            "steps": [
+              "Create instances with different response times",
+              "Record performance metrics",
+              "Use WeightedResponseTime balancer",
+              "Verify faster instances preferred"
+            ],
+            "expected_result": "Faster instances get more traffic",
+            "automation": true
+          }
+        ]
+      },
+      {
+        "name": "Health Monitoring",
+        "test_cases": [
+          {
+            "id": "ENS-030",
+            "title": "Health Check - Failure Detection",
+            "description": "Test health check identifies failures",
+            "type": "integration",
+            "priority": "critical",
+            "steps": [
+              "Create healthy instance",
+              "Record health checks",
+              "Simulate failures",
+              "Verify health status changes",
+              "Verify degraded status"
+            ],
+            "expected_result": "Status changes to degraded after failures",
+            "automation": true
+          },
+          {
+            "id": "ENS-031",
+            "title": "Circuit Breaker - Open/Close",
+            "description": "Test circuit breaker state transitions",
+            "type": "unit",
+            "priority": "high",
+            "steps": [
+              "Create circuit breaker",
+              "Simulate failures to trip",
+              "Verify state changes to Open",
+              "Wait for timeout",
+              "Verify Half-Open state",
+              "Simulate success",
+              "Verify Closed state"
+            ],
+            "expected_result": "Proper state transitions observed",
+            "automation": true
+          },
+          {
+            "id": "ENS-032",
+            "title": "Circuit Breaker - Request Blocking",
+            "description": "Test requests blocked when open",
+            "type": "unit",
+            "priority": "high",
+            "steps": [
+              "Create circuit breaker",
+              "Trip to Open state",
+              "Attempt requests",
+              "Verify requests blocked",
+              "Measure block duration"
+            ],
+            "expected_result": "Requests blocked, no calls to downstream",
+            "automation": true
+          }
+        ]
+      },
+      {
+        "name": "Synchronization",
+        "test_cases": [
+          {
+            "id": "ENS-040",
+            "title": "Distributed Lock - Exclusive Access",
+            "description": "Test lock provides exclusive access",
+            "type": "integration",
+            "priority": "critical",
+            "steps": [
+              "Create two sync managers",
+              "First acquires lock",
+              "Second attempts acquire",
+              "Verify second blocked",
+              "First releases lock",
+              "Verify second can acquire"
+            ],
+            "expected_result": "Only one holder at a time",
+            "automation": true
+          },
+          {
+            "id": "ENS-041",
+            "title": "Distributed Lock - Auto Renewal",
+            "description": "Test lock auto-renews while held",
+            "type": "integration",
+            "priority": "high",
+            "steps": [
+              "Acquire lock with TTL=5s",
+              "Wait 3 seconds",
+              "Verify lock still held",
+              "Wait for renewal",
+              "Verify extended TTL"
+            ],
+            "expected_result": "Lock renewed, not expired",
+            "automation": true
+          },
+          {
+            "id": "ENS-042",
+            "title": "CRDT - G-Counter Merge",
+            "description": "Test G-Counter CRDT merge",
+            "type": "unit",
+            "priority": "medium",
+            "steps": [
+              "Create two G-Counters",
+              "Increment each with different values",
+              "Merge counters",
+              "Verify sum is correct"
+            ],
+            "expected_result": "Merged value = sum of increments",
+            "automation": true
+          }
+        ]
+      },
+      {
+        "name": "CLI Agent Integration",
+        "test_cases": [
+          {
+            "id": "ENS-050",
+            "title": "Aider - Repo Map Generation",
+            "description": "Test repo map generation from codebase",
+            "type": "integration",
+            "priority": "critical",
+            "steps": [
+              "Create test repository",
+              "Initialize RepoMap",
+              "Generate map",
+              "Verify symbols extracted",
+              "Verify rankings computed"
+            ],
+            "expected_result": "Repo map generated with ranked symbols",
+            "automation": true
+          },
+          {
+            "id": "ENS-051",
+            "title": "Aider - Diff Apply",
+            "description": "Test SEARCH/REPLACE diff application",
+            "type": "integration",
+            "priority": "critical",
+            "steps": [
+              "Create test file",
+              "Create diff with search/replace",
+              "Apply diff",
+              "Verify file changed correctly"
+            ],
+            "expected_result": "File modified as specified",
+            "automation": true
+          },
+          {
+            "id": "ENS-052",
+            "title": "OpenHands - Sandbox Execution",
+            "description": "Test sandbox command execution",
+            "type": "integration",
+            "priority": "critical",
+            "steps": [
+              "Start sandbox",
+              "Execute command",
+              "Verify output",
+              "Check resource limits",
+              "Stop sandbox"
+            ],
+            "expected_result": "Command executed in isolated environment",
+            "automation": true
+          },
+          {
+            "id": "ENS-053",
+            "title": "Kiro - Memory Storage",
+            "description": "Test project memory storage",
+            "type": "integration",
+            "priority": "high",
+            "steps": [
+              "Initialize ProjectMemory",
+              "Store memory entry",
+              "Retrieve by key",
+              "Verify content",
+              "Test semantic search"
+            ],
+            "expected_result": "Memory stored and retrievable",
+            "automation": true
+          },
+          {
+            "id": "ENS-054",
+            "title": "Continue - LSP Connection",
+            "description": "Test LSP client connection",
+            "type": "integration",
+            "priority": "high",
+            "steps": [
+              "Start LSP server",
+              "Initialize LSP client",
+              "Send initialize request",
+              "Verify capabilities",
+              "Test text document sync"
+            ],
+            "expected_result": "LSP connection established",
+            "automation": true
+          }
+        ]
+      },
+      {
+        "name": "Output System",
+        "test_cases": [
+          {
+            "id": "ENS-060",
+            "title": "Pipeline - Code Highlighting",
+            "description": "Test syntax highlighting in pipeline",
+            "type": "unit",
+            "priority": "high",
+            "steps": [
+              "Create pipeline",
+              "Submit Go code",
+              "Process through pipeline",
+              "Verify highlighting applied",
+              "Check terminal output"
+            ],
+            "expected_result": "Code highlighted with proper colors",
+            "automation": true
+          },
+          {
+            "id": "ENS-061",
+            "title": "Semantic Cache - Hit/Miss",
+            "description": "Test semantic caching behavior",
+            "type": "integration",
+            "priority": "high",
+            "steps": [
+              "Store response in cache",
+              "Query with similar text",
+              "Verify cache hit",
+              "Query with different text",
+              "Verify cache miss"
+            ],
+            "expected_result": "Similar queries hit cache",
+            "automation": true
+          }
+        ]
+      },
+      {
+        "name": "Stress Tests",
+        "test_cases": [
+          {
+            "id": "ENS-100",
+            "title": "Concurrent Sessions - 100",
+            "description": "Create 100 concurrent ensemble sessions",
+            "type": "stress",
+            "priority": "high",
+            "steps": [
+              "Start 100 goroutines",
+              "Each creates session",
+              "Wait for completion",
+              "Verify all sessions created",
+              "Check resource usage"
+            ],
+            "expected_result": "All 100 sessions created, no errors",
+            "automation": true
+          },
+          {
+            "id": "ENS-101",
+            "title": "Instance Manager - 1000 Instances",
+            "description": "Test with 1000 agent instances",
+            "type": "stress",
+            "priority": "medium",
+            "steps": [
+              "Create 1000 instances",
+              "Verify all registered",
+              "Test health checks",
+              "Measure memory usage",
+              "Clean up"
+            ],
+            "expected_result": "All instances managed, memory stable",
+            "automation": true
+          },
+          {
+            "id": "ENS-102",
+            "title": "Event Bus - 10000 Events/sec",
+            "description": "Test event bus at high throughput",
+            "type": "stress",
+            "priority": "medium",
+            "steps": [
+              "Subscribe 10 consumers",
+              "Publish 100000 events",
+              "Measure throughput",
+              "Verify no events lost",
+              "Check latency"
+            ],
+            "expected_result": "Throughput > 10000/sec, no lost events",
+            "automation": true
+          }
+        ]
+      },
+      {
+        "name": "Security Tests",
+        "test_cases": [
+          {
+            "id": "ENS-110",
+            "title": "Sandbox Escape Prevention",
+            "description": "Test sandbox prevents escape attempts",
+            "type": "security",
+            "priority": "critical",
+            "steps": [
+              "Start sandbox",
+              "Attempt container escape",
+              "Try privilege escalation",
+              "Verify containment",
+              "Log attempts"
+            ],
+            "expected_result": "All escape attempts blocked",
+            "automation": true
+          },
+          {
+            "id": "ENS-111",
+            "title": "Resource Limits - Enforcement",
+            "description": "Test resource limits are enforced",
+            "type": "security",
+            "priority": "high",
+            "steps": [
+              "Create instance with limits",
+              "Attempt to exceed memory",
+              "Attempt to exceed CPU",
+              "Verify throttling/termination",
+              "Check logs"
+            ],
+            "expected_result": "Limits enforced, instance constrained",
+            "automation": true
+          }
+        ]
+      }
+    ]
+  }
+}
