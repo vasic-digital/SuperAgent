@@ -439,3 +439,6 @@
 [submodule "cli_agents/roo-code"]
 	path = cli_agents/roo-code
 	url = https://github.com/RooVetGit/Roo-Code.git
+[submodule "cli_agents/open-interpreter"]
+	path = cli_agents/open-interpreter
+	url = https://github.com/OpenInterpreter/open-interpreter.git
