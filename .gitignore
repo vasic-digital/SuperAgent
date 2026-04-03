@@ -116,3 +116,8 @@ releases/*.*
 
 # QA Results (ephemeral test output)
 qa-results/
+
+# CLI Agent config backups (may contain API keys)
+scripts/cli-agents/configs/backups/
+**/*.backup*
+**/*backup*.json
