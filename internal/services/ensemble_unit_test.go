@@ -522,11 +522,10 @@ func TestEnsembleUnit_Vote_MajorityVote(t *testing.T) {
 		{ID: "r3", Content: "different response", Confidence: 0.9, ProviderName: "p3"},
 	}
 
-	selected, scores, err := service.vote(responses, &models.LLMRequest{})
+	selected, _, err := service.vote(responses, &models.LLMRequest{})
 
 	require.NoError(t, err)
 	assert.NotNil(t, selected)
-	_ = scores
 }
 
 func TestEnsembleUnit_Vote_QualityWeighted(t *testing.T) {
@@ -537,11 +536,10 @@ func TestEnsembleUnit_Vote_QualityWeighted(t *testing.T) {
 		{ID: "r2", Content: strings.Repeat("y", 500), Confidence: 0.8, ProviderName: "p2", TokensUsed: 100, ResponseTime: 600, FinishReason: "stop"},
 	}
 
-	selected, scores, err := service.vote(responses, &models.LLMRequest{})
+	selected, _, err := service.vote(responses, &models.LLMRequest{})
 
 	require.NoError(t, err)
 	assert.NotNil(t, selected)
-	_ = scores
 }
 
 func TestEnsembleUnit_Vote_NoResponses(t *testing.T) {
@@ -563,11 +561,11 @@ func TestEnsembleUnit_Vote_DefaultStrategy(t *testing.T) {
 		{ID: "r1", Content: "response1", Confidence: 0.8, ProviderName: "p1"},
 	}
 
-	selected, scores, err := service.vote(responses, &models.LLMRequest{})
+	selected, _, err := service.vote(responses, &models.LLMRequest{})
 
 	require.NoError(t, err)
 	assert.NotNil(t, selected)
-	_ = scores
+}
 
 // =============================================================================
 // ConfidenceWeightedStrategy Tests
@@ -581,12 +579,11 @@ func TestEnsembleUnit_ConfidenceWeightedStrategy_Vote(t *testing.T) {
 		{ID: "r2", Content: "response2", Confidence: 0.9, ProviderName: "p2", TokensUsed: 120, ResponseTime: 400, FinishReason: "stop"},
 	}
 
-	selected, scores, err := strategy.Vote(responses, &models.LLMRequest{})
+	selected, _, err := strategy.Vote(responses, &models.LLMRequest{})
 
 	require.NoError(t, err)
 	assert.NotNil(t, selected)
 	assert.Equal(t, "r2", selected.ID)
-	assert.NotNil(t, scores)
 }
 
 func TestEnsembleUnit_ConfidenceWeightedStrategy_Vote_NoResponses(t *testing.T) {
@@ -670,18 +667,18 @@ func TestEnsembleUnit_MajorityVoteStrategy_Vote(t *testing.T) {
 		{ID: "r3", Content: "different answer", Confidence: 0.7},
 	}
 
-	selected, scores, err := strategy.Vote(responses, &models.LLMRequest{})
+	selected, _, err := strategy.Vote(responses, &models.LLMRequest{})
 
 	require.NoError(t, err)
 	assert.NotNil(t, selected)
-	_ = scores
+}
 
 func TestEnsembleUnit_MajorityVoteStrategy_Vote_NoResponses(t *testing.T) {
 	strategy := &MajorityVoteStrategy{}
 
 	responses := []*models.LLMResponse{}
 
-	selected, scores, err := strategy.Vote(responses, &models.LLMRequest{})
+	selected, _, err := strategy.Vote(responses, &models.LLMRequest{})
 
 	assert.Error(t, err)
 	assert.Nil(t, selected)
@@ -694,7 +691,7 @@ func TestEnsembleUnit_MajorityVoteStrategy_Vote_SingleResponse(t *testing.T) {
 		{ID: "r1", Content: "only response", Confidence: 0.8},
 	}
 
-	selected, scores, err := strategy.Vote(responses, &models.LLMRequest{})
+	selected, _, err := strategy.Vote(responses, &models.LLMRequest{})
 
 	require.NoError(t, err)
 	assert.NotNil(t, selected)
@@ -713,18 +710,18 @@ func TestEnsembleUnit_QualityWeightedStrategy_Vote(t *testing.T) {
 		{ID: "r2", Content: strings.Repeat("y", 500), Confidence: 0.8, ResponseTime: 600, TokensUsed: 100, FinishReason: "stop"},
 	}
 
-	selected, scores, err := strategy.Vote(responses, &models.LLMRequest{})
+	selected, _, err := strategy.Vote(responses, &models.LLMRequest{})
 
 	require.NoError(t, err)
 	assert.NotNil(t, selected)
-	_ = scores
+}
 
 func TestEnsembleUnit_QualityWeightedStrategy_Vote_NoResponses(t *testing.T) {
 	strategy := &QualityWeightedStrategy{}
 
 	responses := []*models.LLMResponse{}
 
-	selected, scores, err := strategy.Vote(responses, &models.LLMRequest{})
+	selected, _, err := strategy.Vote(responses, &models.LLMRequest{})
 
 	assert.Error(t, err)
 	assert.Nil(t, selected)

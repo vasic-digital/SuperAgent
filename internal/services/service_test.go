@@ -7,7 +7,7 @@ import (
 	"dev.helix.agent/internal/models"
 )
 
-func TestProviderConfig_DefaultValues(t *testing.T) {
+func TestService_ProviderConfig_DefaultValues(t *testing.T) {
 	cfg := &ProviderConfig{}
 
 	if cfg.Name != "" {

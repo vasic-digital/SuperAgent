@@ -68,7 +68,7 @@ func (m *integrationMockProvider) Complete(ctx context.Context, req *models.LLMR
 		ProviderID:   m.name,
 		ProviderName: m.name,
 		TokensUsed:   100,
-		ResponseTime: time.Duration(m.latency),
+		ResponseTime: int64(m.latency),
 		FinishReason: "stop",
 	}, nil
 }
