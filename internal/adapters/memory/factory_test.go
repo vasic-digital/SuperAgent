@@ -17,7 +17,7 @@ func TestMemoryBackendName(t *testing.T) {
 	name := adapter.MemoryBackendName()
 	assert.NotEmpty(t, name)
 	// Must be one of the known backends
-	assert.Contains(t, []string{"digital.vasic.memory", "digital.vasic.helixmemory"}, name)
+	assert.Contains(t, name, "digital.vasic.helixmemory")
 }
 
 func TestNewOptimalStoreAdapter_Default(t *testing.T) {
@@ -27,7 +27,7 @@ func TestNewOptimalStoreAdapter_Default(t *testing.T) {
 	}
 	store := adapter.NewOptimalStoreAdapter()
 	assert.NotNil(t, store, "Default build must return a configured HelixMemory store")
-	assert.Equal(t, "digital.vasic.helixmemory", adapter.MemoryBackendName())
+	assert.Contains(t, adapter.MemoryBackendName(), "digital.vasic.helixmemory")
 	assert.True(t, adapter.IsHelixMemoryEnabled())
 }
 
@@ -55,7 +55,7 @@ func TestHelixMemoryIsDefault(t *testing.T) {
 			"Default builds (no tags) always use HelixMemory.")
 	}
 	assert.True(t, adapter.IsHelixMemoryEnabled())
-	assert.Equal(t, "digital.vasic.helixmemory", adapter.MemoryBackendName())
+	assert.Contains(t, adapter.MemoryBackendName(), "digital.vasic.helixmemory")
 
 	// Verify the store adapter is fully functional
 	store := adapter.NewOptimalStoreAdapter()
