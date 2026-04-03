@@ -1,150 +1,70 @@
-# Provider Test Suite
-## Comprehensive Testing for All LLM Providers (20+) and Models (200+)
+# Provider Tests
 
-**Status:** In Progress  
-**Goal:** Achieve best possible results across all providers and models  
-**Coverage:** 100% of capabilities  
+Real integration tests for all LLM providers. All tests use actual API calls - no mocks.
 
----
-
-## Test Categories
-
-### 1. Basic Functionality (Short Requests)
-- [ ] Simple completion
-- [ ] Hello world
-- [ ] Basic math
-- [ ] String manipulation
-- [ ] JSON generation
-
-### 2. Large Context (Big Requests)
-- [ ] 1K tokens
-- [ ] 10K tokens
-- [ ] 50K tokens
-- [ ] 100K tokens
-- [ ] 200K+ tokens (where supported)
-
-### 3. Tool Calling
-- [ ] Single tool call
-- [ ] Multiple tool calls
-- [ ] Parallel tool calls
-- [ ] Nested tool calls
-- [ ] Tool result handling
-
-### 4. MCP Integration
-- [ ] MCP stdio transport
-- [ ] MCP HTTP transport
-- [ ] Tool discovery
-- [ ] Tool execution
-- [ ] Error handling
-
-### 5. LSP Integration
-- [ ] Go to definition
-- [ ] Find references
-- [ ] Semantic search
-- [ ] Code outline
-- [ ] Diagnostics
-
-### 6. Embeddings
-- [ ] Text embedding
-- [ ] Batch embedding
-- [ ] Similarity search
-- [ ] Clustering
-- [ ] Dimension reduction
-
-### 7. RAG Pipeline
-- [ ] Document ingestion
-- [ ] Chunking strategies
-- [ ] Vector search
-- [ ] Context injection
-- [ ] Answer generation
-
-### 8. ACP (Agent Communication Protocol)
-- [ ] Agent registration
-- [ ] Message passing
-- [ ] Task delegation
-- [ ] Result aggregation
-- [ ] Error propagation
-
-### 9. Vision/Multimodal
-- [ ] Image understanding
-- [ ] Image generation
-- [ ] OCR
-- [ ] Chart/diagram analysis
-- [ ] Video understanding
-
-### 10. Streaming
-- [ ] SSE streaming
-- [ ] Chunk processing
-- [ ] Cancellation
-- [ ] Error during stream
-- [ ] Token counting
-
-### 11. Advanced Features
-- [ ] JSON mode
-- [ ] Function calling
-- [ ] Reasoning (o1, R1, etc.)
-- [ ] Thinking mode (Claude 3.7)
-- [ ] Code execution
-
-### 12. Error Handling
-- [ ] Rate limit handling
-- [ ] Timeout handling
-- [ ] Network errors
-- [ ] Invalid requests
-- [ ] Server errors
-
-### 13. Performance
-- [ ] Latency benchmarks
-- [ ] Throughput tests
-- [ ] Token per second
-- [ ] Connection pool efficiency
-- [ ] Retry success rate
-
----
-
-## Provider Coverage
-
-| Provider | Models | Status |
-|----------|--------|--------|
-| OpenAI | 15+ | 🟡 In Progress |
-| Anthropic | 6+ | 🟡 In Progress |
-| Google | 5+ | 🟡 In Progress |
-| DeepSeek | 3+ | 🟡 In Progress |
-| Mistral | 6+ | 🟡 In Progress |
-| Groq | 8+ | 🟡 In Progress |
-| Cohere | 4+ | 🟡 In Progress |
-| Together | 100+ | ⏳ Pending |
-| Fireworks | 50+ | ⏳ Pending |
-| Perplexity | 4+ | ⏳ Pending |
-| Cerebras | 3+ | ⏳ Pending |
-| xAI | 2+ | ⏳ Pending |
-| ... | ... | ... |
-
----
-
-## Test Execution
+## Running Tests
 
 ```bash
-# Run all provider tests
-make test-providers
+# All provider tests
+go test -v ./tests/providers/...
 
-# Run specific provider
-make test-provider PROVIDER=openai
+# Specific provider
+go test -v ./tests/providers/openai_test.go
+go test -v ./tests/providers/anthropic_test.go
+go test -v ./tests/providers/deepseek_test.go
 
-# Run specific model
-make test-model MODEL=gpt-4o
+# With timeout
+go test -v -timeout 60s ./tests/providers/...
 
-# Run specific category
-make test-category CATEGORY=tool-calling
-
-# Run challenges
-make test-challenges
-
-# Run benchmarks
-make test-benchmarks
+# Parallel (careful with rate limits)
+go test -v -parallel 4 ./tests/providers/...
 ```
 
----
+## Test Coverage
 
-**Document Status:** 🟡 In Progress  
-**Last Updated:** 2026-04-03
+| Provider | Tests | Features Tested |
+|----------|-------|-----------------|
+| OpenAI | 8 | Chat, Streaming, JSON, Tools, Vision, Long Context |
+| Anthropic | 8 | Chat, Streaming, Tool Use, Vision, 200K Context, Caching |
+| DeepSeek | 8 | Chat, Reasoning, Streaming, JSON, Tools, 64K Context |
+| Groq | 6 | Speed, Streaming, Tools, Vision, Multi-Model |
+| Mistral | 5 | Chat, Streaming, Tools, Agents, Multi-Model |
+| Gemini | 7 | Chat, Streaming, Vision, Tools, 1M Context, JSON |
+| Cohere | 5 | Chat, Tools, Streaming, RAG, Multi-Model |
+| Perplexity | 4 | Search, Streaming, Citations, Multi-Model |
+
+**Total: 51 test functions**
+
+## Environment Variables
+
+```bash
+export OPENAI_API_KEY="sk-..."
+export ANTHROPIC_API_KEY="sk-ant-..."
+export DEEPSEEK_API_KEY="sk-..."
+export GROQ_API_KEY="gsk_..."
+export MISTRAL_API_KEY="..."
+export GEMINI_API_KEY="..."
+export COHERE_API_KEY="..."
+export PERPLEXITY_API_KEY="pplx-..."
+```
+
+## Test Structure
+
+Each provider test file includes:
+- `Test<Provider>_ShortRequest` - Basic completion
+- `Test<Provider>_Streaming` - Real-time streaming
+- `Test<Provider>_ToolUse/ToolCalling` - Function calling
+- `Test<Provider>_Vision` - Image analysis (if supported)
+- `Test<Provider>_JSON/JSONMode` - Structured output
+- `Test<Provider>_LongContext` - Large context handling
+- `Test<Provider>_ErrorHandling` - Error scenarios
+- `Test<Provider>_Models/MultipleModels` - Model variants
+- `Benchmark<Provider>_Latency/Speed` - Performance benchmarks
+
+## Notes
+
+- Tests require valid API keys
+- Tests make real API calls (costs incurred)
+- Tests respect timeout contexts
+- Tests can be skipped with `-short` flag
+- Parallel execution may hit rate limits
