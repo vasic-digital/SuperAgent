@@ -66,7 +66,7 @@ services:
   # MEM0 - Semantic Memory
   # ============================================================================
   mem0:
-    image: mem0/mem0:latest
+    image: docker.io/mem0/mem0:latest
     container_name: helixmemory-mem0
     restart: unless-stopped
     ports:
@@ -107,7 +107,7 @@ services:
   # LETTA - Agent Memory
   # ============================================================================
   letta:
-    image: letta/letta:latest
+    image: docker.io/letta/letta:latest
     container_name: helixmemory-letta
     restart: unless-stopped
     ports:
@@ -147,7 +147,7 @@ services:
   # VECTOR DATABASE - Qdrant
   # ============================================================================
   qdrant:
-    image: qdrant/qdrant:latest
+    image: docker.io/qdrant/qdrant:latest
     container_name: helixmemory-qdrant
     restart: unless-stopped
     ports:
@@ -175,7 +175,7 @@ services:
   # GRAPH DATABASE - Neo4j
   # ============================================================================
   neo4j:
-    image: neo4j:5-community
+    image: docker.io/neo4j:5-community
     container_name: helixmemory-neo4j
     restart: unless-stopped
     ports:
@@ -210,11 +210,11 @@ services:
   # CACHE - Redis
   # ============================================================================
   redis:
-    image: redis:7-alpine
+    image: docker.io/redis:7-alpine
     container_name: helixmemory-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis-data:/data
     networks:
@@ -237,11 +237,11 @@ services:
   # SQL DATABASE - PostgreSQL
   # ============================================================================
   postgres:
-    image: pgvector/pgvector:pg16
+    image: docker.io/pgvector/pgvector:pg16
     container_name: helixmemory-postgres
     restart: unless-stopped
     ports:
-      - "5433:5432"
+      - "5434:5432"
     environment:
       - POSTGRES_USER=helixmemory
       - POSTGRES_PASSWORD=helixmemory
