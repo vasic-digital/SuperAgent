@@ -1584,3 +1584,179 @@ verifier-benchmark:
 # PHONY TARGETS
 # =============================================================================
 .PHONY: all build build-debug build-all run run-dev test test-coverage test-unit test-integration test-bench test-race test-all test-with-infra test-infra-start test-infra-stop test-infra-clean test-infra-logs test-infra-status fmt vet lint security-scan security-scan-all security-scan-snyk security-scan-sonarqube security-scan-trivy security-scan-gosec security-scan-go security-scan-stop docker-build docker-build-prod docker-run docker-stop docker-logs docker-clean docker-clean-all docker-test docker-dev docker-prod docker-full docker-monitoring docker-ai install-deps install uninstall clean clean-all check-deps update-deps generate docs docs-api setup-dev setup-prod help test-pentest test-security test-stress test-chaos test-e2e verifier-init verifier-update verifier-build verifier-test verifier-test-unit verifier-test-integration verifier-test-e2e verifier-test-security verifier-test-stress verifier-test-chaos verifier-test-all verifier-test-coverage verifier-test-coverage-100 verifier-run verifier-health verifier-verify verifier-score verifier-providers verifier-metrics verifier-db-migrate verifier-db-sync verifier-clean verifier-docker-build verifier-docker-run verifier-docker-stop verifier-sdk-go verifier-sdk-python verifier-sdk-js verifier-sdk-all verifier-docs verifier-benchmark infra-start infra-stop infra-restart infra-status infra-core infra-mcp infra-lsp infra-rag test-with-full-auto challenges-with-infra challenge-infra challenge-cli-agents release release-all release-helixagent release-api release-grpc-server release-cognee-mock release-sanity-check release-mcp-bridge release-generate-constitution release-force release-clean release-clean-all release-info release-builder-image
+
+# =============================================================================
+# Provider Testing Targets
+# =============================================================================
+
+## Run all provider tests
+.PHONY: test-providers
+test-providers:
+	@echo "Running comprehensive provider tests..."
+	@GOMAXPROCS=2 go test -v ./tests/providers/... -timeout 2h
+
+## Run tests for specific provider
+.PHONY: test-provider
+test-provider:
+	@echo "Running tests for provider: $(PROVIDER)"
+	@GOMAXPROCS=2 go test -v ./tests/providers/... -run "Test.*$(PROVIDER)" -timeout 30m
+
+## Run tests for specific model
+.PHONY: test-model
+test-model:
+	@echo "Running tests for model: $(MODEL)"
+	@GOMAXPROCS=2 go test -v ./tests/providers/... -run "Test.*/$(MODEL)" -timeout 30m
+
+## Run tests for specific category
+.PHONY: test-category
+test-category:
+	@echo "Running tests for category: $(CATEGORY)"
+	@GOMAXPROCS=2 go test -v ./tests/providers/... -run "Test$(CATEGORY)" -timeout 30m
+
+# =============================================================================
+# Challenge Targets
+# =============================================================================
+
+## Run all challenges
+.PHONY: test-challenges
+test-challenges:
+	@echo "Running all challenges..."
+	@GOMAXPROCS=2 go test -v ./tests/challenges/... -timeout 4h
+
+## Run challenges for specific provider
+.PHONY: test-challenges-provider
+test-challenges-provider:
+	@echo "Running challenges for provider: $(PROVIDER)"
+	@GOMAXPROCS=2 go test -v ./tests/challenges/... -run "TestChallenges/$(PROVIDER)" -timeout 2h
+
+## Run challenges for specific category
+.PHONY: test-challenges-category
+test-challenges-category:
+	@echo "Running challenges for category: $(CATEGORY)"
+	@GOMAXPROCS=2 go test -v ./tests/challenges/... -run "TestChallenges/.*/$(CATEGORY)" -timeout 2h
+
+## Run challenges for specific difficulty
+.PHONY: test-challenges-difficulty
+test-challenges-difficulty:
+	@echo "Running challenges for difficulty: $(DIFFICULTY)"
+	@GOMAXPROCS=2 go test -v ./tests/challenges/... -difficulty=$(DIFFICULTY) -timeout 2h
+
+# =============================================================================
+# Benchmark Targets
+# =============================================================================
+
+## Run all benchmarks
+.PHONY: test-benchmarks
+test-benchmarks:
+	@echo "Running all benchmarks..."
+	@GOMAXPROCS=2 go test -bench=. -benchmem ./tests/benchmarks/... -timeout 4h
+
+## Run benchmarks for specific provider
+.PHONY: test-benchmarks-provider
+test-benchmarks-provider:
+	@echo "Running benchmarks for provider: $(PROVIDER)"
+	@GOMAXPROCS=2 go test -bench=. -benchmem ./tests/benchmarks/... -run "$(PROVIDER)" -timeout 2h
+
+## Run specific benchmark test
+.PHONY: test-benchmark
+test-benchmark:
+	@echo "Running benchmark: $(BENCHMARK)"
+	@GOMAXPROCS=2 go test -bench=$(BENCHMARK) -benchmem ./tests/benchmarks/... -timeout 1h
+
+# =============================================================================
+# Comprehensive Test Targets
+# =============================================================================
+
+## Run ALL tests (providers, challenges, benchmarks)
+.PHONY: test-all-providers
+test-all-providers: test-providers test-challenges test-benchmarks
+	@echo "All provider tests completed!"
+
+## Generate comprehensive test report
+.PHONY: test-report
+test-report:
+	@echo "Generating comprehensive test report..."
+	@mkdir -p test-reports
+	@go test -v ./tests/... -json > test-reports/results.jsonl 2>&1 || true
+	@echo "Report saved to test-reports/results.jsonl"
+
+## Run tests with coverage
+.PHONY: test-coverage-providers
+test-coverage-providers:
+	@echo "Running provider tests with coverage..."
+	@go test -coverprofile=test-reports/providers.coverage.out ./tests/providers/... -timeout 2h
+	@go tool cover -html=test-reports/providers.coverage.out -o test-reports/providers-coverage.html
+
+# =============================================================================
+# Sub-Agent Testing
+# =============================================================================
+
+## Test sub-agent system
+.PHONY: test-subagents
+test-subagents:
+	@echo "Testing sub-agent system..."
+	@go test -v ./internal/agents/subagent/... -timeout 30m
+
+## Test specific sub-agent
+.PHONY: test-subagent
+test-subagent:
+	@echo "Testing sub-agent: $(AGENT)"
+	@go test -v ./internal/agents/subagent/... -run "Test$(AGENT)" -timeout 15m
+
+# =============================================================================
+# MCP Testing
+# =============================================================================
+
+## Test MCP client
+.PHONY: test-mcp
+test-mcp:
+	@echo "Testing MCP client..."
+	@go test -v ./internal/mcp/... -timeout 30m
+
+## Test MCP with specific server
+.PHONY: test-mcp-server
+test-mcp-server:
+	@echo "Testing MCP server: $(SERVER)"
+	@go test -v ./internal/mcp/... -run "Test$(SERVER)" -timeout 15m
+
+# =============================================================================
+# Search Testing
+# =============================================================================
+
+## Test search providers
+.PHONY: test-search
+test-search:
+	@echo "Testing search providers..."
+	@go test -v ./internal/search/... -timeout 30m
+
+## Test specific search provider
+.PHONY: test-search-provider
+test-search-provider:
+	@echo "Testing search provider: $(PROVIDER)"
+	@go test -v ./internal/search/... -run "Test$(PROVIDER)" -timeout 15m
+
+# =============================================================================
+# Codebase Testing
+# =============================================================================
+
+## Test codebase indexing
+.PHONY: test-codebase
+test-codebase:
+	@echo "Testing codebase indexing..."
+	@go test -v ./internal/codebase/... -timeout 30m
+
+# =============================================================================
+# Integration Testing
+# =============================================================================
+
+## Run full integration tests
+.PHONY: test-integration-full
+test-integration-full:
+	@echo "Running full integration tests..."
+	@go test -v ./... -run "Integration" -timeout 6h
+
+## Run smoke tests
+.PHONY: test-smoke
+test-smoke:
+	@echo "Running smoke tests..."
+	@go test -v -short ./tests/providers/... -run "TestShortRequest" -timeout 10m
