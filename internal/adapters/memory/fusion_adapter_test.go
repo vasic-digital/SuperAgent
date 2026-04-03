@@ -48,7 +48,7 @@ func TestHelixMemoryFusionAdapter_TypeConversions(t *testing.T) {
 	original := &helixmem.Memory{
 		ID:          "test-1",
 		Content:     "Test content",
-		Type:        helixmem.MemoryTypeFact,
+		Type:        helixmem.MemoryTypeSemantic,
 		UserID:      "user-1",
 		SessionID:   "session-1",
 		Category:    "test-category",
@@ -80,7 +80,7 @@ func TestHelixMemoryFusionAdapter_CRUD(t *testing.T) {
 	memory := &helixmem.Memory{
 		ID:      "test-add",
 		Content: "Test memory content",
-		Type:    helixmem.MemoryTypeFact,
+		Type:    helixmem.MemoryTypeSemantic,
 		UserID:  "user-1",
 	}
 
@@ -198,7 +198,7 @@ func BenchmarkHelixMemoryFusionAdapter_Store(b *testing.B) {
 	mem := &helixmem.Memory{
 		ID:      "bench-mem",
 		Content: "Benchmark memory content",
-		Type:    helixmem.MemoryTypeFact,
+		Type:    helixmem.MemoryTypeSemantic,
 	}
 
 	b.ResetTimer()
@@ -217,8 +217,7 @@ func BenchmarkHelixMemoryFusionAdapter_Search(b *testing.B) {
 
 	ctx := context.Background()
 	opts := &helixmem.SearchOptions{
-		Query: "benchmark",
-		TopK:  10,
+		TopK: 10,
 	}
 
 	b.ResetTimer()

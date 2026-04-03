@@ -7,13 +7,11 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"time"
 
 	"dev.helix.agent/internal/config"
 	helixmem "dev.helix.agent/internal/memory"
 
 	"digital.vasic.helixmemory/pkg/clients/cognee"
-	"digital.vasic.helixmemory/pkg/clients/letta"
 	"digital.vasic.helixmemory/pkg/clients/mem0"
 	helixcfg "digital.vasic.helixmemory/pkg/config"
 	"digital.vasic.helixmemory/pkg/fusion"
@@ -322,14 +320,12 @@ func (a *HelixMemoryFusionAdapter) RetrieveForAgent(ctx context.Context, query, 
 func (a *HelixMemoryFusionAdapter) toHelixMemoryEntry(m *helixmem.Memory) *types.MemoryEntry {
 	memoryType := types.MemoryTypeSemantic
 	switch m.Type {
-	case helixmem.MemoryTypeFact:
-		memoryType = types.MemoryTypeFact
 	case helixmem.MemoryTypeEpisodic:
 		memoryType = types.MemoryTypeEpisodic
-	case helixmem.MemoryTypeSemantic:
-		memoryType = types.MemoryTypeSemantic
 	case helixmem.MemoryTypeProcedural:
 		memoryType = types.MemoryTypeProcedural
+	default:
+		memoryType = types.MemoryTypeSemantic
 	}
 
 	metadata := make(map[string]interface{})
@@ -356,14 +352,12 @@ func (a *HelixMemoryFusionAdapter) toHelixMemoryEntry(m *helixmem.Memory) *types
 func (a *HelixMemoryFusionAdapter) fromHelixMemoryEntry(e *types.MemoryEntry) *helixmem.Memory {
 	memoryType := helixmem.MemoryTypeSemantic
 	switch e.Type {
-	case types.MemoryTypeFact:
-		memoryType = helixmem.MemoryTypeFact
 	case types.MemoryTypeEpisodic:
 		memoryType = helixmem.MemoryTypeEpisodic
-	case types.MemoryTypeSemantic:
-		memoryType = helixmem.MemoryTypeSemantic
 	case types.MemoryTypeProcedural:
 		memoryType = helixmem.MemoryTypeProcedural
+	default:
+		memoryType = helixmem.MemoryTypeSemantic
 	}
 
 	metadata := make(map[string]interface{})
