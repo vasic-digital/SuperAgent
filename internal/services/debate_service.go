@@ -40,7 +40,11 @@ type DebateService struct {
 	logger           *logrus.Logger
 	providerRegistry *ProviderRegistry
 	cogneeService    *CogneeService
-	memoryAdapter    *memoryadapter.StoreAdapter            // HelixMemory unified memory (default)
+	memoryAdapter    interface {                            // HelixMemory unified memory (default)
+		Add(ctx context.Context, memory *helixmem.Memory) error
+		Get(ctx context.Context, id string) (*helixmem.Memory, error)
+		Search(ctx context.Context, query string, opts *helixmem.SearchOptions) ([]*helixmem.Memory, error)
+	}
 	specifierAdapter *specifieradapter.SpecAdapter          // HelixSpecifier fusion engine (default)
 	logRepository    DebateLogRepository                    // Optional: for persistent logging
 	teamConfig       *DebateTeamConfig                      // Team configuration with Claude/Qwen roles
@@ -247,7 +251,11 @@ func NewDebateServiceWithDeps(
 	benchmarkBridgeInst := evaluation.NewBenchmarkBridge()
 
 	// Initialize HelixMemory unified cognitive memory engine (default memory system)
-	var memAdapter *memoryadapter.StoreAdapter
+	var memAdapter interface {
+		Add(ctx context.Context, memory *helixmem.Memory) error
+		Get(ctx context.Context, id string) (*helixmem.Memory, error)
+		Search(ctx context.Context, query string, opts *helixmem.SearchOptions) ([]*helixmem.Memory, error)
+	}
 	if memoryadapter.IsHelixMemoryEnabled() {
 		memAdapter = memoryadapter.NewOptimalStoreAdapter()
 		if memAdapter != nil {
