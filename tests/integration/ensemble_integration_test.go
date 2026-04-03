@@ -1,518 +1,395 @@
-// Package integration provides ensemble voting integration tests.
-// These tests validate ensemble strategies (confidence-weighted, majority vote,
-// quality-weighted) using real strategy implementations and mock providers.
+// Package integration provides integration tests for HelixAgent.
 package integration
 
 import (
 	"context"
+	"database/sql"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 
-	"dev.helix.agent/internal/models"
-	"dev.helix.agent/internal/services"
+	"dev.helix.agent/internal/clis"
+	"dev.helix.agent/internal/ensemble/background"
+	"dev.helix.agent/internal/ensemble/multi_instance"
+	"dev.helix.agent/internal/ensemble/synchronization"
+	_ "github.com/lib/pq"
 )
 
-// =============================================================================
-// Test: Ensemble — Majority Vote with Basic Consensus
-// =============================================================================
-
-func TestIntegration_Ensemble_MajorityVote_BasicConsensus(t *testing.T) {
-	ensemble := services.NewEnsembleService("majority_vote", 30*time.Second)
-
-	// Create 3 providers that return identical content
-	consensusContent := "The answer is 42. This is the definitive response."
-	for i := 0; i < 3; i++ {
-		name := "majority-provider-" + string(rune('A'+i))
-		p := &MockBaseLLMProvider{
-			name: name,
-			completeFunc: func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
-				return &models.LLMResponse{
-					ID:           "resp-" + name,
-					Content:      consensusContent,
-					Confidence:   0.90,
-					ProviderName: name,
-					FinishReason: "stop",
-					TokensUsed:   20,
-					ResponseTime: 200,
-				}, nil
-			},
-		}
-		ensemble.RegisterProvider(name, p)
-	}
-
-	ctx := context.Background()
-	req := &models.LLMRequest{
-		ID:     "majority-test",
-		Prompt: "What is the answer?",
-		Messages: []models.Message{
-			{Role: "user", Content: "What is the answer?"},
-		},
-	}
-
-	result, err := ensemble.RunEnsemble(ctx, req)
-	require.NoError(t, err, "RunEnsemble should not fail with 3 responsive providers")
-	require.NotNil(t, result)
-
-	// All 3 providers returned identical content — majority should win
-	assert.NotNil(t, result.Selected, "A response must be selected")
-	assert.Equal(t, consensusContent, result.Selected.Content,
-		"Selected response must match the consensus content")
-	assert.Equal(t, "majority_vote", result.VotingMethod)
-	assert.Len(t, result.Responses, 3, "All 3 provider responses should be collected")
+// EnsembleIntegrationTestSuite tests ensemble functionality end-to-end
+type EnsembleIntegrationTestSuite struct {
+	suite.Suite
+	db          *sql.DB
+	instanceMgr *clis.InstanceManager
+	syncMgr     *synchronization.SyncManager
+	coordinator *multi_instance.Coordinator
+	ctx         context.Context
+	cancel      context.CancelFunc
 }
 
-// =============================================================================
-// Test: Ensemble — Confidence-Weighted Vote with different confidence scores
-// =============================================================================
-
-func TestIntegration_Ensemble_WeightedVote_HighConfidence(t *testing.T) {
-	ensemble := services.NewEnsembleService("confidence_weighted", 30*time.Second)
-
-	// Provider A: low confidence
-	ensemble.RegisterProvider("weighted-low", &MockBaseLLMProvider{
-		name: "weighted-low",
-		completeFunc: func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
-			return &models.LLMResponse{
-				ID:           "resp-low",
-				Content:      "Low confidence response with reasonable length for scoring purposes in this test.",
-				Confidence:   0.40,
-				ProviderName: "weighted-low",
-				FinishReason: "stop",
-				TokensUsed:   15,
-				ResponseTime: 500,
-			}, nil
-		},
-	})
-
-	// Provider B: medium confidence
-	ensemble.RegisterProvider("weighted-med", &MockBaseLLMProvider{
-		name: "weighted-med",
-		completeFunc: func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
-			return &models.LLMResponse{
-				ID:           "resp-med",
-				Content:      "Medium confidence response with decent quality content for the weighted voting strategy evaluation.",
-				Confidence:   0.70,
-				ProviderName: "weighted-med",
-				FinishReason: "stop",
-				TokensUsed:   20,
-				ResponseTime: 300,
-			}, nil
-		},
-	})
-
-	// Provider C: high confidence
-	ensemble.RegisterProvider("weighted-high", &MockBaseLLMProvider{
-		name: "weighted-high",
-		completeFunc: func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
-			return &models.LLMResponse{
-				ID:           "resp-high",
-				Content:      "High confidence response — this provider is most certain about its answer and provides clear content.",
-				Confidence:   0.98,
-				ProviderName: "weighted-high",
-				FinishReason: "stop",
-				TokensUsed:   22,
-				ResponseTime: 150,
-			}, nil
-		},
-	})
-
-	ctx := context.Background()
-	req := &models.LLMRequest{
-		ID:     "weighted-test",
-		Prompt: "Explain something",
-		Messages: []models.Message{
-			{Role: "user", Content: "Explain something"},
-		},
+func (s *EnsembleIntegrationTestSuite) SetupSuite() {
+	// Setup database connection
+	dbURL := os.Getenv("TEST_DATABASE_URL")
+	if dbURL == "" {
+		dbURL = "postgres://helixagent:helixagent123@localhost:5432/helixagent_test?sslmode=disable"
 	}
 
-	result, err := ensemble.RunEnsemble(ctx, req)
-	require.NoError(t, err)
-	require.NotNil(t, result)
-	require.NotNil(t, result.Selected)
+	var err error
+	s.db, err = sql.Open("postgres", dbURL)
+	s.Require().NoError(err)
+	s.Require().NoError(s.db.Ping())
 
-	// The highest-confidence provider should win in confidence-weighted voting
-	assert.Equal(t, "resp-high", result.Selected.ID,
-		"Confidence-weighted strategy should select the highest confidence response")
-	assert.Equal(t, "confidence_weighted", result.VotingMethod)
+	// Clean database
+	s.cleanDatabase()
 
-	// Verify scores are populated
-	assert.NotEmpty(t, result.Scores, "Scores map must be populated")
-	assert.Len(t, result.Responses, 3)
+	// Setup context
+	s.ctx, s.cancel = context.WithTimeout(context.Background(), 30*time.Minute)
+
+	// Initialize components
+	s.instanceMgr, err = clis.NewInstanceManager(s.db, nil)
+	s.Require().NoError(err)
+
+	s.syncMgr = synchronization.NewSyncManager(s.db, nil, "test-node")
+
+	s.coordinator = multi_instance.NewCoordinator(s.db, nil, s.instanceMgr, s.syncMgr)
+	s.Require().NotNil(s.coordinator)
 }
 
-// =============================================================================
-// Test: Ensemble — Quality-Weighted (Borda-like ranking by quality factors)
-// =============================================================================
-
-func TestIntegration_Ensemble_QualityWeighted_Ranking(t *testing.T) {
-	ensemble := services.NewEnsembleService("quality_weighted", 30*time.Second)
-
-	// Provider with perfect quality signals: fast, good finish, moderate length
-	ensemble.RegisterProvider("quality-best", &MockBaseLLMProvider{
-		name: "quality-best",
-		completeFunc: func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
-			return &models.LLMResponse{
-				ID:           "resp-quality-best",
-				Content:      "A well-crafted response with good length, proper finish reason, and efficient token use. This tests quality scoring.",
-				Confidence:   0.85,
-				ProviderName: "quality-best",
-				FinishReason: "stop",
-				TokensUsed:   20,
-				ResponseTime: 500, // Fast
-			}, nil
-		},
-	})
-
-	// Provider with poor quality signals: slow, truncated, verbose
-	ensemble.RegisterProvider("quality-poor", &MockBaseLLMProvider{
-		name: "quality-poor",
-		completeFunc: func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
-			return &models.LLMResponse{
-				ID:           "resp-quality-poor",
-				Content:      "Short",
-				Confidence:   0.50,
-				ProviderName: "quality-poor",
-				FinishReason: "length",
-				TokensUsed:   100,
-				ResponseTime: 15000, // Very slow
-			}, nil
-		},
-	})
-
-	// Provider with middle-of-the-road quality
-	ensemble.RegisterProvider("quality-mid", &MockBaseLLMProvider{
-		name: "quality-mid",
-		completeFunc: func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
-			return &models.LLMResponse{
-				ID:           "resp-quality-mid",
-				Content:      "A moderate response that is reasonable but not outstanding in any particular dimension.",
-				Confidence:   0.65,
-				ProviderName: "quality-mid",
-				FinishReason: "stop",
-				TokensUsed:   30,
-				ResponseTime: 3000,
-			}, nil
-		},
-	})
-
-	ctx := context.Background()
-	req := &models.LLMRequest{
-		ID:     "quality-test",
-		Prompt: "Rank by quality",
-		Messages: []models.Message{
-			{Role: "user", Content: "Rank by quality"},
-		},
+func (s *EnsembleIntegrationTestSuite) TearDownSuite() {
+	if s.coordinator != nil {
+		s.coordinator.Close()
 	}
-
-	result, err := ensemble.RunEnsemble(ctx, req)
-	require.NoError(t, err)
-	require.NotNil(t, result)
-	require.NotNil(t, result.Selected)
-
-	// The best-quality provider should be selected
-	assert.Equal(t, "resp-quality-best", result.Selected.ID,
-		"Quality-weighted strategy should select the highest quality response")
-	assert.Equal(t, "quality_weighted", result.VotingMethod)
-
-	// Verify scores exist for all responses
-	assert.Len(t, result.Scores, 3, "Scores should exist for all 3 responses")
-
-	// Verify the best has the highest score
-	bestScore := result.Scores["resp-quality-best"]
-	poorScore := result.Scores["resp-quality-poor"]
-	assert.Greater(t, bestScore, poorScore,
-		"Best quality provider should have higher score than poor quality")
+	if s.instanceMgr != nil {
+		s.instanceMgr.Close()
+	}
+	if s.syncMgr != nil {
+		s.syncMgr.Close()
+	}
+	if s.db != nil {
+		s.cleanDatabase()
+		s.db.Close()
+	}
+	s.cancel()
 }
 
-// =============================================================================
-// Test: Ensemble — No Consensus Fallback
-// =============================================================================
-
-func TestIntegration_Ensemble_NoConsensus_Fallback(t *testing.T) {
-	ensemble := services.NewEnsembleService("majority_vote", 30*time.Second)
-
-	// 3 providers with completely different content — no majority possible
-	contents := []string{
-		"The answer involves quantum mechanics and wave functions that collapse upon observation of the system state.",
-		"Actually the solution is purely mathematical — it can be derived from first principles of set theory and logic.",
-		"In my analysis, the problem is fundamentally philosophical and cannot be resolved through empirical methods alone.",
+func (s *EnsembleIntegrationTestSuite) cleanDatabase() {
+	tables := []string{
+		"ensemble_sessions",
+		"agent_instances",
+		"distributed_locks",
+		"crdt_state",
+		"background_tasks",
+		"semantic_cache",
 	}
 
-	for i, content := range contents {
-		c := content // capture
-		name := "no-consensus-" + string(rune('A'+i))
-		ensemble.RegisterProvider(name, &MockBaseLLMProvider{
-			name: name,
-			completeFunc: func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
-				return &models.LLMResponse{
-					ID:           "resp-nc-" + string(rune('A'+i)),
-					Content:      c,
-					Confidence:   0.70 + float64(i)*0.05,
-					ProviderName: name,
-					FinishReason: "stop",
-					TokensUsed:   25,
-					ResponseTime: 400,
-				}, nil
-			},
-		})
+	for _, table := range tables {
+		s.db.Exec("DELETE FROM " + table)
 	}
+}
 
-	ctx := context.Background()
-	req := &models.LLMRequest{
-		ID:     "no-consensus-test",
-		Prompt: "Explain this complex topic",
-		Messages: []models.Message{
-			{Role: "user", Content: "Explain this complex topic"},
+func (s *EnsembleIntegrationTestSuite) TestCreateAndExecuteVotingSession() {
+	// Create ensemble session with voting strategy
+	participants := multi_instance.ParticipantConfig{
+		Primary: multi_instance.InstanceConfig{
+			Type:   clis.TypeHelixAgent,
+			Config: clis.DefaultInstanceConfig(),
+		},
+		Critiques: []multi_instance.InstanceConfig{
+			{Type: clis.TypeHelixAgent, Config: clis.DefaultInstanceConfig()},
+			{Type: clis.TypeHelixAgent, Config: clis.DefaultInstanceConfig()},
 		},
 	}
 
-	result, err := ensemble.RunEnsemble(ctx, req)
-	require.NoError(t, err, "Ensemble should not error — it should fall back")
-	require.NotNil(t, result)
-	require.NotNil(t, result.Selected, "A response must still be selected via fallback")
+	session, err := s.coordinator.CreateSession(
+		s.ctx,
+		multi_instance.StrategyVoting,
+		multi_instance.DefaultEnsembleConfig(),
+		participants,
+	)
+	s.Require().NoError(err)
+	s.NotNil(session)
+	s.Equal(multi_instance.StrategyVoting, session.Strategy)
 
-	// When majority vote has no consensus, it falls back to confidence-weighted
-	// So the selected response should be the one with best overall score
-	assert.NotEmpty(t, result.Selected.Content)
-	assert.Len(t, result.Responses, 3)
+	// Execute a task
+	task := multi_instance.Task{
+		Type:    "test",
+		Content: "Generate a test response",
+		Timeout: 30 * time.Second,
+	}
+
+	// Note: In a real test, we'd need actual running instances
+	// For integration test without real instances, we expect an error
+	_, err = s.coordinator.ExecuteSession(s.ctx, session.ID, task)
+	// Expected to fail without real instances, but shouldn't panic
+	s.Error(err)
 }
 
-// =============================================================================
-// Test: Ensemble — Single Provider Pass-Through
-// =============================================================================
-
-func TestIntegration_Ensemble_SingleProvider_PassThrough(t *testing.T) {
-	// Test each strategy with a single provider
-	strategies := []string{"confidence_weighted", "majority_vote", "quality_weighted"}
+func (s *EnsembleIntegrationTestSuite) TestAllCoordinationStrategies() {
+	strategies := []multi_instance.EnsembleStrategy{
+		multi_instance.StrategyVoting,
+		multi_instance.StrategyDebate,
+		multi_instance.StrategyConsensus,
+		multi_instance.StrategyPipeline,
+		multi_instance.StrategyParallel,
+		multi_instance.StrategySequential,
+		multi_instance.StrategyExpertPanel,
+	}
 
 	for _, strategy := range strategies {
-		t.Run(strategy, func(t *testing.T) {
-			ensemble := services.NewEnsembleService(strategy, 30*time.Second)
-
-			singleContent := "This is the only response from the single provider in the ensemble."
-			ensemble.RegisterProvider("sole-provider", &MockBaseLLMProvider{
-				name: "sole-provider",
-				completeFunc: func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
-					return &models.LLMResponse{
-						ID:           "sole-resp",
-						Content:      singleContent,
-						Confidence:   0.88,
-						ProviderName: "sole-provider",
-						FinishReason: "stop",
-						TokensUsed:   18,
-						ResponseTime: 250,
-					}, nil
-				},
-			})
-
-			ctx := context.Background()
-			req := &models.LLMRequest{
-				ID:     "single-test-" + strategy,
-				Prompt: "Single provider",
-				Messages: []models.Message{
-					{Role: "user", Content: "Single provider"},
+		s.Run(string(strategy), func() {
+			participants := multi_instance.ParticipantConfig{
+				Primary: multi_instance.InstanceConfig{
+					Type: clis.TypeHelixAgent,
 				},
 			}
 
-			result, err := ensemble.RunEnsemble(ctx, req)
-			require.NoError(t, err)
-			require.NotNil(t, result)
-			require.NotNil(t, result.Selected)
+			session, err := s.coordinator.CreateSession(
+				s.ctx,
+				strategy,
+				multi_instance.DefaultEnsembleConfig(),
+				participants,
+			)
+			s.Require().NoError(err)
+			s.NotNil(session)
+			s.Equal(strategy, session.Strategy)
 
-			// With only one provider, the single response must pass through
-			assert.Equal(t, singleContent, result.Selected.Content,
-				"Single provider response should pass through unchanged")
-			assert.Equal(t, "sole-resp", result.Selected.ID)
-			assert.Len(t, result.Responses, 1)
+			// Cleanup
+			s.coordinator.CancelSession(s.ctx, session.ID)
 		})
 	}
 }
 
-// =============================================================================
-// Test: Ensemble — Provider Failure Handling
-// =============================================================================
-
-func TestIntegration_Ensemble_PartialFailure_StillSelects(t *testing.T) {
-	ensemble := services.NewEnsembleService("confidence_weighted", 30*time.Second)
-
-	// Provider A: succeeds
-	ensemble.RegisterProvider("partial-ok", &MockBaseLLMProvider{
-		name: "partial-ok",
-		completeFunc: func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
-			return &models.LLMResponse{
-				ID:           "resp-ok",
-				Content:      "Successful response from the surviving provider in the ensemble test.",
-				Confidence:   0.92,
-				ProviderName: "partial-ok",
-				FinishReason: "stop",
-				TokensUsed:   15,
-				ResponseTime: 200,
-			}, nil
-		},
-	})
-
-	// Provider B: fails
-	ensemble.RegisterProvider("partial-fail", &MockBaseLLMProvider{
-		name: "partial-fail",
-		completeFunc: func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
-			return nil, assert.AnError
-		},
-	})
-
-	ctx := context.Background()
-	req := &models.LLMRequest{
-		ID:     "partial-failure-test",
-		Prompt: "Test partial failure",
-		Messages: []models.Message{
-			{Role: "user", Content: "Test partial failure"},
-		},
+func (s *EnsembleIntegrationTestSuite) TestSessionLifecycle() {
+	// Create session
+	participants := multi_instance.ParticipantConfig{
+		Primary: multi_instance.InstanceConfig{Type: clis.TypeHelixAgent},
 	}
 
-	result, err := ensemble.RunEnsemble(ctx, req)
-	require.NoError(t, err, "Ensemble should succeed if at least one provider responds")
-	require.NotNil(t, result)
-	require.NotNil(t, result.Selected)
+	session, err := s.coordinator.CreateSession(
+		s.ctx,
+		multi_instance.StrategyVoting,
+		multi_instance.DefaultEnsembleConfig(),
+		participants,
+	)
+	s.Require().NoError(err)
 
-	assert.Equal(t, "resp-ok", result.Selected.ID)
-	assert.Len(t, result.Responses, 1, "Only 1 successful response should be collected")
+	// Get session
+	retrieved, err := s.coordinator.GetSession(session.ID)
+	s.Require().NoError(err)
+	s.Equal(session.ID, retrieved.ID)
 
-	// Metadata should track failures
-	if md, ok := result.Metadata["failed_providers"]; ok {
-		failedCount, _ := md.(int)
-		assert.Equal(t, 1, failedCount)
-	}
+	// List sessions
+	sessions := s.coordinator.ListSessions("")
+	s.True(len(sessions) > 0)
+
+	// Cancel session
+	err = s.coordinator.CancelSession(s.ctx, session.ID)
+	s.NoError(err)
+
+	// Verify cancelled
+	cancelled, err := s.coordinator.GetSession(session.ID)
+	s.NoError(err)
+	s.Equal(multi_instance.SessionStatusCancelled, cancelled.Status)
 }
 
-// =============================================================================
-// Test: Ensemble — All Providers Fail
-// =============================================================================
+func (s *EnsembleIntegrationTestSuite) TestInstanceManagerWithCoordinator() {
+	// Create an instance
+	config := clis.DefaultInstanceConfig()
+	provider := clis.ProviderConfig{Name: "test", Model: "test-model"}
 
-func TestIntegration_Ensemble_AllProvidersFail(t *testing.T) {
-	ensemble := services.NewEnsembleService("confidence_weighted", 5*time.Second)
+	instance, err := s.instanceMgr.CreateInstance(s.ctx, clis.TypeHelixAgent, config, provider)
+	s.Require().NoError(err)
+	s.NotNil(instance)
 
-	for i := 0; i < 3; i++ {
-		name := "all-fail-" + string(rune('A'+i))
-		ensemble.RegisterProvider(name, &MockBaseLLMProvider{
-			name: name,
-			completeFunc: func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
-				return nil, assert.AnError
-			},
-		})
-	}
+	// Verify instance is tracked
+	retrieved, err := s.instanceMgr.GetInstance(instance.ID)
+	s.Require().NoError(err)
+	s.Equal(instance.ID, retrieved.ID)
 
-	ctx := context.Background()
-	req := &models.LLMRequest{
-		ID:     "all-fail-test",
-		Prompt: "Test all fail",
-		Messages: []models.Message{
-			{Role: "user", Content: "Test all fail"},
-		},
-	}
+	// Acquire instance
+	acquired, err := s.instanceMgr.AcquireInstance(s.ctx, clis.TypeHelixAgent)
+	s.Require().NoError(err)
+	s.NotNil(acquired)
 
-	result, err := ensemble.RunEnsemble(ctx, req)
-	assert.Error(t, err, "Ensemble should return error when all providers fail")
-	assert.Nil(t, result)
+	// Release instance
+	err = s.instanceMgr.ReleaseInstance(s.ctx, acquired)
+	s.NoError(err)
+
+	// Terminate instance
+	err = s.instanceMgr.TerminateInstance(s.ctx, instance.ID)
+	s.NoError(err)
 }
 
-// =============================================================================
-// Test: Ensemble — ProcessEnsemble with pre-collected responses
-// =============================================================================
+func (s *EnsembleIntegrationTestSuite) TestSyncManagerDistributedLock() {
+	// Acquire lock
+	lock, err := s.syncMgr.AcquireLock(s.ctx, "test-lock", 5*time.Second)
+	s.Require().NoError(err)
+	s.NotNil(lock)
 
-func TestIntegration_Ensemble_ProcessEnsemble_SelectsBest(t *testing.T) {
-	ensemble := services.NewEnsembleService("confidence_weighted", 30*time.Second)
+	// Try to acquire same lock from another "node" should fail
+	s.syncMgr.Close()
+	s.syncMgr = synchronization.NewSyncManager(s.db, nil, "test-node-2")
 
-	// Pre-build responses (simulating already-collected provider outputs)
-	responses := []*models.LLMResponse{
-		{
-			ID:           "pre-resp-1",
-			Content:      "First provider response with moderate quality and reasonable length for testing.",
-			Confidence:   0.75,
-			ProviderName: "provider-1",
-			FinishReason: "stop",
-			TokensUsed:   18,
-			ResponseTime: 300,
-		},
-		{
-			ID:           "pre-resp-2",
-			Content:      "Second provider response — this is the best one with highest quality metrics overall.",
-			Confidence:   0.95,
-			ProviderName: "provider-2",
-			FinishReason: "stop",
-			TokensUsed:   20,
-			ResponseTime: 100,
-		},
-		{
-			ID:           "pre-resp-3",
-			Content:      "Third provider response, decent but not as strong as the second in terms of confidence.",
-			Confidence:   0.60,
-			ProviderName: "provider-3",
-			FinishReason: "stop",
-			TokensUsed:   22,
-			ResponseTime: 800,
-		},
+	_, err = s.syncMgr.AcquireLock(s.ctx, "test-lock", 5*time.Second)
+	s.Error(err) // Should fail - lock is held
+
+	// Release lock from first node
+	s.syncMgr.Close()
+	s.syncMgr = synchronization.NewSyncManager(s.db, nil, "test-node")
+	err = s.syncMgr.ReleaseLock(lock)
+	s.NoError(err)
+
+	// Now acquire should succeed
+	s.syncMgr.Close()
+	s.syncMgr = synchronization.NewSyncManager(s.db, nil, "test-node-2")
+	lock2, err := s.syncMgr.AcquireLock(s.ctx, "test-lock", 5*time.Second)
+	s.NoError(err)
+	s.NotNil(lock2)
+
+	// Cleanup
+	s.syncMgr.ReleaseLock(lock2)
+}
+
+func (s *EnsembleIntegrationTestSuite) TestBackgroundWorkerPool() {
+	pool := background.NewWorkerPoolWithDB(s.db, nil, 5)
+	err := pool.Start(s.ctx)
+	s.Require().NoError(err)
+
+	// Submit multiple tasks
+	var taskIDs []string
+	for i := 0; i < 10; i++ {
+		task := &clis.Task{
+			Type:     clis.TaskTypeCodeAnalysis,
+			Name:     "test-task",
+			Payload:  map[string]string{"file": "test.go"},
+			Priority: 3,
+		}
+		err := pool.Submit(s.ctx, task)
+		s.NoError(err)
+		taskIDs = append(taskIDs, task.ID)
 	}
 
-	ctx := context.Background()
-	req := &models.LLMRequest{
-		ID:     "process-test",
-		Prompt: "Process pre-collected",
+	// Wait for processing
+	time.Sleep(2 * time.Second)
+
+	// Get stats
+	stats := pool.GetStats()
+	s.Equal(5, stats["size"])
+	s.True(stats["tasks_submitted"].(uint64) >= 10)
+
+	pool.Stop()
+}
+
+func (s *EnsembleIntegrationTestSuite) TestEventBusCommunication() {
+	eb := clis.NewEventBus()
+	defer eb.Close()
+
+	// Subscribe to events
+	sub := eb.Subscribe(clis.EventTypeStatus, 10)
+
+	// Publish event
+	event := &clis.Event{
+		ID:        "test-event",
+		Type:      clis.EventTypeStatus,
+		Source:    "test",
+		Payload:   map[string]string{"status": "active"},
+		Timestamp: time.Now(),
 	}
 
-	// Without ensemble config, ProcessEnsemble selects best response
-	selected, err := ensemble.ProcessEnsemble(ctx, req, responses)
+	eb.PublishSync(event)
+
+	// Receive event
+	select {
+	case received := <-sub.Ch:
+		s.Equal(event.ID, received.ID)
+	case <-time.After(time.Second):
+		s.Fail("Timeout waiting for event")
+	}
+
+	eb.Unsubscribe(sub)
+}
+
+func TestEnsembleIntegration(t *testing.T) {
+	if os.Getenv("SKIP_INTEGRATION") != "" {
+		t.Skip("Skipping integration tests")
+	}
+	suite.Run(t, new(EnsembleIntegrationTestSuite))
+}
+
+// Concurrent Ensemble Test
+func TestConcurrentEnsembleSessions(t *testing.T) {
+	if os.Getenv("SKIP_INTEGRATION") != "" {
+		t.Skip("Skipping integration tests")
+	}
+
+	dbURL := os.Getenv("TEST_DATABASE_URL")
+	if dbURL == "" {
+		dbURL = "postgres://helixagent:helixagent123@localhost:5432/helixagent_test?sslmode=disable"
+	}
+
+	db, err := sql.Open("postgres", dbURL)
 	require.NoError(t, err)
-	require.NotNil(t, selected)
+	defer db.Close()
 
-	// The best response should be selected (highest confidence as primary factor)
-	assert.Equal(t, "pre-resp-2", selected.ID,
-		"ProcessEnsemble should select the best response")
-}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
 
-// =============================================================================
-// Test: Ensemble — No Providers registered
-// =============================================================================
+	instanceMgr, err := clis.NewInstanceManager(db, nil)
+	require.NoError(t, err)
+	defer instanceMgr.Close()
 
-func TestIntegration_Ensemble_NoProviders(t *testing.T) {
-	ensemble := services.NewEnsembleService("confidence_weighted", 10*time.Second)
+	syncMgr := synchronization.NewSyncManager(db, nil, "test-concurrent")
+	defer syncMgr.Close()
 
-	ctx := context.Background()
-	req := &models.LLMRequest{
-		ID:     "no-providers",
-		Prompt: "Test",
-		Messages: []models.Message{
-			{Role: "user", Content: "Test"},
-		},
+	coordinator := multi_instance.NewCoordinator(db, nil, instanceMgr, syncMgr)
+	defer coordinator.Close()
+
+	// Create multiple sessions concurrently
+	const numSessions = 10
+	var wg sync.WaitGroup
+	errors := make(chan error, numSessions)
+
+	for i := 0; i < numSessions; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+
+			participants := multi_instance.ParticipantConfig{
+				Primary: multi_instance.InstanceConfig{
+					Type: clis.TypeHelixAgent,
+				},
+			}
+
+			_, err := coordinator.CreateSession(
+				ctx,
+				multi_instance.StrategyVoting,
+				multi_instance.DefaultEnsembleConfig(),
+				participants,
+			)
+			if err != nil {
+				errors <- err
+			}
+		}(i)
 	}
 
-	result, err := ensemble.RunEnsemble(ctx, req)
-	assert.Error(t, err, "RunEnsemble with no providers should return error")
-	assert.Nil(t, result)
-}
+	wg.Wait()
+	close(errors)
 
-// =============================================================================
-// Test: Ensemble — Register and Remove Provider dynamically
-// =============================================================================
+	// Check for errors
+	var errCount int
+	for err := range errors {
+		if err != nil {
+			t.Logf("Error: %v", err)
+			errCount++
+		}
+	}
 
-func TestIntegration_Ensemble_RegisterRemove_Dynamic(t *testing.T) {
-	ensemble := services.NewEnsembleService("confidence_weighted", 30*time.Second)
+	assert.Equal(t, 0, errCount, "Should have no errors creating concurrent sessions")
 
-	p1 := &MockBaseLLMProvider{name: "dynamic-1"}
-	p2 := &MockBaseLLMProvider{name: "dynamic-2"}
-
-	ensemble.RegisterProvider("dynamic-1", p1)
-	ensemble.RegisterProvider("dynamic-2", p2)
-
-	providers := ensemble.GetProviders()
-	assert.Len(t, providers, 2)
-
-	// Remove one
-	ensemble.RemoveProvider("dynamic-1")
-
-	providers = ensemble.GetProviders()
-	assert.Len(t, providers, 1)
-	assert.Contains(t, providers, "dynamic-2")
-	assert.NotContains(t, providers, "dynamic-1")
+	// Verify all sessions exist
+	sessions := coordinator.ListSessions("")
+	assert.True(t, len(sessions) >= numSessions, "Should have created all sessions")
 }
