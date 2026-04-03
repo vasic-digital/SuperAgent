@@ -1,75 +1,121 @@
-# HelixAgent API Documentation
+# HelixAgent API Reference
 
-## Overview
+## Base URL
 
-HelixAgent provides a comprehensive REST API for LLM aggregation, ensemble processing, memory management, and debate orchestration. All endpoints are OpenAI-compatible unless specified otherwise.
-
-**Base URL:** `http://localhost:7061`  
-**API Version:** v1  
-**Protocol:** HTTP/3 (QUIC) with Brotli compression, HTTP/2 fallback  
-**Authentication:** API Key or Bearer Token  
-
----
+```
+http://localhost:7061
+```
 
 ## Authentication
 
-### API Key Authentication
-Include your API key in the header:
-```
-X-API-Key: your-api-key-here
-```
+Most endpoints require Bearer token authentication:
 
-### Bearer Token Authentication
-Include a JWT token in the Authorization header:
 ```
-Authorization: Bearer your-jwt-token-here
+Authorization: Bearer <your-jwt-token>
 ```
 
----
+## Endpoints
 
-## Core Endpoints
+### Health
 
-### 1. Chat Completions (OpenAI Compatible)
+#### GET /health
+Basic health check.
 
-**Endpoint:** `POST /v1/chat/completions`  
-**Description:** Generate chat completions using the ensemble of LLMs
-
-#### Request Body
+**Response:**
 ```json
 {
-  "model": "helixagent-debate",
-  "messages": [
-    {"role": "system", "content": "You are a helpful assistant."},
-    {"role": "user", "content": "Hello!"}
-  ],
-  "temperature": 0.7,
-  "max_tokens": 1000,
-  "stream": false,
-  "tools": [
+  "status": "healthy",
+  "timestamp": "2025-01-15T10:30:00Z"
+}
+```
+
+#### GET /v1/health
+Detailed health with provider status.
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "providers": {
+    "openai": "available",
+    "anthropic": "available",
+    "deepseek": "unavailable"
+  },
+  "timestamp": "2025-01-15T10:30:00Z"
+}
+```
+
+### Models
+
+#### GET /v1/models
+List all available models.
+
+**Response:**
+```json
+{
+  "object": "list",
+  "data": [
     {
-      "type": "function",
-      "function": {
-        "name": "get_weather",
-        "description": "Get weather information",
-        "parameters": {
-          "type": "object",
-          "properties": {
-            "location": {"type": "string"}
-          }
-        }
-      }
+      "id": "gpt-4o",
+      "object": "model",
+      "owned_by": "openai"
+    },
+    {
+      "id": "claude-3-5-sonnet-20241022",
+      "object": "model", 
+      "owned_by": "anthropic"
     }
   ]
 }
 ```
 
-#### Response
+#### GET /v1/providers
+List configured providers.
+
+**Response:**
+```json
+{
+  "providers": [
+    {
+      "name": "openai",
+      "models": ["gpt-4o", "gpt-4o-mini"],
+      "status": "active"
+    },
+    {
+      "name": "anthropic",
+      "models": ["claude-3-5-sonnet-20241022"],
+      "status": "active"
+    }
+  ]
+}
+```
+
+### Chat Completions
+
+#### POST /v1/chat/completions
+Create a chat completion (OpenAI-compatible).
+
+**Request:**
+```json
+{
+  "model": "gpt-4o-mini",
+  "messages": [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "Hello!"}
+  ],
+  "max_tokens": 100,
+  "temperature": 0.7,
+  "stream": false
+}
+```
+
+**Response:**
 ```json
 {
   "id": "chatcmpl-123",
   "object": "chat.completion",
   "created": 1677652288,
-  "model": "helixagent-debate",
+  "model": "gpt-4o-mini",
   "choices": [{
     "index": 0,
     "message": {
@@ -86,559 +132,207 @@ Authorization: Bearer your-jwt-token-here
 }
 ```
 
-#### Streaming Response
-Set `"stream": true` for Server-Sent Events (SSE) streaming:
-```
-data: {"id":"chatcmpl-123","object":"chat.completion.chunk",...}
+#### POST /v1/chat/completions (Streaming)
 
-data: {"id":"chatcmpl-123","object":"chat.completion.chunk",...}
+**Request:**
+```json
+{
+  "model": "gpt-4o-mini",
+  "messages": [{"role": "user", "content": "Count to 5"}],
+  "stream": true
+}
+```
+
+**Response:** (SSE stream)
+```
+data: {"id":"...","choices":[{"delta":{"content":"1"}}]}
+
+data: {"id":"...","choices":[{"delta":{"content":", 2"}}]}
 
 data: [DONE]
 ```
 
----
+### Tool Calling
 
-### 2. Models List (OpenAI Compatible)
+#### POST /v1/chat/completions with Tools
 
-**Endpoint:** `GET /v1/models`  
-**Description:** List all available models from all providers
-
-#### Response
+**Request:**
 ```json
 {
-  "object": "list",
-  "data": [
-    {
-      "id": "helixagent-debate",
-      "object": "model",
-      "created": 1677610602,
-      "owned_by": "helixagent"
-    },
-    {
-      "id": "gpt-4",
-      "object": "model", 
-      "created": 1687882411,
-      "owned_by": "openai"
+  "model": "gpt-4o",
+  "messages": [{"role": "user", "content": "What's the weather in Paris?"}],
+  "tools": [{
+    "type": "function",
+    "function": {
+      "name": "get_weather",
+      "description": "Get weather for a location",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "location": {"type": "string"}
+        },
+        "required": ["location"]
+      }
     }
-  ]
+  }]
 }
 ```
 
----
-
-### 3. Health Check
-
-**Endpoint:** `GET /health`  
-**Description:** Basic health check
-
-#### Response
+**Response:**
 ```json
 {
-  "status": "healthy"
+  "choices": [{
+    "message": {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [{
+        "id": "call_123",
+        "type": "function",
+        "function": {
+          "name": "get_weather",
+          "arguments": "{\"location\":\"Paris\"}"
+        }
+      }]
+    }
+  }]
 }
 ```
 
----
+### Ensemble
 
-### 4. Detailed Health Check
+#### POST /v1/ensemble/completions
+Aggregate responses from multiple providers.
 
-**Endpoint:** `GET /v1/health`  
-**Description:** Enhanced health check with provider status
-
-#### Response
+**Request:**
 ```json
 {
-  "status": "healthy",
-  "providers": {
-    "total": 22,
-    "healthy": 20,
-    "unhealthy": 2
-  },
-  "timestamp": 1677652288
+  "messages": [{"role": "user", "content": "What is 2+2?"}],
+  "providers": ["openai", "anthropic", "deepseek"],
+  "strategy": "majority_vote"
 }
 ```
 
----
-
-### 5. Prometheus Metrics
-
-**Endpoint:** `GET /metrics`  
-**Description:** Prometheus-compatible metrics endpoint
-
-#### Response
-Prometheus exposition format with metrics:
-- `helixagent_requests_total` - Total requests
-- `helixagent_request_duration_seconds` - Request latency
-- `helixagent_provider_health` - Provider health status
-- `helixagent_debate_votes_total` - Debate voting metrics
-
----
-
-## Debate & Ensemble Endpoints
-
-### 6. Start Debate Session
-
-**Endpoint:** `POST /v1/debate/start`  
-**Description:** Start a new AI debate session
-
-#### Request Body
+**Response:**
 ```json
 {
-  "topic": "Best programming language for AI development",
-  "participants": 5,
-  "rounds": 3,
-  "voting_method": "weighted",
-  "positions": ["pro_python", "pro_rust", "pro_julia", "pro_cpp", "neutral"]
-}
-```
-
-#### Response
-```json
-{
-  "session_id": "debate-123-abc",
-  "status": "started",
-  "participants": [
-    {"id": "claude", "position": "pro_python", "model": "claude-sonnet-4"},
-    {"id": "gpt4", "position": "pro_rust", "model": "gpt-4"}
+  "ensemble_id": "ens_123",
+  "consensus": "4",
+  "responses": [
+    {"provider": "openai", "response": "4", "confidence": 0.95},
+    {"provider": "anthropic", "response": "4", "confidence": 0.98},
+    {"provider": "deepseek", "response": "4", "confidence": 0.97}
   ],
-  "current_round": 1
+  "agreement_score": 1.0
 }
 ```
 
----
+### Embeddings
 
-### 7. Get Debate Status
+#### POST /v1/embeddings
 
-**Endpoint:** `GET /v1/debate/{session_id}/status`  
-**Description:** Get current debate status and results
-
-#### Response
+**Request:**
 ```json
 {
-  "session_id": "debate-123-abc",
-  "status": "in_progress",
-  "current_round": 2,
-  "total_rounds": 3,
-  "votes": {
-    "round_1": {
-      "pro_python": 0.35,
-      "pro_rust": 0.25,
-      "pro_julia": 0.20,
-      "pro_cpp": 0.15,
-      "neutral": 0.05
-    }
-  },
-  "transcript": [...]
-}
-```
-
----
-
-## Memory Endpoints
-
-### 8. Store Memory
-
-**Endpoint:** `POST /v1/memory/store`  
-**Description:** Store information in Mem0 memory system
-
-#### Request Body
-```json
-{
-  "user_id": "user-123",
-  "content": "User prefers Python for data science projects",
-  "metadata": {
-    "category": "preference",
-    "confidence": 0.95
-  }
-}
-```
-
-#### Response
-```json
-{
-  "memory_id": "mem-456",
-  "status": "stored",
-  "entities_extracted": ["Python", "data science"]
-}
-```
-
----
-
-### 9. Retrieve Memory
-
-**Endpoint:** `POST /v1/memory/retrieve`  
-**Description:** Retrieve relevant memories for context
-
-#### Request Body
-```json
-{
-  "user_id": "user-123",
-  "query": "What programming languages does the user prefer?",
-  "limit": 5
-}
-```
-
-#### Response
-```json
-{
-  "memories": [
-    {
-      "id": "mem-456",
-      "content": "User prefers Python for data science projects",
-      "relevance": 0.92,
-      "timestamp": "2026-02-27T10:00:00Z"
-    }
-  ]
-}
-```
-
----
-
-## MCP (Model Context Protocol) Endpoints
-
-### 10. MCP Invoke
-
-**Endpoint:** `POST /v1/mcp/invoke`  
-**Description:** Invoke an MCP server capability
-
-#### Request Body
-```json
-{
-  "server": "filesystem",
-  "capability": "read_file",
-  "parameters": {
-    "path": "/home/user/document.txt"
-  }
-}
-```
-
-#### Response
-```json
-{
-  "result": "File contents here...",
-  "server": "filesystem",
-  "capability": "read_file"
-}
-```
-
----
-
-### 11. List MCP Servers
-
-**Endpoint:** `GET /v1/mcp/servers`  
-**Description:** List all available MCP servers
-
-#### Response
-```json
-{
-  "servers": [
-    {
-      "name": "filesystem",
-      "status": "running",
-      "port": 9101,
-      "capabilities": ["read_file", "write_file", "list_directory"]
-    },
-    {
-      "name": "memory",
-      "status": "running", 
-      "port": 9102,
-      "capabilities": ["store", "retrieve", "search"]
-    }
-  ]
-}
-```
-
----
-
-## ACP (Agent Communication Protocol) Endpoints
-
-### 12. ACP Send Message
-
-**Endpoint:** `POST /v1/acp/send`  
-**Description:** Send message to another agent via ACP
-
-#### Request Body
-```json
-{
-  "target_agent": "agent-456",
-  "message_type": "task_request",
-  "payload": {
-    "task": "analyze_code",
-    "code": "def foo(): pass"
-  },
-  "timeout": 30000
-}
-```
-
-#### Response
-```json
-{
-  "message_id": "acp-msg-789",
-  "status": "delivered",
-  "response": {
-    "analysis": "Function is empty and does nothing"
-  }
-}
-```
-
----
-
-## Embeddings Endpoints
-
-### 13. Create Embeddings
-
-**Endpoint:** `POST /v1/embeddings`  
-**Description:** Create vector embeddings for text (OpenAI compatible)
-
-#### Request Body
-```json
-{
-  "input": "The quick brown fox jumps over the lazy dog",
+  "input": "The quick brown fox",
   "model": "text-embedding-3-small"
 }
 ```
 
-#### Response
+**Response:**
 ```json
 {
   "object": "list",
-  "data": [
-    {
-      "object": "embedding",
-      "embedding": [0.0023064255, -0.009327292, ...],
-      "index": 0
-    }
-  ],
-  "model": "text-embedding-3-small",
-  "usage": {
-    "prompt_tokens": 8,
-    "total_tokens": 8
-  }
+  "data": [{
+    "object": "embedding",
+    "embedding": [0.0023, -0.0091, ...],
+    "index": 0
+  }]
 }
 ```
 
----
+### Vision
 
-## RAG (Retrieval Augmented Generation) Endpoints
+#### POST /v1/vision
+Analyze images.
 
-### 14. RAG Query
-
-**Endpoint:** `POST /v1/rag/query`  
-**Description:** Query the RAG system with hybrid retrieval
-
-#### Request Body
+**Request:**
 ```json
 {
-  "query": "What are the best practices for microservices?",
-  "top_k": 5,
-  "filters": {
-    "source": "documentation",
-    "date_after": "2025-01-01"
-  }
+  "model": "gpt-4o",
+  "messages": [{
+    "role": "user",
+    "content": [
+      {"type": "text", "text": "What's in this image?"},
+      {"type": "image_url", "image_url": {"url": "data:image/png;base64,..."}}
+    ]
+  }]
 }
 ```
 
-#### Response
+### Debate
+
+#### POST /v1/debate
+Start a debate between models.
+
+**Request:**
 ```json
 {
-  "results": [
-    {
-      "content": "Microservices should be loosely coupled...",
-      "source": "docs/architecture.md",
-      "score": 0.89,
-      "metadata": {...}
-    }
-  ],
-  "total_results": 42,
-  "query_time_ms": 150
+  "topic": "Should AI be regulated?",
+  "participants": ["claude", "gpt-4", "deepseek"],
+  "rounds": 3,
+  "topology": "mesh"
 }
 ```
 
----
+### MCP
 
-## Authentication Endpoints
+#### GET /v1/mcp/servers
+List MCP servers.
 
-### 15. Register User
+#### POST /v1/mcp/tools/call
+Call an MCP tool.
 
-**Endpoint:** `POST /v1/auth/register`  
-**Description:** Register a new user account
-
-#### Request Body
+**Request:**
 ```json
 {
-  "username": "johndoe",
-  "email": "john@example.com",
-  "password": "securepassword123"
+  "server": "filesystem",
+  "tool": "read_file",
+  "arguments": {"path": "/tmp/test.txt"}
 }
 ```
 
-#### Response
-```json
-{
-  "user_id": "user-123",
-  "api_key": "ha_abc123xyz789",
-  "message": "User registered successfully"
-}
-```
+## Error Responses
 
----
+All errors follow this format:
 
-### 16. Login
-
-**Endpoint:** `POST /v1/auth/login`  
-**Description:** Authenticate and get JWT token
-
-#### Request Body
-```json
-{
-  "username": "johndoe",
-  "password": "securepassword123"
-}
-```
-
-#### Response
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIs...",
-  "token_type": "Bearer",
-  "expires_in": 86400,
-  "api_key": "ha_abc123xyz789"
-}
-```
-
----
-
-## Error Handling
-
-### Standard Error Format
 ```json
 {
   "error": {
-    "code": "invalid_api_key",
-    "message": "The provided API key is invalid or expired",
+    "code": "invalid_request",
+    "message": "Invalid API key",
     "type": "authentication_error"
   }
 }
 ```
 
-### Error Codes
-- `invalid_request` - Malformed request
-- `authentication_error` - Invalid credentials
-- `rate_limit_exceeded` - Too many requests
-- `provider_unavailable` - LLM provider down
-- `invalid_model` - Model not found
-- `context_length_exceeded` - Input too long
-- `debate_not_found` - Debate session doesn't exist
+Common HTTP status codes:
+- `200` - Success
+- `400` - Bad Request
+- `401` - Unauthorized
+- `429` - Rate Limited
+- `500` - Internal Server Error
 
----
+## Rate Limits
 
-## Rate Limiting
+Default rate limits per provider:
+- OpenAI: 60 RPM
+- Anthropic: 50 RPM
+- Groq: 100 RPM
+- Others: 30 RPM
 
-- **Authenticated requests:** 1000 requests/minute
-- **Unauthenticated requests:** 60 requests/minute
-- **Streaming requests:** 100 concurrent streams
-
-Rate limit headers included in all responses:
+Headers returned:
 ```
-X-RateLimit-Limit: 1000
-X-RateLimit-Remaining: 999
-X-RateLimit-Reset: 1677652348
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 59
+X-RateLimit-Reset: 1677652345
 ```
-
----
-
-## SDK Examples
-
-### Python
-```python
-import requests
-
-headers = {
-    "X-API-Key": "your-api-key",
-    "Content-Type": "application/json"
-}
-
-response = requests.post(
-    "http://localhost:7061/v1/chat/completions",
-    headers=headers,
-    json={
-        "model": "helixagent-debate",
-        "messages": [{"role": "user", "content": "Hello!"}]
-    }
-)
-
-print(response.json()["choices"][0]["message"]["content"])
-```
-
-### JavaScript
-```javascript
-const response = await fetch('http://localhost:7061/v1/chat/completions', {
-  method: 'POST',
-  headers: {
-    'X-API-Key': 'your-api-key',
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    model: 'helixagent-debate',
-    messages: [{ role: 'user', content: 'Hello!' }]
-  })
-});
-
-const data = await response.json();
-console.log(data.choices[0].message.content);
-```
-
-### cURL
-```bash
-curl -X POST http://localhost:7061/v1/chat/completions \
-  -H "X-API-Key: your-api-key" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "helixagent-debate",
-    "messages": [{"role": "user", "content": "Hello!"}]
-  }'
-```
-
----
-
-## WebSocket Support
-
-For real-time streaming and bidirectional communication:
-
-**Endpoint:** `ws://localhost:7061/v1/stream`  
-**Protocol:** JSON messages
-
-### Connect
-```javascript
-const ws = new WebSocket('ws://localhost:7061/v1/stream');
-ws.onopen = () => {
-  ws.send(JSON.stringify({
-    type: 'subscribe',
-    channel: 'debate_updates',
-    session_id: 'debate-123'
-  }));
-};
-```
-
----
-
-## Version History
-
-- **v1.0.0** (2026-02-27) - Initial API release
-- **v1.1.0** (2026-02-27) - Added debate endpoints
-- **v1.2.0** (2026-02-27) - Added MCP and ACP endpoints
-- **v1.3.0** (2026-02-27) - Added RAG and memory endpoints
-
----
-
-## Support
-
-- **Documentation:** https://docs.helixagent.dev
-- **GitHub:** https://github.com/HelixDevelopment/HelixAgent
-- **Issues:** https://github.com/HelixDevelopment/HelixAgent/issues
-- **Discord:** https://discord.gg/helixagent
-
----
-
-**Last Updated:** February 27, 2026  
-**API Version:** v1.3.0
