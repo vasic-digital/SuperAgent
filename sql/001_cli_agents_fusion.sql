@@ -593,3 +593,59 @@ COMMENT ON TABLE cache_statistics IS 'Cache performance statistics';
 
 -- Migration complete
 SELECT 'Migration 001_cli_agents_fusion.sql completed successfully' AS status;
+
+-- ============================================
+-- ADDITIONAL TABLES FOR COMPLETE IMPLEMENTATION
+-- ============================================
+
+-- Semantic cache table for caching LLM responses
+CREATE TABLE semantic_cache (
+    key VARCHAR(255) PRIMARY KEY,
+    query TEXT NOT NULL,
+    embedding vector(1536),  -- Adjust dimension based on embedding model
+    response JSONB NOT NULL,
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    hit_count INTEGER DEFAULT 0
+);
+
+-- Index for similarity search
+CREATE INDEX idx_semantic_cache_embedding ON semantic_cache USING ivfflat (embedding vector_cosine_ops);
+CREATE INDEX idx_semantic_cache_expires ON semantic_cache(expires_at);
+
+-- Git operations log
+CREATE TABLE git_operations_log (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    operation VARCHAR(50) NOT NULL,
+    repository_path VARCHAR(500) NOT NULL,
+    branch VARCHAR(100),
+    commit_hash VARCHAR(40),
+    files_changed TEXT[],
+    execution_time_ms INTEGER,
+    success BOOLEAN,
+    error_message TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_git_ops_repo ON git_operations_log(repository_path);
+CREATE INDEX idx_git_ops_created ON git_operations_log(created_at DESC);
+
+-- LSP sessions table
+CREATE TABLE lsp_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    language_server VARCHAR(100) NOT NULL,
+    root_path VARCHAR(500) NOT NULL,
+    process_id INTEGER,
+    capabilities JSONB DEFAULT '{}',
+    status VARCHAR(20) DEFAULT 'active',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    last_activity TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_lsp_sessions_status ON lsp_sessions(status);
+
+-- Comments for new tables
+COMMENT ON TABLE semantic_cache IS 'Semantic cache for LLM responses with embedding-based similarity search';
+COMMENT ON TABLE git_operations_log IS 'Audit log of git operations performed by agents';
+COMMENT ON TABLE lsp_sessions IS 'Active Language Server Protocol sessions';
