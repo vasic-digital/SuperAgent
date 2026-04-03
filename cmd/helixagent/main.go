@@ -70,6 +70,8 @@ import (
 	"dev.helix.agent/internal/verifier"
 	appversion "dev.helix.agent/internal/version"
 	"digital.vasic.llmsverifier/pkg/cliagents"
+	
+	"dev.helix.agent/internal/containers"
 )
 
 var (
@@ -141,6 +143,10 @@ var ValidOpenCodeTopLevelKeys = map[string]bool{
 // Initialized during startup to route all container operations
 // through the Containers module.
 var globalContainerAdapter *containeradapter.Adapter
+
+// globalLazyOrchestrator manages lazy container service startup.
+// Services like NVIDIA RAG are started on-demand rather than at boot.
+var globalLazyOrchestrator *containers.LazyOrchestrator
 
 // CommandExecutor interface for executing system commands (allows mocking)
 type CommandExecutor interface {
@@ -1391,6 +1397,23 @@ func run(appCfg *AppConfig) error {
 			logger.WithField("hosts", len(hosts)).Info(
 				"Remote container distribution enabled",
 			)
+		}
+	}
+
+	// Initialize lazy container orchestrator for on-demand services
+	// This manages services like NVIDIA RAG that start only when first requested
+	logger.Info("Initializing lazy container orchestrator...")
+	lazyOrch, err := containers.NewLazyOrchestrator("", containers.NewLogrusLogger(logger))
+	if err != nil {
+		logger.WithError(err).Warn("Failed to initialize lazy orchestrator, continuing without lazy services")
+	} else {
+		globalLazyOrchestrator = lazyOrch
+		// Register default lazy services (NVIDIA RAG, MCP servers)
+		if err := containers.InitializeDefaultServices(lazyOrch); err != nil {
+			logger.WithError(err).Warn("Failed to register lazy services, continuing")
+		} else {
+			services := lazyOrch.ListServices()
+			logger.WithField("count", len(services)).Info("Lazy container orchestrator initialized with services")
 		}
 	}
 

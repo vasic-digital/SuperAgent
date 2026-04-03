@@ -1,5 +1,5 @@
-// Package continue provides Continue.dev CLI agent integration for HelixAgent.
-package continue
+// Package continueagent provides Continue.dev CLI agent integration for HelixAgent.
+package continueagent
 
 import (
 	"bufio"
@@ -9,6 +9,7 @@ import (
 	"io"
 	"net"
 	"os/exec"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -34,7 +35,7 @@ type LSPClient struct {
 	serverCapabilities ServerCapabilities
 	
 	// Request tracking
-	requestID int64
+	requestID uint64
 	mu        sync.Mutex
 	
 	// Notification handlers
@@ -411,17 +412,18 @@ func (c *LSPClient) initialize(ctx context.Context) error {
 func (c *LSPClient) call(ctx context.Context, method string, params, result interface{}) error {
 	c.mu.Lock()
 	c.requestID++
-	id := c.requestID
 	c.mu.Unlock()
 	
-	return c.server.Call(ctx, method, params, result, jsonrpc2.PickID(id))
+	return c.server.Call(ctx, method, params, result)
 }
 
 func (c *LSPClient) handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) (interface{}, error) {
 	if req.Notif {
 		// Handle notification
 		if handler, ok := c.handlers[req.Method]; ok {
-			handler(req.Method, req.Params)
+			if req.Params != nil {
+				handler(req.Method, *req.Params)
+			}
 		}
 		return nil, nil
 	}
@@ -729,4 +731,4 @@ type RenameParams struct {
 	NewName string `json:"newName"`
 }
 
-import "path/filepath"
+

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math"
 	"sync"
-	"time"
 )
 
 // BuddySystem implements the Terminal Tamagotchi feature

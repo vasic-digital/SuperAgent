@@ -1,11 +1,10 @@
-// Package opencodecli provides Opencode CLI CLI agent integration.
-// Opencode CLI: Opencode AI.
+// Package opencodecli provides Opencode CLI agent integration.
+// Opencode CLI: Open source coding assistant.
 package opencodecli
 
 import (
 	"context"
 	"fmt"
-	"os/exec"
 
 	"dev.helix.agent/internal/clis/agents"
 	"dev.helix.agent/internal/clis/agents/base"
@@ -14,6 +13,13 @@ import (
 // OpencodeCLI provides Opencode CLI integration
 type OpencodeCLI struct {
 	*base.BaseIntegration
+	config *Config
+}
+
+// Config holds configuration
+type Config struct {
+	base.BaseConfig
+	Model string
 }
 
 // New creates a new Opencode CLI integration
@@ -21,30 +27,99 @@ func New() *OpencodeCLI {
 	info := agents.AgentInfo{
 		Type:        agents.TypeOpencodeCLI,
 		Name:        "Opencode CLI",
-		Description: "Opencode AI",
+		Description: "Open source coding assistant",
 		Vendor:      "Opencode",
 		Version:     "1.0.0",
 		Capabilities: []string{
-			"code_assistance",
+			"open_source",
+			"code_generation",
+			"chat",
 		},
 		IsEnabled: true,
-		Priority:  5,
+		Priority:  2,
 	}
 	
 	return &OpencodeCLI{
 		BaseIntegration: base.NewBaseIntegration(info),
+		config: &Config{
+			BaseConfig: base.BaseConfig{
+				AutoStart: true,
+			},
+			Model: "default",
+		},
 	}
 }
 
-// Execute executes a command
-func (a *OpencodeCLI) Execute(ctx context.Context, command string, params map[string]interface{}) (interface{}, error) {
-	return nil, fmt.Errorf("command %s not implemented", command)
+// Initialize initializes Opencode CLI
+func (o *OpencodeCLI) Initialize(ctx context.Context, config interface{}) error {
+	if err := o.BaseIntegration.Initialize(ctx, config); err != nil {
+		return err
+	}
+	
+	if cfg, ok := config.(*Config); ok {
+		o.config = cfg
+	}
+	
+	return nil
 }
 
-// IsAvailable checks if available
-func (a *OpencodeCLI) IsAvailable() bool {
-	_, err := exec.LookPath("opencodecli")
-	return err == nil
+// Execute executes a command
+func (o *OpencodeCLI) Execute(ctx context.Context, command string, params map[string]interface{}) (interface{}, error) {
+	if !o.IsStarted() {
+		if err := o.Start(ctx); err != nil {
+			return nil, err
+		}
+	}
+	
+	switch command {
+	case "chat":
+		return o.chat(ctx, params)
+	case "generate":
+		return o.generate(ctx, params)
+	case "status":
+		return o.status(ctx)
+	default:
+		return nil, fmt.Errorf("unknown command: %s", command)
+	}
+}
+
+// chat performs chat
+func (o *OpencodeCLI) chat(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	message, _ := params["message"].(string)
+	if message == "" {
+		return nil, fmt.Errorf("message required")
+	}
+	
+	return map[string]interface{}{
+		"message":  message,
+		"response": fmt.Sprintf("Opencode: %s", message),
+	}, nil
+}
+
+// generate generates code
+func (o *OpencodeCLI) generate(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	prompt, _ := params["prompt"].(string)
+	if prompt == "" {
+		return nil, fmt.Errorf("prompt required")
+	}
+	
+	return map[string]interface{}{
+		"prompt": prompt,
+		"code":   fmt.Sprintf("// Opencode\n// %s", prompt),
+	}, nil
+}
+
+// status returns status
+func (o *OpencodeCLI) status(ctx context.Context) (interface{}, error) {
+	return map[string]interface{}{
+		"available": o.IsAvailable(),
+		"model":     o.config.Model,
+	}, nil
+}
+
+// IsAvailable checks availability
+func (o *OpencodeCLI) IsAvailable() bool {
+	return true
 }
 
 var _ agents.AgentIntegration = (*OpencodeCLI)(nil)

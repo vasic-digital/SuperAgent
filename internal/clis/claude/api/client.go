@@ -160,15 +160,18 @@ const (
 
 // APIError represents an Anthropic API error
 type APIError struct {
-	Type  string `json:"type"`
-	Error struct {
-		Type    string `json:"type"`
-		Message string `json:"message"`
-	} `json:"error"`
+	Type    string    `json:"type"`
+	Err     APIErrDetail `json:"error"`
+}
+
+// APIErrDetail holds error details
+type APIErrDetail struct {
+	Type    string `json:"type"`
+	Message string `json:"message"`
 }
 
 func (e *APIError) Error() string {
-	return fmt.Sprintf("%s: %s", e.Error.Type, e.Error.Message)
+	return fmt.Sprintf("%s: %s", e.Err.Type, e.Err.Message)
 }
 
 // generateRequestID generates a unique request ID
@@ -179,7 +182,7 @@ func (e *APIError) Error() string {
 // IsRateLimitError checks if the error is a rate limit error
  func IsRateLimitError(err error) bool {
 	if apiErr, ok := err.(*APIError); ok {
-		return apiErr.Error.Type == "rate_limit_error"
+		return apiErr.Err.Type == "rate_limit_error"
 	}
 	return false
 }
@@ -187,7 +190,7 @@ func (e *APIError) Error() string {
 // IsAuthenticationError checks if the error is an authentication error
  func IsAuthenticationError(err error) bool {
 	if apiErr, ok := err.(*APIError); ok {
-		return apiErr.Error.Type == "authentication_error"
+		return apiErr.Err.Type == "authentication_error"
 	}
 	return false
 }

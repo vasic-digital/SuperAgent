@@ -1,17 +1,19 @@
 // Package agents provides the master integration for all 47 CLI agents.
 // This file wires all agent integrations into the global registry.
-package agents
+package master
 
 import (
 	"context"
 	"log"
 	"sync"
 	
+	"dev.helix.agent/internal/clis/agents"
 	"dev.helix.agent/internal/clis/agents/aider"
 	"dev.helix.agent/internal/clis/agents/amazonq"
+	claudeCode "dev.helix.agent/internal/clis/agents/claude_code"
 	"dev.helix.agent/internal/clis/agents/cline"
 	"dev.helix.agent/internal/clis/agents/codex"
-	"dev.helix.agent/internal/clis/agents/continue"
+	continueagent "dev.helix.agent/internal/clis/agents/continueagent"
 	"dev.helix.agent/internal/clis/agents/gemini"
 	"dev.helix.agent/internal/clis/agents/kiro"
 	"dev.helix.agent/internal/clis/agents/openhands"
@@ -19,14 +21,14 @@ import (
 
 // MasterIntegration manages all CLI agent integrations
  type MasterIntegration struct {
-	registry *Registry
+	registry *agents.Registry
 	started  bool
 }
 
 // NewMasterIntegration creates a new master integration
  func NewMasterIntegration() (*MasterIntegration, error) {
 	m := &MasterIntegration{
-		registry: GetGlobalRegistry(),
+		registry: agents.GetGlobalRegistry(),
 	}
 	
 	if err := m.registerAllAgents(); err != nil {
@@ -41,7 +43,7 @@ func (m *MasterIntegration) registerAllAgents() error {
 	log.Println("[Master] Registering all CLI agents...")
 	
 	// Priority 1: Major agents (fully implemented)
-	agents := []AgentIntegration{
+	agentList := []agents.AgentIntegration{
 		aider.New(),
 		openhands.New(),
 		codex.New(),
@@ -49,10 +51,11 @@ func (m *MasterIntegration) registerAllAgents() error {
 		gemini.New(),
 		amazonq.New(),
 		kiro.New(),
-		continue.New(),
+		continueagent.New(),
+		claudeCode.New(),
 	}
 	
-	for _, agent := range agents {
+	for _, agent := range agentList {
 		info := agent.Info()
 		if err := m.registry.Register(agent); err != nil {
 			log.Printf("[Master] Warning: Failed to register %s: %v", info.Name, err)
@@ -116,32 +119,32 @@ func (m *MasterIntegration) IsStarted() bool {
 }
 
 // GetRegistry returns the agent registry
-func (m *MasterIntegration) GetRegistry() *Registry {
+func (m *MasterIntegration) GetRegistry() *agents.Registry {
 	return m.registry
 }
 
 // GetAgent gets a specific agent
-func (m *MasterIntegration) GetAgent(agentType AgentType) (AgentIntegration, bool) {
+func (m *MasterIntegration) GetAgent(agentType agents.AgentType) (agents.AgentIntegration, bool) {
 	return m.registry.Get(agentType)
 }
 
 // Execute executes a command on a specific agent
-func (m *MasterIntegration) Execute(ctx context.Context, agentType AgentType, command string, params map[string]interface{}) (interface{}, error) {
+func (m *MasterIntegration) Execute(ctx context.Context, agentType agents.AgentType, command string, params map[string]interface{}) (interface{}, error) {
 	return m.registry.Execute(ctx, agentType, command, params)
 }
 
 // ListAgents lists all registered agents
-func (m *MasterIntegration) ListAgents() []AgentInfo {
+func (m *MasterIntegration) ListAgents() []agents.AgentInfo {
 	return m.registry.List()
 }
 
 // ListAvailable lists all available agents
-func (m *MasterIntegration) ListAvailable() []AgentInfo {
+func (m *MasterIntegration) ListAvailable() []agents.AgentInfo {
 	return m.registry.ListAvailable()
 }
 
 // HealthCheck checks health of all agents
-func (m *MasterIntegration) HealthCheck(ctx context.Context) map[AgentType]error {
+func (m *MasterIntegration) HealthCheck(ctx context.Context) map[agents.AgentType]error {
 	return m.registry.HealthCheck(ctx)
 }
 

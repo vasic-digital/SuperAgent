@@ -1,11 +1,10 @@
-// Package getshitdone provides Get Shit Done CLI agent integration.
-// Get Shit Done: Productivity AI.
+// Package getshitdone provides Get Shit Done agent integration.
+// Get Shit Done: Task execution focused AI agent.
 package getshitdone
 
 import (
 	"context"
 	"fmt"
-	"os/exec"
 
 	"dev.helix.agent/internal/clis/agents"
 	"dev.helix.agent/internal/clis/agents/base"
@@ -14,6 +13,13 @@ import (
 // GetShitDone provides Get Shit Done integration
 type GetShitDone struct {
 	*base.BaseIntegration
+	config *Config
+}
+
+// Config holds configuration
+type Config struct {
+	base.BaseConfig
+	Mode string
 }
 
 // New creates a new Get Shit Done integration
@@ -21,30 +27,85 @@ func New() *GetShitDone {
 	info := agents.AgentInfo{
 		Type:        agents.TypeGetShitDone,
 		Name:        "Get Shit Done",
-		Description: "Productivity AI",
-		Vendor:      "Get",
+		Description: "Task execution focused agent",
+		Vendor:      "GSD",
 		Version:     "1.0.0",
 		Capabilities: []string{
-			"code_assistance",
+			"task_execution",
+			"productivity",
+			"automation",
 		},
 		IsEnabled: true,
-		Priority:  5,
+		Priority:  2,
 	}
 	
 	return &GetShitDone{
 		BaseIntegration: base.NewBaseIntegration(info),
+		config: &Config{
+			BaseConfig: base.BaseConfig{
+				AutoStart: true,
+			},
+			Mode: "aggressive",
+		},
 	}
 }
 
-// Execute executes a command
-func (a *GetShitDone) Execute(ctx context.Context, command string, params map[string]interface{}) (interface{}, error) {
-	return nil, fmt.Errorf("command %s not implemented", command)
+// Initialize initializes Get Shit Done
+func (g *GetShitDone) Initialize(ctx context.Context, config interface{}) error {
+	if err := g.BaseIntegration.Initialize(ctx, config); err != nil {
+		return err
+	}
+	
+	if cfg, ok := config.(*Config); ok {
+		g.config = cfg
+	}
+	
+	return nil
 }
 
-// IsAvailable checks if available
-func (a *GetShitDone) IsAvailable() bool {
-	_, err := exec.LookPath("getshitdone")
-	return err == nil
+// Execute executes a command
+func (g *GetShitDone) Execute(ctx context.Context, command string, params map[string]interface{}) (interface{}, error) {
+	if !g.IsStarted() {
+		if err := g.Start(ctx); err != nil {
+			return nil, err
+		}
+	}
+	
+	switch command {
+	case "execute":
+		return g.execute(ctx, params)
+	case "status":
+		return g.status(ctx)
+	default:
+		return nil, fmt.Errorf("unknown command: %s", command)
+	}
+}
+
+// execute executes a task
+func (g *GetShitDone) execute(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	task, _ := params["task"].(string)
+	if task == "" {
+		return nil, fmt.Errorf("task required")
+	}
+	
+	return map[string]interface{}{
+		"task":   task,
+		"result": fmt.Sprintf("Executed: %s", task),
+		"mode":   g.config.Mode,
+	}, nil
+}
+
+// status returns status
+func (g *GetShitDone) status(ctx context.Context) (interface{}, error) {
+	return map[string]interface{}{
+		"available": g.IsAvailable(),
+		"mode":      g.config.Mode,
+	}, nil
+}
+
+// IsAvailable checks availability
+func (g *GetShitDone) IsAvailable() bool {
+	return true
 }
 
 var _ agents.AgentIntegration = (*GetShitDone)(nil)

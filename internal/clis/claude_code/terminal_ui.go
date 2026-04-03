@@ -114,8 +114,8 @@ func (ui *TerminalUI) RenderProgress(percent int, message string) string {
 	width := 40
 	filled := int(float64(width) * float64(percent) / 100.0)
 	
-	bar := ui.successColor.Sprintf(strings.Repeat("█", filled)) + 
-	       ui.dimColor.Sprintf(strings.Repeat("░", width-filled))
+	bar := ui.successColor.Sprint(strings.Repeat("█", filled)) + 
+	       ui.dimColor.Sprint(strings.Repeat("░", width-filled))
 	
 	return fmt.Sprintf("\r[%s] %3d%% %s", bar, percent, message)
 }
@@ -392,7 +392,7 @@ func (ui *TerminalUI) addBorder(content, language string) string {
 	// Header with language
 	if language != "" {
 		result.WriteString(ui.dimColor.Sprintf("┌─ %s ", language))
-		result.WriteString(ui.dimColor.Sprintf(strings.Repeat("─", maxWidth-len(language)-4)))
+		result.WriteString(ui.dimColor.Sprint(strings.Repeat("─", maxWidth-len(language)-4)))
 		result.WriteString("┐\n")
 	} else {
 		result.WriteString(ui.dimColor.Sprintf("┌%s┐\n", strings.Repeat("─", maxWidth+2)))

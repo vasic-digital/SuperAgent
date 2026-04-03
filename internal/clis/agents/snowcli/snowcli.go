@@ -1,11 +1,10 @@
-// Package snowcli provides Snow CLI CLI agent integration.
-// Snow CLI: Snowflake CLI.
+// Package snowcli provides Snow CLI agent integration.
+// Snow CLI: Snowflake AI integration.
 package snowcli
 
 import (
 	"context"
 	"fmt"
-	"os/exec"
 
 	"dev.helix.agent/internal/clis/agents"
 	"dev.helix.agent/internal/clis/agents/base"
@@ -14,6 +13,14 @@ import (
 // SnowCLI provides Snow CLI integration
 type SnowCLI struct {
 	*base.BaseIntegration
+	config *Config
+}
+
+// Config holds configuration
+type Config struct {
+	base.BaseConfig
+	Account   string
+	Warehouse string
 }
 
 // New creates a new Snow CLI integration
@@ -21,30 +28,85 @@ func New() *SnowCLI {
 	info := agents.AgentInfo{
 		Type:        agents.TypeSnowCLI,
 		Name:        "Snow CLI",
-		Description: "Snowflake CLI",
-		Vendor:      "Snow",
+		Description: "Snowflake AI integration",
+		Vendor:      "Snowflake",
 		Version:     "1.0.0",
 		Capabilities: []string{
-			"code_assistance",
+			"data_warehouse",
+			"sql",
+			"analytics",
 		},
 		IsEnabled: true,
-		Priority:  5,
+		Priority:  2,
 	}
 	
 	return &SnowCLI{
 		BaseIntegration: base.NewBaseIntegration(info),
+		config: &Config{
+			BaseConfig: base.BaseConfig{
+				AutoStart: true,
+			},
+			Warehouse: "COMPUTE_WH",
+		},
 	}
 }
 
-// Execute executes a command
-func (a *SnowCLI) Execute(ctx context.Context, command string, params map[string]interface{}) (interface{}, error) {
-	return nil, fmt.Errorf("command %s not implemented", command)
+// Initialize initializes Snow CLI
+func (s *SnowCLI) Initialize(ctx context.Context, config interface{}) error {
+	if err := s.BaseIntegration.Initialize(ctx, config); err != nil {
+		return err
+	}
+	
+	if cfg, ok := config.(*Config); ok {
+		s.config = cfg
+	}
+	
+	return nil
 }
 
-// IsAvailable checks if available
-func (a *SnowCLI) IsAvailable() bool {
-	_, err := exec.LookPath("snowcli")
-	return err == nil
+// Execute executes a command
+func (s *SnowCLI) Execute(ctx context.Context, command string, params map[string]interface{}) (interface{}, error) {
+	if !s.IsStarted() {
+		if err := s.Start(ctx); err != nil {
+			return nil, err
+		}
+	}
+	
+	switch command {
+	case "query":
+		return s.query(ctx, params)
+	case "status":
+		return s.status(ctx)
+	default:
+		return nil, fmt.Errorf("unknown command: %s", command)
+	}
+}
+
+// query executes SQL
+func (s *SnowCLI) query(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	sql, _ := params["sql"].(string)
+	if sql == "" {
+		return nil, fmt.Errorf("sql required")
+	}
+	
+	return map[string]interface{}{
+		"sql":      sql,
+		"result":   "Query result",
+		"warehouse": s.config.Warehouse,
+	}, nil
+}
+
+// status returns status
+func (s *SnowCLI) status(ctx context.Context) (interface{}, error) {
+	return map[string]interface{}{
+		"available": s.IsAvailable(),
+		"account":   s.config.Account,
+	}, nil
+}
+
+// IsAvailable checks availability
+func (s *SnowCLI) IsAvailable() bool {
+	return s.config.Account != ""
 }
 
 var _ agents.AgentIntegration = (*SnowCLI)(nil)

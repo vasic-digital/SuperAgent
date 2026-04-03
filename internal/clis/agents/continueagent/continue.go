@@ -1,6 +1,6 @@
-// Package continue provides Continue CLI agent integration.
+// Package continueagent provides Continue CLI agent integration.
 // Continue: Open-source AI code assistant for IDE.
-package continue
+package continueagent
 
 import (
 	"context"

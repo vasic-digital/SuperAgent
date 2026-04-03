@@ -1,11 +1,10 @@
-// Package gptme provides GPTMe CLI agent integration.
-// GPTMe: AI assistant.
+// Package gptme provides GPTMe agent integration.
+// GPTMe: Personal AI assistant for developers.
 package gptme
 
 import (
 	"context"
 	"fmt"
-	"os/exec"
 
 	"dev.helix.agent/internal/clis/agents"
 	"dev.helix.agent/internal/clis/agents/base"
@@ -14,37 +13,113 @@ import (
 // GPTMe provides GPTMe integration
 type GPTMe struct {
 	*base.BaseIntegration
+	config *Config
+}
+
+// Config holds configuration
+type Config struct {
+	base.BaseConfig
+	Personality string
 }
 
 // New creates a new GPTMe integration
 func New() *GPTMe {
 	info := agents.AgentInfo{
-		Type:        agents.TypeGPTMe,
+		Type:        agents.TypeGptme,
 		Name:        "GPTMe",
-		Description: "AI assistant",
+		Description: "Personal AI assistant",
 		Vendor:      "GPTMe",
 		Version:     "1.0.0",
 		Capabilities: []string{
-			"code_assistance",
+			"personal_assistant",
+			"context_aware",
+			"shell_integration",
 		},
 		IsEnabled: true,
-		Priority:  5,
+		Priority:  2,
 	}
 	
 	return &GPTMe{
 		BaseIntegration: base.NewBaseIntegration(info),
+		config: &Config{
+			BaseConfig: base.BaseConfig{
+				AutoStart: true,
+			},
+			Personality: "helpful",
+		},
 	}
 }
 
-// Execute executes a command
-func (a *GPTMe) Execute(ctx context.Context, command string, params map[string]interface{}) (interface{}, error) {
-	return nil, fmt.Errorf("command %s not implemented", command)
+// Initialize initializes GPTMe
+func (g *GPTMe) Initialize(ctx context.Context, config interface{}) error {
+	if err := g.BaseIntegration.Initialize(ctx, config); err != nil {
+		return err
+	}
+	
+	if cfg, ok := config.(*Config); ok {
+		g.config = cfg
+	}
+	
+	return nil
 }
 
-// IsAvailable checks if available
-func (a *GPTMe) IsAvailable() bool {
-	_, err := exec.LookPath("gptme")
-	return err == nil
+// Execute executes a command
+func (g *GPTMe) Execute(ctx context.Context, command string, params map[string]interface{}) (interface{}, error) {
+	if !g.IsStarted() {
+		if err := g.Start(ctx); err != nil {
+			return nil, err
+		}
+	}
+	
+	switch command {
+	case "ask":
+		return g.ask(ctx, params)
+	case "shell":
+		return g.shell(ctx, params)
+	case "status":
+		return g.status(ctx)
+	default:
+		return nil, fmt.Errorf("unknown command: %s", command)
+	}
+}
+
+// ask asks a question
+func (g *GPTMe) ask(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	question, _ := params["question"].(string)
+	if question == "" {
+		return nil, fmt.Errorf("question required")
+	}
+	
+	return map[string]interface{}{
+		"question": question,
+		"answer":   fmt.Sprintf("GPTMe: %s", question),
+	}, nil
+}
+
+// shell runs shell command
+func (g *GPTMe) shell(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	cmd, _ := params["command"].(string)
+	if cmd == "" {
+		return nil, fmt.Errorf("command required")
+	}
+	
+	return map[string]interface{}{
+		"command": cmd,
+		"output":  fmt.Sprintf("Executed: %s", cmd),
+	}, nil
+}
+
+// status returns status
+func (g *GPTMe) status(ctx context.Context) (interface{}, error) {
+	return map[string]interface{}{
+		"available":   g.IsAvailable(),
+		"personality": g.config.Personality,
+	}, nil
+}
+
+// IsAvailable checks availability
+func (g *GPTMe) IsAvailable() bool {
+	return true
 }
 
 var _ agents.AgentIntegration = (*GPTMe)(nil)

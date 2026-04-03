@@ -206,7 +206,7 @@ func (d *DreamSystem) recallRecentMemories() ([]Memory, error) {
 	}
 	
 	var memories []Memory
-	cutoff := time.Now().Add(-24 * time.Hour)
+	_ = time.Now().Add(-24 * time.Hour) // cutoff placeholder
 	
 	for _, file := range matches {
 		data, err := os.ReadFile(file)

@@ -523,11 +523,6 @@ func (m *InstanceManager) persistInstance(ctx context.Context, inst *AgentInstan
 		return fmt.Errorf("marshal provider: %w", err)
 	}
 
-	stateJSON, err := json.Marshal(inst.State)
-	if err != nil {
-		return fmt.Errorf("marshal state: %w", err)
-	}
-
 	_, err = m.db.ExecContext(ctx,
 		`INSERT INTO agent_instances (
 			id, agent_type, instance_name, status, config, provider_config,

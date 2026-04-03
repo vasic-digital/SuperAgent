@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"dev.helix.agent/internal/clis"
 	"github.com/google/uuid"
 )
 
@@ -622,7 +621,7 @@ type LWWRegister struct {
 // NewLWWRegister creates a new LWW-Register.
 func NewLWWRegister(key string) *LWWRegister {
 	return &LWWRegister{
-		Key_:: key,
+		Key_: key,
 	}
 }
 
@@ -662,4 +661,4 @@ func (r *LWWRegister) FromJSON(data []byte) error {
 }
 
 // Helper for JSON marshaling
-var json = json
+var _ = json.Marshal // Ensure json package is used

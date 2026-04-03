@@ -65,60 +65,31 @@ type HTTPTransport struct {
 }
 
 // MCPRequest represents an MCP JSON-RPC request
-type MCPRequest struct {
-	JSONRPC string      `json:"jsonrpc"`
-	ID      interface{} `json:"id"`
-	Method  string      `json:"method"`
-	Params  interface{} `json:"params,omitempty"`
-}
+// Alias for backward compatibility
+type MCPRequest = JSONRPCRequest
 
 // MCPResponse represents an MCP JSON-RPC response
-type MCPResponse struct {
-	JSONRPC string      `json:"jsonrpc"`
-	ID      interface{} `json:"id,omitempty"`
-	Result  interface{} `json:"result,omitempty"`
-	Error   *MCPError   `json:"error,omitempty"`
-}
+// Alias for backward compatibility
+type MCPResponse = JSONRPCResponse
 
 // MCPNotification represents an MCP JSON-RPC notification
-type MCPNotification struct {
-	JSONRPC string      `json:"jsonrpc"`
-	Method  string      `json:"method"`
-	Params  interface{} `json:"params,omitempty"`
-}
+// Alias for backward compatibility
+type MCPNotification = JSONRPCNotification
 
-// MCPInitializeRequest represents an initialize request
-type MCPInitializeRequest struct {
-	ProtocolVersion string                 `json:"protocolVersion"`
-	Capabilities    map[string]interface{} `json:"capabilities"`
-	ClientInfo      map[string]string      `json:"clientInfo"`
-}
-
-// MCPInitializeResult represents an initialize response
-type MCPInitializeResult struct {
-	ProtocolVersion string                 `json:"protocolVersion"`
-	Capabilities    map[string]interface{} `json:"capabilities"`
-	ServerInfo      map[string]string      `json:"serverInfo"`
-	Instructions    string                 `json:"instructions,omitempty"`
-}
+// MCPInitializeRequest is imported from mcp_types.go
+// MCPInitializeResult is imported from mcp_types.go
 
 // MCPToolCall represents a tool call request
-type MCPToolCall struct {
-	Name      string                 `json:"name"`
-	Arguments map[string]interface{} `json:"arguments,omitempty"`
-}
+// Alias for backward compatibility
+type MCPToolCall = ToolCallRequest
 
 // MCPToolResult represents a tool call result
-type MCPToolResult struct {
-	Content []MCPContent `json:"content"`
-	IsError bool         `json:"isError,omitempty"`
-}
+// Alias for backward compatibility
+type MCPToolResult = ToolCallResult
 
 // MCPContent represents content in a tool result
-type MCPContent struct {
-	Type string `json:"type"`
-	Text string `json:"text,omitempty"`
-}
+// Alias for backward compatibility
+type MCPContent = Content
 
 // NewMCPClient creates a new MCP client
 func NewMCPClient(logger *logrus.Logger) *MCPClient {
@@ -127,7 +98,7 @@ func NewMCPClient(logger *logrus.Logger) *MCPClient {
 		tools:   make(map[string]*MCPTool),
 		logger:  logger,
 	}
-	client.messageID.Store(1)
+	client.messageID.Store(0)
 	return client
 }
 

@@ -261,7 +261,6 @@ func (df *DiffFormat) ApplyEditBlocks(
 		
 		// Apply blocks sequentially
 		contentStr := string(content)
-		allApplied := true
 		
 		for _, block := range fileBlocks {
 			if !strings.Contains(contentStr, block.Search) {
@@ -269,7 +268,6 @@ func (df *DiffFormat) ApplyEditBlocks(
 					Block: block,
 					Error: fmt.Errorf("search text not found"),
 				})
-				allApplied = false
 				continue
 			}
 			
@@ -280,7 +278,6 @@ func (df *DiffFormat) ApplyEditBlocks(
 					Block: block,
 					Error: fmt.Errorf("replacement did not change content"),
 				})
-				allApplied = false
 				continue
 			}
 			

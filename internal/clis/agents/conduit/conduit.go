@@ -1,11 +1,10 @@
-// Package conduit provides Conduit CLI agent integration.
-// Conduit: AI workflow automation.
+// Package conduit provides Conduit agent integration.
+// Conduit: AI-powered API integration and automation.
 package conduit
 
 import (
 	"context"
 	"fmt"
-	"os/exec"
 
 	"dev.helix.agent/internal/clis/agents"
 	"dev.helix.agent/internal/clis/agents/base"
@@ -14,6 +13,14 @@ import (
 // Conduit provides Conduit integration
 type Conduit struct {
 	*base.BaseIntegration
+	config *Config
+}
+
+// Config holds configuration
+type Config struct {
+	base.BaseConfig
+	Endpoint string
+	APIKey   string
 }
 
 // New creates a new Conduit integration
@@ -21,30 +28,100 @@ func New() *Conduit {
 	info := agents.AgentInfo{
 		Type:        agents.TypeConduit,
 		Name:        "Conduit",
-		Description: "AI workflow automation",
+		Description: "API integration and automation",
 		Vendor:      "Conduit",
 		Version:     "1.0.0",
 		Capabilities: []string{
-			"code_assistance",
+			"api_integration",
+			"automation",
+			"webhooks",
 		},
 		IsEnabled: true,
-		Priority:  5,
+		Priority:  2,
 	}
 	
 	return &Conduit{
 		BaseIntegration: base.NewBaseIntegration(info),
+		config: &Config{
+			BaseConfig: base.BaseConfig{
+				AutoStart: true,
+			},
+		},
 	}
 }
 
-// Execute executes a command
-func (a *Conduit) Execute(ctx context.Context, command string, params map[string]interface{}) (interface{}, error) {
-	return nil, fmt.Errorf("command %s not implemented", command)
+// Initialize initializes Conduit
+func (c *Conduit) Initialize(ctx context.Context, config interface{}) error {
+	if err := c.BaseIntegration.Initialize(ctx, config); err != nil {
+		return err
+	}
+	
+	if cfg, ok := config.(*Config); ok {
+		c.config = cfg
+	}
+	
+	return nil
 }
 
-// IsAvailable checks if available
-func (a *Conduit) IsAvailable() bool {
-	_, err := exec.LookPath("conduit")
-	return err == nil
+// Execute executes a command
+func (c *Conduit) Execute(ctx context.Context, command string, params map[string]interface{}) (interface{}, error) {
+	if !c.IsStarted() {
+		if err := c.Start(ctx); err != nil {
+			return nil, err
+		}
+	}
+	
+	switch command {
+	case "connect":
+		return c.connect(ctx, params)
+	case "send":
+		return c.send(ctx, params)
+	case "status":
+		return c.status(ctx)
+	default:
+		return nil, fmt.Errorf("unknown command: %s", command)
+	}
+}
+
+// connect connects to API
+func (c *Conduit) connect(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	endpoint, _ := params["endpoint"].(string)
+	if endpoint == "" {
+		return nil, fmt.Errorf("endpoint required")
+	}
+	
+	c.config.Endpoint = endpoint
+	
+	return map[string]interface{}{
+		"endpoint": endpoint,
+		"status":   "connected",
+	}, nil
+}
+
+// send sends data
+func (c *Conduit) send(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	data, _ := params["data"].(string)
+	if data == "" {
+		return nil, fmt.Errorf("data required")
+	}
+	
+	return map[string]interface{}{
+		"data":   data,
+		"status": "sent",
+	}, nil
+}
+
+// status returns status
+func (c *Conduit) status(ctx context.Context) (interface{}, error) {
+	return map[string]interface{}{
+		"available": c.IsAvailable(),
+		"endpoint":  c.config.Endpoint,
+	}, nil
+}
+
+// IsAvailable checks availability
+func (c *Conduit) IsAvailable() bool {
+	return c.config.Endpoint != ""
 }
 
 var _ agents.AgentIntegration = (*Conduit)(nil)

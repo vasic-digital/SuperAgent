@@ -1,0 +1,40 @@
+# HelixAgent RAG Bridge Service
+# Provides unified API for NVIDIA RAG pipeline with fallback to open-source alternatives
+
+FROM golang:1.23-alpine AS builder
+
+WORKDIR /build
+
+# Install dependencies
+RUN apk add --no-cache git ca-certificates tzdata
+
+# Copy go mod files
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build the RAG bridge
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o rag-bridge \
+    ./docker/nvidia-rag/cmd/rag-bridge
+
+# Final stage
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates curl
+
+WORKDIR /app
+
+# Copy binary from builder
+COPY --from=builder /build/rag-bridge .
+
+# Create directories for document processing
+RUN mkdir -p /app/data/documents /app/data/processed
+
+EXPOSE 8500
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8500/health || exit 1
+
+ENTRYPOINT ["./rag-bridge"]

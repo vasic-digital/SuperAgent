@@ -4,6 +4,7 @@ package clis
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"testing"
 	"time"
 
@@ -569,8 +570,8 @@ func BenchmarkInstanceManager_CreateInstance(b *testing.B) {
 	config := DefaultInstanceConfig()
 	provider := ProviderConfig{}
 
-	mock.ExpectExec("INSERT INTO agent_instances").WillReturnResult(sqlmock.NewResult(1, 1)).AnyTimes()
-	mock.ExpectExec("UPDATE agent_instances SET status").WillReturnResult(sqlmock.NewResult(1, 1)).AnyTimes()
+	mock.ExpectExec("INSERT INTO agent_instances").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("UPDATE agent_instances SET status").WillReturnResult(sqlmock.NewResult(1, 1))
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

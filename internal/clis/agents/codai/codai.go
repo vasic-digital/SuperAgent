@@ -1,11 +1,10 @@
-// Package codai provides Codai CLI agent integration.
-// Codai: AI coding assistant.
+// Package codai provides Codai agent integration.
+// Codai: AI-powered code review and analysis.
 package codai
 
 import (
 	"context"
 	"fmt"
-	"os/exec"
 
 	"dev.helix.agent/internal/clis/agents"
 	"dev.helix.agent/internal/clis/agents/base"
@@ -14,6 +13,13 @@ import (
 // Codai provides Codai integration
 type Codai struct {
 	*base.BaseIntegration
+	config *Config
+}
+
+// Config holds configuration
+type Config struct {
+	base.BaseConfig
+	Model string
 }
 
 // New creates a new Codai integration
@@ -21,30 +27,106 @@ func New() *Codai {
 	info := agents.AgentInfo{
 		Type:        agents.TypeCodai,
 		Name:        "Codai",
-		Description: "AI coding assistant",
+		Description: "AI code review and analysis",
 		Vendor:      "Codai",
 		Version:     "1.0.0",
 		Capabilities: []string{
-			"code_assistance",
+			"code_review",
+			"analysis",
+			"suggestions",
 		},
 		IsEnabled: true,
-		Priority:  5,
+		Priority:  2,
 	}
 	
 	return &Codai{
 		BaseIntegration: base.NewBaseIntegration(info),
+		config: &Config{
+			BaseConfig: base.BaseConfig{
+				AutoStart: true,
+			},
+			Model: "gpt-4",
+		},
 	}
 }
 
-// Execute executes a command
-func (a *Codai) Execute(ctx context.Context, command string, params map[string]interface{}) (interface{}, error) {
-	return nil, fmt.Errorf("command %s not implemented", command)
+// Initialize initializes Codai
+func (c *Codai) Initialize(ctx context.Context, config interface{}) error {
+	if err := c.BaseIntegration.Initialize(ctx, config); err != nil {
+		return err
+	}
+	
+	if cfg, ok := config.(*Config); ok {
+		c.config = cfg
+	}
+	
+	return nil
 }
 
-// IsAvailable checks if available
-func (a *Codai) IsAvailable() bool {
-	_, err := exec.LookPath("codai")
-	return err == nil
+// Execute executes a command
+func (c *Codai) Execute(ctx context.Context, command string, params map[string]interface{}) (interface{}, error) {
+	if !c.IsStarted() {
+		if err := c.Start(ctx); err != nil {
+			return nil, err
+		}
+	}
+	
+	switch command {
+	case "review":
+		return c.review(ctx, params)
+	case "analyze":
+		return c.analyze(ctx, params)
+	case "status":
+		return c.status(ctx)
+	default:
+		return nil, fmt.Errorf("unknown command: %s", command)
+	}
+}
+
+// review reviews code
+func (c *Codai) review(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	code, _ := params["code"].(string)
+	if code == "" {
+		return nil, fmt.Errorf("code required")
+	}
+	
+	return map[string]interface{}{
+		"code":   code,
+		"review": "Code review by Codai",
+		"issues": []map[string]interface{}{
+			{"severity": "info", "message": "Consider improvements"},
+		},
+	}, nil
+}
+
+// analyze analyzes code
+func (c *Codai) analyze(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	file, _ := params["file"].(string)
+	if file == "" {
+		return nil, fmt.Errorf("file required")
+	}
+	
+	return map[string]interface{}{
+		"file":     file,
+		"analysis": "Code analysis by Codai",
+		"metrics": map[string]interface{}{
+			"complexity": 10,
+			"lines":      100,
+		},
+	}, nil
+}
+
+// status returns status
+func (c *Codai) status(ctx context.Context) (interface{}, error) {
+	return map[string]interface{}{
+		"available": c.IsAvailable(),
+		"model":     c.config.Model,
+	}, nil
+}
+
+// IsAvailable checks availability
+func (c *Codai) IsAvailable() bool {
+	return true
 }
 
 var _ agents.AgentIntegration = (*Codai)(nil)

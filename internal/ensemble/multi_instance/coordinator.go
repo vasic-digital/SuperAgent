@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"dev.helix.agent/internal/clis"
+	"dev.helix.agent/internal/ensemble/background"
 	"dev.helix.agent/internal/ensemble/synchronization"
 	"github.com/google/uuid"
 )
@@ -33,7 +34,7 @@ type Coordinator struct {
 	healthMonitor *HealthMonitor
 
 	// Background workers
-	workerPool *WorkerPool
+	workerPool *background.WorkerPool
 
 	// Event bus for session events
 	eventBus *clis.EventBus
@@ -193,8 +194,8 @@ type MessageBus struct {
 	messages  chan *clis.Message
 }
 
-// EnsembleStrategy defines the strategy interface.
-type EnsembleStrategy interface {
+// Strategy defines the strategy interface.
+type Strategy interface {
 	Execute(ctx context.Context, session *EnsembleSession, task Task) (*ConsensusResult, error)
 }
 
@@ -215,7 +216,7 @@ func NewCoordinator(
 		sessions:      make(map[string]*EnsembleSession),
 		loadBalancer:  NewRoundRobinBalancer(),
 		healthMonitor: NewHealthMonitor(),
-		workerPool:    NewWorkerPool(100),
+		workerPool:    background.NewWorkerPool(100),
 		eventBus:      clis.NewEventBus(),
 		ctx:           ctx,
 		cancel:        cancel,
@@ -526,6 +527,7 @@ func (c *Coordinator) executeDebateStrategy(
 
 	allResults := make(map[string]*AgentResult)
 	debateHistory := []map[string]*AgentResult{}
+	var lastProposal *AgentResult
 
 	for round := 1; round <= session.Config.MaxRounds; round++ {
 		session.CurrentRound = round
@@ -539,6 +541,7 @@ func (c *Coordinator) executeDebateStrategy(
 		if err != nil {
 			return nil, fmt.Errorf("primary execution failed: %w", err)
 		}
+		lastProposal = proposal
 
 		// Critiques evaluate proposal
 		critiqueTask := Task{
@@ -581,9 +584,12 @@ func (c *Coordinator) executeDebateStrategy(
 	}
 
 	// Max rounds reached, return best result
+	if lastProposal == nil {
+		return nil, fmt.Errorf("no proposal generated in debate")
+	}
 	return &ConsensusResult{
 		Reached:    false,
-		Winner:     c.resultKey(proposal.Result),
+		Winner:     c.resultKey(lastProposal.Result),
 		Confidence: c.calculateAgreement(debateHistory[len(debateHistory)-1]),
 		AllResults: allResults,
 		Rounds:     session.Config.MaxRounds,
@@ -784,6 +790,9 @@ func (c *Coordinator) executeOnAll(
 			defer wg.Done()
 
 			result, err := c.executeOnInstance(ctx, i, task, round)
+			if err != nil {
+				c.logger.Printf("Error executing on instance %s: %v", i.ID, err)
+			}
 
 			mu.Lock()
 			results[i.ID] = result
@@ -1002,14 +1011,19 @@ func (c *Coordinator) cleanupSession(ctx context.Context, session *EnsembleSessi
 }
 
 func (c *Coordinator) handleSessionMessages(session *EnsembleSession) {
-	for msg := range session.MessageBus.sub.Ch {
+	for event := range session.MessageBus.sub.Ch {
+		// Convert Event to Message
+		msg := &clis.Message{
+			ID:        event.ID,
+			SessionID: session.ID, // Use session ID since Event doesn't have one
+			Type:      clis.MessageType(event.Type),
+			SourceID:  event.Source,
+		}
 		// Process session-specific messages
-		if msg.SessionID == session.ID {
-			select {
-			case session.MessageBus.messages <- msg:
-			default:
-				// Message buffer full
-			}
+		select {
+		case session.MessageBus.messages <- msg:
+		default:
+			// Message buffer full
 		}
 	}
 }

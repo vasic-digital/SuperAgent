@@ -2,7 +2,6 @@
 package clis
 
 import (
-	"context"
 	"sync"
 	"sync/atomic"
 	"testing"

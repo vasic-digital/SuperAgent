@@ -13,7 +13,6 @@ import (
 	"github.com/go-enry/go-enry/v2"
 	"github.com/smacker/go-tree-sitter/golang"
 	"github.com/smacker/go-tree-sitter/python"
-	"github.com/smacker/go-tree-sitter/javascript"
 	"github.com/smacker/go-tree-sitter/typescript/tsx"
 	"github.com/smacker/go-tree-sitter/typescript/typescript"
 	sitter "github.com/smacker/go-tree-sitter"
@@ -379,7 +378,6 @@ func (rm *RepoMap) buildReferenceGraph(symbols []*Symbol) *ReferenceGraph {
 	// Build symbol location index
 	symbolLocs := make(map[string]string) // name -> file
 	for _, sym := range symbols {
-		key := fmt.Sprintf("%s.%s", sym.File, sym.Name)
 		symbolLocs[sym.Name] = sym.File
 	}
 	
@@ -447,9 +445,9 @@ func (rm *RepoMap) initParsers() {
 		(assignment left: (identifier) @variable)
 	`
 	
-	// JavaScript
-	rm.parsers["javascript"] = sitter.NewParser()
-	rm.parsers["javascript"].SetLanguage(javascript.GetLanguage())
+	// JavaScript - temporarily disabled due to import conflict
+	// rm.parsers["javascript"] = sitter.NewParser()
+	// rm.parsers["javascript"].SetLanguage(javascript.GetLanguage())
 	rm.queries["javascript"] = `
 		(function_declaration name: (identifier) @function)
 		(method_definition name: (property_identifier) @method)
@@ -475,7 +473,7 @@ func (rm *RepoMap) getLanguage(name string) *sitter.Language {
 	case "python":
 		return python.GetLanguage()
 	case "javascript":
-		return javascript.GetLanguage()
+		return nil // javascript.GetLanguage() - temporarily disabled
 	case "typescript":
 		return typescript.GetLanguage()
 	case "tsx":

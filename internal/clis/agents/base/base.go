@@ -42,7 +42,12 @@ import (
 	
 	b.config = config
 	
-	// Set default work directory
+	// Extract work directory from config if provided
+	if cfg, ok := config.(*BaseConfig); ok && cfg != nil && cfg.WorkDir != "" {
+		b.workDir = cfg.WorkDir
+	}
+	
+	// Set default work directory if still empty
 	if b.workDir == "" {
 		home, _ := os.UserHomeDir()
 		b.workDir = filepath.Join(home, ".helixagent", "agents", string(b.info.Type))

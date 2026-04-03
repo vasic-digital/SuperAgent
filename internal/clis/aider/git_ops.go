@@ -361,8 +361,6 @@ func (g *GitOps) parseDiff(diffOutput string) []*Diff {
 	var currentDiff *Diff
 
 	lines := strings.Split(diffOutput, "\n")
-	inOld := false
-	inNew := false
 
 	for _, line := range lines {
 		if strings.HasPrefix(line, "diff --git") {
@@ -378,8 +376,6 @@ func (g *GitOps) parseDiff(diffOutput string) []*Diff {
 					File: strings.TrimPrefix(parts[2], "a/"),
 				}
 			}
-			inOld = false
-			inNew = false
 			continue
 		}
 
@@ -389,21 +385,15 @@ func (g *GitOps) parseDiff(diffOutput string) []*Diff {
 
 		if strings.HasPrefix(line, "@@") {
 			// Hunk header
-			inOld = false
-			inNew = false
 			continue
 		}
 
 		if strings.HasPrefix(line, "-") && !strings.HasPrefix(line, "---") {
 			currentDiff.OldLines = append(currentDiff.OldLines, line[1:])
 			currentDiff.Removed++
-			inOld = true
-			inNew = false
 		} else if strings.HasPrefix(line, "+") && !strings.HasPrefix(line, "+++") {
 			currentDiff.NewLines = append(currentDiff.NewLines, line[1:])
 			currentDiff.Added++
-			inOld = false
-			inNew = true
 		}
 	}
 

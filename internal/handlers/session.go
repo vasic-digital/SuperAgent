@@ -24,8 +24,8 @@ func NewSessionHandler(log *logrus.Logger) *SessionHandler {
 	}
 }
 
-// CreateSessionRequest represents a request to create a new session
-type CreateSessionRequest struct {
+// SessionCreateRequest represents a request to create a new session
+type SessionCreateRequest struct {
 	UserID         string                 `json:"user_id" binding:"required"`
 	InitialContext map[string]interface{} `json:"initial_context"`
 	TTLHours       int                    `json:"ttl_hours"`
@@ -48,7 +48,7 @@ type SessionResponse struct {
 
 // CreateSession handles POST /v1/sessions
 func (h *SessionHandler) CreateSession(c *gin.Context) {
-	var req CreateSessionRequest
+	var req SessionCreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.log.WithError(err).Error("Failed to bind create session request")
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

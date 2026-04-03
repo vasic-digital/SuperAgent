@@ -4,7 +4,6 @@ package clis
 import (
 	"context"
 	"sync"
-	"time"
 )
 
 // EventBus provides pub/sub event routing between agent instances.

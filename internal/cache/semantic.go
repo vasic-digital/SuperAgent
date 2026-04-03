@@ -24,8 +24,8 @@ type EmbeddingGenerator interface {
 	Embed(ctx context.Context, text string) ([]float32, error)
 }
 
-// CacheEntry represents a cached response.
-type CacheEntry struct {
+// SemanticCacheEntry represents a cached response for semantic cache.
+type SemanticCacheEntry struct {
 	Key       string
 	Query     string
 	Embedding []float32
@@ -54,7 +54,7 @@ func NewSemanticCache(db *pgxpool.Pool, embedder EmbeddingGenerator, threshold f
 }
 
 // Get retrieves a cached response by semantic similarity.
-func (c *SemanticCache) Get(ctx context.Context, query string) (*CacheEntry, error) {
+func (c *SemanticCache) Get(ctx context.Context, query string) (*SemanticCacheEntry, error) {
 	// Generate embedding for query
 	queryEmb, err := c.embedder.Embed(ctx, query)
 	if err != nil {
@@ -76,7 +76,7 @@ func (c *SemanticCache) Get(ctx context.Context, query string) (*CacheEntry, err
 	defer rows.Close()
 	
 	for rows.Next() {
-		var entry CacheEntry
+		var entry SemanticCacheEntry
 		var responseJSON []byte
 		var metadataJSON []byte
 		var similarity float64

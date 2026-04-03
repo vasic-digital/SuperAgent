@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 )
 
@@ -109,7 +109,7 @@ func (sb *Sandbox) Start(ctx context.Context, hostWorkspace string) error {
 	_, _, err := sb.client.ImageInspectWithRaw(ctx, sb.image)
 	if err != nil {
 		// Image not found, pull it
-		pullReader, err := sb.client.ImagePull(ctx, sb.image, types.ImagePullOptions{})
+		pullReader, err := sb.client.ImagePull(ctx, sb.image, image.PullOptions{})
 		if err != nil {
 			return fmt.Errorf("pull image: %w", err)
 		}
@@ -139,9 +139,9 @@ func (sb *Sandbox) Start(ctx context.Context, hostWorkspace string) error {
 		Resources: container.Resources{
 			Memory:     sb.memoryMB * 1024 * 1024,
 			MemorySwap: sb.memorySwapMB * 1024 * 1024,
-			CpuQuota:   sb.cpuPercent,
-			CpuPeriod:  100000,
-			CpuCount:   sb.cpuCount,
+			CPUQuota:   sb.cpuPercent,
+			CPUPeriod:  100000,
+			CPUCount:   int64(sb.cpuCount),
 		},
 
 		// Security
@@ -170,9 +170,9 @@ func (sb *Sandbox) Start(ctx context.Context, hostWorkspace string) error {
 	sb.containerID = resp.ID
 
 	// Start container
-	if err := sb.client.ContainerStart(ctx, sb.containerID, types.ContainerStartOptions{}); err != nil {
+	if err := sb.client.ContainerStart(ctx, sb.containerID, container.StartOptions{}); err != nil {
 		// Cleanup on failure
-		sb.client.ContainerRemove(ctx, sb.containerID, types.ContainerRemoveOptions{Force: true})
+		sb.client.ContainerRemove(ctx, sb.containerID, container.RemoveOptions{Force: true})
 		return fmt.Errorf("start container: %w", err)
 	}
 
@@ -201,7 +201,7 @@ func (sb *Sandbox) Execute(ctx context.Context, command string, options ...Execu
 	defer cancel()
 
 	// Create exec
-	execConfig := types.ExecConfig{
+	execConfig := container.ExecOptions{
 		Cmd:          []string{"sh", "-c", command},
 		WorkingDir:   opts.workdir,
 		AttachStdout: true,
@@ -215,7 +215,7 @@ func (sb *Sandbox) Execute(ctx context.Context, command string, options ...Execu
 	}
 
 	// Attach and run
-	attachResp, err := sb.client.ContainerExecAttach(ctx, execResp.ID, types.ExecStartCheck{})
+	attachResp, err := sb.client.ContainerExecAttach(ctx, execResp.ID, container.ExecStartOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("attach exec: %w", err)
 	}
@@ -295,7 +295,7 @@ func (sb *Sandbox) CopyTo(ctx context.Context, srcPath, dstPath string) error {
 
 	// Copy to container
 	dstDir := filepath.Dir(dstPath)
-	if err := sb.client.CopyToContainer(ctx, sb.containerID, dstDir, &buf, types.CopyToContainerOptions{}); err != nil {
+	if err := sb.client.CopyToContainer(ctx, sb.containerID, dstDir, &buf, container.CopyToContainerOptions{}); err != nil {
 		return fmt.Errorf("copy to container: %w", err)
 	}
 
@@ -370,7 +370,7 @@ func (sb *Sandbox) Stop(ctx context.Context) error {
 	}
 
 	// Remove container
-	if err := sb.client.ContainerRemove(ctx, sb.containerID, types.ContainerRemoveOptions{
+	if err := sb.client.ContainerRemove(ctx, sb.containerID, container.RemoveOptions{
 		Force: true,
 	}); err != nil {
 		return fmt.Errorf("remove container: %w", err)

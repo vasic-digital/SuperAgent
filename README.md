@@ -626,6 +626,7 @@ export REQUEST_LOGGING=true
 - **[Architecture Guide](./docs/architecture/architecture.md)**: System architecture
 - **[Deployment Guide](./docs/deployment/DEPLOYMENT_GUIDE.md)**: Production deployment
 - **[Quick Start](./docs/guides/quick-start-guide.md)**: Getting started guide
+- **[NVIDIA Nemotron RAG](./docs/NVIDIA_NEMOTRON_RAG_INTEGRATION.md)**: Document processing with Nemotron models
 
 ### 🔬 Research Documentation (328KB)
 Comprehensive analysis of 47 CLI agents and protocol specifications:
