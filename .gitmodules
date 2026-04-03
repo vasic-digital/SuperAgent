@@ -448,3 +448,6 @@
 [submodule "tools/snow-cli"]
 	path = tools/snow-cli
 	url = git@github.com:MayDay-wpf/snow-cli.git
+[submodule "cli_agents/swe-agent"]
+	path = cli_agents/swe-agent
+	url = git@github.com:princeton-nlp/SWE-agent.git
