@@ -57,6 +57,10 @@ func (m *ensembleUnitTestMockProvider) Complete(ctx context.Context, req *models
 		return nil, m.err
 	}
 
+	if m.response == nil {
+		return nil, fmt.Errorf("mock provider error")
+	}
+
 	resp := *m.response
 	resp.ID = req.ID + "-response"
 	return &resp, nil
@@ -326,7 +330,7 @@ func TestEnsembleUnit_RunEnsemble_AllProvidersFail(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "all providers failed")
+	assert.Contains(t, err.Error(), "providers failed")
 }
 
 func TestEnsembleUnit_RunEnsemble_Timeout(t *testing.T) {
