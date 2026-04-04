@@ -5,9 +5,20 @@ package subagent
 import (
 	"context"
 	"time"
-
-	"dev.helix.agent/internal/agents"
 )
+
+// ToolCall represents a tool invocation from an agent
+type ToolCall struct {
+	Name      string                 `json:"name"`
+	Arguments map[string]interface{} `json:"arguments"`
+}
+
+// TokenUsage tracks token consumption
+type TokenUsage struct {
+	PromptTokens     int `json:"prompt_tokens"`
+	CompletionTokens int `json:"completion_tokens"`
+	TotalTokens      int `json:"total_tokens"`
+}
 
 // SubAgentType represents the type of sub-agent
 type SubAgentType string
@@ -99,8 +110,8 @@ const (
 // TaskResult contains the result of a sub-agent task
 type TaskResult struct {
 	Content     string                 `json:"content"`
-	ToolCalls   []agents.ToolCall      `json:"tool_calls,omitempty"`
-	Usage       *agents.TokenUsage     `json:"usage,omitempty"`
+	ToolCalls   []ToolCall              `json:"tool_calls,omitempty"`
+	Usage       *TokenUsage             `json:"usage,omitempty"`
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 	Error       string                 `json:"error,omitempty"`
 }
@@ -215,4 +226,44 @@ Work efficiently and maintain code quality.`,
 			},
 		},
 	}
+}
+
+// LLM types for sub-agent operations
+
+// Message represents a chat message
+type Message struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+// ToolDefinition represents a tool definition
+type ToolDefinition struct {
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
+	Parameters  map[string]interface{} `json:"parameters"`
+}
+
+// ChatRequest represents a chat completion request
+type ChatRequest struct {
+	Model          string           `json:"model"`
+	Messages       []Message        `json:"messages"`
+	MaxTokens      int              `json:"max_tokens"`
+	Temperature    float64          `json:"temperature"`
+	Tools          []ToolDefinition `json:"tools,omitempty"`
+	EnableThinking bool             `json:"enable_thinking,omitempty"`
+}
+
+// ChatResponse represents a chat completion response
+type ChatResponse struct {
+	Content   string     `json:"content"`
+	ToolCalls []ToolCall `json:"tool_calls,omitempty"`
+	Usage     TokenUsage `json:"usage"`
+}
+
+// AgentResult represents the result from an agent execution
+type AgentResult struct {
+	Content   string                 `json:"content"`
+	ToolCalls []ToolCall             `json:"tool_calls,omitempty"`
+	Usage     *TokenUsage            `json:"usage,omitempty"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
 }
