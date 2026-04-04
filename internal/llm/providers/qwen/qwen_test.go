@@ -75,7 +75,7 @@ func TestNewQwenProvider(t *testing.T) {
 			assert.Equal(t, tt.want.baseURL, got.baseURL)
 			assert.Equal(t, tt.want.model, got.model)
 			assert.NotNil(t, got.httpClient)
-			assert.Equal(t, 60*time.Second, got.httpClient.Timeout)
+			assert.Equal(t, 120*time.Second, got.httpClient.Timeout)
 		})
 	}
 }

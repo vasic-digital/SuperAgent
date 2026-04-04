@@ -50,7 +50,7 @@ func TestNewSimpleOpenRouterProvider(t *testing.T) {
 			assert.Equal(t, tt.want.apiKey, got.apiKey)
 			assert.Equal(t, tt.want.baseURL, got.baseURL)
 			assert.NotNil(t, got.client)
-			assert.Equal(t, 60*time.Second, got.client.Timeout)
+			assert.Equal(t, 120*time.Second, got.client.Timeout)
 		})
 	}
 }
@@ -94,7 +94,7 @@ func TestNewSimpleOpenRouterProviderWithBaseURL(t *testing.T) {
 			assert.Equal(t, tt.want.apiKey, got.apiKey)
 			assert.Equal(t, tt.want.baseURL, got.baseURL)
 			assert.NotNil(t, got.client)
-			assert.Equal(t, 60*time.Second, got.client.Timeout)
+			assert.Equal(t, 120*time.Second, got.client.Timeout)
 		})
 	}
 }
