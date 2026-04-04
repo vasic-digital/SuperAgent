@@ -37,8 +37,8 @@ var providers = []LLMProviderConfig{
 	{Name: "Gemini", EnvVar: "GEMINI_API_KEY", Type: "gemini", DefaultModel: "gemini-2.0-flash-exp", SupportsTools: true, SupportsVision: true, ContextWindow: 1000000},
 }
 
-// ProviderConfig is an alias for backward compatibility
-type ProviderConfig = LLMProviderConfig
+// IntegrationProviderConfig is an alias for backward compatibility
+type IntegrationProviderConfig = LLMProviderConfig
 
 // TestAllProviders_BasicChat tests basic chat across all configured providers
 func TestAllProviders_BasicChat(t *testing.T) {
@@ -223,7 +223,7 @@ func TestAllProviders_Concurrent(t *testing.T) {
 		}
 
 		wg.Add(1)
-		go func(provider ProviderConfig, key string) {
+		go func(provider LLMProviderConfig, key string) {
 			defer wg.Done()
 
 			client := llm.NewClient(provider.Type, key, logger)

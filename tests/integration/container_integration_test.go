@@ -30,7 +30,7 @@ func TestMain(m *testing.M) {
 
 // TestContainer_AllServicesHealthy verifies all required containers are running
 func TestContainer_AllServicesHealthy(t *testing.T) {
-	harness := SetupIntegrationTest(t)
+	_ = SetupIntegrationTest(t)
 
 	services := []string{"postgresql", "redis", "chromadb", "cognee", "qdrant"}
 	

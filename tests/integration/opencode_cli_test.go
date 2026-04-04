@@ -158,7 +158,7 @@ func loadTestConfig(t *testing.T) *TestConfig {
 	t.Helper()
 
 	// Load .env file from project root
-	projectRoot := findProjectRoot(t)
+	projectRoot := findProjectRootForOpenCode(t)
 	envFile := filepath.Join(projectRoot, ".env")
 	if err := godotenv.Load(envFile); err != nil {
 		t.Logf("Warning: Could not load .env file: %v", err)
@@ -181,7 +181,7 @@ func loadTestConfig(t *testing.T) *TestConfig {
 	return config
 }
 
-func findProjectRoot(t *testing.T) string {
+func findProjectRootForOpenCode(t *testing.T) string {
 	t.Helper()
 
 	dir, err := os.Getwd()

@@ -5,9 +5,11 @@ import (
 	"context"
 	"database/sql"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -95,11 +97,11 @@ func (s *EnsembleIntegrationTestSuite) TestCreateAndExecuteVotingSession() {
 	participants := multi_instance.ParticipantConfig{
 		Primary: multi_instance.InstanceConfig{
 			Type:   clis.TypeHelixAgent,
-			Config: clis.DefaultInstanceConfig(),
+			Config: clis.DefaultInstanceConfig(clis.TypeHelixAgent),
 		},
 		Critiques: []multi_instance.InstanceConfig{
-			{Type: clis.TypeHelixAgent, Config: clis.DefaultInstanceConfig()},
-			{Type: clis.TypeHelixAgent, Config: clis.DefaultInstanceConfig()},
+			{Type: clis.TypeHelixAgent, Config: clis.DefaultInstanceConfig(clis.TypeHelixAgent)},
+			{Type: clis.TypeHelixAgent, Config: clis.DefaultInstanceConfig(clis.TypeHelixAgent)},
 		},
 	}
 
@@ -197,10 +199,10 @@ func (s *EnsembleIntegrationTestSuite) TestSessionLifecycle() {
 
 func (s *EnsembleIntegrationTestSuite) TestInstanceManagerWithCoordinator() {
 	// Create an instance
-	config := clis.DefaultInstanceConfig()
-	provider := clis.ProviderConfig{Name: "test", Model: "test-model"}
+	config := clis.DefaultInstanceConfig(clis.TypeHelixAgent)
+	providerName := "test-provider"
 
-	instance, err := s.instanceMgr.CreateInstance(s.ctx, clis.TypeHelixAgent, config, provider)
+	instance, err := s.instanceMgr.CreateInstance(s.ctx, clis.TypeHelixAgent, config, providerName)
 	s.Require().NoError(err)
 	s.NotNil(instance)
 
@@ -292,10 +294,10 @@ func (s *EnsembleIntegrationTestSuite) TestEventBusCommunication() {
 
 	// Publish event
 	event := &clis.Event{
-		ID:        "test-event",
+		ID:        uuid.New(),
 		Type:      clis.EventTypeStatus,
 		Source:    "test",
-		Payload:   map[string]string{"status": "active"},
+		Payload:   map[string]interface{}{"status": "active"},
 		Timestamp: time.Now(),
 	}
 
