@@ -1,3 +1,5 @@
+//go:build ignore
+
 // Package main demonstrates streaming responses
 package main
 

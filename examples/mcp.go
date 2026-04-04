@@ -1,3 +1,5 @@
+//go:build ignore
+
 // Package main demonstrates MCP (Model Context Protocol) usage
 package main
 

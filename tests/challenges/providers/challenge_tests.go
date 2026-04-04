@@ -1,3 +1,5 @@
+//go:build ignore
+
 // Package providers implements real challenge tests for all providers
 package providers
 

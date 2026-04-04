@@ -1,3 +1,5 @@
+//go:build ignore
+
 // Package main demonstrates vision/multimodal capabilities
 package main
 

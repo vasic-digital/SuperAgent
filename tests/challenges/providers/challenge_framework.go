@@ -1,3 +1,5 @@
+//go:build ignore
+
 // Package providers implements challenge-based testing for all LLM providers
 // Challenges validate real-world capabilities and edge cases
 package providers

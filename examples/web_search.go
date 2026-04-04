@@ -1,3 +1,5 @@
+//go:build ignore
+
 // Package main demonstrates web search capabilities
 package main
 

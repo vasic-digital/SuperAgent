@@ -1,3 +1,5 @@
+//go:build ignore
+
 // Package main demonstrates function/tool calling
 package main
 

@@ -1,3 +1,5 @@
+//go:build ignore
+
 // Package main demonstrates RAG (Retrieval-Augmented Generation)
 package main
 

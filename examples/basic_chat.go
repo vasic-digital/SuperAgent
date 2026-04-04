@@ -1,3 +1,5 @@
+//go:build ignore
+
 // Package main demonstrates basic chat with multiple providers
 package main
 

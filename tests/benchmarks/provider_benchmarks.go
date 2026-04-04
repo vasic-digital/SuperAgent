@@ -1,3 +1,5 @@
+//go:build ignore
+
 // Package benchmarks implements performance benchmarking for all providers
 package benchmarks
 
