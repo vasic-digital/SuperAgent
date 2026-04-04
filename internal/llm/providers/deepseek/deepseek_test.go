@@ -52,7 +52,7 @@ func TestNewDeepSeekProvider(t *testing.T) {
 			assert.Equal(t, tt.expected.baseURL, provider.baseURL)
 			assert.Equal(t, tt.expected.model, provider.model)
 			assert.NotNil(t, provider.httpClient)
-			assert.Equal(t, 60*time.Second, provider.httpClient.Timeout)
+			assert.Equal(t, 120*time.Second, provider.httpClient.Timeout)
 		})
 	}
 }
