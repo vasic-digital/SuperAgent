@@ -205,7 +205,7 @@ func (r *Registry) Execute(ctx context.Context, toolName string, args map[string
 }
 
 // ToMCPTool converts a BashTool to MCP Tool format
-func (t *BashTool) ToMCPTool() services.Tool {
+func (t *BashTool) ToMCPTool() services.MCPToolDefinition {
 	properties := make(map[string]interface{})
 	required := []string{}
 
@@ -219,13 +219,13 @@ func (t *BashTool) ToMCPTool() services.Tool {
 		}
 	}
 
-	return services.Tool{
+	return services.MCPToolDefinition{
 		Name:        t.Name,
 		Description: t.Description,
-		InputSchema: map[string]interface{}{
-			"type":       "object",
-			"properties": properties,
-			"required":   required,
+		InputSchema: services.ToolInputSchema{
+			Type:       "object",
+			Properties: properties,
+			Required:   required,
 		},
 	}
 }
