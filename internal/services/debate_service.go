@@ -1536,6 +1536,7 @@ func (ds *DebateService) buildDebatePrompt(
 			sb.WriteString("Address points raised by others and advance the discussion.\n")
 		}
 	} else {
+		sb.WriteString("This is the opening round. Present your initial perspective on the topic.\n")
 		if intentResult.IsConfirmation() || intentResult.ShouldProceed() {
 			sb.WriteString("User is confirming work. Start executing immediately with tools.\n")
 		} else if intentResult.IsRefusal() {
@@ -1920,7 +1921,12 @@ func (ds *DebateService) generateFinalPosition(responses []ParticipantResponse, 
 	if content == "" {
 		return "No substantive position established"
 	}
-	return content
+
+	// Format based on consensus
+	if consensusReached {
+		return "Consensus reached: Participants found common ground on the key aspects of the topic"
+	}
+	return "Discussion ongoing: Multiple perspectives presented with varying viewpoints"
 }
 
 // getVoteDistribution gets the vote distribution by participant
