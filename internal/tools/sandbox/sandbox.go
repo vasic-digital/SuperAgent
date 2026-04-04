@@ -179,7 +179,15 @@ func (s *Sandbox) executeContainer(ctx context.Context, command []string) (*Resu
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			result.ExitCode = exitErr.ExitCode()
 			result.Stderr = string(exitErr.Stderr)
+			// Check if context was cancelled due to timeout
+			if ctx.Err() != nil {
+				result.ExitCode = -1
+				result.Stderr = "execution timeout"
+			}
 		} else if ctx.Err() == context.DeadlineExceeded {
+			result.ExitCode = -1
+			result.Stderr = "execution timeout"
+		} else if ctx.Err() != nil {
 			result.ExitCode = -1
 			result.Stderr = "execution timeout"
 		} else {
@@ -221,7 +229,15 @@ func (s *Sandbox) executeDirect(ctx context.Context, command []string) (*Result,
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			result.ExitCode = exitErr.ExitCode()
 			result.Stderr = string(exitErr.Stderr)
+			// Check if context was cancelled due to timeout
+			if ctx.Err() != nil {
+				result.ExitCode = -1
+				result.Stderr = "execution timeout"
+			}
 		} else if ctx.Err() == context.DeadlineExceeded {
+			result.ExitCode = -1
+			result.Stderr = "execution timeout"
+		} else if ctx.Err() != nil {
 			result.ExitCode = -1
 			result.Stderr = "execution timeout"
 		} else {
