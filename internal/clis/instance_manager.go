@@ -76,7 +76,7 @@ func (m *InstanceManager) CreateInstance(
 	ctx context.Context,
 	agentType AgentType,
 	config InstanceConfig,
-	provider ProviderConfig,
+	providerName string,
 ) (*AgentInstance, error) {
 	// Check if this agent type is available
 	if !m.IsAgentTypeAvailable(agentType) {
@@ -94,7 +94,7 @@ func (m *InstanceManager) CreateInstance(
 		Name:       instanceName,
 		Status:     StatusCreating,
 		Config:     config,
-		Provider:   provider,
+		Provider:   providerName,
 		Resources:  ResourceLimits{},
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),
@@ -143,10 +143,10 @@ func (m *InstanceManager) CreateInstance(
 
 	// Publish event
 	m.eventBus.Publish(&Event{
-		ID:        uuid.New().String(),
+		ID:        uuid.MustParse(instanceID),
 		Type:      EventTypeStatus,
 		Source:    instance.ID,
-		Payload:   map[string]string{"status": string(StatusIdle)},
+		Payload:   map[string]interface{}{"status": string(StatusIdle)},
 		Timestamp: time.Now(),
 	})
 
@@ -170,7 +170,7 @@ func (m *InstanceManager) AcquireInstance(
 
 	// Create new instance if pool is empty
 	m.logger.Printf("Pool empty for %s, creating new instance", agentType)
-	return m.CreateInstance(ctx, agentType, DefaultInstanceConfig(), ProviderConfig{})
+	return m.CreateInstance(ctx, agentType, DefaultInstanceConfig(agentType), "default")
 }
 
 // ReleaseInstance returns an instance to the pool or terminates it.
@@ -317,7 +317,7 @@ func (m *InstanceManager) SendRequest(
 	case resp := <-instance.ResponseCh:
 		// Update metrics
 		instance.RequestsProcessed++
-		instance.TotalExecTimeMs += int64(resp.Duration.Milliseconds())
+		instance.TotalExecTimeMs += uint64(resp.Duration.Milliseconds())
 		if !resp.Success {
 			instance.ErrorsCount++
 		}
@@ -652,7 +652,7 @@ func (m *InstanceManager) instanceHealthLoop(inst *AgentInstance) {
 			}
 
 			result := m.performHealthCheck(inst)
-			inst.Health = result.Status
+			inst.Health = HealthStatus(result.Status)
 			inst.HealthDetails = result.Details
 			now := time.Now()
 			inst.LastHealthCheck = &now

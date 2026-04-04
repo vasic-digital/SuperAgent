@@ -4,10 +4,9 @@
 // - Task management (TaskCreate, TaskGet, TaskList, TaskStop, TaskUpdate)
 // - Enhanced multi-agent coordination
 // - Agent-to-agent messaging
-package handlers
+package extended
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"sync"
@@ -17,18 +16,17 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
-	"dev.helix.agent/internal/clis"
 	"dev.helix.agent/internal/ensemble/multi_instance"
 )
 
 // Team represents a team of agents (inspired by claude-code-source Team tools)
-type Team struct {
+type AgentTeam struct {
 	ID          string            `json:"id"`
 	Name        string            `json:"name"`
 	Description string            `json:"description,omitempty"`
 	LeaderID    string            `json:"leader_id"`
 	MemberIDs   []string          `json:"member_ids"`
-	Config      TeamConfig        `json:"config"`
+	Config      AgentTeamConfig  `json:"config"`
 	Status      TeamStatus        `json:"status"`
 	CreatedAt   time.Time         `json:"created_at"`
 	UpdatedAt   time.Time         `json:"updated_at"`
@@ -36,7 +34,7 @@ type Team struct {
 }
 
 // TeamConfig holds team configuration
-type TeamConfig struct {
+type AgentTeamConfig struct {
 	MaxMembers        int               `json:"max_members"`
 	CoordinationMode  string            `json:"coordination_mode"` // hierarchical, democratic, leader_follower
 	DecisionStrategy  string            `json:"decision_strategy"` // consensus, majority, leader_decides
@@ -55,6 +53,15 @@ const (
 	TeamStatusError     TeamStatus = "error"
 )
 
+// Type aliases for backward compatibility
+type Team = AgentTeam
+type TeamConfig = AgentTeamConfig
+type CreateTeamRequest = CreateAgentTeamRequest
+type UpdateTeamRequest = UpdateAgentTeamRequest
+type CreateTaskRequest = CreateAgentTaskRequest
+type UpdateTaskRequest = UpdateAgentTaskRequest
+type TaskStatus = AgentTaskStatus
+
 // Task represents a task assigned to agents (inspired by claude-code-source Task tools)
 type Task struct {
 	ID           string         `json:"id"`
@@ -64,7 +71,7 @@ type Task struct {
 	Title        string         `json:"title"`
 	Description  string         `json:"description"`
 	Type         string         `json:"type"` // code_review, implementation, research, testing, documentation
-	Status       TaskStatus     `json:"status"`
+	Status       AgentTaskStatus     `json:"status"`
 	Priority     TaskPriority   `json:"priority"`
 	Dependencies []string       `json:"dependencies"` // Task IDs
 	Subtasks     []Subtask      `json:"subtasks"`
@@ -77,17 +84,28 @@ type Task struct {
 	mu           sync.RWMutex
 }
 
-// TaskStatus represents task status
-type TaskStatus string
+// AgentTaskStatus represents task status
+type AgentTaskStatus string
 
 const (
-	TaskStatusPending     TaskStatus = "pending"
-	TaskStatusAssigned    TaskStatus = "assigned"
-	TaskStatusInProgress  TaskStatus = "in_progress"
-	TaskStatusReview      TaskStatus = "review"
-	TaskStatusCompleted   TaskStatus = "completed"
-	TaskStatusFailed      TaskStatus = "failed"
-	TaskStatusCancelled   TaskStatus = "cancelled"
+	AgentTaskStatusPending     AgentTaskStatus = "pending"
+	AgentTaskStatusAssigned    AgentTaskStatus = "assigned"
+	AgentTaskStatusInProgress  AgentTaskStatus = "in_progress"
+	AgentTaskStatusReview      AgentTaskStatus = "review"
+	AgentTaskStatusCompleted   AgentTaskStatus = "completed"
+	AgentTaskStatusFailed      AgentTaskStatus = "failed"
+	AgentTaskStatusCancelled   AgentTaskStatus = "cancelled"
+)
+
+// TaskStatus constants for backward compatibility
+const (
+	TaskStatusPending    = AgentTaskStatusPending
+	TaskStatusAssigned   = AgentTaskStatusAssigned
+	TaskStatusInProgress = AgentTaskStatusInProgress
+	TaskStatusReview     = AgentTaskStatusReview
+	TaskStatusCompleted  = AgentTaskStatusCompleted
+	TaskStatusFailed     = AgentTaskStatusFailed
+	TaskStatusCancelled  = AgentTaskStatusCancelled
 )
 
 // TaskPriority represents task priority
@@ -187,7 +205,7 @@ func NewEnsembleHandlerExtensions(coordinator *multi_instance.Coordinator, logge
 // ============================================
 
 // CreateTeamRequest represents a team creation request
-type CreateTeamRequest struct {
+type CreateAgentTeamRequest struct {
 	Name        string            `json:"name" binding:"required"`
 	Description string            `json:"description,omitempty"`
 	LeaderID    string            `json:"leader_id" binding:"required"`
@@ -212,7 +230,7 @@ func (h *EnsembleHandlerExtensions) CreateTeam(c *gin.Context) {
 		return
 	}
 
-	config := TeamConfig{
+	config := AgentTeamConfig{
 		MaxMembers:       10,
 		CoordinationMode: "leader_follower",
 		DecisionStrategy: "leader_decides",
@@ -223,7 +241,7 @@ func (h *EnsembleHandlerExtensions) CreateTeam(c *gin.Context) {
 		config = *req.Config
 	}
 
-	team := &Team{
+	team := &AgentTeam{
 		ID:          uuid.New().String(),
 		Name:        req.Name,
 		Description: req.Description,
@@ -300,7 +318,7 @@ func (h *EnsembleHandlerExtensions) ListTeams(c *gin.Context) {
 }
 
 // UpdateTeamRequest represents a team update request
-type UpdateTeamRequest struct {
+type UpdateAgentTeamRequest struct {
 	Name        string      `json:"name,omitempty"`
 	Description string      `json:"description,omitempty"`
 	LeaderID    string      `json:"leader_id,omitempty"`
@@ -393,7 +411,7 @@ func (h *EnsembleHandlerExtensions) DeleteTeam(c *gin.Context) {
 	if !force {
 		h.taskMu.RLock()
 		for _, task := range h.tasks {
-			if task.TeamID == teamID && (task.Status == TaskStatusInProgress || task.Status == TaskStatusPending) {
+			if task.TeamID == teamID && (task.Status == AgentTaskStatusInProgress || task.Status == AgentTaskStatusPending) {
 				h.taskMu.RUnlock()
 				h.teamMu.Unlock()
 				c.JSON(http.StatusBadRequest, gin.H{
@@ -425,7 +443,7 @@ func (h *EnsembleHandlerExtensions) DeleteTeam(c *gin.Context) {
 // ============================================
 
 // CreateTaskRequest represents a task creation request
-type CreateTaskRequest struct {
+type CreateAgentTaskRequest struct {
 	TeamID       string            `json:"team_id,omitempty"`
 	AssigneeID   string            `json:"assignee_id,omitempty"`
 	Title        string            `json:"title" binding:"required"`
@@ -471,7 +489,7 @@ func (h *EnsembleHandlerExtensions) CreateTask(c *gin.Context) {
 		Title:        req.Title,
 		Description:  req.Description,
 		Type:         req.Type,
-		Status:       TaskStatusPending,
+		Status:       AgentTaskStatusPending,
 		Priority:     priority,
 		Dependencies: req.Dependencies,
 		Deadline:     req.Deadline,
@@ -577,7 +595,7 @@ func (h *EnsembleHandlerExtensions) ListTasks(c *gin.Context) {
 }
 
 // UpdateTaskRequest represents a task update request
-type UpdateTaskRequest struct {
+type UpdateAgentTaskRequest struct {
 	Title        string   `json:"title,omitempty"`
 	Description  string   `json:"description,omitempty"`
 	AssigneeID   string   `json:"assignee_id,omitempty"`
@@ -631,12 +649,12 @@ func (h *EnsembleHandlerExtensions) UpdateTask(c *gin.Context) {
 		task.Status = TaskStatus(req.Status)
 		
 		// Update timestamps based on status changes
-		if task.Status == TaskStatusInProgress && oldStatus != TaskStatusInProgress {
+		if task.Status == AgentTaskStatusInProgress && oldStatus != AgentTaskStatusInProgress {
 			now := time.Now()
 			task.StartedAt = &now
 		}
-		if (task.Status == TaskStatusCompleted || task.Status == TaskStatusFailed) && 
-		   oldStatus != TaskStatusCompleted && oldStatus != TaskStatusFailed {
+		if (task.Status == AgentTaskStatusCompleted || task.Status == AgentTaskStatusFailed) && 
+		   oldStatus != AgentTaskStatusCompleted && oldStatus != AgentTaskStatusFailed {
 			now := time.Now()
 			task.CompletedAt = &now
 		}
@@ -680,7 +698,7 @@ func (h *EnsembleHandlerExtensions) StopTask(c *gin.Context) {
 	}
 
 	task.mu.Lock()
-	if task.Status != TaskStatusInProgress && task.Status != TaskStatusPending {
+	if task.Status != AgentTaskStatusInProgress && task.Status != AgentTaskStatusPending {
 		task.mu.Unlock()
 		h.taskMu.Unlock()
 		c.JSON(http.StatusBadRequest, gin.H{

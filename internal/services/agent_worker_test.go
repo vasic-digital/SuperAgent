@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -20,12 +21,12 @@ func agentWorkerMockComplete(
 	content string,
 	toolCalls []models.ToolCall,
 ) CompleteFunc {
-	calls := 0
+	var calls atomic.Int32
 	return func(
 		_ context.Context, _ []models.Message,
 	) (*models.LLMResponse, error) {
-		calls++
-		if calls == 1 && len(toolCalls) > 0 {
+		callCount := calls.Add(1)
+		if callCount == 1 && len(toolCalls) > 0 {
 			return &models.LLMResponse{
 				Content:   "",
 				ToolCalls: toolCalls,

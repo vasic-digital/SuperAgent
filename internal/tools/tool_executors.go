@@ -4,7 +4,6 @@
 package tools
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -386,7 +385,10 @@ func (e *DefaultToolExecutor) executeSearchTool(ctx context.Context, toolName st
 		pattern := getStringArg(args, "pattern")
 		path := getStringArg(args, "path")
 		glob := getStringArg(args, "glob")
-		outputMode := getStringArg(args, "output_mode", "content")
+		outputMode := getStringArg(args, "output_mode")
+		if outputMode == "" {
+			outputMode = "content"
+		}
 		
 		if path == "" {
 			path = e.workingDir
@@ -575,7 +577,10 @@ func (e *DefaultToolExecutor) executeGitCommit(ctx context.Context, args map[str
 
 func (e *DefaultToolExecutor) executeDiff(ctx context.Context, args map[string]interface{}) (*ToolExecutionResult, error) {
 	filePath := getStringArg(args, "file_path")
-	mode := getStringArg(args, "mode", "working")
+	mode := getStringArg(args, "mode")
+	if mode == "" {
+		mode = "working"
+	}
 	compareWith := getStringArg(args, "compare_with")
 	contextLines := getIntArg(args, "context_lines", 3)
 	

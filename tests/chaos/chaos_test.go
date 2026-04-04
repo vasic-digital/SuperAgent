@@ -4,11 +4,9 @@ import (
 	"context"
 	"os"
 	"testing"
-	"time"
 
 	"dev.helix.agent/internal/adapters/memory"
 	helixmem "dev.helix.agent/internal/memory"
-	"github.com/stretchr/testify/assert"
 )
 
 // TestChaos_ServiceUnavailable tests behavior when memory services fail

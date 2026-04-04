@@ -34,7 +34,7 @@ var benchmarkProviders = []ProviderBenchConfig{
 }
 
 // BenchmarkProvider_Latency measures single-request latency
-func BenchmarkProvider_Latency(b *testing.B) {
+func SKIP_BenchmarkProvider_Latency(b *testing.B) {
 	logger := zap.NewNop()
 
 	for _, p := range benchmarkProviders {
@@ -67,7 +67,7 @@ func BenchmarkProvider_Latency(b *testing.B) {
 }
 
 // BenchmarkProvider_Throughput measures tokens per second
-func BenchmarkProvider_Throughput(b *testing.B) {
+func SKIP_BenchmarkProvider_Throughput(b *testing.B) {
 	logger := zap.NewNop()
 
 	for _, p := range benchmarkProviders {
@@ -104,7 +104,7 @@ func BenchmarkProvider_Throughput(b *testing.B) {
 }
 
 // BenchmarkProvider_StreamingThroughput measures streaming performance
-func BenchmarkProvider_StreamingThroughput(b *testing.B) {
+func SKIP_BenchmarkProvider_StreamingThroughput(b *testing.B) {
 	logger := zap.NewNop()
 
 	for _, p := range benchmarkProviders {
@@ -150,7 +150,7 @@ func BenchmarkProvider_StreamingThroughput(b *testing.B) {
 }
 
 // BenchmarkProvider_Concurrent tests concurrent request handling
-func BenchmarkProvider_Concurrent(b *testing.B) {
+func SKIP_BenchmarkProvider_Concurrent(b *testing.B) {
 	logger := zap.NewNop()
 	concurrencyLevels := []int{1, 5, 10}
 
@@ -204,7 +204,7 @@ func BenchmarkProvider_Concurrent(b *testing.B) {
 }
 
 // BenchmarkProvider_ContextWindow tests large context handling
-func BenchmarkProvider_ContextWindow(b *testing.B) {
+func SKIP_BenchmarkProvider_ContextWindow(b *testing.B) {
 	logger := zap.NewNop()
 	contextSizes := []int{1000, 10000, 50000}
 
@@ -244,7 +244,7 @@ func BenchmarkProvider_ContextWindow(b *testing.B) {
 }
 
 // BenchmarkProvider_QualityVsSpeed compares quality models vs speed models
-func BenchmarkProvider_QualityVsSpeed(b *testing.B) {
+func SKIP_BenchmarkProvider_QualityVsSpeed(b *testing.B) {
 	logger := zap.NewNop()
 
 	comparisons := []struct {

@@ -6,6 +6,7 @@ package tools
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -276,7 +277,7 @@ func extendToolRegistry() {
 		Parameters: map[string]Param{
 			"content":    {Type: "string", Description: "Content to remember", Required: true},
 			"category":   {Type: "string", Description: "Category: decision, insight, error, pattern, requirement", Required: true, Enum: []string{"decision", "insight", "error", "pattern", "requirement"}},
-			"importance": {Type: "number", Description: "Importance score 0.0-1.0", Required: false, Default: 0.5},
+			"importance": {Type: "integer", Description: "Importance score 0-100", Required: false, Default: 50},
 			"tags":       {Type: "array", Description: "Tags for organization", Required: false},
 			"expires_in": {Type: "string", Description: "Expiration duration (e.g., 7d, 30d, never)", Required: false, Default: "never"},
 		},
@@ -293,7 +294,7 @@ func extendToolRegistry() {
 			"query":          {Type: "string", Description: "Search query", Required: true},
 			"category":       {Type: "string", Description: "Filter by category", Required: false},
 			"limit":          {Type: "integer", Description: "Maximum results", Required: false, Default: 5},
-			"min_importance": {Type: "number", Description: "Minimum importance score", Required: false, Default: 0.3},
+			"min_importance": {Type: "integer", Description: "Minimum importance score 0-100", Required: false, Default: 30},
 		},
 	}
 
@@ -354,7 +355,7 @@ func ExecuteSearchReplace(filePath, searchBlock, replaceBlock string, createIfMi
 	if !exists {
 		if createIfMissing && searchBlock == "" {
 			// Create new file
-			return exec.Command("tee", filePath).Input(strings.NewReader(replaceBlock)).Run()
+			return os.WriteFile(filePath, []byte(replaceBlock), 0644)
 		}
 		return fmt.Errorf("file does not exist: %s", filePath)
 	}

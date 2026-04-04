@@ -254,7 +254,7 @@ func (c *Coordinator) CreateSession(
 			ctx,
 			participants.Primary.Type,
 			participants.Primary.Config,
-			participants.Primary.Provider,
+			participants.Primary.Provider.Name,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("create primary: %w", err)
@@ -264,7 +264,7 @@ func (c *Coordinator) CreateSession(
 
 	// Create critique instances
 	for _, cfg := range participants.Critiques {
-		inst, err := c.instanceMgr.CreateInstance(ctx, cfg.Type, cfg.Config, cfg.Provider)
+		inst, err := c.instanceMgr.CreateInstance(ctx, cfg.Type, cfg.Config, cfg.Provider.Name)
 		if err != nil {
 			c.cleanupSession(ctx, session)
 			return nil, fmt.Errorf("create critique: %w", err)
@@ -274,7 +274,7 @@ func (c *Coordinator) CreateSession(
 
 	// Create verifier instances
 	for _, cfg := range participants.Verifiers {
-		inst, err := c.instanceMgr.CreateInstance(ctx, cfg.Type, cfg.Config, cfg.Provider)
+		inst, err := c.instanceMgr.CreateInstance(ctx, cfg.Type, cfg.Config, cfg.Provider.Name)
 		if err != nil {
 			c.cleanupSession(ctx, session)
 			return nil, fmt.Errorf("create verifier: %w", err)
@@ -284,7 +284,7 @@ func (c *Coordinator) CreateSession(
 
 	// Create fallback instances
 	for _, cfg := range participants.Fallbacks {
-		inst, err := c.instanceMgr.CreateInstance(ctx, cfg.Type, cfg.Config, cfg.Provider)
+		inst, err := c.instanceMgr.CreateInstance(ctx, cfg.Type, cfg.Config, cfg.Provider.Name)
 		if err != nil {
 			c.cleanupSession(ctx, session)
 			return nil, fmt.Errorf("create fallback: %w", err)
@@ -1014,7 +1014,7 @@ func (c *Coordinator) handleSessionMessages(session *EnsembleSession) {
 	for event := range session.MessageBus.sub.Ch {
 		// Convert Event to Message
 		msg := &clis.Message{
-			ID:        event.ID,
+			ID:        event.ID.String(),
 			SessionID: session.ID, // Use session ID since Event doesn't have one
 			Type:      clis.MessageType(event.Type),
 			SourceID:  event.Source,

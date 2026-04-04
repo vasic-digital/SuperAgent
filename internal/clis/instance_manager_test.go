@@ -58,8 +58,8 @@ func TestInstanceManager_CreateInstance(t *testing.T) {
 
 	// Test creating an instance
 	ctx := context.Background()
-	config := DefaultInstanceConfig()
-	provider := ProviderConfig{Name: "test-provider", Model: "test-model"}
+	config := DefaultInstanceConfig(TypeAider)
+	provider := "test-provider"
 
 	// Expect insert - use AnyArg for NullString fields due to sqlmock comparison issues
 	mock.ExpectExec("INSERT INTO agent_instances").
@@ -602,8 +602,8 @@ func BenchmarkInstanceManager_CreateInstance(b *testing.B) {
 	defer im.Close()
 
 	ctx := context.Background()
-	config := DefaultInstanceConfig()
-	provider := ProviderConfig{}
+	config := DefaultInstanceConfig(TypeAider)
+	provider := "test-provider"
 
 	mock.ExpectExec("INSERT INTO agent_instances").WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectExec("UPDATE agent_instances SET status").WillReturnResult(sqlmock.NewResult(1, 1))

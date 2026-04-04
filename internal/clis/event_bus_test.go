@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -104,10 +105,10 @@ func TestEventBus_Publish(t *testing.T) {
 	sub := eb.Subscribe(EventTypeStatus, 10)
 
 	event := &Event{
-		ID:        "test-event",
+		ID:        uuid.New(),
 		Type:      EventTypeStatus,
 		Source:    "test",
-		Payload:   map[string]string{"status": "active"},
+		Payload:   map[string]interface{}{"status": "active"},
 		Timestamp: time.Now(),
 	}
 
@@ -130,10 +131,10 @@ func TestEventBus_PublishSync(t *testing.T) {
 	sub := eb.Subscribe(EventTypeStatus, 10)
 
 	event := &Event{
-		ID:        "test-event",
+		ID:        uuid.New(),
 		Type:      EventTypeStatus,
 		Source:    "test",
-		Payload:   "test-payload",
+		Payload:   map[string]interface{}{"data": "test-payload"},
 		Timestamp: time.Now(),
 	}
 
@@ -156,7 +157,7 @@ func TestEventBus_PublishToMultipleSubscribers(t *testing.T) {
 	sub2 := eb.Subscribe(EventTypeStatus, 10)
 
 	event := &Event{
-		ID:        "test-event",
+		ID:        uuid.New(),
 		Type:      EventTypeStatus,
 		Source:    "test",
 		Timestamp: time.Now(),
@@ -189,9 +190,12 @@ func TestEventBus_PublishWithFilter(t *testing.T) {
 		return e.Source == "allowed-source"
 	})
 
+	eventID1 := uuid.New()
+	eventID2 := uuid.New()
+
 	// Publish matching event
 	eb.PublishSync(&Event{
-		ID:        "event-1",
+		ID:        eventID1,
 		Type:      EventTypeStatus,
 		Source:    "allowed-source",
 		Timestamp: time.Now(),
@@ -199,7 +203,7 @@ func TestEventBus_PublishWithFilter(t *testing.T) {
 
 	// Publish non-matching event
 	eb.PublishSync(&Event{
-		ID:        "event-2",
+		ID:        eventID2,
 		Type:      EventTypeStatus,
 		Source:    "blocked-source",
 		Timestamp: time.Now(),
@@ -208,7 +212,7 @@ func TestEventBus_PublishWithFilter(t *testing.T) {
 	// Should only receive the matching event
 	select {
 	case received := <-sub.Ch:
-		assert.Equal(t, "event-1", received.ID)
+		assert.Equal(t, eventID1, received.ID)
 	case <-time.After(100 * time.Millisecond):
 		t.Fatal("Should have received matching event")
 	}
@@ -231,10 +235,10 @@ func TestEventBus_TopicSubscription(t *testing.T) {
 
 	// Publish event with topic in metadata
 	event := &Event{
-		ID:       "test-event",
-		Type:     EventTypeStatus,
-		Source:   "test",
-		Metadata: map[string]interface{}{"topic": "test-topic"},
+		ID:        uuid.New(),
+		Type:      EventTypeStatus,
+		Source:    "test",
+		Metadata:  map[string]interface{}{"topic": "test-topic"},
 		Timestamp: time.Now(),
 	}
 
@@ -265,9 +269,9 @@ func TestEventBus_WildcardSubscription(t *testing.T) {
 	statusSub := eb.Subscribe(EventTypeStatus, 10)
 
 	// Publish different event types
-	eb.PublishSync(&Event{ID: "1", Type: EventTypeStatus, Timestamp: time.Now()})
-	eb.PublishSync(&Event{ID: "2", Type: EventTypeProgress, Timestamp: time.Now()})
-	eb.PublishSync(&Event{ID: "3", Type: EventTypeError, Timestamp: time.Now()})
+	eb.PublishSync(&Event{ID: uuid.New(), Type: EventTypeStatus, Timestamp: time.Now()})
+	eb.PublishSync(&Event{ID: uuid.New(), Type: EventTypeProgress, Timestamp: time.Now()})
+	eb.PublishSync(&Event{ID: uuid.New(), Type: EventTypeError, Timestamp: time.Now()})
 
 	// Wildcard should receive all 3
 	count := 0
@@ -310,22 +314,25 @@ func TestEventBus_OnceSubscription(t *testing.T) {
 	sub := eb.Subscribe(EventTypeStatus, 10)
 	sub.Once = true
 
+	eventID1 := uuid.New()
+	eventID2 := uuid.New()
+
 	// Publish first event (async to allow unsubscribe to process)
-	eb.Publish(&Event{ID: "1", Type: EventTypeStatus, Timestamp: time.Now()})
-	
+	eb.Publish(&Event{ID: eventID1, Type: EventTypeStatus, Timestamp: time.Now()})
+
 	// Wait for first event to be processed and unsubscribe to complete
 	time.Sleep(200 * time.Millisecond)
-	
+
 	// Publish second event - should not be received
-	eb.Publish(&Event{ID: "2", Type: EventTypeStatus, Timestamp: time.Now()})
-	
+	eb.Publish(&Event{ID: eventID2, Type: EventTypeStatus, Timestamp: time.Now()})
+
 	// Give time for processing
 	time.Sleep(100 * time.Millisecond)
 
 	// Should only receive first event
 	select {
 	case received := <-sub.Ch:
-		assert.Equal(t, "1", received.ID)
+		assert.Equal(t, eventID1, received.ID)
 	case <-time.After(time.Second):
 		t.Fatal("Should have received first event")
 	}
@@ -366,7 +373,7 @@ func TestEventBus_HighThroughput(t *testing.T) {
 	start := time.Now()
 	for i := 0; i < eventCount; i++ {
 		eb.Publish(&Event{
-			ID:        string(rune(i)),
+			ID:        uuid.New(),
 			Type:      EventTypeStatus,
 			Timestamp: time.Now(),
 		})
@@ -418,7 +425,7 @@ func TestEventBus_ConcurrentPublishSubscribe(t *testing.T) {
 			defer wg.Done()
 			for j := 0; j < eventsPerPublisher; j++ {
 				eb.PublishSync(&Event{
-					ID:        string(rune(id*eventsPerPublisher + j)),
+					ID:        uuid.New(),
 					Type:      EventTypeStatus,
 					Timestamp: time.Now(),
 				})

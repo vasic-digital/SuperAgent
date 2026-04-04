@@ -182,6 +182,7 @@ func (wp *WorkerPool) SubmitAsync(task *clis.Task) <-chan *TaskResult {
 				Success: false,
 				Error:   err,
 			}
+			// Return immediately since task was not submitted
 			return
 		}
 

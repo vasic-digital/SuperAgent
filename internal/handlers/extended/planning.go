@@ -4,7 +4,7 @@
 // - Todo/Checklist management
 // - Plan verification and tracking
 // - Interactive plan editing
-package handlers
+package extended
 
 import (
 	"context"
@@ -19,7 +19,7 @@ import (
 )
 
 // PlanModeSession represents an active plan mode session (inspired by claude-code-source)
-type PlanModeSession struct {
+type ExtendedPlanModeSession struct {
 	ID              string                 `json:"id"`
 	UserID          string                 `json:"user_id"`
 	Objective       string                 `json:"objective"`
@@ -47,6 +47,15 @@ const (
 	PlanModeStatusCompleted  PlanModeStatus = "completed"
 	PlanModeStatusFailed     PlanModeStatus = "failed"
 )
+
+// Type aliases for backward compatibility
+type PlanModeSession = ExtendedPlanModeSession
+type EnterPlanModeRequest = ExtendedEnterPlanModeRequest
+
+// VerifierErrorResponse represents a simple error response for verifier handlers
+type VerifierErrorResponse struct {
+	Error string `json:"error"`
+}
 
 // PlanStep represents a single step in a plan
 type PlanStep struct {
@@ -129,7 +138,7 @@ func NewPlanningHandlerExtensions(logger *logrus.Logger) *PlanningHandlerExtensi
 // ============================================
 
 // EnterPlanModeRequest represents a request to enter plan mode
-type EnterPlanModeRequest struct {
+type ExtendedEnterPlanModeRequest struct {
 	Objective    string   `json:"objective" binding:"required"`
 	Context      []string `json:"context,omitempty"`
 	AutoExecute  bool     `json:"auto_execute,omitempty"`

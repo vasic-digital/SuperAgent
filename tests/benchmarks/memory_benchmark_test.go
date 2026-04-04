@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"testing"
-	"time"
 
 	"dev.helix.agent/internal/adapters/memory"
 	helixmem "dev.helix.agent/internal/memory"
@@ -87,7 +86,6 @@ func BenchmarkMemoryLatency(b *testing.B) {
 	
 	b.Run("Add", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			start := time.Now()
 			mem := &helixmem.Memory{
 				ID:         fmt.Sprintf("latency-%d", i),
 				Content:    "Latency test content",
@@ -96,15 +94,12 @@ func BenchmarkMemoryLatency(b *testing.B) {
 				Importance: 0.5,
 			}
 			_ = adapter.Add(ctx, mem)
-			b.SetLatency(time.Since(start))
 		}
 	})
 
 	b.Run("Search", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			start := time.Now()
 			_, _ = adapter.Search(ctx, "latency", &helixmem.SearchOptions{TopK: 5})
-			b.SetLatency(time.Since(start))
 		}
 	})
 }
