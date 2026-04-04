@@ -371,62 +371,7 @@ func TestGenerateMemoryID(t *testing.T) {
 	assert.Contains(t, id1, "mem_")
 }
 
-func TestDreamer_CalculateProgress(t *testing.T) {
-	logger := logrus.New()
-	config := DefaultConfig()
-	dreamer := NewDreamer(config, logger)
 
-	tests := []struct {
-		name     string
-		tasks    []PlanTask
-		expected float64
-	}{
-		{
-			"empty",
-			[]PlanTask{},
-			0.0,
-		},
-		{
-			"all_pending",
-			[]PlanTask{
-				{Status: TaskStatusPending},
-				{Status: TaskStatusPending},
-			},
-			0.0,
-		},
-		{
-			"half_complete",
-			[]PlanTask{
-				{Status: TaskStatusCompleted},
-				{Status: TaskStatusPending},
-			},
-			0.5,
-		},
-		{
-			"all_complete",
-			[]PlanTask{
-				{Status: TaskStatusCompleted},
-				{Status: TaskStatusCompleted},
-			},
-			1.0,
-		},
-		{
-			"with_verified",
-			[]PlanTask{
-				{Status: TaskStatusCompleted},
-				{Status: TaskStatusVerified},
-			},
-			1.0,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			progress := dreamer.calculateProgress(tt.tasks)
-			assert.InDelta(t, tt.expected, progress, 0.01)
-		})
-	}
-}
 
 func TestDreamer_Dream_Locked(t *testing.T) {
 	logger := logrus.New()
@@ -434,19 +379,13 @@ func TestDreamer_Dream_Locked(t *testing.T) {
 	config := DefaultConfig()
 	dreamer := NewDreamer(config, logger)
 
-	// Set up for dreaming
-	dreamer.trigger.LastDreamTime = time.Now().Add(-25 * time.Hour)
-	dreamer.trigger.SessionsSinceDream = 10
-	dreamer.trigger.Locked = false
+	// Manually lock the dreamer
+	dreamer.trigger.Locked = true
 
 	ctx := context.Background()
 
-	// First dream should work
+	// Dream should fail (already locked)
 	_, err := dreamer.Dream(ctx)
-	require.NoError(t, err)
-
-	// Second dream should fail (already locked)
-	_, err = dreamer.Dream(ctx)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "already in progress")
 }

@@ -229,8 +229,8 @@ func TestService_GetDailySummary(t *testing.T) {
 	service.Observe("type1", "source", "content2", nil)
 	service.Observe("type2", "source", "content3", nil)
 
-	service.recordAction(Action{Type: "action1", Status: "completed"})
-	service.recordAction(Action{Type: "action2", Status: "pending"})
+	service.recordAction(Action{Type: "action1", Status: "completed", Timestamp: time.Now()})
+	service.recordAction(Action{Type: "action2", Status: "pending", Timestamp: time.Now()})
 
 	summary := service.GetDailySummary(time.Now())
 
@@ -303,10 +303,9 @@ func TestService_Tick_WithinBudget(t *testing.T) {
 
 	service := NewService(config, logger)
 
-	actionExecuted := false
 	service.SetCallbacks(
 		func(o Observation) {},
-		func(a Action) { actionExecuted = true },
+		func(a Action) {},
 		func(t TickPrompt) (Action, error) {
 			return Action{
 				Type:        "test",
@@ -327,7 +326,6 @@ func TestService_Tick_WithinBudget(t *testing.T) {
 
 	service.Stop()
 
-	// Action may or may not have executed depending on timing
 	// We mainly verify no panic occurred
 }
 
