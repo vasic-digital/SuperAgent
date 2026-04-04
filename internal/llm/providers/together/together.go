@@ -369,9 +369,11 @@ func (p *Provider) GetCapabilities() *models.ProviderCapabilities {
 		SupportsFunctionCalling: true,
 		SupportsVision:          true,
 		SupportsTools:           true,
+		SupportsSearch:          false,
 		SupportsReasoning:       true,
 		SupportsCodeCompletion:  true,
 		SupportsCodeAnalysis:    true,
+		SupportsRefactoring:     true,
 		Limits: models.ModelLimits{
 			MaxTokens:             131072,
 			MaxInputLength:        131072,

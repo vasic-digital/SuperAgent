@@ -2,77 +2,117 @@ package search
 
 import (
 	"context"
-	"time"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"dev.helix.agent/internal/search/types"
 )
 
 func TestSearchOptions(t *testing.T) {
-	opts := SearchOptions{
-		Limit:         10,
-		Timeout:       30 * time.Second,
-		IncludeAnswer: true,
-		RecencyDays:   7,
-		SafeSearch:    true,
+	opts := types.SearchOptions{
+		TopK:     10,
+		MinScore: 0.8,
+		Filters: map[string]interface{}{
+			"language": "go",
+		},
+		IncludeContent: true,
 	}
 
-	assert.Equal(t, 10, opts.Limit)
-	assert.Equal(t, 30 * time.Second, opts.Timeout)
-	assert.True(t, opts.IncludeAnswer)
-	assert.Equal(t, 7, opts.RecencyDays)
-	assert.True(t, opts.SafeSearch)
+	assert.Equal(t, 10, opts.TopK)
+	assert.Equal(t, float32(0.8), opts.MinScore)
+	assert.NotNil(t, opts.Filters)
+	assert.True(t, opts.IncludeContent)
 }
 
 func TestSearchResult(t *testing.T) {
-	result := &SearchResult{
-		Query:      "test query",
-		Answer:     "test answer",
-		Results:    []SearchItem{},
-		TotalCount: 0,
-		Provider:   "test",
+	result := &types.SearchResult{
+		Document: types.Document{
+			ID:      "doc-1",
+			Content: "test content",
+			Metadata: map[string]interface{}{
+				"file_path": "test.go",
+			},
+		},
+		Score:    0.95,
+		Distance: 0.05,
 	}
 
-	assert.Equal(t, "test query", result.Query)
-	assert.Equal(t, "test answer", result.Answer)
-	assert.Empty(t, result.Results)
-	assert.Equal(t, 0, result.TotalCount)
-	assert.Equal(t, "test", result.Provider)
+	assert.Equal(t, "doc-1", result.ID)
+	assert.Equal(t, "test content", result.Content)
+	assert.Equal(t, float32(0.95), result.Score)
+	assert.Equal(t, float32(0.05), result.Distance)
 }
 
-func TestSearchItem(t *testing.T) {
-	item := SearchItem{
-		Title:       "Test Title",
-		URL:         "https://example.com",
-		Snippet:     "Test snippet",
-		Content:     "Test content",
-		PublishedAt: "2024-01-01",
-		Score:       0.95,
+func TestDocument(t *testing.T) {
+	doc := types.Document{
+		ID:      "doc-1",
+		Vector:  []float32{0.1, 0.2, 0.3},
+		Content: "test content",
+		Metadata: map[string]interface{}{
+			"file_path": "test.go",
+			"language":  "go",
+		},
 	}
 
-	assert.Equal(t, "Test Title", item.Title)
-	assert.Equal(t, "https://example.com", item.URL)
-	assert.Equal(t, "Test snippet", item.Snippet)
-	assert.Equal(t, "Test content", item.Content)
-	assert.Equal(t, "2024-01-01", item.PublishedAt)
-	assert.Equal(t, 0.95, item.Score)
+	assert.Equal(t, "doc-1", doc.ID)
+	assert.Equal(t, []float32{0.1, 0.2, 0.3}, doc.Vector)
+	assert.Equal(t, "test content", doc.Content)
+	assert.Equal(t, "test.go", doc.Metadata["file_path"])
 }
 
-func TestProviderInterface(t *testing.T) {
-	// Test that Provider interface can be implemented
-	var _ Provider = &mockProvider{}
+func TestChunk(t *testing.T) {
+	chunk := types.Chunk{
+		ID:        "chunk-1",
+		Content:   "func main() {}",
+		FilePath:  "main.go",
+		StartLine: 1,
+		EndLine:   10,
+		Language:  "go",
+		Type:      types.ChunkTypeFunction,
+	}
+
+	assert.Equal(t, "chunk-1", chunk.ID)
+	assert.Equal(t, "func main() {}", chunk.Content)
+	assert.Equal(t, "main.go", chunk.FilePath)
+	assert.Equal(t, 1, chunk.StartLine)
+	assert.Equal(t, 10, chunk.EndLine)
+	assert.Equal(t, "go", chunk.Language)
+	assert.Equal(t, types.ChunkTypeFunction, chunk.Type)
 }
 
-type mockProvider struct{}
+// Mock implementations for testing
+type mockEmbedder struct{}
 
-func (m *mockProvider) Search(ctx context.Context, query string, options SearchOptions) (*SearchResult, error) {
-	return &SearchResult{
-		Query:    query,
-		Provider: "mock",
-		Results:  []SearchItem{},
-	}, nil
+func (m *mockEmbedder) Embed(ctx context.Context, texts []string) ([][]float32, error) {
+	result := make([][]float32, len(texts))
+	for i := range texts {
+		result[i] = []float32{0.1, 0.2, 0.3}
+	}
+	return result, nil
 }
 
-func (m *mockProvider) Name() string {
-	return "mock"
+func (m *mockEmbedder) EmbedQuery(ctx context.Context, query string) ([]float32, error) {
+	return []float32{0.1, 0.2, 0.3}, nil
+}
+
+func (m *mockEmbedder) Dimensions() int {
+	return 3
+}
+
+func TestMockEmbedder(t *testing.T) {
+	embedder := &mockEmbedder{}
+	
+	ctx := context.Background()
+	texts := []string{"hello", "world"}
+	
+	embeddings, err := embedder.Embed(ctx, texts)
+	assert.NoError(t, err)
+	assert.Len(t, embeddings, 2)
+	assert.Equal(t, []float32{0.1, 0.2, 0.3}, embeddings[0])
+	
+	queryEmbedding, err := embedder.EmbedQuery(ctx, "test")
+	assert.NoError(t, err)
+	assert.Equal(t, []float32{0.1, 0.2, 0.3}, queryEmbedding)
+	
+	assert.Equal(t, 3, embedder.Dimensions())
 }

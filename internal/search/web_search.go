@@ -13,14 +13,14 @@ import (
 	"go.uber.org/zap"
 )
 
-// Provider defines the web search provider interface
-type Provider interface {
-	Search(ctx context.Context, query string, options SearchOptions) (*SearchResult, error)
+// WebSearchProvider defines the web search provider interface
+type WebSearchProvider interface {
+	Search(ctx context.Context, query string, options WebSearchOptions) (*WebSearchResult, error)
 	Name() string
 }
 
-// SearchOptions contains search configuration
-type SearchOptions struct {
+// WebSearchOptions contains search configuration
+type WebSearchOptions struct {
 	Limit         int
 	Timeout       time.Duration
 	IncludeAnswer bool
@@ -28,8 +28,8 @@ type SearchOptions struct {
 	SafeSearch    bool
 }
 
-// SearchResult contains search results
-type SearchResult struct {
+// WebSearchResult contains search results
+type WebSearchResult struct {
 	Query       string        `json:"query"`
 	Answer      string        `json:"answer,omitempty"`
 	Results     []SearchItem  `json:"results"`
@@ -72,7 +72,7 @@ func (p *TavilyProvider) Name() string {
 }
 
 // Search performs a web search using Tavily
-func (p *TavilyProvider) Search(ctx context.Context, query string, options SearchOptions) (*SearchResult, error) {
+func (p *TavilyProvider) Search(ctx context.Context, query string, options WebSearchOptions) (*WebSearchResult, error) {
 	start := time.Now()
 	
 	type request struct {
@@ -153,7 +153,7 @@ func (p *TavilyProvider) Search(ctx context.Context, query string, options Searc
 		zap.Duration("duration", time.Since(start)),
 	)
 	
-	return &SearchResult{
+	return &WebSearchResult{
 		Query:      query,
 		Answer:     searchResp.Answer,
 		Results:    results,
@@ -187,7 +187,7 @@ func (p *PerplexityProvider) Name() string {
 }
 
 // Search performs a web search using Perplexity
-func (p *PerplexityProvider) Search(ctx context.Context, query string, options SearchOptions) (*SearchResult, error) {
+func (p *PerplexityProvider) Search(ctx context.Context, query string, options WebSearchOptions) (*WebSearchResult, error) {
 	start := time.Now()
 	
 	type request struct {
@@ -267,7 +267,7 @@ func (p *PerplexityProvider) Search(ctx context.Context, query string, options S
 		zap.Duration("duration", time.Since(start)),
 	)
 	
-	return &SearchResult{
+	return &WebSearchResult{
 		Query:      query,
 		Answer:     searchResp.Choices[0].Message.Content,
 		Results:    results,

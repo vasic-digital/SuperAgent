@@ -4,11 +4,14 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	authadapter "dev.helix.agent/internal/adapters/auth"
 	containeradapter "dev.helix.agent/internal/adapters/containers"
+	"dev.helix.agent/internal/browser"
 	"dev.helix.agent/internal/cache"
+	"dev.helix.agent/internal/checkpoints"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/database"
 	"dev.helix.agent/internal/features"
@@ -19,9 +22,12 @@ import (
 	"dev.helix.agent/internal/middleware"
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/modelsdev"
+	"dev.helix.agent/internal/search"
+	"dev.helix.agent/internal/search/indexer"
 	"dev.helix.agent/internal/services"
 	"dev.helix.agent/internal/services/debate_integration"
 	"dev.helix.agent/internal/skills"
+	"dev.helix.agent/internal/templates"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
@@ -31,11 +37,11 @@ import (
 
 // RouterContext wraps the router with cleanup capabilities for background services
 type RouterContext struct {
-	Engine                 *gin.Engine
-	protocolManager        *services.UnifiedProtocolManager
-	oauthMonitor           *services.OAuthTokenMonitor
-	oauthCredentialManager *authadapter.OAuthCredentialManager // OAuth credential manager from auth adapter
-	containerAdapter       *containeradapter.Adapter           // Container adapter for orchestration
+	Engine                  *gin.Engine
+	protocolManager         *services.UnifiedProtocolManager
+	oauthMonitor            *services.OAuthTokenMonitor
+	oauthCredentialManager  *authadapter.OAuthCredentialManager // OAuth credential manager from auth adapter
+	containerAdapter        *containeradapter.Adapter           // Container adapter for orchestration
 	healthMonitor           *services.ProviderHealthMonitor
 	concurrencyMonitor      *services.ConcurrencyMonitor
 	concurrencyAlertManager *services.ConcurrencyAlertManager
@@ -1207,6 +1213,46 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 		handlers.RegisterQARoutes(protected, qaHandler)
 		logger.Info("QA endpoints registered at /v1/qa/* (services pending)")
 
+		// Semantic Search endpoints — vector-based code search with ChromaDB/Qdrant
+		searchService, searchErr := initializeSearchService(cfg, logger)
+		if searchErr != nil {
+			logger.WithError(searchErr).Warn("Failed to initialize semantic search service, continuing without search")
+		} else if searchService != nil {
+			searchHandler := handlers.NewSearchHandler(searchService.Searcher, searchService.Indexer)
+			searchHandler.RegisterRoutes(r)
+			logger.Info("Semantic search endpoints registered at /v1/search/*")
+		}
+
+		// Context Templates endpoints — reusable prompt templates with Git integration
+		templateManager, templateErr := templates.NewManager(templates.DefaultManagerConfig())
+		if templateErr != nil {
+			logger.WithError(templateErr).Warn("Failed to initialize template manager, continuing without templates")
+		} else {
+			templateHandler := handlers.NewTemplateHandler(templateManager)
+			templateHandler.RegisterRoutes(r)
+			logger.Info("Context template endpoints registered at /v1/templates/*")
+		}
+
+		// Checkpoints endpoints — workspace snapshots with Git state capture
+		checkpointManager, checkpointErr := checkpoints.NewManager(".")
+		if checkpointErr != nil {
+			logger.WithError(checkpointErr).Warn("Failed to initialize checkpoint manager, continuing without checkpoints")
+		} else {
+			checkpointHandler := handlers.NewCheckpointHandler(checkpointManager)
+			checkpointHandler.RegisterRoutes(r)
+			logger.Info("Checkpoint endpoints registered at /v1/checkpoints/*")
+		}
+
+		// Browser Automation endpoints — Playwright-based web automation
+		browserManager, browserErr := browser.NewManager(browser.DefaultConfig())
+		if browserErr != nil {
+			logger.WithError(browserErr).Warn("Failed to initialize browser manager, continuing without browser automation")
+		} else {
+			browserHandler := handlers.NewBrowserHandler(browserManager)
+			browserHandler.RegisterRoutes(r)
+			logger.Info("Browser automation endpoints registered at /v1/browser/*")
+		}
+
 		// GraphQL endpoint (feature-flagged, disabled by default for backward compatibility)
 		if os.Getenv("GRAPHQL_ENABLED") == "true" {
 			if err := helixgraphql.InitSchema(); err != nil {
@@ -1250,6 +1296,55 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 
 	rc.Engine = r
 	return rc
+}
+
+// initializeSearchService initializes the semantic search service with configuration
+func initializeSearchService(cfg *config.Config, logger *logrus.Logger) (*search.Service, error) {
+	chromadbPort, _ := strconv.Atoi(cfg.Services.ChromaDB.Port)
+	if chromadbPort == 0 {
+		chromadbPort = 8000
+	}
+	
+	searchConfig := search.ServiceConfig{
+		Enabled:         true,
+		EmbedderType:    "local", // Use local embedder by default (deterministic, no API key needed)
+		VectorStoreType: "chroma",
+		ChromaHost:      cfg.Services.ChromaDB.Host,
+		ChromaPort:      chromadbPort,
+		CollectionName:  "code_embeddings",
+		IndexerConfig: indexer.Config{
+			RootPath:        ".",
+			IncludePatterns: []string{"*.go", "*.py", "*.js", "*.ts", "*.rs", "*.java", "*.cpp", "*.c", "*.h"},
+			ExcludePatterns: []string{"vendor/", "node_modules/", ".git/", "*.pb.go", "*_test.go", "dist/", "build/"},
+			ChunkSize:       50,
+			ChunkOverlap:    10,
+			MaxFileSize:     1024 * 1024, // 1MB
+			IndexOnStartup:  false,       // Don't index on startup to avoid slowdown
+			WatchFiles:      false,       // Disable file watching by default
+		},
+	}
+
+	// Override with environment variables if set
+	if os.Getenv("SEARCH_ENABLED") == "false" {
+		searchConfig.Enabled = false
+	}
+	if embedderType := os.Getenv("SEARCH_EMBEDDER_TYPE"); embedderType != "" {
+		searchConfig.EmbedderType = embedderType
+	}
+	if vectorStore := os.Getenv("SEARCH_VECTOR_STORE"); vectorStore != "" {
+		searchConfig.VectorStoreType = vectorStore
+	}
+
+	// Get OpenAI key if using OpenAI embedder
+	if searchConfig.EmbedderType == "openai" {
+		searchConfig.OpenAIKey = os.Getenv("OPENAI_API_KEY")
+		if searchConfig.OpenAIKey == "" {
+			logger.Warn("OpenAI embedder configured but OPENAI_API_KEY not set, falling back to local embedder")
+			searchConfig.EmbedderType = "local"
+		}
+	}
+
+	return search.NewService(searchConfig, logger)
 }
 
 // initializeFormattersSystem initializes the code formatters system with default configuration

@@ -1,0 +1,57 @@
+# Semantic Code Search Configuration
+semantic_search:
+  enabled: true
+  
+  embedder:
+    provider: "openai"  # or "mock" for testing
+    model: "text-embedding-3-small"
+    dimensions: 1536
+    batch_size: 100
+    
+  vector_store:
+    provider: "chroma"  # or "qdrant"
+    
+    chroma:
+      host: "localhost"
+      port: 8000
+      collection: "code_embeddings"
+      
+    qdrant:
+      host: "localhost"
+      port: 6333
+      collection: "code_embeddings"
+      
+  indexer:
+    root_path: "."
+    include_patterns:
+      - "*.go"
+      - "*.py"
+      - "*.js"
+      - "*.ts"
+      - "*.rs"
+      - "*.java"
+      - "*.cpp"
+      - "*.c"
+      - "*.h"
+      - "*.rb"
+      - "*.php"
+    exclude_patterns:
+      - "vendor/"
+      - "node_modules/"
+      - ".git/"
+      - "*.pb.go"
+      - "*_test.go"
+      - "dist/"
+      - "build/"
+      - "target/"
+    chunk_size: 50
+    chunk_overlap: 10
+    max_file_size: 1048576  # 1MB
+    index_on_startup: false
+    watch_files: false
+    
+  search:
+    default_top_k: 10
+    min_score: 0.7
+    rerank_enabled: false
+    cache_ttl: 3600

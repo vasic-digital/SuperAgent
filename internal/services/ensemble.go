@@ -415,7 +415,7 @@ func (e *EnsembleService) RunEnsembleStream(ctx context.Context, req *models.LLM
 func (e *EnsembleService) filterProviders(providers map[string]LLMProvider, req *models.LLMRequest) map[string]LLMProvider {
 	filtered := make(map[string]LLMProvider)
 
-	// If no preferred providers specified, use all
+	// If no preferred providers specified, use all available providers
 	if req.EnsembleConfig == nil || len(req.EnsembleConfig.PreferredProviders) == 0 {
 		for k, v := range providers {
 			filtered[k] = v
@@ -423,28 +423,10 @@ func (e *EnsembleService) filterProviders(providers map[string]LLMProvider, req 
 		return filtered
 	}
 
-	// Filter by preferred providers
+	// Filter by preferred providers - respect explicit preferences strictly
 	for _, preferred := range req.EnsembleConfig.PreferredProviders {
 		if provider, exists := providers[preferred]; exists {
 			filtered[preferred] = provider
-		}
-	}
-
-	// If we don't have enough preferred providers, add more
-	minProviders := 2
-	if req.EnsembleConfig != nil && req.EnsembleConfig.MinProviders > 0 {
-		minProviders = req.EnsembleConfig.MinProviders
-	}
-
-	if len(filtered) < minProviders {
-		// Add additional providers until we reach minimum
-		for name, provider := range providers {
-			if _, exists := filtered[name]; !exists {
-				filtered[name] = provider
-				if len(filtered) >= minProviders {
-					break
-				}
-			}
 		}
 	}
 

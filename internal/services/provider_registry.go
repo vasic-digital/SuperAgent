@@ -17,6 +17,8 @@ import (
 	"dev.helix.agent/internal/llm"
 	"dev.helix.agent/internal/llm/providers/ai21"
 	"dev.helix.agent/internal/llm/providers/anthropic"
+	"dev.helix.agent/internal/llm/providers/anthropic_cu"
+	"dev.helix.agent/internal/llm/providers/azure"
 	"dev.helix.agent/internal/llm/providers/cerebras"
 	"dev.helix.agent/internal/llm/providers/chutes"
 	"dev.helix.agent/internal/llm/providers/claude"
@@ -24,6 +26,7 @@ import (
 	"dev.helix.agent/internal/llm/providers/codestral"
 	"dev.helix.agent/internal/llm/providers/cohere"
 	"dev.helix.agent/internal/llm/providers/deepseek"
+	"dev.helix.agent/internal/llm/providers/lmstudio"
 	"dev.helix.agent/internal/llm/providers/fireworks"
 	"dev.helix.agent/internal/llm/providers/gemini"
 	"dev.helix.agent/internal/llm/providers/githubmodels"
@@ -48,9 +51,10 @@ import (
 	"dev.helix.agent/internal/llm/providers/qwen"
 	"dev.helix.agent/internal/llm/providers/replicate"
 	"dev.helix.agent/internal/llm/providers/sambanova"
+	"dev.helix.agent/internal/llm/providers/together"
+	"dev.helix.agent/internal/llm/providers/vertex"
 	"dev.helix.agent/internal/llm/providers/sarvam"
 	"dev.helix.agent/internal/llm/providers/siliconflow"
-	"dev.helix.agent/internal/llm/providers/together"
 	"dev.helix.agent/internal/llm/providers/upstage"
 	"dev.helix.agent/internal/llm/providers/venice"
 	"dev.helix.agent/internal/llm/providers/vulavula"
@@ -101,6 +105,8 @@ type ProviderConfig struct {
 	Tags                  []string          `json:"tags"`
 	Capabilities          map[string]string `json:"capabilities"`
 	CustomSettings        map[string]any    `json:"custom_settings"`
+	ProjectID             string            `json:"project_id"` // For Google Vertex AI
+	Location              string            `json:"location"`   // For Google Vertex AI
 }
 
 // ProviderHealthStatus represents the verified health status of a provider
@@ -1885,6 +1891,30 @@ func (r *ProviderRegistry) RegisterProviderFromConfig(cfg ProviderConfig) error 
 		provider = openrouter.NewSimpleOpenRouterProviderWithBaseURL(cfg.APIKey, baseURL)
 	case "github-models":
 		provider = githubmodels.NewGitHubModelsProvider(cfg.APIKey, baseURL, model)
+	case "lmstudio":
+		provider = lmstudio.NewProvider(baseURL, model)
+	case "together":
+		provider = together.NewProvider(cfg.APIKey, baseURL, model)
+	case "azure-openai":
+		provider = azure.NewProvider(baseURL, cfg.Name, cfg.APIKey)
+	case "cohere":
+		provider = cohere.NewProvider(cfg.APIKey, baseURL, model)
+	case "replicate":
+		provider = replicate.NewProvider(cfg.APIKey, baseURL, model)
+	case "ai21":
+		provider = ai21.NewProvider(cfg.APIKey, baseURL, model)
+	case "anthropic-cu":
+		provider = anthropic_cu.NewProvider(anthropic_cu.Config{
+			APIKey: cfg.APIKey,
+			Model:  model,
+		})
+	case "vertex":
+		provider = vertex.NewProvider(vertex.Config{
+			ProjectID: cfg.ProjectID,
+			Location:  cfg.Location,
+			Model:     model,
+			APIKey:    cfg.APIKey,
+		})
 	default:
 		return fmt.Errorf("unsupported provider type: %s", cfg.Type)
 	}

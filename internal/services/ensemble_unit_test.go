@@ -400,7 +400,7 @@ func TestEnsembleUnit_RunEnsemble_WithPreferredProviders(t *testing.T) {
 }
 
 func TestEnsembleUnit_RunEnsemble_NoSuitableProviders(t *testing.T) {
-	t.Skip("Requires mock provider setup")
+	
 	service := NewEnsembleService("confidence_weighted", 30*time.Second)
 	ctx := context.Background()
 

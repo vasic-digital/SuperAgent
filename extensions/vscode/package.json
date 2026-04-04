@@ -1,0 +1,139 @@
+{
+  "name": "helixagent",
+  "displayName": "HelixAgent",
+  "description": "HelixAgent - AI-powered ensemble LLM coding assistant",
+  "version": "1.0.0",
+  "publisher": "helixagent",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Machine Learning",
+    "Programming Languages",
+    "Debuggers",
+    "Other"
+  ],
+  "keywords": [
+    "ai",
+    "llm",
+    "coding",
+    "assistant",
+    "ensemble"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "helixagent.startChat",
+        "title": "Start Chat",
+        "category": "HelixAgent"
+      },
+      {
+        "command": "helixagent.explainCode",
+        "title": "Explain Code",
+        "category": "HelixAgent"
+      },
+      {
+        "command": "helixagent.generateTests",
+        "title": "Generate Tests",
+        "category": "HelixAgent"
+      },
+      {
+        "command": "helixagent.refactorCode",
+        "title": "Refactor Code",
+        "category": "HelixAgent"
+      },
+      {
+        "command": "helixagent.fixErrors",
+        "title": "Fix Errors",
+        "category": "HelixAgent"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "helixagent.explainCode",
+          "group": "helixagent@1",
+          "when": "editorHasSelection"
+        },
+        {
+          "command": "helixagent.generateTests",
+          "group": "helixagent@2"
+        },
+        {
+          "command": "helixagent.refactorCode",
+          "group": "helixagent@3",
+          "when": "editorHasSelection"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "helixagent",
+          "title": "HelixAgent",
+          "icon": "$(comment-discussion)"
+        }
+      ]
+    },
+    "views": {
+      "helixagent": [
+        {
+          "id": "helixagent.chat",
+          "name": "Chat",
+          "type": "webview"
+        },
+        {
+          "id": "helixagent.history",
+          "name": "History"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "HelixAgent",
+      "properties": {
+        "helixagent.endpoint": {
+          "type": "string",
+          "default": "http://localhost:7061",
+          "description": "HelixAgent server endpoint"
+        },
+        "helixagent.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "API key for HelixAgent"
+        },
+        "helixagent.model": {
+          "type": "string",
+          "default": "ensemble",
+          "enum": ["ensemble", "claude", "deepseek", "gemini"],
+          "description": "Default model to use"
+        },
+        "helixagent.enableDebate": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable AI debate mode"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  }
+}
