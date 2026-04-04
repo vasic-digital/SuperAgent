@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -422,9 +423,18 @@ func (h *PlanningHandler) RunToT(c *gin.Context) {
 func RegisterPlanningRoutes(r *gin.RouterGroup, h *PlanningHandler) {
 	p := r.Group("/planning")
 	{
+		// Core planning algorithms
 		p.POST("/hiplan", h.CreateHiPlan)
 		p.POST("/mcts", h.RunMCTS)
 		p.POST("/tot", h.RunToT)
+		
+		// Plan Mode endpoints (from Claude Code)
+		p.POST("/plan-mode/enter", h.EnterPlanMode)
+		p.POST("/plan-mode/:id/exit", h.ExitPlanMode)
+		p.GET("/plan-mode/:id/status", h.GetPlanModeStatus)
+		p.POST("/plan-mode/:id/verify", h.VerifyPlan)
+		p.POST("/plan-mode/:id/execute", h.StartPlanExecution)
+		p.PUT("/plan-mode/:id/tasks/:taskId", h.UpdatePlanTask)
 	}
 }
 
@@ -644,4 +654,520 @@ func truncate(s string, maxLen int) string {
 		return s[:maxLen]
 	}
 	return s[:maxLen-3] + "..."
+}
+
+
+// ============================================
+// PLAN MODE - Multi-step planning with verification
+// ============================================
+
+// PlanState represents the state of a plan mode session
+type PlanState string
+
+const (
+	PlanStateDraft     PlanState = "draft"
+	PlanStateActive    PlanState = "active"
+	PlanStateExecuting PlanState = "executing"
+	PlanStateCompleted PlanState = "completed"
+	PlanStateFailed    PlanState = "failed"
+	PlanStateVerified  PlanState = "verified"
+)
+
+// TaskStatus represents the status of a plan task
+type TaskStatus string
+
+const (
+	TaskStatusPending    TaskStatus = "pending"
+	TaskStatusInProgress TaskStatus = "in_progress"
+	TaskStatusCompleted  TaskStatus = "completed"
+	TaskStatusFailed     TaskStatus = "failed"
+	TaskStatusBlocked    TaskStatus = "blocked"
+	TaskStatusVerified   TaskStatus = "verified"
+)
+
+// PlanModeSession represents a plan mode session
+type PlanModeSession struct {
+	ID            string              `json:"id"`
+	State         PlanState           `json:"state"`
+	OriginalTask  string              `json:"original_task"`
+	Tasks         []PlanTask          `json:"tasks"`
+	Progress      float64             `json:"progress"`
+	CurrentPhase  string              `json:"current_phase"`
+	Verification  PlanVerification    `json:"verification"`
+	CreatedAt     time.Time           `json:"created_at"`
+	UpdatedAt     time.Time           `json:"updated_at"`
+	CompletedAt   *time.Time          `json:"completed_at,omitempty"`
+	Metadata      map[string]interface{} `json:"metadata,omitempty"`
+}
+
+// PlanTask represents a task in the plan
+type PlanTask struct {
+	ID           string                 `json:"id"`
+	Description  string                 `json:"description"`
+	Status       TaskStatus             `json:"status"`
+	Dependencies []string               `json:"dependencies"`
+	CanParallel  bool                   `json:"can_parallel"`
+	Verified     bool                   `json:"verified"`
+	Output       string                 `json:"output,omitempty"`
+	Error        string                 `json:"error,omitempty"`
+	StartedAt    *time.Time             `json:"started_at,omitempty"`
+	CompletedAt  *time.Time             `json:"completed_at,omitempty"`
+	Metadata     map[string]interface{} `json:"metadata,omitempty"`
+}
+
+// PlanVerification represents the verification state
+type PlanVerification struct {
+	Required      bool      `json:"required"`
+	Passed        bool      `json:"passed"`
+	Feedback      string    `json:"feedback,omitempty"`
+	VerifiedAt    *time.Time `json:"verified_at,omitempty"`
+	VerifiedBy    string    `json:"verified_by,omitempty"`
+}
+
+// EnterPlanModeRequest represents a request to enter plan mode
+type EnterPlanModeRequest struct {
+	Task              string  `json:"task" binding:"required"`
+	RequireVerification bool   `json:"require_verification,omitempty"`
+}
+
+// ExitPlanModeRequest represents a request to exit plan mode
+type ExitPlanModeRequest struct {
+	Force    bool   `json:"force,omitempty"`
+	Reason   string `json:"reason,omitempty"`
+}
+
+// VerifyPlanRequest represents a plan verification request
+type VerifyPlanRequest struct {
+	Approved bool   `json:"approved"`
+	Feedback string `json:"feedback,omitempty"`
+}
+
+// UpdateTaskRequest represents a task update request
+type UpdateTaskRequest struct {
+	Status   string `json:"status,omitempty"`
+	Output   string `json:"output,omitempty"`
+	Error    string `json:"error,omitempty"`
+	Verified *bool  `json:"verified,omitempty"`
+}
+
+// Global plan mode sessions store (in production, use database)
+var (
+	planModeSessions   = make(map[string]*PlanModeSession)
+	planModeSessionsMu sync.RWMutex
+)
+
+// EnterPlanMode enters plan mode for a task
+func (h *PlanningHandler) EnterPlanMode(c *gin.Context) {
+	var req EnterPlanModeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, VerifierErrorResponse{Error: err.Error()})
+		return
+	}
+
+	session := &PlanModeSession{
+		ID:           generatePlanModeID(),
+		State:        PlanStateDraft,
+		OriginalTask: req.Task,
+		Tasks:        []PlanTask{},
+		Progress:     0.0,
+		CurrentPhase: "breakdown",
+		Verification: PlanVerification{
+			Required: req.RequireVerification,
+			Passed:   false,
+		},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Metadata:  make(map[string]interface{}),
+	}
+
+	// Auto-generate initial task breakdown (simplified)
+	session.Tasks = h.generateTaskBreakdown(req.Task)
+
+	planModeSessionsMu.Lock()
+	planModeSessions[session.ID] = session
+	planModeSessionsMu.Unlock()
+
+	h.logger.WithFields(logrus.Fields{
+		"session_id": session.ID,
+		"task":       req.Task,
+		"tasks":      len(session.Tasks),
+	}).Info("Entered plan mode")
+
+	c.JSON(http.StatusCreated, gin.H{
+		"session_id":   session.ID,
+		"state":        session.State,
+		"original_task": session.OriginalTask,
+		"tasks":        session.Tasks,
+		"progress":     session.Progress,
+		"created_at":   session.CreatedAt,
+	})
+}
+
+// ExitPlanMode exits plan mode
+func (h *PlanningHandler) ExitPlanMode(c *gin.Context) {
+	id := c.Param("id")
+
+	var req ExitPlanModeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, VerifierErrorResponse{Error: err.Error()})
+		return
+	}
+
+	planModeSessionsMu.Lock()
+	session, exists := planModeSessions[id]
+	if !exists {
+		planModeSessionsMu.Unlock()
+		c.JSON(http.StatusNotFound, VerifierErrorResponse{Error: "plan mode session not found"})
+		return
+	}
+
+	// Check if we can exit
+	if session.State == PlanStateExecuting && !req.Force {
+		planModeSessionsMu.Unlock()
+		c.JSON(http.StatusBadRequest, VerifierErrorResponse{
+			Error: "Cannot exit while executing. Use force=true to force exit.",
+		})
+		return
+	}
+
+	now := time.Now()
+	session.State = PlanStateCompleted
+	session.CompletedAt = &now
+	session.UpdatedAt = now
+
+	planModeSessionsMu.Unlock()
+
+	h.logger.WithFields(logrus.Fields{
+		"session_id": id,
+		"force":      req.Force,
+		"reason":     req.Reason,
+	}).Info("Exited plan mode")
+
+	c.JSON(http.StatusOK, gin.H{
+		"session_id":   session.ID,
+		"state":        session.State,
+		"progress":     session.Progress,
+		"completed_at": session.CompletedAt,
+	})
+}
+
+// GetPlanModeStatus gets the status of a plan mode session
+func (h *PlanningHandler) GetPlanModeStatus(c *gin.Context) {
+	id := c.Param("id")
+
+	planModeSessionsMu.RLock()
+	session, exists := planModeSessions[id]
+	planModeSessionsMu.RUnlock()
+
+	if !exists {
+		c.JSON(http.StatusNotFound, VerifierErrorResponse{Error: "plan mode session not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, session)
+}
+
+// VerifyPlan verifies a plan before execution
+func (h *PlanningHandler) VerifyPlan(c *gin.Context) {
+	id := c.Param("id")
+
+	var req VerifyPlanRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, VerifierErrorResponse{Error: err.Error()})
+		return
+	}
+
+	planModeSessionsMu.Lock()
+	session, exists := planModeSessions[id]
+	if !exists {
+		planModeSessionsMu.Unlock()
+		c.JSON(http.StatusNotFound, VerifierErrorResponse{Error: "plan mode session not found"})
+		return
+	}
+
+	if session.State != PlanStateDraft && session.State != PlanStateActive {
+		planModeSessionsMu.Unlock()
+		c.JSON(http.StatusBadRequest, VerifierErrorResponse{
+			Error: fmt.Sprintf("Cannot verify plan in state: %s", session.State),
+		})
+		return
+	}
+
+	now := time.Now()
+	session.Verification.Passed = req.Approved
+	session.Verification.Feedback = req.Feedback
+	session.Verification.VerifiedAt = &now
+	session.UpdatedAt = now
+
+	if req.Approved {
+		session.State = PlanStateVerified
+		session.Verification.VerifiedBy = "user" // Could be API key, user ID, etc.
+	} else {
+		session.State = PlanStateDraft
+	}
+
+	planModeSessionsMu.Unlock()
+
+	h.logger.WithFields(logrus.Fields{
+		"session_id": id,
+		"approved":   req.Approved,
+		"feedback":   req.Feedback,
+	}).Info("Plan verification completed")
+
+	c.JSON(http.StatusOK, gin.H{
+		"session_id":    session.ID,
+		"verified":      req.Approved,
+		"state":         session.State,
+		"feedback":      req.Feedback,
+		"verified_at":   now,
+	})
+}
+
+// StartPlanExecution starts executing a verified plan
+func (h *PlanningHandler) StartPlanExecution(c *gin.Context) {
+	id := c.Param("id")
+
+	planModeSessionsMu.Lock()
+	session, exists := planModeSessions[id]
+	if !exists {
+		planModeSessionsMu.Unlock()
+		c.JSON(http.StatusNotFound, VerifierErrorResponse{Error: "plan mode session not found"})
+		return
+	}
+
+	if session.Verification.Required && !session.Verification.Passed {
+		planModeSessionsMu.Unlock()
+		c.JSON(http.StatusBadRequest, VerifierErrorResponse{
+			Error: "Plan requires verification before execution",
+		})
+		return
+	}
+
+	if session.State == PlanStateExecuting {
+		planModeSessionsMu.Unlock()
+		c.JSON(http.StatusBadRequest, VerifierErrorResponse{Error: "Plan already executing"})
+		return
+	}
+
+	session.State = PlanStateExecuting
+	session.CurrentPhase = "execution"
+	session.UpdatedAt = time.Now()
+	planModeSessionsMu.Unlock()
+
+	// Start execution in background
+	go h.executePlan(id)
+
+	h.logger.WithFields(logrus.Fields{
+		"session_id": id,
+	}).Info("Started plan execution")
+
+	c.JSON(http.StatusOK, gin.H{
+		"session_id": session.ID,
+		"state":      session.State,
+		"message":    "Plan execution started",
+	})
+}
+
+// UpdatePlanTask updates a task's status
+func (h *PlanningHandler) UpdatePlanTask(c *gin.Context) {
+	id := c.Param("id")
+	taskID := c.Param("taskId")
+
+	var req UpdateTaskRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, VerifierErrorResponse{Error: err.Error()})
+		return
+	}
+
+	planModeSessionsMu.Lock()
+	session, exists := planModeSessions[id]
+	if !exists {
+		planModeSessionsMu.Unlock()
+		c.JSON(http.StatusNotFound, VerifierErrorResponse{Error: "plan mode session not found"})
+		return
+	}
+
+	found := false
+	for i := range session.Tasks {
+		if session.Tasks[i].ID == taskID {
+			if req.Status != "" {
+				session.Tasks[i].Status = TaskStatus(req.Status)
+			}
+			if req.Output != "" {
+				session.Tasks[i].Output = req.Output
+			}
+			if req.Error != "" {
+				session.Tasks[i].Error = req.Error
+			}
+			if req.Verified != nil {
+				session.Tasks[i].Verified = *req.Verified
+			}
+			
+			now := time.Now()
+			if req.Status == "in_progress" && session.Tasks[i].StartedAt == nil {
+				session.Tasks[i].StartedAt = &now
+			}
+			if (req.Status == "completed" || req.Status == "failed") && session.Tasks[i].CompletedAt == nil {
+				session.Tasks[i].CompletedAt = &now
+			}
+			
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		planModeSessionsMu.Unlock()
+		c.JSON(http.StatusNotFound, VerifierErrorResponse{Error: "task not found"})
+		return
+	}
+
+	// Recalculate progress
+	session.Progress = h.calculateProgress(session.Tasks)
+	session.UpdatedAt = time.Now()
+	planModeSessionsMu.Unlock()
+
+	c.JSON(http.StatusOK, gin.H{
+		"session_id": id,
+		"task_id":    taskID,
+		"progress":   session.Progress,
+	})
+}
+
+// generateTaskBreakdown generates initial task breakdown (simplified)
+func (h *PlanningHandler) generateTaskBreakdown(task string) []PlanTask {
+	// In production, this would use LLM to break down the task
+	// For now, create placeholder tasks
+	return []PlanTask{
+		{
+			ID:          generateTaskID(),
+			Description: "Analyze requirements: " + truncate(task, 50),
+			Status:      TaskStatusPending,
+			Dependencies: []string{},
+			CanParallel: false,
+			Verified:    false,
+		},
+		{
+			ID:          generateTaskID(),
+			Description: "Design solution approach",
+			Status:      TaskStatusPending,
+			Dependencies: []string{},
+			CanParallel: false,
+			Verified:    false,
+		},
+		{
+			ID:          generateTaskID(),
+			Description: "Implement core functionality",
+			Status:      TaskStatusPending,
+			Dependencies: []string{},
+			CanParallel: false,
+			Verified:    false,
+		},
+		{
+			ID:          generateTaskID(),
+			Description: "Add tests and validation",
+			Status:      TaskStatusPending,
+			Dependencies: []string{},
+			CanParallel: true,
+			Verified:    false,
+		},
+		{
+			ID:          generateTaskID(),
+			Description: "Review and finalize",
+			Status:      TaskStatusPending,
+			Dependencies: []string{},
+			CanParallel: false,
+			Verified:    false,
+		},
+	}
+}
+
+// calculateProgress calculates the overall progress
+func (h *PlanningHandler) calculateProgress(tasks []PlanTask) float64 {
+	if len(tasks) == 0 {
+		return 0.0
+	}
+	
+	completed := 0
+	for _, task := range tasks {
+		if task.Status == TaskStatusCompleted || task.Status == TaskStatusVerified {
+			completed++
+		}
+	}
+	
+	return float64(completed) / float64(len(tasks))
+}
+
+// executePlan executes the plan tasks
+func (h *PlanningHandler) executePlan(sessionID string) {
+	planModeSessionsMu.RLock()
+	session, exists := planModeSessions[sessionID]
+	planModeSessionsMu.RUnlock()
+
+	if !exists {
+		return
+	}
+
+	// Execute tasks in dependency order
+	for i := range session.Tasks {
+		// Check for cancellation
+		planModeSessionsMu.RLock()
+		s, ok := planModeSessions[sessionID]
+		planModeSessionsMu.RUnlock()
+		
+		if !ok || s.State != PlanStateExecuting {
+			return
+		}
+
+		// Start task
+		planModeSessionsMu.Lock()
+		if session.Tasks[i].Status == TaskStatusPending {
+			now := time.Now()
+			session.Tasks[i].Status = TaskStatusInProgress
+			session.Tasks[i].StartedAt = &now
+		}
+		planModeSessionsMu.Unlock()
+
+		// Simulate execution (in production, this would execute actual work)
+		time.Sleep(100 * time.Millisecond)
+
+		// Complete task
+		planModeSessionsMu.Lock()
+		now := time.Now()
+		session.Tasks[i].Status = TaskStatusCompleted
+		session.Tasks[i].CompletedAt = &now
+		session.Tasks[i].Output = "Task completed successfully"
+		session.Progress = h.calculateProgress(session.Tasks)
+		session.UpdatedAt = now
+		planModeSessionsMu.Unlock()
+
+		h.logger.WithFields(logrus.Fields{
+			"session_id": sessionID,
+			"task_id":    session.Tasks[i].ID,
+			"progress":   session.Progress,
+		}).Debug("Task completed")
+	}
+
+	// Mark plan as completed
+	planModeSessionsMu.Lock()
+	session.State = PlanStateCompleted
+	now := time.Now()
+	session.CompletedAt = &now
+	session.UpdatedAt = now
+	session.Progress = 1.0
+	planModeSessionsMu.Unlock()
+
+	h.logger.WithFields(logrus.Fields{
+		"session_id": sessionID,
+	}).Info("Plan execution completed")
+}
+
+// generatePlanModeID generates a unique plan mode session ID
+func generatePlanModeID() string {
+	return fmt.Sprintf("plan_%d", time.Now().UnixNano())
+}
+
+// generateTaskID generates a unique task ID
+func generateTaskID() string {
+	return fmt.Sprintf("task_%d", time.Now().UnixNano())
 }

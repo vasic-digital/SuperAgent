@@ -2,26 +2,117 @@
 package handlers
 
 import (
+	"context"
+	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/clis"
 	"dev.helix.agent/internal/ensemble/multi_instance"
 )
 
+// AgentType represents the type of agent in a team
+type AgentType string
+
+const (
+	AgentTypePrimary   AgentType = "primary"
+	AgentTypeCritic    AgentType = "critic"
+	AgentTypeVerifier  AgentType = "verifier"
+	AgentTypeResearcher AgentType = "researcher"
+	AgentTypeCoder     AgentType = "coder"
+	AgentTypeTester    AgentType = "tester"
+)
+
+// AgentDefinition defines an agent in a team
+type AgentDefinition struct {
+	ID       string                 `json:"id"`
+	Name     string                 `json:"name"`
+	Type     AgentType              `json:"type"`
+	Config   map[string]interface{} `json:"config"`
+	Provider ProviderConfig         `json:"provider"`
+}
+
+// ProviderConfig defines LLM provider configuration
+type ProviderConfig struct {
+	Name    string                 `json:"name"`
+	Model   string                 `json:"model"`
+	Config  map[string]interface{} `json:"config,omitempty"`
+}
+
+// Team defines a team of agents
+type Team struct {
+	ID          string            `json:"id"`
+	Name        string            `json:"name"`
+	Description string            `json:"description"`
+	Agents      []AgentDefinition `json:"agents"`
+	Config      TeamConfig        `json:"config"`
+	CreatedAt   time.Time         `json:"created_at"`
+	UpdatedAt   time.Time         `json:"updated_at"`
+}
+
+// TeamConfig configures team behavior
+type TeamConfig struct {
+	MaxParallel        int     `json:"max_parallel"`
+	ConsensusThreshold float64 `json:"consensus_threshold"` // 0.0 - 1.0
+	Timeout            int     `json:"timeout_seconds"`
+	EnableVoting       bool    `json:"enable_voting"`
+}
+
+// TeamExecutionRequest represents a team execution request
+type TeamExecutionRequest struct {
+	Task        string                 `json:"task" binding:"required"`
+	Context     map[string]interface{} `json:"context,omitempty"`
+	Timeout     int                    `json:"timeout_seconds,omitempty"`
+	RequireConsensus bool              `json:"require_consensus,omitempty"`
+}
+
+// TeamExecutionResult represents the result of team execution
+type TeamExecutionResult struct {
+	TeamID           string                 `json:"team_id"`
+	Task             string                 `json:"task"`
+	Consensus        string                 `json:"consensus"`
+	Confidence       float64                `json:"confidence"`
+	IndividualVotes  map[string]string      `json:"individual_votes"`
+	AgentResults     []AgentResult          `json:"agent_results"`
+	ExecutionTime    int64                  `json:"execution_time_ms"`
+	ConsensusReached bool                   `json:"consensus_reached"`
+}
+
+// AgentResult represents an individual agent's result
+type AgentResult struct {
+	AgentID   string        `json:"agent_id"`
+	AgentName string        `json:"agent_name"`
+	AgentType AgentType     `json:"agent_type"`
+	Output    string        `json:"output"`
+	Confidence float64      `json:"confidence"`
+	ExecutionTime int64     `json:"execution_time_ms"`
+}
+
 // EnsembleHandler handles ensemble-related endpoints.
 type EnsembleHandler struct {
 	coordinator *multi_instance.Coordinator
+	logger      *logrus.Logger
+	
+	// Team management
+	teams   map[string]*Team
+	teamsMu sync.RWMutex
 }
 
 // NewEnsembleHandler creates a new ensemble handler.
-func NewEnsembleHandler(coordinator *multi_instance.Coordinator) *EnsembleHandler {
-	return &EnsembleHandler{coordinator: coordinator}
+func NewEnsembleHandler(coordinator *multi_instance.Coordinator, logger *logrus.Logger) *EnsembleHandler {
+	return &EnsembleHandler{
+		coordinator: coordinator,
+		logger:      logger,
+		teams:       make(map[string]*Team),
+	}
 }
 
 // RegisterRoutes registers the ensemble routes.
 func (h *EnsembleHandler) RegisterRoutes(r *gin.RouterGroup) {
+	// Existing ensemble session routes
 	sessions := r.Group("/ensemble/sessions")
 	{
 		sessions.POST("", h.CreateSession)
@@ -29,6 +120,19 @@ func (h *EnsembleHandler) RegisterRoutes(r *gin.RouterGroup) {
 		sessions.GET("/:id", h.GetSession)
 		sessions.POST("/:id/execute", h.ExecuteSession)
 		sessions.POST("/:id/cancel", h.CancelSession)
+	}
+	
+	// New team management routes
+	teams := r.Group("/ensemble/teams")
+	{
+		teams.POST("", h.CreateTeam)
+		teams.GET("", h.ListTeams)
+		teams.GET("/:id", h.GetTeam)
+		teams.PUT("/:id", h.UpdateTeam)
+		teams.DELETE("/:id", h.DeleteTeam)
+		teams.POST("/:id/agents", h.AddAgentToTeam)
+		teams.DELETE("/:id/agents/:agentId", h.RemoveAgentFromTeam)
+		teams.POST("/:id/execute", h.ExecuteTeam)
 	}
 }
 
@@ -184,4 +288,448 @@ func (h *EnsembleHandler) CancelSession(c *gin.Context) {
 	}
 	
 	c.JSON(http.StatusOK, gin.H{"status": "cancelled"})
+}
+
+
+// ============================================
+// TEAM MANAGEMENT METHODS
+// ============================================
+
+// CreateTeamRequest represents a create team request
+type CreateTeamRequest struct {
+	Name        string            `json:"name" binding:"required"`
+	Description string            `json:"description"`
+	Agents      []AgentDefinition `json:"agents,omitempty"`
+	Config      *TeamConfig       `json:"config,omitempty"`
+}
+
+// CreateTeam creates a new team
+func (h *EnsembleHandler) CreateTeam(c *gin.Context) {
+	var req CreateTeamRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	team := &Team{
+		ID:          generateTeamID(),
+		Name:        req.Name,
+		Description: req.Description,
+		Agents:      req.Agents,
+		Config:      DefaultTeamConfig(),
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+
+	if req.Config != nil {
+		team.Config = *req.Config
+	}
+
+	// Assign IDs to agents without them
+	for i := range team.Agents {
+		if team.Agents[i].ID == "" {
+			team.Agents[i].ID = fmt.Sprintf("agent_%d_%d", time.Now().Unix(), i)
+		}
+	}
+
+	h.teamsMu.Lock()
+	h.teams[team.ID] = team
+	h.teamsMu.Unlock()
+
+	h.logger.Infof("Created team: %s (%s)", team.Name, team.ID)
+
+	c.JSON(http.StatusCreated, gin.H{
+		"id":          team.ID,
+		"name":        team.Name,
+		"description": team.Description,
+		"agents":      len(team.Agents),
+		"created_at":  team.CreatedAt,
+	})
+}
+
+// ListTeams lists all teams
+func (h *EnsembleHandler) ListTeams(c *gin.Context) {
+	h.teamsMu.RLock()
+	defer h.teamsMu.RUnlock()
+
+	var teams []gin.H
+	for _, team := range h.teams {
+		teams = append(teams, gin.H{
+			"id":          team.ID,
+			"name":        team.Name,
+			"description": team.Description,
+			"agent_count": len(team.Agents),
+			"created_at":  team.CreatedAt,
+		})
+	}
+
+	c.JSON(http.StatusOK, teams)
+}
+
+// GetTeam gets a team by ID
+func (h *EnsembleHandler) GetTeam(c *gin.Context) {
+	id := c.Param("id")
+
+	h.teamsMu.RLock()
+	team, exists := h.teams[id]
+	h.teamsMu.RUnlock()
+
+	if !exists {
+		c.JSON(http.StatusNotFound, gin.H{"error": "team not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, team)
+}
+
+// UpdateTeamRequest represents an update team request
+type UpdateTeamRequest struct {
+	Name        string            `json:"name"`
+	Description string            `json:"description"`
+	Agents      []AgentDefinition `json:"agents,omitempty"`
+	Config      *TeamConfig       `json:"config,omitempty"`
+}
+
+// UpdateTeam updates a team
+func (h *EnsembleHandler) UpdateTeam(c *gin.Context) {
+	id := c.Param("id")
+
+	var req UpdateTeamRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	h.teamsMu.Lock()
+	team, exists := h.teams[id]
+	if !exists {
+		h.teamsMu.Unlock()
+		c.JSON(http.StatusNotFound, gin.H{"error": "team not found"})
+		return
+	}
+
+	if req.Name != "" {
+		team.Name = req.Name
+	}
+	if req.Description != "" {
+		team.Description = req.Description
+	}
+	if req.Agents != nil {
+		team.Agents = req.Agents
+	}
+	if req.Config != nil {
+		team.Config = *req.Config
+	}
+
+	team.UpdatedAt = time.Now()
+	h.teamsMu.Unlock()
+
+	c.JSON(http.StatusOK, team)
+}
+
+// DeleteTeam deletes a team
+func (h *EnsembleHandler) DeleteTeam(c *gin.Context) {
+	id := c.Param("id")
+
+	h.teamsMu.Lock()
+	_, exists := h.teams[id]
+	if !exists {
+		h.teamsMu.Unlock()
+		c.JSON(http.StatusNotFound, gin.H{"error": "team not found"})
+		return
+	}
+
+	delete(h.teams, id)
+	h.teamsMu.Unlock()
+
+	h.logger.Infof("Deleted team: %s", id)
+
+	c.JSON(http.StatusOK, gin.H{"status": "deleted"})
+}
+
+// AddAgentToTeam adds an agent to a team
+func (h *EnsembleHandler) AddAgentToTeam(c *gin.Context) {
+	teamID := c.Param("id")
+
+	var agent AgentDefinition
+	if err := c.ShouldBindJSON(&agent); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if agent.ID == "" {
+		agent.ID = fmt.Sprintf("agent_%d", time.Now().UnixNano())
+	}
+
+	h.teamsMu.Lock()
+	team, exists := h.teams[teamID]
+	if !exists {
+		h.teamsMu.Unlock()
+		c.JSON(http.StatusNotFound, gin.H{"error": "team not found"})
+		return
+	}
+
+	team.Agents = append(team.Agents, agent)
+	team.UpdatedAt = time.Now()
+	h.teamsMu.Unlock()
+
+	h.logger.Infof("Added agent %s to team %s", agent.ID, teamID)
+
+	c.JSON(http.StatusCreated, agent)
+}
+
+// RemoveAgentFromTeam removes an agent from a team
+func (h *EnsembleHandler) RemoveAgentFromTeam(c *gin.Context) {
+	teamID := c.Param("id")
+	agentID := c.Param("agentId")
+
+	h.teamsMu.Lock()
+	team, exists := h.teams[teamID]
+	if !exists {
+		h.teamsMu.Unlock()
+		c.JSON(http.StatusNotFound, gin.H{"error": "team not found"})
+		return
+	}
+
+	found := false
+	for i, agent := range team.Agents {
+		if agent.ID == agentID {
+			team.Agents = append(team.Agents[:i], team.Agents[i+1:]...)
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		h.teamsMu.Unlock()
+		c.JSON(http.StatusNotFound, gin.H{"error": "agent not found"})
+		return
+	}
+
+	team.UpdatedAt = time.Now()
+	h.teamsMu.Unlock()
+
+	h.logger.Infof("Removed agent %s from team %s", agentID, teamID)
+
+	c.JSON(http.StatusOK, gin.H{"status": "removed"})
+}
+
+// ExecuteTeam executes a task with a team
+func (h *EnsembleHandler) ExecuteTeam(c *gin.Context) {
+	teamID := c.Param("id")
+
+	var req TeamExecutionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	h.teamsMu.RLock()
+	team, exists := h.teams[teamID]
+	h.teamsMu.RUnlock()
+
+	if !exists {
+		c.JSON(http.StatusNotFound, gin.H{"error": "team not found"})
+		return
+	}
+
+	if len(team.Agents) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "team has no agents"})
+		return
+	}
+
+	// Execute with team
+	startTime := time.Now()
+	result, err := h.executeTeamTask(c.Request.Context(), team, req)
+	executionTime := time.Since(startTime).Milliseconds()
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	result.ExecutionTime = executionTime
+
+	c.JSON(http.StatusOK, result)
+}
+
+// executeTeamTask executes a task with parallel agent coordination
+func (h *EnsembleHandler) executeTeamTask(ctx context.Context, team *Team, req TeamExecutionRequest) (*TeamExecutionResult, error) {
+	result := &TeamExecutionResult{
+		TeamID:          team.ID,
+		Task:            req.Task,
+		IndividualVotes: make(map[string]string),
+		AgentResults:    make([]AgentResult, 0, len(team.Agents)),
+	}
+
+	// Determine timeout
+	timeout := time.Duration(team.Config.Timeout) * time.Second
+	if req.Timeout > 0 {
+		timeout = time.Duration(req.Timeout) * time.Second
+	}
+	if timeout == 0 {
+		timeout = 60 * time.Second
+	}
+
+	// Create execution context with timeout
+	execCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	// Execute agents in parallel with semaphore for max parallel
+	semaphore := make(chan struct{}, team.Config.MaxParallel)
+	if team.Config.MaxParallel <= 0 {
+		semaphore = make(chan struct{}, len(team.Agents))
+	}
+
+	var wg sync.WaitGroup
+	resultsChan := make(chan AgentResult, len(team.Agents))
+
+	for _, agent := range team.Agents {
+		wg.Add(1)
+		go func(agent AgentDefinition) {
+			defer wg.Done()
+
+			semaphore <- struct{}{}
+			defer func() { <-semaphore }()
+
+			agentResult := h.executeAgent(execCtx, agent, req)
+			resultsChan <- agentResult
+		}(agent)
+	}
+
+	// Close results channel when all agents complete
+	go func() {
+		wg.Wait()
+		close(resultsChan)
+	}()
+
+	// Collect results
+	for agentResult := range resultsChan {
+		result.AgentResults = append(result.AgentResults, agentResult)
+		result.IndividualVotes[agentResult.AgentID] = agentResult.Output
+	}
+
+	// Calculate consensus if voting is enabled
+	if team.Config.EnableVoting {
+		result.Consensus, result.Confidence, result.ConsensusReached = h.calculateConsensus(result.AgentResults, team.Config.ConsensusThreshold)
+	} else {
+		// Use primary agent result as consensus
+		for _, ar := range result.AgentResults {
+			if ar.AgentType == AgentTypePrimary {
+				result.Consensus = ar.Output
+				result.Confidence = ar.Confidence
+				result.ConsensusReached = true
+				break
+			}
+		}
+		if !result.ConsensusReached && len(result.AgentResults) > 0 {
+			result.Consensus = result.AgentResults[0].Output
+			result.Confidence = result.AgentResults[0].Confidence
+			result.ConsensusReached = true
+		}
+	}
+
+	return result, nil
+}
+
+// executeAgent executes a single agent's task
+func (h *EnsembleHandler) executeAgent(ctx context.Context, agent AgentDefinition, req TeamExecutionRequest) AgentResult {
+	startTime := time.Now()
+
+	result := AgentResult{
+		AgentID:   agent.ID,
+		AgentName: agent.Name,
+		AgentType: agent.Type,
+	}
+
+	// This would integrate with the LLM provider system
+	// For now, simulate execution
+	select {
+	case <-ctx.Done():
+		result.Output = "Execution cancelled or timed out"
+		result.Confidence = 0.0
+	case <-time.After(time.Duration(100+len(req.Task)*10) * time.Millisecond):
+		// Simulate different agent behaviors
+		switch agent.Type {
+		case AgentTypePrimary:
+			result.Output = fmt.Sprintf("Primary analysis: Task '%s' requires careful consideration", req.Task)
+			result.Confidence = 0.85
+		case AgentTypeCritic:
+			result.Output = fmt.Sprintf("Critical review: Approach to '%s' could be improved", req.Task)
+			result.Confidence = 0.75
+		case AgentTypeVerifier:
+			result.Output = fmt.Sprintf("Verification: Task '%s' specifications verified", req.Task)
+			result.Confidence = 0.90
+		case AgentTypeResearcher:
+			result.Output = fmt.Sprintf("Research findings: Related to '%s' found", req.Task)
+			result.Confidence = 0.80
+		case AgentTypeCoder:
+			result.Output = fmt.Sprintf("Implementation: Code for '%s' generated", req.Task)
+			result.Confidence = 0.88
+		case AgentTypeTester:
+			result.Output = fmt.Sprintf("Testing: Test cases for '%s' created", req.Task)
+			result.Confidence = 0.82
+		default:
+			result.Output = fmt.Sprintf("Agent processed task: %s", req.Task)
+			result.Confidence = 0.70
+		}
+	}
+
+	result.ExecutionTime = time.Since(startTime).Milliseconds()
+	return result
+}
+
+// calculateConsensus calculates consensus from agent results
+func (h *EnsembleHandler) calculateConsensus(results []AgentResult, threshold float64) (string, float64, bool) {
+	if len(results) == 0 {
+		return "", 0.0, false
+	}
+
+	if threshold <= 0 {
+		threshold = 0.5
+	}
+
+	// Group similar outputs (simplified - exact match)
+	votes := make(map[string]int)
+	confidenceSum := make(map[string]float64)
+
+	for _, result := range results {
+		votes[result.Output]++
+		confidenceSum[result.Output] += result.Confidence
+	}
+
+	// Find the most voted output
+	maxVotes := 0
+	var consensus string
+	for output, count := range votes {
+		if count > maxVotes {
+			maxVotes = count
+			consensus = output
+		}
+	}
+
+	// Calculate confidence
+	consensusRatio := float64(maxVotes) / float64(len(results))
+	averageConfidence := confidenceSum[consensus] / float64(maxVotes)
+	overallConfidence := consensusRatio * averageConfidence
+
+	// Check threshold
+	reached := consensusRatio >= threshold
+
+	return consensus, overallConfidence, reached
+}
+
+// DefaultTeamConfig returns default team configuration
+func DefaultTeamConfig() TeamConfig {
+	return TeamConfig{
+		MaxParallel:        4,
+		ConsensusThreshold: 0.5,
+		Timeout:            300,
+		EnableVoting:       true,
+	}
+}
+
+// generateTeamID generates a unique team ID
+func generateTeamID() string {
+	return fmt.Sprintf("team_%d", time.Now().UnixNano())
 }
