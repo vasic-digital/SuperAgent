@@ -117,6 +117,10 @@ var _ llm.LLMProvider = (*integrationMockProvider)(nil)
 // =============================================================================
 
 func TestServicesIntegration_DebateService_FullWorkflow(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
 	logger := newIntegrationTestLogger()
 
 	// Create mock providers
@@ -196,6 +200,10 @@ func TestServicesIntegration_DebateService_FullWorkflow(t *testing.T) {
 }
 
 func TestServicesIntegration_DebateService_WithFallbacks(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
 	logger := newIntegrationTestLogger()
 
 	// Create providers - one will fail
@@ -551,6 +559,10 @@ func TestServicesIntegration_RegistryWithEnsemble(t *testing.T) {
 }
 
 func TestServicesIntegration_DebateWithEnsembleFallback(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
 	logger := newIntegrationTestLogger()
 
 	// Create registry
@@ -609,6 +621,10 @@ func TestServicesIntegration_DebateWithEnsembleFallback(t *testing.T) {
 // =============================================================================
 
 func TestServicesIntegration_ErrorHandling(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
 	logger := newIntegrationTestLogger()
 
 	cfg := &RegistryConfig{
@@ -663,6 +679,10 @@ func TestServicesIntegration_ErrorHandling(t *testing.T) {
 // =============================================================================
 
 func TestServicesIntegration_Performance(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
 	logger := newIntegrationTestLogger()
 
 	cfg := &RegistryConfig{

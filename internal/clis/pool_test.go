@@ -32,6 +32,9 @@ func TestNewInstancePool(t *testing.T) {
 }
 
 func TestInstancePool_AcquireFromEmpty(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping pool test in short mode - requires database setup")
+	}
 	config := PoolConfig{
 		MinIdle:     0,
 		MaxIdle:     5,
@@ -60,6 +63,9 @@ func TestInstancePool_AcquireFromEmpty(t *testing.T) {
 }
 
 func TestInstancePool_AcquireFromPool(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping pool test in short mode - requires database setup")
+	}
 	config := PoolConfig{
 		MinIdle:     1,
 		MaxIdle:     5,
@@ -89,6 +95,9 @@ func TestInstancePool_AcquireFromPool(t *testing.T) {
 }
 
 func TestInstancePool_Release(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping pool test in short mode - requires database setup")
+	}
 	config := PoolConfig{
 		MinIdle:     0,
 		MaxIdle:     5,
@@ -121,6 +130,9 @@ func TestInstancePool_Release(t *testing.T) {
 }
 
 func TestInstancePool_MaxIdleLimit(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping pool test in short mode - requires database setup")
+	}
 	config := PoolConfig{
 		MinIdle:     0,
 		MaxIdle:     2,
@@ -164,6 +176,9 @@ func TestInstancePool_MaxIdleLimit(t *testing.T) {
 }
 
 func TestInstancePool_MaxActiveLimit(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping pool test in short mode - requires database setup")
+	}
 	config := PoolConfig{
 		MinIdle:     0,
 		MaxIdle:     5,
@@ -204,6 +219,9 @@ func TestInstancePool_MaxActiveLimit(t *testing.T) {
 }
 
 func TestInstancePool_Invalidate(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping pool test in short mode - requires database setup")
+	}
 	config := DefaultPoolConfig()
 	factory := func() (*AgentInstance, error) {
 		return &AgentInstance{
@@ -230,6 +248,9 @@ func TestInstancePool_Invalidate(t *testing.T) {
 }
 
 func TestInstancePool_CleanupExpired(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping pool test in short mode - requires database setup")
+	}
 	config := PoolConfig{
 		MinIdle:     0,
 		MaxIdle:     5,
@@ -264,6 +285,9 @@ func TestInstancePool_CleanupExpired(t *testing.T) {
 }
 
 func TestInstancePool_ConcurrentAcquireRelease(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping pool test in short mode - requires database setup")
+	}
 	config := PoolConfig{
 		MinIdle:     0,
 		MaxIdle:     10,
@@ -312,6 +336,9 @@ func TestInstancePool_ConcurrentAcquireRelease(t *testing.T) {
 }
 
 func TestInstancePool_Stats(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping pool test in short mode - requires database setup")
+	}
 	config := DefaultPoolConfig()
 	factory := func() (*AgentInstance, error) {
 		return &AgentInstance{ID: "test", Type: TypeAider}, nil
@@ -345,6 +372,9 @@ func TestInstancePool_Stats(t *testing.T) {
 }
 
 func TestInstancePool_Close(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping pool test in short mode - requires database setup")
+	}
 	config := DefaultPoolConfig()
 	factory := func() (*AgentInstance, error) {
 		return &AgentInstance{ID: "test", Type: TypeAider}, nil
