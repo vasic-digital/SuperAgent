@@ -57,6 +57,7 @@ require (
 	github.com/graphql-go/graphql v0.8.1
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/joho/godotenv v1.5.1
+	github.com/lib/pq v1.12.3
 	github.com/minio/minio-go/v7 v7.0.98
 	github.com/neo4j/neo4j-go-driver/v5 v5.28.4
 	github.com/playwright-community/playwright-go v0.5700.1

@@ -1214,7 +1214,7 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 		logger.Info("QA endpoints registered at /v1/qa/* (services pending)")
 
 		// Semantic Search endpoints — vector-based code search with ChromaDB/Qdrant
-		searchService, searchErr := initializeSearchService(cfg, logger)
+		searchService, searchErr := initializeSearchService(cfg, logger, rc.containerAdapter)
 		if searchErr != nil {
 			logger.WithError(searchErr).Warn("Failed to initialize semantic search service, continuing without search")
 		} else if searchService != nil {
@@ -1299,19 +1299,28 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 }
 
 // initializeSearchService initializes the semantic search service with configuration
-func initializeSearchService(cfg *config.Config, logger *logrus.Logger) (*search.Service, error) {
+func initializeSearchService(cfg *config.Config, logger *logrus.Logger, containerAdapter *containeradapter.Adapter) (*search.Service, error) {
 	chromadbPort, _ := strconv.Atoi(cfg.Services.ChromaDB.Port)
 	if chromadbPort == 0 {
 		chromadbPort = 8000
 	}
 	
+	qdrantPort, _ := strconv.Atoi(cfg.Services.Qdrant.Port)
+	if qdrantPort == 0 {
+		qdrantPort = 6333
+	}
+	
 	searchConfig := search.ServiceConfig{
-		Enabled:         true,
-		EmbedderType:    "local", // Use local embedder by default (deterministic, no API key needed)
-		VectorStoreType: "chroma",
-		ChromaHost:      cfg.Services.ChromaDB.Host,
-		ChromaPort:      chromadbPort,
-		CollectionName:  "code_embeddings",
+		Enabled:          true,
+		EmbedderType:     "local", // Use local embedder by default (deterministic, no API key needed)
+		VectorStoreType:  "chroma",
+		ChromaHost:       cfg.Services.ChromaDB.Host,
+		ChromaPort:       chromadbPort,
+		QdrantHost:       cfg.Services.Qdrant.Host,
+		QdrantPort:       qdrantPort,
+		CollectionName:   "code_embeddings",
+		ContainerAdapter: containerAdapter,
+		ComposeFile:      "docker-compose.yml",
 		IndexerConfig: indexer.Config{
 			RootPath:        ".",
 			IncludePatterns: []string{"*.go", "*.py", "*.js", "*.ts", "*.rs", "*.java", "*.cpp", "*.c", "*.h"},

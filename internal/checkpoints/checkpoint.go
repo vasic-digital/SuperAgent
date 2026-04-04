@@ -6,10 +6,12 @@ import (
 	"compress/gzip"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -138,7 +140,7 @@ func (m *Manager) List() ([]*Checkpoint, error) {
 
 	var checkpoints []*Checkpoint
 	for _, entry := range entries {
-		if entry.IsDir() || filepath.Ext(entry.Name()) != ".tar.gz" {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".tar.gz") {
 			continue
 		}
 
@@ -222,6 +224,37 @@ func (m *Manager) saveCheckpoint(checkpoint *Checkpoint) error {
 	tarWriter := tar.NewWriter(gzWriter)
 	defer tarWriter.Close()
 
+	// Save metadata as JSON first
+	metadata := map[string]interface{}{
+		"id":          checkpoint.ID,
+		"name":        checkpoint.Name,
+		"description": checkpoint.Description,
+		"created_at":  checkpoint.CreatedAt,
+		"created_by":  checkpoint.CreatedBy,
+		"git_ref":     checkpoint.GitRef,
+		"git_branch":  checkpoint.GitBranch,
+		"tags":        checkpoint.Tags,
+		"size":        checkpoint.Size,
+	}
+	
+	metaJSON, err := json.Marshal(metadata)
+	if err != nil {
+		return fmt.Errorf("failed to marshal metadata: %w", err)
+	}
+	
+	metaHeader := &tar.Header{
+		Name:    ".checkpoint-meta.json",
+		Mode:    0644,
+		ModTime: checkpoint.CreatedAt,
+		Size:    int64(len(metaJSON)),
+	}
+	if err := tarWriter.WriteHeader(metaHeader); err != nil {
+		return err
+	}
+	if _, err := tarWriter.Write(metaJSON); err != nil {
+		return err
+	}
+
 	// Write each file
 	for _, file := range checkpoint.Files {
 		header := &tar.Header{
@@ -277,6 +310,46 @@ func (m *Manager) loadCheckpoint(checkpointID string) (*Checkpoint, error) {
 		content := make([]byte, header.Size)
 		if _, err := io.ReadFull(tarReader, content); err != nil {
 			return nil, err
+		}
+
+		// Load metadata from JSON file
+		if header.Name == ".checkpoint-meta.json" {
+			var metadata map[string]interface{}
+			if err := json.Unmarshal(content, &metadata); err == nil {
+				if id, ok := metadata["id"].(string); ok {
+					checkpoint.ID = id
+				}
+				if name, ok := metadata["name"].(string); ok {
+					checkpoint.Name = name
+				}
+				if desc, ok := metadata["description"].(string); ok {
+					checkpoint.Description = desc
+				}
+				if createdBy, ok := metadata["created_by"].(string); ok {
+					checkpoint.CreatedBy = createdBy
+				}
+				if gitRef, ok := metadata["git_ref"].(string); ok {
+					checkpoint.GitRef = gitRef
+				}
+				if gitBranch, ok := metadata["git_branch"].(string); ok {
+					checkpoint.GitBranch = gitBranch
+				}
+				if createdAt, ok := metadata["created_at"].(string); ok {
+					checkpoint.CreatedAt, _ = time.Parse(time.RFC3339Nano, createdAt)
+				}
+				if tags, ok := metadata["tags"].([]interface{}); ok {
+					checkpoint.Tags = make([]string, 0, len(tags))
+					for _, tag := range tags {
+						if s, ok := tag.(string); ok {
+							checkpoint.Tags = append(checkpoint.Tags, s)
+						}
+					}
+				}
+				if size, ok := metadata["size"].(float64); ok {
+					checkpoint.Size = int64(size)
+				}
+			}
+			continue
 		}
 
 		hash := sha256.Sum256(content)

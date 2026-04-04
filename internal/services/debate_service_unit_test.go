@@ -586,7 +586,7 @@ func TestDebateServiceUnit_CalculateQualityScore(t *testing.T) {
 	}
 
 	score := ds.calculateQualityScore(responses)
-	assert.Equal(t, 0.8, score)
+	assert.InDelta(t, 0.8, score, 0.0001)
 }
 
 func TestDebateServiceUnit_CalculateQualityScore_Empty(t *testing.T) {

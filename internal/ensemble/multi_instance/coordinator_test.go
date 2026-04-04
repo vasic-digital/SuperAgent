@@ -125,7 +125,7 @@ func TestCoordinator_ExecuteSession_Voting(t *testing.T) {
 
 	// Note: This test requires mocking the instance manager to return proper responses
 	// In a real test, you'd mock the instance manager's SendRequest method
-	result, err := coord.ExecuteSession(ctx, session.ID, task)
+	_, err = coord.ExecuteSession(ctx, session.ID, task)
 
 	// Since we don't have real instances, this will likely fail or return partial results
 	// The test validates the coordinator logic executes without panicking

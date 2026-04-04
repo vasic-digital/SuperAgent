@@ -39,7 +39,7 @@ func TestSessionHandler_CreateSession(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 
-		reqBody := CreateSessionRequest{
+		reqBody := SessionCreateRequest{
 			UserID:        "test-user-123",
 			MemoryEnabled: false,
 			TTLHours:      24,
@@ -66,7 +66,7 @@ func TestSessionHandler_CreateSession(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 
-		reqBody := CreateSessionRequest{
+		reqBody := SessionCreateRequest{
 			UserID:        "test-user-memory",
 			MemoryEnabled: true,
 			TTLHours:      12,
@@ -89,7 +89,7 @@ func TestSessionHandler_CreateSession(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 
-		reqBody := CreateSessionRequest{
+		reqBody := SessionCreateRequest{
 			UserID: "test-user-context",
 			InitialContext: map[string]interface{}{
 				"key1": "value1",
@@ -114,7 +114,7 @@ func TestSessionHandler_CreateSession(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 
-		reqBody := CreateSessionRequest{
+		reqBody := SessionCreateRequest{
 			UserID:   "test-user-default-ttl",
 			TTLHours: 0, // Should default to 24
 		}
@@ -137,7 +137,7 @@ func TestSessionHandler_CreateSession(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 
-		reqBody := CreateSessionRequest{
+		reqBody := SessionCreateRequest{
 			UserID:   "test-user-max-ttl",
 			TTLHours: 1000, // Should cap at 168 (7 days)
 		}
@@ -190,7 +190,7 @@ func TestSessionHandler_GetSession(t *testing.T) {
 	// First create a session
 	createW := httptest.NewRecorder()
 	createC, _ := gin.CreateTestContext(createW)
-	reqBody := CreateSessionRequest{
+	reqBody := SessionCreateRequest{
 		UserID: "test-user-get",
 		InitialContext: map[string]interface{}{
 			"test": "context",
@@ -260,7 +260,7 @@ func TestSessionHandler_TerminateSession(t *testing.T) {
 		// Create a session first
 		createW := httptest.NewRecorder()
 		createC, _ := gin.CreateTestContext(createW)
-		reqBody := CreateSessionRequest{UserID: "test-user-terminate"}
+		reqBody := SessionCreateRequest{UserID: "test-user-terminate"}
 		jsonBody, _ := json.Marshal(reqBody)
 		createC.Request = httptest.NewRequest("POST", "/v1/sessions", bytes.NewReader(jsonBody))
 		createC.Request.Header.Set("Content-Type", "application/json")
@@ -294,7 +294,7 @@ func TestSessionHandler_TerminateSession(t *testing.T) {
 		// Create a session first
 		createW := httptest.NewRecorder()
 		createC, _ := gin.CreateTestContext(createW)
-		reqBody := CreateSessionRequest{UserID: "test-user-immediate"}
+		reqBody := SessionCreateRequest{UserID: "test-user-immediate"}
 		jsonBody, _ := json.Marshal(reqBody)
 		createC.Request = httptest.NewRequest("POST", "/v1/sessions", bytes.NewReader(jsonBody))
 		createC.Request.Header.Set("Content-Type", "application/json")
@@ -339,7 +339,7 @@ func TestSessionHandler_ListSessions(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
-		reqBody := CreateSessionRequest{
+		reqBody := SessionCreateRequest{
 			UserID: "test-user-list",
 		}
 		jsonBody, _ := json.Marshal(reqBody)
@@ -351,7 +351,7 @@ func TestSessionHandler_ListSessions(t *testing.T) {
 	// Create a session for a different user
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	reqBody := CreateSessionRequest{
+	reqBody := SessionCreateRequest{
 		UserID: "different-user",
 	}
 	jsonBody, _ := json.Marshal(reqBody)
@@ -414,7 +414,7 @@ func TestSessionHandler_UpdateSessionContext(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	reqBody := CreateSessionRequest{
+	reqBody := SessionCreateRequest{
 		UserID: "test-user-update",
 	}
 	jsonBody, _ := json.Marshal(reqBody)
@@ -472,7 +472,7 @@ func TestSessionHandler_GetSessionByID(t *testing.T) {
 		gin.SetMode(gin.TestMode)
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
-		reqBody := CreateSessionRequest{
+		reqBody := SessionCreateRequest{
 			UserID: "test-user-getbyid",
 		}
 		jsonBody, _ := json.Marshal(reqBody)

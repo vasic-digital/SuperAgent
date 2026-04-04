@@ -537,6 +537,29 @@ test-integration-full:
 	@echo ""
 	@echo "✅ Integration tests completed!"
 
+# =============================================================================
+# Container Harness Integration Tests (Real Containers via Container Adapter)
+# =============================================================================
+
+test-integration-containers:
+	@echo "🐳 Running integration tests with Container Harness..."
+	@echo "   This will boot real containers via the Containers module adapter"
+	@echo ""
+	@$(RESOURCE_PREFIX) go test -v $(GO_TEST_FLAGS) ./tests/integration/... \
+		-run "Container" \
+		-tags=integration \
+		-timeout 600s
+	@echo ""
+	@echo "✅ Container integration tests completed!"
+
+test-integration-containers-short:
+	@echo "🐳 Running container integration tests (short mode)..."
+	@$(RESOURCE_PREFIX) go test $(GO_TEST_FLAGS) ./tests/integration/... \
+		-run "Container" \
+		-tags=integration \
+		-timeout 300s
+	@echo "✅ Container tests completed!"
+
 test-with-infra:
 	@echo "⚠️  WARNING: This target uses manual container startup. Use './bin/helixagent' for proper container orchestration."
 	@echo "🧪 Running tests with infrastructure..."

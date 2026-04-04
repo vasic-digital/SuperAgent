@@ -4,7 +4,9 @@ package search
 import (
 	"context"
 	"fmt"
+	"time"
 
+	containeradapter "dev.helix.agent/internal/adapters/containers"
 	"dev.helix.agent/internal/search/embedder"
 	"dev.helix.agent/internal/search/indexer"
 	"dev.helix.agent/internal/search/store"
@@ -22,17 +24,19 @@ type Service struct {
 
 // ServiceConfig holds service configuration
 type ServiceConfig struct {
-	Enabled         bool
-	EmbedderType    string // "openai" or "local"
-	OpenAIKey       string
-	OpenAIModel     string
-	VectorStoreType string // "chroma" or "qdrant"
-	ChromaHost      string
-	ChromaPort      int
-	QdrantHost      string
-	QdrantPort      int
-	CollectionName  string
-	IndexerConfig   indexer.Config
+	Enabled          bool
+	EmbedderType     string // "openai" or "local"
+	OpenAIKey        string
+	OpenAIModel      string
+	VectorStoreType  string // "chroma" or "qdrant"
+	ChromaHost       string
+	ChromaPort       int
+	QdrantHost       string
+	QdrantPort       int
+	CollectionName   string
+	IndexerConfig    indexer.Config
+	ContainerAdapter *containeradapter.Adapter // Container adapter for orchestration
+	ComposeFile      string                    // Docker compose file path for container management
 }
 
 // DefaultServiceConfig returns default configuration
@@ -48,6 +52,7 @@ func DefaultServiceConfig() ServiceConfig {
 		QdrantPort:      6333,
 		CollectionName:  "code_embeddings",
 		IndexerConfig:   indexer.DefaultConfig(),
+		ComposeFile:     "docker-compose.yml",
 	}
 }
 
@@ -55,6 +60,13 @@ func DefaultServiceConfig() ServiceConfig {
 func NewService(config ServiceConfig, logger *logrus.Logger) (*Service, error) {
 	if !config.Enabled {
 		return &Service{config: config, logger: logger}, nil
+	}
+
+	// Ensure vector store containers are running via container adapter
+	if config.ContainerAdapter != nil {
+		if err := ensureVectorStoreContainer(context.Background(), config, logger); err != nil {
+			logger.WithError(err).Warn("Failed to ensure vector store container, continuing anyway")
+		}
 	}
 
 	// Create embedder
@@ -117,6 +129,71 @@ func NewService(config ServiceConfig, logger *logrus.Logger) (*Service, error) {
 	}
 
 	return service, nil
+}
+
+// ensureVectorStoreContainer ensures the vector store container is running
+func ensureVectorStoreContainer(ctx context.Context, config ServiceConfig, logger *logrus.Logger) error {
+	if config.ContainerAdapter == nil {
+		return fmt.Errorf("container adapter not available")
+	}
+
+	var serviceName string
+	switch config.VectorStoreType {
+	case "chroma":
+		serviceName = "chromadb"
+	case "qdrant":
+		serviceName = "qdrant"
+	default:
+		return fmt.Errorf("unknown vector store type: %s", config.VectorStoreType)
+	}
+
+	logger.WithField("service", serviceName).Info("Ensuring vector store container is running")
+
+	// Check if service is already running via container adapter
+	composeFile := config.ComposeFile
+	if composeFile == "" {
+		composeFile = "docker-compose.yml"
+	}
+
+	// Check current status of compose services
+	statuses, err := config.ContainerAdapter.ComposeStatus(ctx, composeFile)
+	if err != nil {
+		logger.WithError(err).Warn("Failed to get compose status, attempting ComposeUp")
+		return startVectorStoreContainer(ctx, config.ContainerAdapter, composeFile, serviceName, logger)
+	}
+
+	// Check if the specific service is running
+	for _, status := range statuses {
+		if status.Name == serviceName {
+			if status.State == "running" {
+				logger.WithField("service", serviceName).Info("Vector store container is already running")
+				return nil
+			}
+			// Service exists but is not running
+			logger.WithFields(logrus.Fields{
+				"service": status.Name,
+				"state":   status.State,
+			}).Info("Vector store container found but not running, starting it")
+			return startVectorStoreContainer(ctx, config.ContainerAdapter, composeFile, serviceName, logger)
+		}
+	}
+
+	// Service not found in compose status, try to start it
+	logger.WithField("service", serviceName).Info("Vector store container not found, starting via ComposeUp")
+	return startVectorStoreContainer(ctx, config.ContainerAdapter, composeFile, serviceName, logger)
+}
+
+// startVectorStoreContainer starts the vector store container using ComposeUp
+func startVectorStoreContainer(ctx context.Context, adapter *containeradapter.Adapter, composeFile, serviceName string, logger *logrus.Logger) error {
+	ctx, cancel := context.WithTimeout(ctx, 120*time.Second)
+	defer cancel()
+
+	if err := adapter.ComposeUp(ctx, composeFile, "default"); err != nil {
+		return fmt.Errorf("failed to start %s container: %w", serviceName, err)
+	}
+
+	logger.WithField("service", serviceName).Info("Vector store container started successfully")
+	return nil
 }
 
 // Initialize creates collection and optionally indexes on startup

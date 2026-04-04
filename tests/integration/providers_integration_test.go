@@ -14,8 +14,8 @@ import (
 	"go.uber.org/zap"
 )
 
-// ProviderConfig holds configuration for provider tests
-type ProviderConfig struct {
+// LLMProviderConfig holds configuration for LLM provider tests
+type LLMProviderConfig struct {
 	Name          string
 	EnvVar        string
 	Type          string
@@ -26,7 +26,7 @@ type ProviderConfig struct {
 }
 
 // All supported providers
-var providers = []ProviderConfig{
+var providers = []LLMProviderConfig{
 	{Name: "OpenAI", EnvVar: "OPENAI_API_KEY", Type: "openai", DefaultModel: "gpt-4o-mini", SupportsTools: true, SupportsVision: true, ContextWindow: 128000},
 	{Name: "Anthropic", EnvVar: "ANTHROPIC_API_KEY", Type: "anthropic", DefaultModel: "claude-3-5-haiku-20241022", SupportsTools: true, SupportsVision: true, ContextWindow: 200000},
 	{Name: "DeepSeek", EnvVar: "DEEPSEEK_API_KEY", Type: "deepseek", DefaultModel: "deepseek-chat", SupportsTools: true, SupportsVision: false, ContextWindow: 64000},
@@ -36,6 +36,9 @@ var providers = []ProviderConfig{
 	{Name: "Perplexity", EnvVar: "PERPLEXITY_API_KEY", Type: "perplexity", DefaultModel: "sonar", SupportsTools: false, SupportsVision: false, ContextWindow: 128000},
 	{Name: "Gemini", EnvVar: "GEMINI_API_KEY", Type: "gemini", DefaultModel: "gemini-2.0-flash-exp", SupportsTools: true, SupportsVision: true, ContextWindow: 1000000},
 }
+
+// ProviderConfig is an alias for backward compatibility
+type ProviderConfig = LLMProviderConfig
 
 // TestAllProviders_BasicChat tests basic chat across all configured providers
 func TestAllProviders_BasicChat(t *testing.T) {

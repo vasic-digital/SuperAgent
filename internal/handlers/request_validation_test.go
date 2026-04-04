@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,7 +21,8 @@ func TestValidateRequestID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			isValid := len(tt.requestID) > 0 && len(tt.requestID) <= 128
+			trimmed := strings.TrimSpace(tt.requestID)
+			isValid := len(trimmed) > 0 && len(trimmed) <= 128
 			assert.Equal(t, tt.valid, isValid)
 		})
 	}

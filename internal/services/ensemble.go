@@ -430,6 +430,21 @@ func (e *EnsembleService) filterProviders(providers map[string]LLMProvider, req 
 		}
 	}
 
+	// If MinProviders is set and we don't have enough, add more providers
+	if req.EnsembleConfig != nil && req.EnsembleConfig.MinProviders > 0 {
+		if len(filtered) < req.EnsembleConfig.MinProviders {
+			// Add providers not in the preferred list until we meet the minimum
+			for name, provider := range providers {
+				if len(filtered) >= req.EnsembleConfig.MinProviders {
+					break
+				}
+				if _, exists := filtered[name]; !exists {
+					filtered[name] = provider
+				}
+			}
+		}
+	}
+
 	return filtered
 }
 
